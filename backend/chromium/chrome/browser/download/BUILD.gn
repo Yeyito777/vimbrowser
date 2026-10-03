@@ -37,21 +37,19 @@ source_set("download") {
     "//url",
   ]
 
-  if (!is_android) {
-    public += [
-      "download_commands.h",
-      "download_item_web_app_data.h",
-    ]
+  public += [
+    "download_commands.h",
+    "download_item_web_app_data.h",
+  ]
 
-    sources += [ "download_item_web_app_data.cc" ]
+  sources += [ "download_item_web_app_data.cc" ]
 
-    public_deps += [ "//components/webapps/common" ]
+  public_deps += [ "//components/webapps/common" ]
 
-    deps += [
-      "//chrome/browser/policy:path_parser",
-      "//chrome/common:chrome_features",
-    ]
-  }
+  deps += [
+    "//chrome/browser/policy:path_parser",
+    "//chrome/common:chrome_features",
+  ]
 
   if (safe_browsing_mode != 0) {
     deps +=

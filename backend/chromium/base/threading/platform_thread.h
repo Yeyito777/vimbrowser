@@ -29,14 +29,8 @@
 #include "base/trace_event/base_tracing_forward.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#elif BUILDFLAG(IS_FUCHSIA)
-#include <zircon/types.h>
-#elif BUILDFLAG(IS_POSIX)
 #include <pthread.h>
 #include <unistd.h>
-#endif
 
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 #include "base/feature_list.h"
@@ -46,9 +40,6 @@ namespace base {
 namespace internal {
 class ThreadTypeManager;
 }
-#if BUILDFLAG(IS_ANDROID)
-BASE_EXPORT BASE_DECLARE_FEATURE(kRestrictBigCoreThreadAffinity);
-#endif
 
 class TimeDelta;
 
@@ -61,13 +52,9 @@ class TimeDelta;
 // because we are logging and the occasional false match is not catastrophic).
 class BASE_EXPORT PlatformThreadId {
  public:
-#if BUILDFLAG(IS_WIN)
-  using UnderlyingType = DWORD;
-#elif BUILDFLAG(IS_FUCHSIA)
-  using UnderlyingType = zx_koid_t;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   using UnderlyingType = uint64_t;
-#elif BUILDFLAG(IS_POSIX)
+#else
   using UnderlyingType = pid_t;
 #endif
   static_assert(std::is_integral_v<UnderlyingType>, "Always an integer value.");
@@ -136,9 +123,7 @@ inline std::ostream& operator<<(std::ostream& stream,
 // Used to operate on threads.
 class PlatformThreadHandle {
  public:
-#if BUILDFLAG(IS_WIN)
-  typedef void* Handle;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   typedef pthread_t Handle;
 #endif
 
@@ -393,54 +378,16 @@ class BASE_EXPORT PlatformThreadLinux : public PlatformThreadBase {
 };
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-class CrossProcessPlatformThreadDelegate;
-
-class BASE_EXPORT PlatformThreadChromeOS : public PlatformThreadLinux {
- public:
-  // Sets a delegate which handles thread type changes for threads of another
-  // process. This must be externally synchronized with any call to
-  // SetCurrentThreadType.
-  static void SetCrossProcessPlatformThreadDelegate(
-      CrossProcessPlatformThreadDelegate* delegate);
-
-  // Initializes features for this class. See `base::features::Init()`.
-  static void InitializeFeatures();
-
-  // Toggles a specific thread's type at runtime. This is the ChromeOS-specific
-  // version and includes Linux's functionality but does slightly more. See
-  // PlatformThreadLinux's SetThreadType() header comment for Linux details.
-  static void SetThreadType(ProcessId process_id,
-                            PlatformThreadId thread_id,
-                            ThreadType thread_type);
-};
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Alias to the correct platform-specific class based on preprocessor directives
 #if BUILDFLAG(IS_APPLE)
 using PlatformThread = PlatformThreadApple;
-#elif BUILDFLAG(IS_CHROMEOS)
-using PlatformThread = PlatformThreadChromeOS;
 #elif BUILDFLAG(IS_LINUX)
 using PlatformThread = PlatformThreadLinux;
 #else
 using PlatformThread = PlatformThreadBase;
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_EXPORT void SetMaxFrequencyPerProcessorOverrideForTesting(
-    std::vector<uint64_t>* value);
-
-// Returns whether `SetCanRunOnBigCore()` is a no-op. This is intended to help
-// with experiment targeting, by making sure that the base::Feature is only
-// queried for eligible devices. It is thus intended to be temporary, and to be
-// removed once the experiments conclude.
-BASE_EXPORT bool IsEligibleForBigCoreAffinityChange();
-// Sets whether a thread is allowed to run on the big core cluster, on
-// configurations where this is relevant, i.e. at least 3 distinct
-// clusters. Otherwise this is a no-op.
-BASE_EXPORT void SetCanRunOnBigCore(PlatformThreadId thread_id, bool can_run);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace internal {
 

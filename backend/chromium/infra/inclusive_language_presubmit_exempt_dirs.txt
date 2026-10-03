@@ -506,7 +506,6 @@ third_party/grpc/source/src/python/grpcio_observability/grpc_observability
 third_party/grpc/source/src/ruby/ext/grpc
 third_party/grpc/source/third_party/upb/upb/conformance
 third_party/grpc/source/third_party/xxhash
-third_party/hunspell/fuzz/bdict_corpus
 third_party/hyphenation-patterns
 third_party/hyphenation-patterns/src/am
 third_party/inspector_protocol

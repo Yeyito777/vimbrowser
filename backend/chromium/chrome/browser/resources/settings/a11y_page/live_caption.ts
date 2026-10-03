@@ -36,7 +36,6 @@ import 'chrome://resources/cr_elements/cr_lazy_render/cr_lazy_render.js';
 import type {CrActionMenuElement} from '//resources/cr_elements/cr_action_menu/cr_action_menu.js';
 import type {CrLazyRenderElement} from 'chrome://resources/cr_elements/cr_lazy_render/cr_lazy_render.js';
 
-import './live_translate.js';
 import '../languages_page/add_languages_dialog.js';
 
 import {I18nMixin} from 'chrome://resources/cr_elements/i18n_mixin.js';
@@ -92,13 +91,6 @@ export class SettingsLiveCaptionElement extends SettingsLiveCaptionElementBase {
       },
 
       // <if expr="not is_chromeos">
-      enableLiveTranslate_: {
-        type: Boolean,
-        value: function() {
-          return loadTimeData.getBoolean('enableLiveTranslate');
-        },
-      },
-
       installedLanguagePacks_: {
         type: Array,
         value: () => [],
@@ -120,7 +112,6 @@ export class SettingsLiveCaptionElement extends SettingsLiveCaptionElementBase {
   }
 
   // <if expr="not is_chromeos">
-  declare private enableLiveTranslate_: boolean;
   declare private installedLanguagePacks_: LiveCaptionLanguageList;
   declare private availableLanguagePacks_: LiveCaptionLanguageList;
   declare private detailLanguage_?: LiveCaptionLanguage;

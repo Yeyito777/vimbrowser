@@ -93,20 +93,11 @@
 #include "third_party/blink/public/common/features.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/net/network_annotation_monitor.h"
-#include "chrome/browser/ash/net/dhcp_wpad_url_client.h"
-#include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
-#include "chrome/browser/browser_process_platform_part.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "extensions/common/constants.h"
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/net/chrome_mojo_proxy_resolver_win.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(ENABLE_REQUEST_HEADER_INTEGRITY)
 #include "chrome/common/request_header_integrity/request_header_integrity_url_loader_throttle.h"  // nogncheck crbug.com/1125897
@@ -147,9 +138,7 @@ SystemNetworkContextManager* g_system_network_context_manager = nullptr;
 bool g_network_service_will_allow_gssapi_library_load = false;
 
 const char* kGssapiDesiredPref =
-#if BUILDFLAG(IS_CHROMEOS)
-    prefs::kKerberosEnabled;
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
     prefs::kReceivedHttpAuthNegotiateHeader;
 #endif
 #endif  // BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
@@ -200,15 +189,9 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams(
       local_state->GetBoolean(prefs::kAuthNegotiateDelegateByKdcPolicy);
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_POSIX)
   auth_dynamic_params->ntlm_v2_enabled =
       local_state->GetBoolean(prefs::kNtlmV2Enabled);
-#endif  // BUILDFLAG(IS_POSIX)
 
-#if BUILDFLAG(IS_ANDROID)
-  auth_dynamic_params->android_negotiate_account_type =
-      local_state->GetString(prefs::kAuthAndroidNegotiateAccountType);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
   auth_dynamic_params->allow_gssapi_library_load =
@@ -282,11 +265,6 @@ NetworkSandboxState IsNetworkSandboxEnabledInternal() {
   }
 #endif  // BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_WIN)
-  if (!sandbox::policy::features::IsNetworkSandboxSupported()) {
-    return NetworkSandboxState::kDisabledByPlatform;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   if (local_state &&
@@ -418,15 +396,6 @@ class SystemNetworkContextManager::NetworkProcessLaunchWatcher
           "Chrome.SystemNetworkContextManager.NetworkSandboxLaunchFailed."
           "ErrorCode",
           info.exit_code);
-#if BUILDFLAG(IS_WIN)
-      // This histogram duplicates data recorded in
-      // ChildProcess.LaunchFailed.WinLastError but is specific to the network
-      // service to make analysis easier.
-      base::UmaHistogramSparse(
-          "Chrome.SystemNetworkContextManager.NetworkSandboxLaunchFailed."
-          "WinLastError",
-          info.last_error);
-#endif  // BUILDFLAG(IS_WIN)
       RecordLaunchFailure();
     }
   }
@@ -619,7 +588,6 @@ SystemNetworkContextManager::SystemNetworkContextManager(
       ssl_config_service_manager_(local_state_),
       proxy_config_monitor_(local_state_),
       stub_resolver_config_reader_(local_state_) {
-#if !BUILDFLAG(IS_ANDROID)
   // QuicAllowed was not part of Android policy.
   const base::Value* value =
       g_browser_process->policy_service()
@@ -628,7 +596,6 @@ SystemNetworkContextManager::SystemNetworkContextManager(
           .GetValue(policy::key::kQuicAllowed, base::Value::Type::BOOLEAN);
   if (value)
     is_quic_allowed_ = value->GetBool();
-#endif  // !BUILDFLAG(IS_ANDROID)
   shared_url_loader_factory_ = new URLLoaderFactoryForSystem(this);
 
   pref_change_registrar_.Init(local_state_);
@@ -654,14 +621,8 @@ SystemNetworkContextManager::SystemNetworkContextManager(
                              auth_pref_callback);
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_POSIX)
   pref_change_registrar_.Add(prefs::kNtlmV2Enabled, auth_pref_callback);
-#endif  // BUILDFLAG(IS_POSIX)
 
-#if BUILDFLAG(IS_ANDROID)
-  pref_change_registrar_.Add(prefs::kAuthAndroidNegotiateAccountType,
-                             auth_pref_callback);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
   pref_change_registrar_.Add(kGssapiDesiredPref, auth_pref_callback);
@@ -740,14 +701,8 @@ void SystemNetworkContextManager::RegisterPrefs(PrefRegistrySimple* registry) {
                                 false);
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_POSIX)
   registry->RegisterBooleanPref(prefs::kNtlmV2Enabled, true);
-#endif  // BUILDFLAG(IS_POSIX)
 
-#if BUILDFLAG(IS_ANDROID)
-  registry->RegisterStringPref(prefs::kAuthAndroidNegotiateAccountType,
-                               std::string());
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Per-NetworkContext pref. The pref value from |local_state_| is used for
   // the system NetworkContext, and the per-profile pref values are used for
@@ -861,9 +816,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
     // On Windows, OSCrypt Async manages the encryption key via the DPAPI key
     // provider, and there is no need to send the key separately to OSCrypt
     // sync.
-#if !BUILDFLAG(IS_WIN)
     network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
-#endif  // !BUILDFLAG(IS_WIN)
   }
 
   // Configure SCT Auditing in the NetworkService.
@@ -878,20 +831,6 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
 
   UpdateTLS13EarlyDataEnabled();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(features::kNetworkAnnotationMonitoring)) {
-    // Create NetworkAnnotationMonitor.
-    if (!network_annotation_monitor_) {
-      network_annotation_monitor_ =
-          std::make_unique<NetworkAnnotationMonitor>();
-    }
-
-    // Pass NetworkAnnotationMonitor remote to NetworkService so that network
-    // calls can be reported.
-    network_service->SetNetworkAnnotationMonitor(
-        network_annotation_monitor_->GetClient());
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // cert_verifier_time_updater_ does not depend on the network service, but
   // can't be initialized from the constructor since network_time_tracker()
@@ -967,19 +906,9 @@ void SystemNetworkContextManager::ConfigureDefaultNetworkContextParams(
       network_context_params->proxy_resolver_factory =
           ChromeMojoProxyResolverFactory::CreateWithSelfOwnedReceiver();
 
-#if BUILDFLAG(IS_CHROMEOS)
-      network_context_params->dhcp_wpad_url_client =
-          ash::DhcpWpadUrlClient::CreateWithSelfOwnedReceiver();
-#endif  // BUILDFLAG(IS_CHROMEOS)
     }
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (command_line.HasSwitch(switches::kUseSystemProxyResolver)) {
-    network_context_params->system_proxy_resolver =
-        ChromeMojoProxyResolverWin::CreateWithSelfOwnedReceiver();
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   network_context_params->pac_quick_check_enabled =
       local_state_->GetBoolean(prefs::kQuickCheckEnabled);
@@ -1082,13 +1011,6 @@ void SystemNetworkContextManager::FlushNetworkInterfaceForTesting() {
     url_loader_factory_.FlushForTesting();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void SystemNetworkContextManager::FlushNetworkAnnotationMonitorForTesting() {
-  if (network_annotation_monitor_) {
-    network_annotation_monitor_->FlushForTesting();  // IN-TEST
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 network::mojom::HttpAuthStaticParamsPtr
 SystemNetworkContextManager::GetHttpAuthStaticParamsForTesting() {

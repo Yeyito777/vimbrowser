@@ -94,18 +94,6 @@ class TestRenderWidgetHostView : public RenderWidgetHostViewBase,
   uint64_t GetNSViewId() const override;
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_ANDROID)
-  bool IsTouchSequencePotentiallyActiveOnViz() override;
-
-  void RequestInputBackForDragAndDrop(
-      blink::mojom::DragDataPtr drag_data,
-      const url::Origin& source_origin,
-      blink::DragOperationsMask drag_operations_mask,
-      SkBitmap bitmap,
-      gfx::Vector2d cursor_offset_in_dip,
-      gfx::Rect drag_obj_rect_in_dip,
-      blink::mojom::DragEventSourceInfoPtr event_info) override {}
-#endif
 
   // Notified in response to a CommitPending where there is no content for
   // TakeFallbackContentFrom to use.
@@ -191,9 +179,7 @@ class TestRenderWidgetHostView : public RenderWidgetHostViewBase,
   bool is_showing_;
   bool is_occluded_;
   PageVisibilityState page_visibility_ = PageVisibilityState::kHidden;
-#if !BUILDFLAG(IS_IOS)
   ui::DummyTextInputClient text_input_client_;
-#endif
   ui::Cursor last_cursor_;
 
   // Latest capture sequence number which is incremented when the caller

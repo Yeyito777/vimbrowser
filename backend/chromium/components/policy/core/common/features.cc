@@ -6,7 +6,6 @@
 
 #include "base/metrics/field_trial_params.h"
 #include "base/time/time.h"
-#include "build/android_buildflags.h"
 #include "build/build_config.h"
 
 namespace policy::features {
@@ -26,10 +25,6 @@ BASE_FEATURE(kEnhancedSecurityEventFields,
 
 BASE_FEATURE(kUseCECFlagInPolicyData, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kInitializePoliciesForSignedInUserInNewEntryPoints,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 // Enables a configurable delay for policy registration.
 BASE_FEATURE(kCustomPolicyRegistrationDelay, base::FEATURE_DISABLED_BY_DEFAULT);
@@ -39,17 +34,6 @@ const base::FeatureParam<base::TimeDelta> kPolicyRegistrationDelay{
 // Used to add a captive portal check in SafeSitesNavigationThrottle.
 BASE_FEATURE(kSafeSitesCaptivePortalCheck, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_DESKTOP_ANDROID)
-// TODO(https://crbug.com/452666657): Remove this feature flag after launching
-// policies to supported on Android Desktop.
-BASE_FEATURE(kFuturePoliciesOnDesktopAndroid,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-// A blocklist of policies to be blocked/ignored on Desktop Android.
-BASE_FEATURE(kDesktopAndroidPolicy, base::FEATURE_DISABLED_BY_DEFAULT);
-const base::FeatureParam<std::string> kDesktopAndroidPolicyBlocklist{
-    &kDesktopAndroidPolicy, "blocklist", ""};
-#endif  // BUILDFLAG(IS_DESKTOP_ANDROID)
 
 // Used to enable extension install policy support.
 BASE_FEATURE(kEnableExtensionInstallPolicyFetching,

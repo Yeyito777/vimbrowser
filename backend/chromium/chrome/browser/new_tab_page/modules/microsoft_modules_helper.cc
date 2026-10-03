@@ -40,14 +40,7 @@ std::string GetFileExtension(std::string mime_type) {
   net::GetPreferredExtensionForMimeType(mime_type, &extension);
   std::string result;
 
-#if BUILDFLAG(IS_WIN)
-  // `extension` will be of std::wstring type on Windows which needs to be
-  // handled differently than std::string. See base/files/file_path.h for more
-  // info.
-  result = base::WideToUTF8(extension);
-#else
   result = extension;
-#endif
 
   return result;
 }

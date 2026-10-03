@@ -4,12 +4,6 @@
 
 import("//pdf/features.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 source_set("page_content_annotations") {
   sources = [ "page_content_annotations_service_factory.h" ]
   public_deps = [
@@ -47,19 +41,6 @@ source_set("extraction_service") {
     "//components/page_content_annotations/core",
     "//content/public/browser",
   ]
-
-  if (is_android) {
-    sources += [
-      "android/page_content_extraction_service_android.cc",
-      "android/page_content_extraction_service_android.h",
-    ]
-
-    deps += [
-      ":factory_jni_headers",
-      ":service_jni_headers",
-      "//chrome/browser/tabwindow",
-    ]
-  }
 }
 
 source_set("fetcher") {
@@ -90,47 +71,4 @@ source_set("page_embeddings") {
     "//components/keyed_service/core",
     "//components/passage_embeddings/core",
   ]
-}
-
-if (is_android) {
-  android_library("java") {
-    visibility = [
-      ":*",
-      "//chrome/android:chrome_java",
-    ]
-    srcjar_deps = [ ":service_jni_headers" ]
-    sources = [ "android/java/src/org/chromium/chrome/browser/page_content_annotations/PageContentExtractionService.java" ]
-    deps = [
-      "//base:base_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-  }
-
-  generate_jni("service_jni_headers") {
-    visibility = [
-      ":*",
-      "//chrome/browser",
-    ]
-
-    sources = [ "android/java/src/org/chromium/chrome/browser/page_content_annotations/PageContentExtractionService.java" ]
-  }
-
-  android_library("factory_java") {
-    srcjar_deps = [ ":factory_jni_headers" ]
-    sources = [ "android/java/src/org/chromium/chrome/browser/page_content_annotations/PageContentExtractionServiceFactory.java" ]
-    deps = [
-      ":java",
-      "//base:base_java",
-      "//chrome/browser/profiles/android:java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-  }
-
-  generate_jni("factory_jni_headers") {
-    visibility = [
-      ":*",
-      "//chrome/browser",
-    ]
-    sources = [ "android/java/src/org/chromium/chrome/browser/page_content_annotations/PageContentExtractionServiceFactory.java" ]
-  }
 }

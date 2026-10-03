@@ -64,16 +64,10 @@ enum class PlatformType {
 };
 
 PlatformType GetPlatformInput() {
-#if BUILDFLAG(IS_WIN)
-  return PlatformType::kWindows;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return PlatformType::kMac;
 #elif BUILDFLAG(IS_LINUX)
   return PlatformType::kLinux;
-#elif BUILDFLAG(IS_IOS)
-  return PlatformType::kIos;
-#elif BUILDFLAG(IS_ANDROID)
-  return PlatformType::kAndroid;
 #else
   return PlatformType::kOther;
 #endif
@@ -497,35 +491,6 @@ const Decoration& GetMostRelevantDecoration(
 
 std::u16string GetStringForDecoration(DecorationType type,
                                       bool visited_recently) {
-#if BUILDFLAG(IS_IOS)
-  switch (type) {
-    case DecorationType::kMostRecent:
-      return l10n_util::GetStringUTF16(
-          IDS_TAB_RESUME_DECORATORS_MOST_RECENT_IOS);
-    case DecorationType::kFrequentlyVisitedAtTime:
-      return l10n_util::GetStringUTF16(
-          IDS_TAB_RESUME_DECORATORS_FREQUENTLY_VISITED_IOS);
-    case DecorationType::kFrequentlyVisited:
-      return l10n_util::GetStringUTF16(
-          IDS_TAB_RESUME_DECORATORS_FREQUENTLY_VISITED_IOS);
-    case DecorationType::kVisitedXAgo:
-      if (visited_recently) {
-        return l10n_util::GetStringUTF16(
-            IDS_TAB_RESUME_DECORATORS_VISITED_RECENTLY_IOS);
-      } else {
-        return l10n_util::GetStringUTF16(
-            IDS_TAB_RESUME_DECORATORS_VISITED_X_AGO_IOS);
-      }
-    case DecorationType::kUnknown:
-      if (visited_recently) {
-        return l10n_util::GetStringUTF16(
-            IDS_TAB_RESUME_DECORATORS_VISITED_RECENTLY_IOS);
-      } else {
-        return l10n_util::GetStringUTF16(
-            IDS_TAB_RESUME_DECORATORS_VISITED_X_AGO_IOS);
-      }
-  }
-#else
   switch (type) {
     case DecorationType::kMostRecent:
       return l10n_util::GetStringUTF16(IDS_TAB_RESUME_DECORATORS_MOST_RECENT);
@@ -552,7 +517,6 @@ std::u16string GetStringForDecoration(DecorationType type,
             IDS_TAB_RESUME_DECORATORS_VISITED_X_AGO);
       }
   }
-#endif
 }
 
 std::u16string GetStringForRecencyDecorationWithTime(

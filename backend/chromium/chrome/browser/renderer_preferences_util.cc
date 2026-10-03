@@ -16,9 +16,6 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/convert_explicitly_allowed_network_ports_pref.h"
 #include "content/public/browser/reduce_accept_language_utils.h"
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/login/demo_mode/demo_session.h"
-#endif
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/common/pref_names.h"
 #include "components/autofill/core/common/autofill_prefs.h"
@@ -117,13 +114,6 @@ void UpdateFromSystemSettings(blink::RendererPreferences* prefs,
   prefs->focus_ring_color = BUILDFLAG(IS_MAC) ? SkColorSetRGB(0x00, 0x5F, 0xCC)
                                               : SkColorSetRGB(0x10, 0x10, 0x10);
 #if defined(USE_AURA)
-#if BUILDFLAG(IS_CHROMEOS)
-  // This color is 0x544d90fe modulated with 0xffffff.
-  prefs->active_selection_bg_color = SkColorSetRGB(0xCB, 0xE4, 0xFA);
-  prefs->active_selection_fg_color = SK_ColorBLACK;
-  prefs->inactive_selection_bg_color = SkColorSetRGB(0xEA, 0xEA, 0xEA);
-  prefs->inactive_selection_fg_color = SK_ColorBLACK;
-#endif
 
 #if BUILDFLAG(IS_LINUX)
   if (auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(profile)) {
@@ -198,18 +188,8 @@ void UpdateFromSystemSettings(blink::RendererPreferences* prefs,
   prefs->plugin_fullscreen_allowed =
       pref_service->GetBoolean(prefs::kFullscreenAllowed);
 #endif
-#if BUILDFLAG(IS_ANDROID)
-  prefs->uses_platform_autofill =
-      pref_service->GetBoolean(autofill::prefs::kAutofillUsingPlatformAutofill);
-#endif
   prefs->caret_browsing_enabled =
       pref_service->GetBoolean(prefs::kCaretBrowsingEnabled);
-#if BUILDFLAG(IS_ANDROID)
-  if (!base::FeatureList::IsEnabled(features::kAndroidCaretBrowsing)) {
-    // ensures caret browsing is disabled on Clank if the feature flag is off
-    prefs->caret_browsing_enabled = false;
-  }
-#endif
   ui::AXPlatform::GetInstance().SetCaretBrowsingState(
       prefs->caret_browsing_enabled);
   if (PrefService* const local_state = g_browser_process->local_state()) {

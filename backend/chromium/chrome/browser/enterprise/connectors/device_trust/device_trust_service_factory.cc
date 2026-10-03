@@ -41,14 +41,6 @@
 #include "components/policy/core/common/cloud/user_cloud_policy_manager.h"
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_switches.h"
-#include "chrome/browser/enterprise/connectors/device_trust/ash/ash_attestation_policy_observer.h"
-#include "chrome/browser/enterprise/connectors/device_trust/attestation/ash/ash_attestation_service_impl.h"
-#include "chrome/browser/enterprise/connectors/device_trust/attestation/ash/flex_attester.h"
-#include "chrome/browser/enterprise/connectors/device_trust/attestation/browser/browser_attestation_service.h"
-#include "chromeos/ash/components/install_attributes/install_attributes.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 bool IsProfileManaged(Profile* profile) {
@@ -146,25 +138,6 @@ DeviceTrustServiceFactory::BuildServiceInstanceForBrowserContext(
     return nullptr;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<AttestationService> attestation_service;
-  if (ash::switches::IsRevenBranding()) {
-    std::vector<std::unique_ptr<Attester>> attesters;
-    attesters.push_back(std::make_unique<FlexAttester>(profile));
-    attestation_service = std::make_unique<BrowserAttestationService>(
-        std::move(attesters),
-        ash::InstallAttributes::Get()->IsEnterpriseManaged()
-            ? ENTERPRISE_MACHINE
-            : DEVICE_TRUST_CONNECTOR);
-  } else {
-    std::unique_ptr<AshAttestationServiceImpl> ash_attestation_service =
-        std::make_unique<AshAttestationServiceImpl>(profile);
-    dt_connector_service->AddObserver(
-        std::make_unique<AshAttestationPolicyObserver>(
-            ash_attestation_service->GetWeakPtr()));
-    attestation_service = std::move(ash_attestation_service);
-  }
-#else
   DeviceTrustKeyManager* key_manager = nullptr;
   policy::CloudPolicyStore* browser_cloud_policy_store = nullptr;
   auto* browser_policy_connector =
@@ -196,7 +169,6 @@ DeviceTrustServiceFactory::BuildServiceInstanceForBrowserContext(
 
   auto attestation_service =
       std::make_unique<BrowserAttestationService>(std::move(attesters), CBCM);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   auto signals_service = CreateSignalsService(profile);
 

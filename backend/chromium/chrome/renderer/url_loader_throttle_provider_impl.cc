@@ -44,9 +44,6 @@
 #include "chrome/common/request_header_integrity/request_header_integrity_url_loader_throttle.h"  // nogncheck crbug.com/1125897
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/renderer/ash_merge_session_loader_throttle.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 #include "components/safe_browsing/content/renderer/renderer_url_loader_throttle.h"
@@ -229,18 +226,8 @@ URLLoaderThrottleProviderImpl::CreateThrottles(
   }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  std::string client_data_header;
-  if (!is_frame_resource && local_frame_token.has_value()) {
-    client_data_header = ChromeRenderFrameObserver::GetCCTClientHeader(
-        local_frame_token.value());
-  }
-#endif
 
   throttles.emplace_back(std::make_unique<GoogleURLLoaderThrottle>(
-#if BUILDFLAG(IS_ANDROID)
-      client_data_header,
-#endif
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
       chrome_content_renderer_client_->GetChromeObserver()
           ->CreateBoundSessionRequestThrottledHandler(),
@@ -248,11 +235,6 @@ URLLoaderThrottleProviderImpl::CreateThrottles(
       chrome_content_renderer_client_->GetChromeObserver()
           ->GetDynamicParams()));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  throttles.emplace_back(std::make_unique<AshMergeSessionLoaderThrottle>(
-      chrome_content_renderer_client_->GetChromeObserver()
-          ->chromeos_listener()));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_REQUEST_HEADER_INTEGRITY)
   if (request_header_integrity::RequestHeaderIntegrityURLLoaderThrottle::

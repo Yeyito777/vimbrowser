@@ -11,10 +11,6 @@ import("//build/config/c++/c++.gni")
 import("//build/config/compiler/compiler.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 executable("code_cache_generator") {
   sources = [ "code_cache_generator.cc" ]
 

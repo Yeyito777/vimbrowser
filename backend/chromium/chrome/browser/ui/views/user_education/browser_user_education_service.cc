@@ -66,7 +66,6 @@
 #include "chrome/browser/ui/views/user_education/impl/browser_feature_promo_controller.h"
 #include "chrome/browser/ui/views/user_education/impl/browser_feature_promo_preconditions.h"
 #include "chrome/browser/ui/views/user_education/impl/browser_user_education_context.h"
-#include "chrome/browser/ui/views/user_education/ios_promo_bubble_view.h"
 #include "chrome/browser/ui/views/web_apps/web_app_install_dialog_delegate.h"
 #include "chrome/browser/ui/webui/customize_buttons/customize_buttons_handler.h"
 #include "chrome/browser/ui/webui/new_tab_page/new_tab_page_ui.h"
@@ -88,8 +87,6 @@
 #include "components/compose/buildflags.h"
 #include "components/compose/core/browser/compose_features.h"
 #include "components/data_sharing/public/features.h"
-#include "components/desktop_to_mobile_promos/features.h"
-#include "components/desktop_to_mobile_promos/promos_types.h"
 #include "components/feature_engagement/public/event_constants.h"
 #include "components/feature_engagement/public/feature_constants.h"
 #include "components/lens/lens_features.h"
@@ -136,9 +133,6 @@
 #include "components/plus_addresses/core/browser/resources/vector_icons.h"
 #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/user_education/views/help_bubble_factory_views_ash.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
 #include "components/user_education/views/help_bubble_factory_mac.h"
@@ -285,13 +279,6 @@ void RegisterChromeHelpBubbleFactories(
     user_education::HelpBubbleFactoryRegistry& registry) {
   const user_education::HelpBubbleDelegate* const delegate =
       GetHelpBubbleDelegate();
-#if BUILDFLAG(IS_CHROMEOS)
-  // Try to create an Ash-specific help bubble first. Note that an Ash-specific
-  // help bubble will only take precedence over a standard Views-specific help
-  // bubble if the tracked element's help bubble context is explicitly set to
-  // `ash::HelpBubbleContext::kAsh`.
-  registry.MaybeRegister<ash::HelpBubbleFactoryViewsAsh>(delegate);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   // Autofill bubbles require special handling.
   registry.MaybeRegister<AutofillHelpBubbleFactory>(delegate);
   registry.MaybeRegister<user_education::HelpBubbleFactoryViews>(delegate);
@@ -841,12 +828,7 @@ void MaybeRegisterChromeFeaturePromos(
   registry.RegisterFeature(std::move(
       FeaturePromoSpecification::CreateForToastPromo(
           feature_engagement::kIPHPasswordsSavePrimingPromoFeature,
-#if BUILDFLAG(IS_CHROMEOS)
-          // No avatar button on ChromeOS, so anchor to app menu instead.
-          kToolbarAppMenuButtonElementId,
-#else
           kToolbarAvatarButtonElementId,
-#endif
           IDS_PASSWORDS_SAVE_PRIMING_PROMO_BODY_TEMPLATE,
           IDS_PASSWORDS_SAVE_PRIMING_PROMO_SCREENREADER,
           FeaturePromoSpecification::AcceleratorInfo())
@@ -981,7 +963,6 @@ void MaybeRegisterChromeFeaturePromos(
                                  "Triggered when a bookmark is added from the "
                                  "bookmark page action in omnibox.")));
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // kIPHSwitchProfileFeature:
   registry.RegisterFeature(FeaturePromoSpecification::CreateForToastPromo(
       feature_engagement::kIPHProfileSwitchFeature,
@@ -1013,7 +994,6 @@ void MaybeRegisterChromeFeaturePromos(
           .SetBubbleArrow(HelpBubbleArrow::kTopRight)
           .SetBubbleIcon(&vector_icons::kCelebrationIcon)
           .SetReshowPolicy(base::Days(14), /*max_show_count=*/6)));
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // kIPHPwaQuietNotificationFeature:
   registry.RegisterFeature(std::move(
@@ -1699,87 +1679,6 @@ void MaybeRegisterChromeFeaturePromos(
           .SetInAnyContext(true)
           .SetMetadata(130, "johntlee@chromium.org",
                        "Triggered after user lands on chrome://history.")));
-
-  // kIPHiOSLensPromoDesktopFeature
-  if (MobilePromoOnDesktopTypeEnabled(
-          MobilePromoOnDesktopPromoType::kLensPromo)) {
-    registry.RegisterFeature(
-        std::move(FeaturePromoSpecification::CreateForCustomUi(
-                      feature_engagement::kIPHiOSLensPromoDesktopFeature,
-                      kIOSLensPromoAnchorElementId,
-                      user_education::CreateCustomHelpBubbleViewFactoryCallback(
-                          base::BindRepeating(
-                              &IOSPromoBubbleView::Create,
-                              desktop_to_mobile_promos::PromoType::kLens)))
-                      .SetMetadata(144, "scottyoder@google.com",
-                                   "Triggered when Lens Overlay is used.")
-                      .SetBubbleArrow(HelpBubbleArrow::kNone)));
-  }
-
-  // kIPHiOSEnhancedBrowsingDesktopFeature
-  if (MobilePromoOnDesktopTypeEnabled(
-          MobilePromoOnDesktopPromoType::kESBPromo)) {
-    registry.RegisterFeature(std::move(
-        FeaturePromoSpecification::CreateForCustomUi(
-            feature_engagement::kIPHiOSEnhancedBrowsingDesktopFeature,
-            kToolbarAppMenuButtonElementId,
-            user_education::CreateCustomHelpBubbleViewFactoryCallback(
-                base::BindRepeating(
-                    &IOSPromoBubbleView::Create,
-                    desktop_to_mobile_promos::PromoType::kEnhancedBrowsing)))
-            .SetPromoSubtype(
-                FeaturePromoSpecification::PromoSubtype::kActionableAlert)
-            .SetMetadata(144, "scottyoder@google.com",
-                         "Triggered when ESB is first enabled.")
-            .SetBubbleArrow(HelpBubbleArrow::kNone)));
-  }
-
-  // kIPHiOSPasswordPromoDesktopFeature
-  if (MobilePromoOnDesktopTypeEnabled(
-          MobilePromoOnDesktopPromoType::kAutofillPromo)) {
-    registry.RegisterFeature(
-        std::move(FeaturePromoSpecification::CreateForCustomUi(
-                      feature_engagement::kIPHiOSPasswordPromoDesktopFeature,
-                      kPasswordsOmniboxKeyIconElementId,
-                      user_education::CreateCustomHelpBubbleViewFactoryCallback(
-                          base::BindRepeating(
-                              &IOSPromoBubbleView::Create,
-                              desktop_to_mobile_promos::PromoType::kPassword)))
-                      .SetMetadata(144, "scottyoder@google.com",
-                                   "Triggered when a password is saved.")
-                      .SetBubbleArrow(HelpBubbleArrow::kNone)));
-  }
-
-  // kIPHiOSTabGroupsDesktopFeature
-  if (MobilePromoOnDesktopTypeEnabled(
-          MobilePromoOnDesktopPromoType::kTabGroups)) {
-    registry.RegisterFeature(std::move(
-        FeaturePromoSpecification::CreateForCustomUi(
-            feature_engagement::kIPHiOSTabGroupsDesktopFeature,
-            kToolbarAvatarButtonElementId,
-            user_education::CreateCustomHelpBubbleViewFactoryCallback(
-                base::BindRepeating(
-                    &IOSPromoBubbleView::Create,
-                    desktop_to_mobile_promos::PromoType::kTabGroups)))
-            .SetMetadata(146, "bmcclure@google.com",
-                         "Triggered when Tab Groups are interacted with.")
-            .SetBubbleArrow(HelpBubbleArrow::kNone)));
-  }
-
-  // kIPHiOSPriceTrackingDesktopFeature
-  if (MobilePromoOnDesktopTypeEnabled(
-          MobilePromoOnDesktopPromoType::kPriceTracking)) {
-    registry.RegisterFeature(std::move(
-        FeaturePromoSpecification::CreateForCustomUi(
-            feature_engagement::kIPHiOSPriceTrackingDesktopFeature,
-            kToolbarAvatarButtonElementId,
-            user_education::CreateCustomHelpBubbleViewFactoryCallback(
-                base::BindRepeating(
-                    &IOSPromoBubbleView::Create,
-                    desktop_to_mobile_promos::PromoType::kPriceTracking)))
-            .SetMetadata(146, "bmcclure@google.com",
-                         "Triggered when Price Tracking alerts are enabled.")));
-  }
 
 #endif  // BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
 

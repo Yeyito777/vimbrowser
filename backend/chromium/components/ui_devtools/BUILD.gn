@@ -140,9 +140,6 @@ source_set("unit_tests") {
   testonly = true
 
   cflags = []
-  if (is_win) {
-    cflags += [ "/wd4800" ]  # Value forced to bool.
-  }
 
   sources = [
     "css_agent_unittest.cc",

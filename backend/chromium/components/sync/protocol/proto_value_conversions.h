@@ -33,7 +33,6 @@ class CookieSpecifics;
 class CrossUserSharingPublicKey;
 class DebugEventInfo;
 class DebugInfo;
-class DesktopToMobilePromoMessage;
 class DeviceDetails;
 class DeviceInfoSpecifics;
 class DictionarySpecifics;
@@ -67,12 +66,10 @@ class PrinterSpecifics;
 class PrintersAuthorizationServerSpecifics;
 class PriorityPreferenceSpecifics;
 class ProductComparisonSpecifics;
-class PushNotificationMessage;
 class ReadingListSpecifics;
 class SavedTabGroupSpecifics;
 class SearchEngineSpecifics;
 class SecurityEventSpecifics;
-class SendTabToSelfPush;
 class SendTabToSelfSpecifics;
 class SessionHeader;
 class SessionSpecifics;
@@ -86,7 +83,6 @@ class ThemeIosSpecifics;
 class ThemeSpecifics;
 class TimeRangeDirective;
 class TypedUrlSpecifics;
-class UnencryptedSharingMessage;
 class UrlDirective;
 class UserConsentSpecifics;
 class UserEventSpecifics;
@@ -165,10 +161,6 @@ base::Value CookieSpecificsToValue(const sync_pb::CookieSpecifics& proto);
 base::Value DebugEventInfoToValue(const sync_pb::DebugEventInfo& proto);
 
 base::Value DebugInfoToValue(const sync_pb::DebugInfo& proto);
-
-base::Value DesktopToMobilePromoMessageToValue(
-    const sync_pb::DesktopToMobilePromoMessage&
-        desktop_to_mobile_promo_message);
 
 base::Value DeviceDetailsToValue(const sync_pb::DeviceDetails& device_details);
 
@@ -267,9 +259,6 @@ base::Value PriorityPreferenceSpecificsToValue(
 base::Value ProductComparisonSpecificsToValue(
     const sync_pb::ProductComparisonSpecifics& product_comparison_specifics);
 
-base::Value PushNotificationMessageToValue(
-    const sync_pb::PushNotificationMessage& push_notification_message);
-
 base::Value CrossUserSharingPublicKeyToValue(
     const sync_pb::CrossUserSharingPublicKey& proto);
 
@@ -281,9 +270,6 @@ base::Value SavedTabGroupSpecificsToValue(
 
 base::Value SearchEngineSpecificsToValue(
     const sync_pb::SearchEngineSpecifics& search_engine_specifics);
-
-base::Value SendTabToSelfPushToValue(
-    const sync_pb::SendTabToSelfPush& send_tab_push);
 
 base::Value SendTabToSelfSpecificsToValue(
     const sync_pb::SendTabToSelfSpecifics& send_tab_specifics);
@@ -319,9 +305,6 @@ base::Value TimeRangeDirectiveToValue(
 
 base::Value TypedUrlSpecificsToValue(
     const sync_pb::TypedUrlSpecifics& typed_url_specifics);
-
-base::Value UnencryptedSharingMessageToValue(
-    const sync_pb::UnencryptedSharingMessage& proto);
 
 base::Value UrlDirectiveToValue(
     const sync_pb::UrlDirective& time_range_directive);

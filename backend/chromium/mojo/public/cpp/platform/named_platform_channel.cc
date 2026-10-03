@@ -29,11 +29,7 @@ NamedPlatformChannel::~NamedPlatformChannel() = default;
 // static
 NamedPlatformChannel::ServerName NamedPlatformChannel::ServerNameFromUTF8(
     std::string_view name) {
-#if BUILDFLAG(IS_WIN)
-  return base::UTF8ToWide(name);
-#else
   return std::string(name);
-#endif
 }
 
 void NamedPlatformChannel::PassServerNameOnCommandLine(

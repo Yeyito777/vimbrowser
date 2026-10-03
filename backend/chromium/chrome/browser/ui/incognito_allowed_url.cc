@@ -14,9 +14,6 @@
 #include "components/signin/public/base/signin_metrics.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/webui_url_constants.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -28,16 +25,7 @@ bool IsHostAllowedInIncognito(const GURL& url) {
   }
 
   if (host == chrome::kChromeUIChromeSigninHost) {
-#if BUILDFLAG(IS_WIN)
-    // Allow incognito mode for the chrome-signin url if we only want to
-    // retrieve the login scope token without touching any profiles. This
-    // option is only available on Windows for use with Google Credential
-    // Provider for Windows.
-    return signin::GetSigninReasonForEmbeddedPromoURL(url) ==
-           signin_metrics::Reason::kFetchLstOnly;
-#else
     return false;
-#endif  // BUILDFLAG(IS_WIN)
   }
 
   // Most URLs are allowed in incognito; the following are exceptions.
@@ -45,9 +33,6 @@ bool IsHostAllowedInIncognito(const GURL& url) {
   // chrome://settings.
   return host != chrome::kChromeUIAppLauncherPageHost &&
          host != chrome::kChromeUISettingsHost &&
-#if BUILDFLAG(IS_CHROMEOS)
-         host != ash::kChromeUIOSSettingsHost &&
-#endif
          host != chrome::kChromeUIHelpHost &&
          host != chrome::kChromeUIHistoryHost &&
          host != chrome::kChromeUIExtensionsHost &&

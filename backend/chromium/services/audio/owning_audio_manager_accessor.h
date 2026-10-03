@@ -12,9 +12,6 @@
 #include "build/build_config.h"
 #include "services/audio/service.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_com_initializer.h"
-#endif
 
 namespace media {
 class AudioLogFactory;
@@ -48,11 +45,6 @@ class OwningAudioManagerAccessor : public Service::AudioManagerAccessor {
   void Shutdown() final;
 
  private:
-#if BUILDFLAG(IS_WIN)
-  // Required to access CoreAudio.
-  base::win::ScopedCOMInitializer com_initializer_{
-      base::win::ScopedCOMInitializer::kMTA};
-#endif
   AudioManagerFactoryCallback audio_manager_factory_cb_;
   std::unique_ptr<media::AudioManager> audio_manager_;
   raw_ptr<media::AudioLogFactory, DanglingUntriaged> log_factory_ =

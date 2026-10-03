@@ -59,10 +59,6 @@ component("sync") {
       "//components/os_crypt/common:keychain_password_mac",
       "//crypto:mock_apple_keychain",
     ]
-  } else if (is_win) {
-    sources += [ "os_crypt_win.cc" ]
-    deps += [ "//components/version_info" ]
-    libs = [ "crypt32.lib" ]
   } else if (is_linux && !is_castos) {
     sources += [
       "key_storage_config_linux.cc",

@@ -110,13 +110,7 @@ class VIZ_SERVICE_EXPORT SkiaOutputSurfaceImpl : public SkiaOutputSurface {
   void SwapBuffers(OutputSurfaceFrame frame) override;
   void SetNeedsSwapSizeNotifications(
       bool needs_swap_size_notifications) override;
-#if BUILDFLAG(IS_ANDROID)
-  base::ScopedClosureRunner GetCacheBackBufferCb() override;
-#endif
   gfx::Rect GetCurrentFramebufferDamage() const override;
-#if BUILDFLAG(IS_ANDROID)
-  void SetFrameRate(gfx::SurfaceControlFrameRate frame_rate) override;
-#endif
   void SetNeedsMeasureNextDrawLatency() override;
 
   // SkiaOutputSurface implementation:

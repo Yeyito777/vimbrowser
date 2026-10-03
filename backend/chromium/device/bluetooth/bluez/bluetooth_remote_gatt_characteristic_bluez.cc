@@ -219,40 +219,15 @@ void BluetoothRemoteGattCharacteristicBlueZ::
                          std::move(error_callback)));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void BluetoothRemoteGattCharacteristicBlueZ::PrepareWriteRemoteCharacteristic(
-    base::span<const uint8_t> value,
-    base::OnceClosure callback,
-    ErrorCallback error_callback) {
-  DVLOG(1) << "Sending GATT characteristic prepare write request to "
-           << "characteristic: " << GetIdentifier()
-           << ", UUID: " << GetUUID().canonical_value()
-           << ", with value: " << value << ".";
-
-  bluez::BluezDBusManager::Get()
-      ->GetBluetoothGattCharacteristicClient()
-      ->PrepareWriteValue(
-          object_path(), value, std::move(callback),
-          base::BindOnce(&BluetoothRemoteGattCharacteristicBlueZ::OnWriteError,
-                         weak_ptr_factory_.GetWeakPtr(),
-                         std::move(error_callback)));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void BluetoothRemoteGattCharacteristicBlueZ::SubscribeToNotifications(
     device::BluetoothRemoteGattDescriptor* ccc_descriptor,
-#if BUILDFLAG(IS_CHROMEOS)
-    NotificationType notification_type,
-#endif  // BUILDFLAG(IS_CHROMEOS)
     base::OnceClosure callback,
     ErrorCallback error_callback) {
   bluez::BluezDBusManager::Get()
       ->GetBluetoothGattCharacteristicClient()
       ->StartNotify(
           object_path(),
-#if BUILDFLAG(IS_CHROMEOS)
-          notification_type,
-#endif  // BUILDFLAG(IS_CHROMEOS)
           base::BindOnce(
               &BluetoothRemoteGattCharacteristicBlueZ::OnStartNotifySuccess,
               weak_ptr_factory_.GetWeakPtr(), std::move(callback)),

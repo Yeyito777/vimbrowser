@@ -20,12 +20,8 @@
 #include "chrome/common/chrome_switches.h"
 #include "ui/base/ui_base_paths.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include <stdio.h>
 #include <unistd.h>
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace diagnostics {
 
@@ -58,82 +54,6 @@ class SimpleConsole {
   static SimpleConsole* Create();
 };
 
-#if BUILDFLAG(IS_WIN)
-namespace {
-
-// Wrapper for the windows console operating in high-level IO mode.
-class WinConsole : public SimpleConsole {
- public:
-  // The ctor allocates a console. This avoids having to ask the user to start
-  // chrome from a command prompt.
-  WinConsole()
-      : std_out_(INVALID_HANDLE_VALUE),
-        std_in_(INVALID_HANDLE_VALUE) {
-    ::AllocConsole();
-  }
-
-  WinConsole(const WinConsole&) = delete;
-  WinConsole& operator=(const WinConsole&) = delete;
-
-  ~WinConsole() override { ::FreeConsole(); }
-
-  bool Init() override { return SetIOHandles(); }
-
-  bool Write(const std::u16string& txt) override {
-    DWORD sz = txt.size();
-    return (TRUE ==
-            ::WriteConsoleW(std_out_, base::as_wcstr(txt), sz, &sz, NULL));
-  }
-
-  // Reads a string from the console. Internally it is limited to 256
-  // characters.
-  void OnQuit() override {
-    // Block here so the user can see the results.
-    SetColor(SimpleConsole::DEFAULT);
-    Write(u"Press [enter] to continue\n");
-    wchar_t buf[256];
-    DWORD read = std::size(buf);
-    ::ReadConsoleW(std_in_, buf, read, &read, NULL);
-  }
-
-  // Sets the foreground and background color.
-  bool SetColor(Color color) override {
-    uint16_t color_combo = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE |
-                           FOREGROUND_INTENSITY;
-    switch (color) {
-      case RED:
-        color_combo = FOREGROUND_RED | FOREGROUND_INTENSITY;
-        break;
-      case GREEN:
-        color_combo = FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-        break;
-      case DEFAULT:
-        break;
-      default:
-        NOTREACHED();
-    }
-    return (TRUE == ::SetConsoleTextAttribute(std_out_, color_combo));
-  }
-
- private:
-  bool SetIOHandles() {
-    std_out_ = ::GetStdHandle(STD_OUTPUT_HANDLE);
-    std_in_ = ::GetStdHandle(STD_INPUT_HANDLE);
-    return ((std_out_ != INVALID_HANDLE_VALUE) &&
-            (std_in_ != INVALID_HANDLE_VALUE));
-  }
-
-  // The input and output handles to the screen. They seem to be
-  // implemented as pipes but they have non-documented protocol.
-  HANDLE std_out_;
-  HANDLE std_in_;
-};
-
-}  // namespace
-
-SimpleConsole* SimpleConsole::Create() { return new WinConsole(); }
-
-#elif BUILDFLAG(IS_POSIX)
 namespace {
 
 class PosixConsole : public SimpleConsole {
@@ -190,9 +110,6 @@ class PosixConsole : public SimpleConsole {
 
 SimpleConsole* SimpleConsole::Create() { return new PosixConsole(); }
 
-#else  // !BUILDFLAG(IS_WIN) && !BUILDFLAG(IS_POSIX)
-SimpleConsole* SimpleConsole::Create() { return NULL; }
-#endif
 
 ///////////////////////////////////////////////////////////
 //  DiagnosticsWriter

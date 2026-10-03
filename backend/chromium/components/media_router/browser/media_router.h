@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef COMPONENTS_MEDIA_ROUTER_BROWSER_MEDIA_ROUTER_H_
+#if !defined(COMPONENTS_MEDIA_ROUTER_BROWSER_MEDIA_ROUTER_H_)
 #define COMPONENTS_MEDIA_ROUTER_BROWSER_MEDIA_ROUTER_H_
 
 #include <stdint.h>
@@ -29,7 +29,7 @@
 #include "media/base/flinging_controller.h"
 #include "third_party/blink/public/mojom/presentation/presentation.mojom.h"
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
 #include "components/media_router/browser/logger_impl.h"
 #include "components/media_router/browser/media_router_debugger.h"
 #include "components/media_router/common/mojom/media_controller.mojom.h"
@@ -155,7 +155,7 @@ class MediaRouter : public KeyedService {
   virtual std::unique_ptr<media::FlingingController> GetFlingingController(
       const MediaRoute::Id& route_id) = 0;
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
   // Returns a pointer to a controller host that sends media commands related to
   // mirroring within a route.
   virtual MirroringMediaControllerHost* GetMirroringMediaControllerHost(

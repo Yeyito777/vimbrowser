@@ -74,12 +74,6 @@
 #include "third_party/blink/public/web/web_view.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/renderer/media/android/flinging_renderer_client_factory.h"
-#include "media/base/android/media_codec_util.h"
-#include "media/base/media.h"
-#include "url/gurl.h"
-#endif
 
 #if BUILDFLAG(ENABLE_CAST_RECEIVER)
 #include "components/cast_streaming/common/public/cast_streaming_url.h"  // nogncheck
@@ -92,11 +86,7 @@
 #include "content/renderer/media/cast_renderer_client_factory.h"
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "media/cdm/fuchsia/fuchsia_cdm_factory.h"
-#include "media/fuchsia/video/fuchsia_decoder_factory.h"
-#include "media/mojo/clients/mojo_fuchsia_cdm_provider.h"
-#elif BUILDFLAG(ENABLE_MOJO_CDM)
+#if BUILDFLAG(ENABLE_MOJO_CDM)
 #include "media/mojo/clients/mojo_cdm_factory.h"  // nogncheck
 #else
 #include "media/cdm/default_cdm_factory.h"
@@ -127,14 +117,6 @@
 #include "media/remoting/remoting_renderer_factory.h"  // nogncheck
 #endif  // BUILDFLAG(IS_CASTOS) || BUILDFLAG(IS_CAST_ANDROID)
 
-#if BUILDFLAG(IS_WIN)
-#include "content/renderer/media/win/dcomp_texture_wrapper_impl.h"
-#include "gpu/config/gpu_driver_bug_workarounds.h"
-#include "media/base/win/mf_feature_checks.h"
-#include "media/cdm/win/media_foundation_cdm.h"
-#include "media/mojo/clients/win/media_foundation_renderer_client_factory.h"
-#include "media/mojo/mojom/speech_recognition_service.mojom.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace {
 
@@ -243,19 +225,11 @@ std::unique_ptr<media::RendererImplFactory> CreateRendererImplFactory(
     media::DecoderFactory* decoder_factory,
     content::RenderThreadImpl* render_thread,
     content::RenderFrameImpl* render_frame) {
-#if BUILDFLAG(IS_ANDROID)
-  auto factory = std::make_unique<media::RendererImplFactory>(
-      media_log, decoder_factory,
-      base::BindRepeating(&content::RenderThreadImpl::GetGpuFactories,
-                          base::Unretained(render_thread)),
-      player_id);
-#else
   auto factory = std::make_unique<media::RendererImplFactory>(
       media_log, decoder_factory,
       base::BindRepeating(&content::RenderThreadImpl::GetGpuFactories,
                           base::Unretained(render_thread)),
       player_id, render_frame->CreateSpeechRecognitionClient());
-#endif
   return factory;
 }
 
@@ -410,10 +384,6 @@ std::unique_ptr<blink::WebMediaPlayer> MediaFactory::CreateMediaPlayer(
   const blink::web_pref::WebPreferences webkit_preferences =
       render_frame_->GetBlinkPreferences();
   bool embedded_media_experience_enabled = false;
-#if BUILDFLAG(IS_ANDROID)
-  embedded_media_experience_enabled =
-      webkit_preferences.embedded_media_experience_enabled;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   media::MediaPlayerLoggingID player_id = media::GetNextMediaPlayerLoggingID();
   std::vector<std::unique_ptr<BatchingMediaLog::EventHandler>> handlers;
@@ -558,25 +528,6 @@ MediaFactory::CreateRendererFactorySelector(
                                      std::move(factory));
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // FlingingRendererClientFactory (FRCF) setup.
-  auto flinging_factory = std::make_unique<FlingingRendererClientFactory>(
-      CreateMojoRendererFactory(), std::move(client_wrapper));
-
-  // base::Unretained() is safe here because |factory_selector| owns and
-  // outlives |flinging_factory|.
-  factory_selector->StartRequestRemotePlayStateCB(
-      base::BindOnce(&FlingingRendererClientFactory::SetRemotePlayStateChangeCB,
-                     base::Unretained(flinging_factory.get())));
-
-  // Must bind the callback first since |flinging_factory| will be moved.
-  // base::Unretained() is also safe here, for the same reasons.
-  auto is_flinging_cb =
-      base::BindRepeating(&FlingingRendererClientFactory::IsFlingingActive,
-                          base::Unretained(flinging_factory.get()));
-  factory_selector->AddConditionalFactory(
-      RendererType::kFlinging, std::move(flinging_factory), is_flinging_cb);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_MOJO_RENDERER)
   if (!is_base_renderer_factory_set &&
@@ -633,55 +584,6 @@ MediaFactory::CreateRendererFactorySelector(
       RendererType::kCourier, std::move(courier_factory), is_remoting_cb);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // Enable Media Foundation for Clear if it is supported & there are no GPU
-  // workarounds enabled.
-  bool use_mf_for_clear = false;
-  if (media::SupportMediaFoundationClearPlayback()) {
-    if (auto gpu_channel_host = render_thread->EstablishGpuChannelSync()) {
-      use_mf_for_clear =
-          !gpu_channel_host->gpu_feature_info().IsWorkaroundEnabled(
-              gpu::DISABLE_MEDIA_FOUNDATION_CLEAR_PLAYBACK);
-    }
-  }
-
-  // Only use MediaFoundationRenderer when MediaFoundationCdm is available or
-  // MediaFoundation for Clear is supported.
-  if (media::MediaFoundationCdm::IsAvailable() || use_mf_for_clear) {
-    auto dcomp_texture_creation_cb =
-        base::BindRepeating(&DCOMPTextureWrapperImpl::Create,
-                            render_thread->GetDCOMPTextureFactory(),
-                            render_thread->GetMediaSequencedTaskRunner());
-
-    mojo::Remote<media::mojom::MediaFoundationRendererNotifier>
-        media_foundation_renderer_notifier;
-    GetInterfaceBroker().GetInterface(
-        media_foundation_renderer_notifier.BindNewPipeAndPassReceiver());
-
-    factory_selector->AddFactory(
-        RendererType::kMediaFoundation,
-        std::make_unique<media::MediaFoundationRendererClientFactory>(
-            media_log, std::move(dcomp_texture_creation_cb),
-            CreateMojoRendererFactory(),
-            std::move(media_foundation_renderer_notifier)));
-
-    if (use_mf_for_clear && !is_base_renderer_factory_set) {
-      // We want to use Media Foundation even for non-explicit Media Foundation
-      // clients (e.g. Media Foundation for Clear), register Media Foundation
-      // Renderer Factory as the base factory.
-      factory_selector->SetBaseRendererType(RendererType::kMediaFoundation);
-      is_base_renderer_factory_set = true;
-
-      // There are cases which Media Foundation may not support which will
-      // require us to fallback to the renderer impl so we add the renderer
-      // impl factory here to allow that fallback.
-      auto renderer_impl_factory = CreateRendererImplFactory(
-          player_id, media_log, decoder_factory, render_thread, render_frame_);
-      factory_selector->AddFactory(RendererType::kRendererImpl,
-                                   std::move(renderer_impl_factory));
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_CASTOS) || BUILDFLAG(IS_CAST_ANDROID)
   if (renderer_media_playback_options.is_remoting_renderer_enabled()) {
@@ -789,14 +691,6 @@ void MediaFactory::EnsureDecoderFactory() {
         GetMediaInterfaceFactory();
     external_decoder_factory =
         std::make_unique<media::MojoDecoderFactory>(interface_factory);
-#elif BUILDFLAG(IS_FUCHSIA)
-    mojo::PendingRemote<media::mojom::FuchsiaMediaCodecProvider>
-        media_codec_provider;
-    GetInterfaceBroker().GetInterface(
-        media_codec_provider.InitWithNewPipeAndPassReceiver());
-
-    external_decoder_factory = std::make_unique<media::FuchsiaDecoderFactory>(
-        std::move(media_codec_provider), /*allow_overlay=*/true);
 #endif
     decoder_factory_ = std::make_unique<media::DefaultDecoderFactory>(
         std::move(external_decoder_factory));
@@ -833,11 +727,7 @@ media::CdmFactory* MediaFactory::GetCdmFactory() {
   if (cdm_factory_)
     return cdm_factory_.get();
 
-#if BUILDFLAG(IS_FUCHSIA)
-  cdm_factory_ = std::make_unique<media::FuchsiaCdmFactory>(
-      std::make_unique<media::MojoFuchsiaCdmProvider>(&GetInterfaceBroker()),
-      GetKeySystems());
-#elif BUILDFLAG(ENABLE_MOJO_CDM)
+#if BUILDFLAG(ENABLE_MOJO_CDM)
   cdm_factory_ = std::make_unique<media::MojoCdmFactory>(
       GetMediaInterfaceFactory(), GetKeySystems());
 #else

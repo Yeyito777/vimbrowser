@@ -41,9 +41,6 @@
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/platform_window/win/win_window.h"
-#endif
 
 namespace aura {
 
@@ -237,10 +234,6 @@ WindowTreeHostPlatform::CreatePlatformWindow(
 #if BUILDFLAG(IS_OZONE)
   return ui::OzonePlatform::GetInstance()->CreatePlatformWindow(
       this, std::move(properties));
-#elif BUILDFLAG(IS_WIN)
-  auto window = std::make_unique<ui::WinWindow>(this, properties.bounds);
-  window->SetInputMethod(GetInputMethod());
-  return window;
 #else
   NOTIMPLEMENTED();
   return nullptr;

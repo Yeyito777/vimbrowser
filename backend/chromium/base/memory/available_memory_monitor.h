@@ -32,20 +32,6 @@ class BASE_EXPORT AvailableMemoryMonitor {
     base::TimeTicks timestamp;
     base::ByteSize available_physical_bytes;
 
-#if BUILDFLAG(IS_WIN)
-    // The following commit metrics are retrieved via the Windows MEMORYSTATUSEX
-    // API. For details on the underlying fields, see:
-    // https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex
-
-    // The maximum amount of memory the current process can commit. This is
-    // usually the system-wide available commit space, but can be smaller if
-    // the process is subject to a Job object quota (ullAvailPageFile).
-    base::ByteSize available_commit_bytes;
-
-    // The current committed memory limit for the system or the current process,
-    // whichever is smaller (ullTotalPageFile).
-    base::ByteSize total_commit_bytes;
-#endif
   };
 
   class Observer : public base::CheckedObserver {

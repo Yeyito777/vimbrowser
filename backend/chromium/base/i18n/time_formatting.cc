@@ -166,16 +166,6 @@ std::u16string TimeFormatShortDateAndTimeWithTimeZone(const Time& time) {
   return TimeFormat(*formatter, time);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::u16string TimeFormatMonthAndYearForTimeZone(
-    const Time& time,
-    const icu::TimeZone* time_zone) {
-  icu::SimpleDateFormat formatter =
-      CreateSimpleDateFormatter(DateFormatToString(DATE_FORMAT_YEAR_MONTH));
-  formatter.setTimeZone(*time_zone);
-  return TimeFormat(formatter, time);
-}
-#endif
 
 std::u16string TimeFormatMonthAndYear(const Time& time) {
   return TimeFormat(

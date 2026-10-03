@@ -58,9 +58,7 @@
 #include "components/signin/public/identity_manager/identity_manager.h"
 #include "components/version_info/version_info.h"
 
-#if !BUILDFLAG(IS_FUCHSIA)
 #include "components/variations/service/variations_service.h"  // nogncheck
-#endif
 
 using ::country_codes::CountryId;
 using ::regional_capabilities::SearchEngineChoiceScreenConditions;
@@ -504,15 +502,9 @@ SearchEngineChoiceService::Client::~Client() = default;
 // static
 CountryId SearchEngineChoiceService::Client::GetVariationsLatestCountry(
     variations::VariationsService* variations_service) {
-#if BUILDFLAG(IS_FUCHSIA)
-  // We can't add a dependency from Fuchsia to
-  // `//components/variations/service`.
-  return CountryId();
-#else
   return variations_service ? CountryId(base::ToUpperASCII(
                                   variations_service->GetLatestCountry()))
                             : CountryId();
-#endif
 }
 
 // -- SearchEngineChoiceService -----------------------------------------------
@@ -675,10 +667,8 @@ SearchEngineChoiceService::GetDynamicChoiceScreenConditions(
 
 void SearchEngineChoiceService::RecordProfileLoadEligibility(
     SearchEngineChoiceScreenConditions condition) {
-#if !BUILDFLAG(IS_IOS)
   // On iOS, this function is called directly.
   RecordLegacyStaticEligibilityInternal(*client_.get(), condition);
-#endif  // !BUILDFLAG(IS_IOS)
 
   regional_capabilities::RecordEligibilityFunnelStageDetails(condition);
   if (!regional_capabilities::IsEligible(condition)) {
@@ -693,26 +683,6 @@ void SearchEngineChoiceService::RecordProfileLoadEligibility(
   recorded_profile_load_choice_screen_eligibility_ = condition;
 }
 
-#if BUILDFLAG(IS_IOS)
-void SearchEngineChoiceService::RecordLegacyStaticEligibility(
-    SearchEngineChoiceScreenConditions condition) {
-  RecordLegacyStaticEligibilityInternal(*client_.get(), condition);
-}
-
-bool SearchEngineChoiceService::IsSurfaceEligible(
-    bool is_first_run_experience_surface) const {
-  if (!regional_capabilities_service_->GetChoiceScreenEligibilityConfig()
-           .has_value()) {
-    return false;
-  }
-
-  // Either the surface is FRE so the choice screen should be presented anyway,
-  // or the restriction to FRE is not requested.
-  return is_first_run_experience_surface ||
-         !regional_capabilities_service_->GetChoiceScreenEligibilityConfig()
-              ->restrict_surfaces_to_fre_only;
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 void SearchEngineChoiceService::RecordTriggeringEligibility(
     SearchEngineChoiceScreenConditions condition) {
@@ -1163,10 +1133,6 @@ void SearchEngineChoiceService::RegisterProfilePrefs(
   registry->RegisterInt64Pref(
       prefs::kDefaultSearchProviderChoiceInvalidationTimestamp, 0);
 
-#if BUILDFLAG(IS_IOS)
-  registry->RegisterIntegerPref(
-      prefs::kDefaultSearchProviderChoiceScreenSkippedCount, 0);
-#endif
 }
 
 SearchEngineChoiceService::Client&

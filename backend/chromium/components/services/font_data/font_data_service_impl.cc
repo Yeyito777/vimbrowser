@@ -4,9 +4,6 @@
 
 #include "components/services/font_data/font_data_service_impl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 #include <algorithm>
 #include <utility>
@@ -137,12 +134,6 @@ std::tuple<base::File, uint64_t> FontDataServiceImpl::GetFileHandle(
   auto font_file =
       base::File(font_file_path, base::File::FLAG_OPEN | base::File::FLAG_READ |
                                      base::File::FLAG_WIN_EXCLUSIVE_WRITE);
-#if BUILDFLAG(IS_WIN)
-  if (!font_file.IsValid()) {
-    base::UmaHistogramSparse("Chrome.FontDataService.WinLastError",
-                             ::GetLastError());
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   return std::make_tuple(std::move(font_file), GetUniqueFileId(font_file_path));
 }
@@ -187,67 +178,6 @@ bool FontDataServiceImpl::CheckMatchesRequiredStyle(
     const SkFontStyle& actual_style,
     const std::string& requested_family_name,
     const SkFontStyle& requested_style) {
-#if BUILDFLAG(IS_WIN)
-  static const std::string kFamiliesWithRequiredStyles[] = {
-      // The regular version of Gill Sans is actually in the Gill Sans MT
-      // family,
-      // and the Gill Sans family typically contains just the ultra-bold styles.
-      "gill sans",
-      "helvetica",
-      "open sans",
-  };
-
-  // Returns the "direction" of a given style component. For example, using this
-  // lambda for "weight" will return -1 if the typeface is light, 1 if it's
-  // bold, and 0 if it's normal. Used to compare styles directionally between 2
-  // typefaces.
-  auto find_style_component_direction = [](auto value, auto lower_bound,
-                                           auto upper_bound) {
-    if (value <= lower_bound) {
-      return -1;
-    }
-    if (value >= upper_bound) {
-      return 1;
-    }
-    return 0;
-  };
-
-  // SkTypeface defines "is bold" as >= Semibold. The enum has "light" as the
-  // first weight under "normal". That only leaves "medium" to classify, which
-  // is between "normal" and "semi-bold", so let's consider medium as "normal".
-  int requested_weight_direction = find_style_component_direction(
-      requested_style.weight(), SkFontStyle::kLight_Weight,
-      SkFontStyle::kSemiBold_Weight);
-  // For width, there's no precedent anywhere else in the codebase but the enum
-  // is pretty explicit. Anything under semi-condensed is "condensed", anything
-  // above semi-expanded is "expanded", and "normal" is right in the middle.
-  int requested_width_direction = find_style_component_direction(
-      requested_style.width(), SkFontStyle::kSemiCondensed_Width,
-      SkFontStyle::kSemiExpanded_Width);
-
-  for (const auto& family_name : kFamiliesWithRequiredStyles) {
-    if (base::EqualsCaseInsensitiveASCII(requested_family_name, family_name)) {
-      int found_weight_direction = find_style_component_direction(
-          actual_style.weight(), SkFontStyle::kLight_Weight,
-          SkFontStyle::kSemiBold_Weight);
-      int found_width_direction = find_style_component_direction(
-          actual_style.width(), SkFontStyle::kSemiCondensed_Width,
-          SkFontStyle::kSemiExpanded_Width);
-
-      // The regular variant is always usable if it's found.
-      if (found_weight_direction == 0 && found_width_direction == 0 &&
-          actual_style.slant() == SkFontStyle::kUpright_Slant) {
-        return true;
-      }
-
-      // If the requested style and the found typeface's styles match, consider
-      // the found typeface to be usable.
-      return requested_weight_direction == found_weight_direction &&
-             requested_width_direction == found_width_direction &&
-             requested_style.slant() == actual_style.slant();
-    }
-  }
-#endif
   // The requested family doesn't have style requirements, consider it usable.
   return true;
 }

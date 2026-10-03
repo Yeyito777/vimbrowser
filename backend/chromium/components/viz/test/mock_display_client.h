@@ -32,16 +32,6 @@ class MockDisplayClient : public mojom::DisplayClient {
 #if BUILDFLAG(IS_APPLE)
   MOCK_METHOD1(OnDisplayReceivedCALayerParams, void(const gfx::CALayerParams&));
 #endif
-#if BUILDFLAG(IS_WIN)
-  MOCK_METHOD1(CreateLayeredWindowUpdater,
-               void(mojo::PendingReceiver<mojom::LayeredWindowUpdater>));
-  MOCK_METHOD1(AddChildWindowToBrowser, void(gpu::SurfaceHandle child_window));
-#endif
-#if BUILDFLAG(IS_ANDROID)
-  MOCK_METHOD1(DidCompleteSwapWithSize, void(const gfx::Size&));
-  MOCK_METHOD1(OnContextCreationResult, void(gpu::ContextResult));
-  MOCK_METHOD1(SetWideColorEnabled, void(bool enabled));
-#endif  // BUILDFLAG(IS_ANDROID)
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
   MOCK_METHOD1(SetPreferredRefreshRate, void(float refresh_rate));
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)

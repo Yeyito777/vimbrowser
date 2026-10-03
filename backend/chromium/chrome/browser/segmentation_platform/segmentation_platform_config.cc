@@ -21,7 +21,6 @@
 #include "components/segmentation_platform/embedder/default_model/device_switcher_model.h"
 #include "components/segmentation_platform/embedder/default_model/fedcm_user_segment.h"
 #include "components/segmentation_platform/embedder/default_model/feed_user_segment.h"
-#include "components/segmentation_platform/embedder/default_model/frequent_feature_user_model.h"
 #include "components/segmentation_platform/embedder/default_model/low_user_engagement_model.h"
 #include "components/segmentation_platform/embedder/default_model/metrics_clustering.h"
 #include "components/segmentation_platform/embedder/default_model/optimization_target_segmentation_dummy.h"
@@ -41,21 +40,6 @@
 #include "components/webapps/browser/features.h"
 #include "content/public/browser/browser_context.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/bookmarks/bookmark_model_factory.h"
-#include "chrome/browser/commerce/shopping_service_factory.h"
-#include "chrome/browser/flags/android/chrome_feature_list.h"
-#include "components/commerce/core/commerce_feature_list.h"
-#include "components/commerce/core/shopping_service.h"
-#include "components/segmentation_platform/embedder/default_model/android_home_module_ranker.h"
-#include "components/segmentation_platform/embedder/default_model/contextual_page_actions_model.h"
-#include "components/segmentation_platform/embedder/default_model/device_tier_segment.h"
-#include "components/segmentation_platform/embedder/default_model/intentional_user_model.h"
-#include "components/segmentation_platform/embedder/default_model/most_visited_tiles_user.h"
-#include "components/segmentation_platform/embedder/default_model/power_user_segment.h"
-#include "components/segmentation_platform/embedder/default_model/tablet_productivity_user_model.h"
-#endif
-
 #if BUILDFLAG(ENABLE_COMPOSE)
 #include "components/segmentation_platform/embedder/default_model/compose_promotion.h"
 #endif
@@ -65,59 +49,6 @@ namespace segmentation_platform {
 using proto::SegmentId;
 
 namespace {
-
-#if BUILDFLAG(IS_ANDROID)
-
-constexpr int kAdaptiveToolbarDefaultSelectionTTLDays = 56;
-
-#endif  // BUILDFLAG(IS_ANDROID)
-
-#if BUILDFLAG(IS_ANDROID)
-std::unique_ptr<Config> GetConfigForAdaptiveToolbar() {
-  if (!base::FeatureList::IsEnabled(
-          chrome::android::kAdaptiveButtonInTopToolbarCustomizationV2)) {
-    return nullptr;
-  }
-  auto config = std::make_unique<Config>();
-  config->segmentation_key = kAdaptiveToolbarSegmentationKey;
-  config->segmentation_uma_name = kAdaptiveToolbarUmaName;
-  config->auto_execute_and_cache = true;
-
-  if (base::FeatureList::IsEnabled(
-          segmentation_platform::features::
-              kSegmentationPlatformAdaptiveToolbarV2Feature)) {
-    config->AddSegmentId(
-        SegmentId::OPTIMIZATION_TARGET_SEGMENTATION_ADAPTIVE_TOOLBAR);
-  } else {
-    int segment_selection_ttl_days = base::GetFieldTrialParamByFeatureAsInt(
-        chrome::android::kAdaptiveButtonInTopToolbarCustomizationV2,
-        kVariationsParamNameSegmentSelectionTTLDays,
-        kAdaptiveToolbarDefaultSelectionTTLDays);
-    config->segment_selection_ttl = base::Days(segment_selection_ttl_days);
-    // Do not set unknown TTL so that the platform ignores unknown results.
-
-    // A hardcoded list of segment IDs known to the segmentation platform.
-    config->AddSegmentId(SegmentId::OPTIMIZATION_TARGET_SEGMENTATION_NEW_TAB);
-    config->AddSegmentId(SegmentId::OPTIMIZATION_TARGET_SEGMENTATION_SHARE);
-    config->AddSegmentId(SegmentId::OPTIMIZATION_TARGET_SEGMENTATION_VOICE);
-  }
-
-  return config;
-}
-
-std::unique_ptr<Config> GetConfigForContextualPageActions(
-    content::BrowserContext* context) {
-  auto config = std::make_unique<Config>();
-  config->segmentation_key = kContextualPageActionsKey;
-  config->segmentation_uma_name = kContextualPageActionsUmaName;
-  config->AddSegmentId(
-      SegmentId::OPTIMIZATION_TARGET_CONTEXTUAL_PAGE_ACTION_PRICE_TRACKING,
-      std::make_unique<ContextualPageActionsModel>());
-  config->auto_execute_and_cache = false;
-  return config;
-}
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 std::unique_ptr<Config> GetConfigForWebAppInstallationPromo() {
   auto config = std::make_unique<Config>();
@@ -146,23 +77,6 @@ std::vector<std::unique_ptr<Config>> GetSegmentationPlatformConfig(
     content::BrowserContext* context,
     home_modules::HomeModulesCardRegistry* home_modules_card_registry) {
   std::vector<std::unique_ptr<Config>> configs;
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(
-          chrome::android::kAdaptiveButtonInTopToolbarCustomizationV2)) {
-    configs.emplace_back(GetConfigForAdaptiveToolbar());
-  }
-  if (base::FeatureList::IsEnabled(features::kContextualPageActions)) {
-    configs.emplace_back(GetConfigForContextualPageActions(context));
-  }
-
-  configs.emplace_back(IntentionalUserModel::GetConfig());
-  configs.emplace_back(PowerUserSegment::GetConfig());
-  configs.emplace_back(FrequentFeatureUserModel::GetConfig());
-  configs.emplace_back(DeviceTierSegment::GetConfig());
-  configs.emplace_back(TabletProductivityUserModel::GetConfig());
-  configs.emplace_back(MostVisitedTilesUser::GetConfig());
-  configs.emplace_back(AndroidHomeModuleRanker::GetConfig());
-#endif
   configs.emplace_back(LowUserEngagementModel::GetConfig());
   configs.emplace_back(SearchUserModel::GetConfig());
   configs.emplace_back(FeedUserSegment::GetConfig());

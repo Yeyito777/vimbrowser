@@ -1,22 +1,4 @@
 {
-  "codesearch-gen-chromium-android": {
-    "gn_args": {
-      "android_static_analysis": "off",
-      "blink_enable_generated_code_formatting": true,
-      "clang_use_chrome_plugins": false,
-      "debuggable_apks": false,
-      "enable_kythe_annotations": true,
-      "is_clang": true,
-      "is_component_build": false,
-      "is_debug": true,
-      "is_desktop_android": true,
-      "symbol_level": 1,
-      "system_headers_in_deps": true,
-      "target_os": "android",
-      "use_reclient": false,
-      "use_remoteexec": true
-    }
-  },
   "codesearch-gen-chromium-chromiumos": {
     "gn_args": {
       "blink_enable_generated_code_formatting": true,
@@ -107,24 +89,6 @@
       "symbol_level": 1,
       "system_headers_in_deps": true,
       "target_os": "mac",
-      "use_reclient": false,
-      "use_remoteexec": true
-    }
-  },
-  "codesearch-gen-chromium-webview": {
-    "gn_args": {
-      "android_static_analysis": "off",
-      "blink_enable_generated_code_formatting": true,
-      "clang_use_chrome_plugins": false,
-      "debuggable_apks": false,
-      "enable_kythe_annotations": true,
-      "is_clang": true,
-      "is_component_build": false,
-      "is_debug": true,
-      "is_desktop_android": true,
-      "symbol_level": 1,
-      "system_headers_in_deps": true,
-      "target_os": "android",
       "use_reclient": false,
       "use_remoteexec": true
     }

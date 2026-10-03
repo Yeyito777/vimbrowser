@@ -35,32 +35,6 @@ BaseSignalResponse::~BaseSignalResponse() = default;
 
 bool BaseSignalResponse::operator==(const BaseSignalResponse&) const = default;
 
-#if BUILDFLAG(IS_WIN)
-AntiVirusSignalResponse::AntiVirusSignalResponse() = default;
-AntiVirusSignalResponse::AntiVirusSignalResponse(
-    const AntiVirusSignalResponse&) = default;
-
-AntiVirusSignalResponse& AntiVirusSignalResponse::operator=(
-    const AntiVirusSignalResponse&) = default;
-
-bool AntiVirusSignalResponse::operator==(const AntiVirusSignalResponse&) const =
-    default;
-
-AntiVirusSignalResponse::~AntiVirusSignalResponse() = default;
-
-HotfixSignalResponse::HotfixSignalResponse() = default;
-HotfixSignalResponse::HotfixSignalResponse(const HotfixSignalResponse&) =
-    default;
-
-HotfixSignalResponse& HotfixSignalResponse::operator=(
-    const HotfixSignalResponse&) = default;
-
-bool HotfixSignalResponse::operator==(const HotfixSignalResponse&) const =
-    default;
-
-HotfixSignalResponse::~HotfixSignalResponse() = default;
-
-#endif  // BUILDFLAG(IS_WIN)
 
 GetSettingsOptions::GetSettingsOptions() = default;
 GetSettingsOptions::GetSettingsOptions(const GetSettingsOptions&) = default;

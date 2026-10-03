@@ -70,23 +70,6 @@ class PrefsUtil {
   // Returns whether |pref_name| corresponds to a pref whose type is URL.
   bool IsPrefTypeURL(const std::string& pref_name);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Returns whether |pref_name| corresponds to a pref that is enterprise
-  // managed.
-  bool IsPrefEnterpriseManaged(const std::string& pref_name);
-
-  // Returns whether |pref_name| corresponds to a pref that is controlled by
-  // the owner, and |profile_| is not the owner profile.
-  bool IsPrefOwnerControlled(const std::string& pref_name);
-
-  // Returns whether |pref_name| corresponds to a pref that is controlled by
-  // the primary user, and |profile_| is not the primary profile.
-  bool IsPrefPrimaryUserControlled(const std::string& pref_name);
-
-  // Returns whether |pref_name| corresponds to the hotword enabled pref, if the
-  // pref is disabled, and if |profile_| is a child user.
-  bool IsHotwordDisabledForChildUser(const std::string& pref_name);
-#endif
 
   // Returns whether |pref_name| corresponds to a pref that is controlled by
   // a supervisor, and |profile_| is supervised.

@@ -79,14 +79,10 @@
 #include "services/tracing/public/cpp/background_tracing/background_tracing_agent_impl.h"
 #include "services/tracing/public/cpp/background_tracing/background_tracing_agent_provider_impl.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include "base/posix/global_descriptors.h"
 #include "content/public/common/content_descriptors.h"
-#if !BUILDFLAG(IS_ANDROID)
 #include "services/tracing/public/cpp/system_tracing_service.h"
 #include "services/tracing/public/cpp/traced_process.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
-#endif  // BUILDFLAG(IS_POSIX)
 
 #if BUILDFLAG(IS_APPLE)
 #include "base/apple/mach_port_rendezvous.h"
@@ -96,12 +92,7 @@
 #include <stdio.h>
 #include "base/test/clang_profiling.h"
 #include "build/config/compiler/compiler_buildflags.h"
-#if BUILDFLAG(IS_POSIX)
 #include "base/files/scoped_file.h"
-#endif
-#if BUILDFLAG(IS_WIN)
-#include <io.h>
-#endif
 // Function provided by libclang_rt.profile-*.a, declared and documented at:
 // https://github.com/llvm/llvm-project/blob/master/compiler-rt/lib/profile/InstrProfiling.h
 extern "C" void __llvm_profile_set_file_object(FILE* File, int EnableMerge);
@@ -118,7 +109,6 @@ constinit thread_local ChildThreadImpl* child_thread_impl = nullptr;
 // This isn't needed on Windows because there the sandbox's job object
 // terminates child processes automatically. For unsandboxed processes (i.e.
 // plugins), PluginThread has EnsureTerminateMessageFilter.
-#if BUILDFLAG(IS_POSIX)
 
 #if defined(ADDRESS_SANITIZER) || defined(LEAK_SANITIZER) ||  \
     defined(MEMORY_SANITIZER) || defined(THREAD_SANITIZER) || \
@@ -228,33 +218,13 @@ void TerminateSelfOnDisconnect(
 #endif
 }
 
-#endif  // OS(POSIX)
 
 mojo::IncomingInvitation InitializeMojoIPCChannel() {
   TRACE_EVENT0("startup", "InitializeMojoIPCChannel");
   mojo::PlatformChannelEndpoint endpoint;
   MojoAcceptInvitationFlags flags =
       MOJO_ACCEPT_INVITATION_FLAG_LEAK_TRANSPORT_ENDPOINT;
-#if BUILDFLAG(IS_WIN)
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          mojo::PlatformChannel::kHandleSwitch)) {
-    endpoint = mojo::PlatformChannel::RecoverPassedEndpointFromCommandLine(
-        *base::CommandLine::ForCurrentProcess());
-  } else {
-    // If this process is elevated, it will have a pipe path passed on the
-    // command line.
-    endpoint = mojo::NamedPlatformChannel::ConnectToServer(
-        *base::CommandLine::ForCurrentProcess());
-    flags |= MOJO_ACCEPT_INVITATION_FLAG_ELEVATED;
-  }
-#elif BUILDFLAG(IS_FUCHSIA)
-  endpoint = mojo::PlatformChannel::RecoverPassedEndpointFromCommandLine(
-      *base::CommandLine::ForCurrentProcess());
-#elif BUILDFLAG(IS_APPLE)
-#if BUILDFLAG(IS_IOS_TVOS)
-  endpoint = mojo::PlatformChannel::RecoverPassedEndpointFromCommandLine(
-      *base::CommandLine::ForCurrentProcess());
-#else
+#if BUILDFLAG(IS_APPLE)
   auto* client = base::MachPortRendezvousClient::GetInstance();
   if (!client) {
     LOG(ERROR) << "Mach rendezvous failed, terminating process (parent died?)";
@@ -267,14 +237,7 @@ mojo::IncomingInvitation InitializeMojoIPCChannel() {
   }
   endpoint =
       mojo::PlatformChannelEndpoint(mojo::PlatformHandle(std::move(receive)));
-#endif
-#elif BUILDFLAG(IS_POSIX)
-#if BUILDFLAG(IS_ANDROID)
-  // If the endpoint is backed by a BinderRef it will be recovered here.
-  // Otherwise we'll assume a socket FD below.
-  endpoint = mojo::PlatformChannel::RecoverPassedEndpointFromCommandLine(
-      *base::CommandLine::ForCurrentProcess());
-#endif
+#else
   if (!endpoint.is_valid()) {
     endpoint =
         mojo::PlatformChannelEndpoint(mojo::PlatformHandle(base::ScopedFD(
@@ -412,7 +375,6 @@ class ChildThreadImpl::IOThreadState
     //   inner classes cannot be forward declared.
     // The simple fix adopted is to explicitly close |file| if unused, thus
     // eliding checks -- this function is rather low-level anyway.
-#if BUILDFLAG(IS_POSIX)
     // Take the file descriptor so that |file| does not close it.
     base::ScopedFD fd(file.TakePlatformFile());
 #if BUILDFLAG(CLANG_PGO_PROFILING) || BUILDFLAG(USE_CLANG_COVERAGE)
@@ -420,14 +382,6 @@ class ChildThreadImpl::IOThreadState
     __llvm_profile_set_file_object(f, 1);
 #else
     // Let |fd| close file descriptor.
-#endif
-#elif BUILDFLAG(IS_WIN)
-    HANDLE handle = file.TakePlatformFile();
-    int fd = _open_osfhandle((intptr_t)handle, 0);
-    FILE* f = _fdopen(fd, "r+b");
-    __llvm_profile_set_file_object(f, 1);
-#else
-#error Unsupported architecture for profiling.
 #endif
   }
 
@@ -438,20 +392,6 @@ class ChildThreadImpl::IOThreadState
   }
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void ReinitializeLogging(mojom::LoggingSettingsPtr settings) override {
-    logging::LoggingSettings logging_settings;
-    logging_settings.logging_dest = settings->logging_dest;
-    base::ScopedFD log_file_descriptor = settings->log_file_descriptor.TakeFD();
-    logging_settings.log_file = fdopen(log_file_descriptor.release(), "a");
-    if (!logging_settings.log_file) {
-      LOG(ERROR) << "Failed to open new log file handle";
-      return;
-    }
-    if (!logging::InitLogging(logging_settings))
-      LOG(ERROR) << "Unable to reinitialize logging";
-  }
-#endif
 
   void OnMemoryPressure(base::MemoryPressureLevel level) override {
     main_thread_task_runner_->PostTask(
@@ -699,7 +639,6 @@ void ChildThreadImpl::Init(const Options& options) {
     BindHostReceiver(ChildMemoryCoordinator::BindAndPassReceiver());
   }
 
-#if BUILDFLAG(IS_POSIX)
   // Check that --process-type is specified so we don't do this in unit tests
   // and single-process mode.
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
@@ -708,7 +647,6 @@ void ChildThreadImpl::Init(const Options& options) {
         base::BindOnce(&TerminateSelfOnDisconnect, GetIOTaskRunner()),
         GetIOTaskRunner());
   }
-#endif
 
   // Add filters passed here via options.
   if (options.with_legacy_ipc_channel) {
@@ -813,21 +751,6 @@ void ChildThreadImpl::OnChannelError() {
     quit_closure_.Run();
 }
 
-#if BUILDFLAG(IS_WIN)
-void ChildThreadImpl::PreCacheFont(const LOGFONT& log_font) {
-  GetFontCacheWin()->PreCacheFont(log_font);
-}
-
-void ChildThreadImpl::ReleaseCachedFonts() {
-  GetFontCacheWin()->ReleaseCachedFonts();
-}
-
-const mojo::Remote<mojom::FontCacheWin>& ChildThreadImpl::GetFontCacheWin() {
-  if (!font_cache_win_)
-    BindHostReceiver(font_cache_win_.BindNewPipeAndPassReceiver());
-  return font_cache_win_;
-}
-#endif
 
 void ChildThreadImpl::RecordAction(const base::UserMetricsAction& action) {
   NOTREACHED();

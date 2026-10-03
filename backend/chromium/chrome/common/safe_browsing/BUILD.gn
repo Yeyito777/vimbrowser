@@ -68,8 +68,6 @@ if (safe_browsing_mode != 0) {
         "mach_o_image_reader_mac.cc",
         "mach_o_image_reader_mac.h",
       ]
-    } else if (is_win) {
-      sources += [ "binary_feature_extractor_win.cc" ]
     }
     if (is_posix) {
       sources += [ "binary_feature_extractor_posix.cc" ]

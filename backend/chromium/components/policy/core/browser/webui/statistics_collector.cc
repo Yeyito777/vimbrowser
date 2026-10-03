@@ -27,11 +27,9 @@ void RecordPolicyUIButtonUsage(uint32_t reload_policies_count,
   base::UmaHistogramCustomCounts("Enterprise.PolicyUI.ButtonUsage.CopyToJson",
                                  copy_to_json_count, kMetricsCountMin,
                                  kMetricsCountMax, kMetricsBucket);
-#if !BUILDFLAG(IS_IOS)
   base::UmaHistogramCustomCounts("Enterprise.PolicyUI.ButtonUsage.ExportToJson",
                                  export_to_json_count, kMetricsCountMin,
                                  kMetricsCountMax, kMetricsBucket);
-#endif
   base::UmaHistogramCustomCounts("Enterprise.PolicyUI.ButtonUsage.UploadReport",
                                  upload_report_count, kMetricsCountMin,
                                  kMetricsCountMax, kMetricsBucket);

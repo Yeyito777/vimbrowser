@@ -12,9 +12,7 @@
 #include "components/reporting/client/report_queue_configuration.h"
 #include "components/reporting/client/report_queue_provider.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/policy/messaging_layer/upload/upload_provider.h"
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 namespace reporting {
 
@@ -41,9 +39,7 @@ class ReportingClient : public ReportQueueProvider,
   ReportingClient& operator=(const ReportingClient& other) = delete;
 
  private:
-#if !BUILDFLAG(IS_CHROMEOS)
   class Uploader;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   friend class ReportQueueProvider;
   friend class TestEnvironment;
 
@@ -63,7 +59,6 @@ class ReportingClient : public ReportQueueProvider,
   void OnConnected() override;
   void OnDisconnected() override;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   //
   // Everything below is used in Local storage case only.
   //
@@ -82,7 +77,6 @@ class ReportingClient : public ReportQueueProvider,
 
   // Upload provider (if enabled).
   std::unique_ptr<EncryptedReportingUploadProvider> upload_provider_;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 };
 }  // namespace reporting
 

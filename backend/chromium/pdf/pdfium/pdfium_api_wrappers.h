@@ -18,9 +18,6 @@
 #include "third_party/pdfium/public/fpdf_edit.h"
 #include "third_party/pdfium/public/fpdfview.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 // This file contains wrapper functions that let callers use modern C++
 // constructs to interact with PDFium. This is easier than accessing PDFium C
@@ -68,13 +65,6 @@ bool RenderPageToBitmap(FPDF_PAGE page,
                         const PDFiumEngineExports::RenderingSettings& settings,
                         void* bitmap_buffer);
 
-#if BUILDFLAG(IS_WIN)
-// Wrapper around FPDF_RenderPageBitmap().
-// Similar to RenderPageToBitmap(), but renders into `dc` instead.
-bool RenderPageToDC(FPDF_PAGE page,
-                    const PDFiumEngineExports::RenderingSettings& settings,
-                    HDC dc);
-#endif
 
 }  // namespace chrome_pdf
 

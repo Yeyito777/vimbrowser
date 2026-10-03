@@ -7,7 +7,6 @@ action("bake_in_configs") {
   script = "bake_in_configs.py"
 
   inputs = [
-    "baked_in_configs/c_android_clients_google_com.json",
     "baked_in_configs/c_bigcache_googleapis_com.json",
     "baked_in_configs/c_doc-0-0-sj_sj_googleusercontent_com.json",
     "baked_in_configs/c_docs_google_com.json",

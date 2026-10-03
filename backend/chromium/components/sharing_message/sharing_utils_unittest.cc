@@ -98,7 +98,6 @@ TEST_F(SharingUtilsTest, GetFCMChannel) {
       kDeviceGuid, kDeviceName,
       syncer::DeviceInfo::SharingInfo(
           {kSenderIdFCMToken, kSenderIdP256dh, kSenderIdAuthSecret},
-          /*chime_representative_target_id=*/std::string(),
           std::set<sync_pb::SharingSpecificFields::EnabledFeatures>()));
 
   auto fcm_channel = GetFCMChannel(*device_info);

@@ -85,17 +85,6 @@ inline constexpr std::array kColumns = {
         .initial_sort_is_ascending = false,
         .default_visibility = true},
 
-#if BUILDFLAG(IS_CHROMEOS)
-    TableColumnData{.id = IDS_TASK_MANAGER_SWAPPED_MEM_COLUMN,
-                    .align = ui::TableColumn::RIGHT,
-                    .width = -1,
-                    .percent = 0,
-                    .min_width = std::size("800 MiB") * kCharWidth,
-                    .max_width = -1,
-                    .sortable = true,
-                    .initial_sort_is_ascending = false,
-                    .default_visibility = false},
-#endif
 
 // Make the CPU column min width a bit wider on macOS. When you click a column
 // to make it the primary sort column a caret appears to the right of the
@@ -123,26 +112,6 @@ inline constexpr std::array kColumns = {
                     .default_visibility = true},
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-    TableColumnData{.id = IDS_TASK_MANAGER_CPU_TIME_COLUMN,
-                    .align = ui::TableColumn::RIGHT,
-                    .width = -1,
-                    .percent = 0,
-                    .min_width = std::size("1234h 42m 30s") * kCharWidth,
-                    .max_width = -1,
-                    .sortable = true,
-                    .initial_sort_is_ascending = false,
-                    .default_visibility = false},
-    TableColumnData{.id = IDS_TASK_MANAGER_START_TIME_COLUMN,
-                    .align = ui::TableColumn::RIGHT,
-                    .width = -1,
-                    .percent = 0,
-                    .min_width = std::size("12/13/14 11:44:30 PM") * kCharWidth,
-                    .max_width = -1,
-                    .sortable = true,
-                    .initial_sort_is_ascending = true,
-                    .default_visibility = false},
-#endif
     TableColumnData{.id = IDS_TASK_MANAGER_NET_COLUMN,
                     .align = ui::TableColumn::RIGHT,
                     .width = -1,
@@ -162,26 +131,6 @@ inline constexpr std::array kColumns = {
                     .initial_sort_is_ascending = true,
                     .default_visibility = true},
 
-#if BUILDFLAG(IS_WIN)
-    TableColumnData{.id = IDS_TASK_MANAGER_GDI_HANDLES_COLUMN,
-                    .align = ui::TableColumn::RIGHT,
-                    .width = -1,
-                    .percent = 0,
-                    .min_width = 0,
-                    .max_width = 0,
-                    .sortable = true,
-                    .initial_sort_is_ascending = false,
-                    .default_visibility = false},
-    TableColumnData{.id = IDS_TASK_MANAGER_USER_HANDLES_COLUMN,
-                    .align = ui::TableColumn::RIGHT,
-                    .width = -1,
-                    .percent = 0,
-                    .min_width = 0,
-                    .max_width = 0,
-                    .sortable = true,
-                    .initial_sort_is_ascending = false,
-                    .default_visibility = false},
-#endif
 
     TableColumnData{
         .id = IDS_TASK_MANAGER_WEBCORE_IMAGE_CACHE_COLUMN,
@@ -252,17 +201,6 @@ inline constexpr std::array kColumns = {
                     .initial_sort_is_ascending = false,
                     .default_visibility = false},
 
-#if BUILDFLAG(IS_WIN)
-    TableColumnData{.id = IDS_TASK_MANAGER_HARD_FAULTS_COLUMN,
-                    .align = ui::TableColumn::RIGHT,
-                    .width = -1,
-                    .percent = 0,
-                    .min_width = std::size("100000") * kCharWidth,
-                    .max_width = -1,
-                    .sortable = true,
-                    .initial_sort_is_ascending = false,
-                    .default_visibility = false},
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_MAC)
     TableColumnData{.id = IDS_TASK_MANAGER_OPEN_FD_COUNT_COLUMN,

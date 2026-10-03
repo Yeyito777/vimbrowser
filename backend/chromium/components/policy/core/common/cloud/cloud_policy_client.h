@@ -1013,14 +1013,6 @@ class POLICY_EXPORT CloudPolicyClient {
       bool is_mandatory,
       DeviceManagementService::JobConfiguration::JobType type);
 
-#if BUILDFLAG(IS_WIN)
-  // Callback to get browser device identifier.
-  void SetBrowserDeviceIdentifier(
-      enterprise_management::PolicyFetchRequest* request,
-      std::unique_ptr<DMServerJobConfiguration> config,
-      std::unique_ptr<enterprise_management::BrowserDeviceIdentifier>
-          identifier);
-#endif
 
   // Used to store a copy of the previously used `dm_token_`. This is used
   // during re-registration, which gets triggered by a failed policy fetch

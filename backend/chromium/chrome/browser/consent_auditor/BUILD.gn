@@ -17,11 +17,6 @@ source_set("consent_auditor") {
     "//components/sync/base",
     "//components/sync/model",
   ]
-
-  if (is_android) {
-    sources += [ "../android/consent_auditor/consent_auditor_bridge.cc" ]
-    deps += [ "//chrome/browser/consent_auditor/android:jni_headers" ]
-  }
 }
 
 source_set("test_support") {

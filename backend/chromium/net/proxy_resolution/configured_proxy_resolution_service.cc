@@ -44,9 +44,7 @@
 #include "net/proxy_resolution/proxy_resolver_factory.h"
 #include "net/url_request/url_request_context.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "net/proxy_resolution/win/proxy_resolver_winhttp.h"
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 #include "net/proxy_resolution/proxy_resolver_apple.h"
 #endif
 
@@ -251,9 +249,7 @@ class ProxyResolverFactoryForSystem : public MultiThreadedProxyResolverFactory {
       const ProxyResolverFactoryForSystem&) = delete;
 
   std::unique_ptr<ProxyResolverFactory> CreateProxyResolverFactory() override {
-#if BUILDFLAG(IS_WIN)
-    return std::make_unique<ProxyResolverFactoryWinHttp>();
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
     return std::make_unique<ProxyResolverFactoryApple>();
 #else
     NOTREACHED();

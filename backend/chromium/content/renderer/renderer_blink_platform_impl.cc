@@ -117,9 +117,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "content/child/child_process_sandbox_support_impl_win.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "content/child/font_data/font_data_manager.h"
@@ -134,13 +131,8 @@
 #include "content/child/sandboxed_process_thread_type_handler.h"
 #endif
 
-#if BUILDFLAG(IS_POSIX)
 #include "base/file_descriptor_posix.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/common/android/sync_compositor_statics.h"
-#endif
 
 using blink::Platform;
 using blink::WebAudioDevice;
@@ -237,8 +229,6 @@ RendererBlinkPlatformImpl::RendererBlinkPlatformImpl(
   if (sandboxEnabled()) {
 #if BUILDFLAG(IS_MAC)
     sandbox_support_ = std::make_unique<WebSandboxSupportMac>();
-#elif BUILDFLAG(IS_WIN)
-    sandbox_support_ = std::make_unique<WebSandboxSupportWin>();
 #else
     sandbox_support_ = std::make_unique<WebSandboxSupportLinux>(font_loader);
 #endif
@@ -464,23 +454,6 @@ bool RendererBlinkPlatformImpl::IsGpuCompositingDisabled() const {
   return thread->IsGpuCompositingDisabled();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool RendererBlinkPlatformImpl::
-    IsSynchronousCompositingEnabledForAndroidWebView() {
-  return GetContentClient()->UsingSynchronousCompositing();
-}
-
-bool RendererBlinkPlatformImpl::
-    IsZeroCopySynchronousSwDrawEnabledForAndroidWebView() {
-  return base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kSingleProcess);
-}
-
-SkCanvas*
-RendererBlinkPlatformImpl::SynchronousCompositorGetSkCanvasForAndroidWebView() {
-  return content::SynchronousCompositorGetSkCanvas();
-}
-#endif
 
 bool RendererBlinkPlatformImpl::IsLcdTextEnabled() {
   RenderThreadImpl* thread = RenderThreadImpl::current();
@@ -1175,19 +1148,6 @@ RendererBlinkPlatformImpl::VideoFrameCompositorTaskRunner() {
   return compositor_task_runner;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void RendererBlinkPlatformImpl::SetPrivateMemoryFootprint(
-    uint64_t private_memory_footprint_bytes) {
-  auto* render_thread = RenderThreadImpl::current();
-  CHECK(render_thread);
-  render_thread->SetPrivateMemoryFootprint(private_memory_footprint_bytes);
-}
-
-bool RendererBlinkPlatformImpl::IsUserLevelMemoryPressureSignalEnabled() {
-  return base::SysInfo::Is4GbDevice() || base::SysInfo::Is6GbDevice();
-}
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void RendererBlinkPlatformImpl::OnV8HeapLastResortGC() {
   // In --single-process mode, the RendererMemoryCoordinatorPolicy does not run.

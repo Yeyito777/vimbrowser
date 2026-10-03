@@ -31,10 +31,6 @@
 #include "services/device/public/cpp/geolocation/location_system_permission_status.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_android.h"
-#include "services/device/geolocation/geolocation_jni_headers/LocationProviderFactory_jni.h"
-#endif
 
 namespace device {
 
@@ -94,12 +90,7 @@ void GeolocationProviderImpl::SetGeolocationConfiguration(
   g_geolocation_system_permission_manager =
       geolocation_system_permission_manager;
   if (use_gms_core_location_provider) {
-#if BUILDFLAG(IS_ANDROID)
-    JNIEnv* env = base::android::AttachCurrentThread();
-    Java_LocationProviderFactory_useGmsCoreLocationProvider(env);
-#else
     NOTREACHED() << "GMS core location provider is only available for Android";
-#endif
   }
 }
 
@@ -579,7 +570,3 @@ void GeolocationProviderImpl::DoStartProvidersOnGeolocationThread() {
 }
 
 }  // namespace device
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(LocationProviderFactory)
-#endif

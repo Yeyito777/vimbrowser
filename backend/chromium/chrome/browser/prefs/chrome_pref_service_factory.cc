@@ -80,18 +80,11 @@
 #include "sql/error_delegate_util.h"
 #include "ui/base/resource/resource_bundle.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/files/file_util.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 #include "extensions/browser/pref_names.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/enterprise_util.h"
-#include "services/preferences/tracked/features.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 using content::BrowserContext;
 using content::BrowserThread;
@@ -104,12 +97,6 @@ using ValueType = prefs::mojom::TrackedPreferenceMetadata::ValueType;
 
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-// Whether we are in testing mode; can be enabled via
-// DisableDomainCheckForTesting(). Forces startup checks to ignore the presence
-// of a domain when determining the active SettingsEnforcement group.
-bool g_disable_domain_check_for_testing = false;
-#endif  // BUILDFLAG(IS_WIN)
 
 // These preferences must be kept in sync with the TrackedPreference enum in
 // tools/metrics/histograms/metadata/settings/enums.xml. To add a new
@@ -137,10 +124,8 @@ const auto kTrackedPrefs = std::to_array<prefs::TrackedPreferenceMetadata>({
      ValueType::PERSONAL},
     {7, prefs::kSearchProviderOverrides, EnforcementLevel::ENFORCE_ON_LOAD,
      PrefTrackingStrategy::ATOMIC, ValueType::IMPERSONAL},
-#if !BUILDFLAG(IS_ANDROID)
     {11, prefs::kPinnedTabs, EnforcementLevel::ENFORCE_ON_LOAD,
      PrefTrackingStrategy::ATOMIC, ValueType::IMPERSONAL},
-#endif
     {14, DefaultSearchManager::kDefaultSearchProviderDataPrefName,
      EnforcementLevel::NO_ENFORCEMENT, PrefTrackingStrategy::ATOMIC,
      ValueType::IMPERSONAL},
@@ -164,10 +149,6 @@ const auto kTrackedPrefs = std::to_array<prefs::TrackedPreferenceMetadata>({
      PrefTrackingStrategy::ATOMIC, ValueType::PERSONAL},
     {29, prefs::kMediaStorageIdSalt, EnforcementLevel::ENFORCE_ON_LOAD,
      PrefTrackingStrategy::ATOMIC, ValueType::IMPERSONAL},
-#if BUILDFLAG(IS_WIN)
-    {32, prefs::kMediaCdmOriginData, EnforcementLevel::ENFORCE_ON_LOAD,
-     PrefTrackingStrategy::ATOMIC, ValueType::IMPERSONAL},
-#endif  // BUILDFLAG(IS_WIN)
     {33, prefs::kGoogleServicesLastSignedInUsername,
      EnforcementLevel::ENFORCE_ON_LOAD, PrefTrackingStrategy::ATOMIC,
      ValueType::PERSONAL},
@@ -213,16 +194,6 @@ enum SettingsEnforcementGroup {
 };
 
 SettingsEnforcementGroup GetSettingsEnforcementGroup() {
-#if BUILDFLAG(IS_WIN)
-  if (!g_disable_domain_check_for_testing) {
-    static const bool is_domain_joined = base::IsEnterpriseDevice();
-    if (is_domain_joined &&
-        !base::FeatureList::IsEnabled(
-            tracked::kEnableEncryptedTrackedPrefOnEnterprise)) {
-      return GROUP_NO_ENFORCEMENT;
-    }
-  }
-#endif
 
   // Use the strongest enforcement setting on Windows and MacOS. Remember to
   // update the OFFICIAL_BUILD section of extension_startup_browsertest.cc and
@@ -292,25 +263,6 @@ std::unique_ptr<ProfilePrefStoreManager> CreateProfilePrefStoreManager(
   return std::make_unique<ProfilePrefStoreManager>(profile_path, seed);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// The standalone browser prefs store does not exist anymore but there may still
-// be files left on disk. Delete them.
-// TODO(crbug.com/380780352): Remove this code after the stepping stone.
-void CleanupObsoleteStandaloneBrowserPrefsFile(
-    const base::FilePath& profile_path) {
-  base::FilePath file(FILE_PATH_LITERAL("standalone_browser_preferences.json"));
-  base::FilePath user_data_dir;
-  CHECK(base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir));
-  base::FilePath obsolete_paths[] = {user_data_dir.Append(file),
-                                     profile_path.Append(file)};
-  for (const auto& path : obsolete_paths) {
-    if (base::PathExists(path)) {
-      bool success = base::DeleteFile(path);
-      LOG(WARNING) << "Removing obsolete " << path << " file: " << success;
-    }
-  }
-}
-#endif
 
 void PrepareFactory(sync_preferences::PrefServiceSyncableFactory* factory,
                     const base::FilePath& pref_filename,
@@ -424,11 +376,6 @@ std::unique_ptr<sync_preferences::PrefServiceSyncable> CreateProfilePrefs(
               io_task_runner, std::move(reset_on_load_observer),
               std::move(validation_delegate), os_crypt_async);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  io_task_runner->PostTask(
-      FROM_HERE,
-      base::BindOnce(&CleanupObsoleteStandaloneBrowserPrefsFile, profile_path));
-#endif
 
   if (family_link_settings_service) {
     PrepareFactory(&factory, profile_path, policy_service,
@@ -465,28 +412,7 @@ std::unique_ptr<sync_preferences::PrefServiceSyncable> CreateProfilePrefs(
     // preferences. Mobile platforms have a separate file to store account
     // preferences. Whereas, desktop platforms would store account preferences
     // as a dictionary in the main preference file.
-#if BUILDFLAG(IS_ANDROID)
-    if (!base::FeatureList::IsEnabled(syncer::kMigrateAccountPrefs)) {
-      // Mobile platforms do not require preference protection. Hence pref
-      // filters and ProfilePrefStoreManager::CreateProfilePrefStore() can be
-      // avoided.
-      factory.SetAccountPrefStore(base::MakeRefCounted<JsonPrefStore>(
-          /*pref_filename=*/profile_path.Append(
-              chrome::kAccountPreferencesFilename),
-          /*pref_filter=*/nullptr,
-          /*file_task_runner=*/io_task_runner));
-    } else
-#endif  // BUILDFLAG(IS_ANDROID)
     {
-#if BUILDFLAG(IS_ANDROID)
-      // Delete account preference file on Mobile platforms.
-      // TODO(crbug.com/346508597): Remove this after an year, consistent with
-      // the pref migration process.
-      io_task_runner->PostTask(
-          FROM_HERE, base::BindOnce(IgnoreResult(&base::DeleteFile),
-                                    profile_path.Append(
-                                        chrome::kAccountPreferencesFilename)));
-#endif  // BUILDFLAG(IS_ANDROID)
       /**
        * Account values will live under `kAccountPreferencesPrefix` as a
        * dictionary in the main preference file and will be operated upon by a
@@ -557,9 +483,6 @@ std::unique_ptr<sync_preferences::PrefServiceSyncable> CreateProfilePrefs(
 }
 
 void DisableDomainCheckForTesting() {
-#if BUILDFLAG(IS_WIN)
-  g_disable_domain_check_for_testing = true;
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 bool InitializePrefsFromMasterPrefs(
@@ -602,7 +525,6 @@ void HandlePersistentPrefStoreReadError(
          !BrowserThread::IsThreadInitialized(BrowserThread::UI));
 
   if (error != PersistentPrefStore::PREF_READ_ERROR_NONE) {
-#if !BUILDFLAG(IS_CHROMEOS)
     // Failing to load prefs on startup is a bad thing(TM). See bug 38352 for
     // an example problem that this can cause.
     // Do some diagnosis and try to avoid losing data.
@@ -624,17 +546,6 @@ void HandlePersistentPrefStoreReadError(
                          message_id,
                          sql::GetCorruptFileDiagnosticsInfo(pref_filename)));
     }
-#else
-    // On ChromeOS error screen with message about broken local state
-    // will be displayed.
-
-    // A supplementary error message about broken local state - is included
-    // in logs and user feedbacks.
-    if (error != PersistentPrefStore::PREF_READ_ERROR_NONE &&
-        error != PersistentPrefStore::PREF_READ_ERROR_NO_FILE) {
-      LOG(ERROR) << "An error happened during prefs loading: " << error;
-    }
-#endif
   }
 }
 

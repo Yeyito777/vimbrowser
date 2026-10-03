@@ -140,22 +140,6 @@ void BluetoothRemoteGattCharacteristicFloss::
                                 std::move(error_callback));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void BluetoothRemoteGattCharacteristicFloss::PrepareWriteRemoteCharacteristic(
-    base::span<const uint8_t> value,
-    base::OnceClosure callback,
-    ErrorCallback error_callback) {
-  // Make sure we're using reliable writes before starting a prepared write.
-  BluetoothDeviceFloss* device =
-      static_cast<BluetoothDeviceFloss*>(service_->GetDevice());
-  if (device && !device->UsingReliableWrite()) {
-    device->BeginReliableWrite();
-  }
-
-  WriteRemoteCharacteristicImpl(value, floss::WriteType::kWritePrepare,
-                                std::move(callback), std::move(error_callback));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void BluetoothRemoteGattCharacteristicFloss::WriteRemoteCharacteristicImpl(
     base::span<const uint8_t> value,
@@ -279,14 +263,9 @@ void BluetoothRemoteGattCharacteristicFloss::OnWriteCharacteristic(
 
 void BluetoothRemoteGattCharacteristicFloss::SubscribeToNotifications(
     device::BluetoothRemoteGattDescriptor* ccc_descriptor,
-#if BUILDFLAG(IS_CHROMEOS)
-    NotificationType notification_type,
-#endif  // BUILDFLAG(IS_CHROMEOS)
     base::OnceClosure callback,
     ErrorCallback error_callback) {
-#if !BUILDFLAG(IS_CHROMEOS)
   NotificationType notification_type = NotificationType::kNotification;
-#endif
 
   // Set CCCD value to notification type
   std::vector<uint8_t> value = {static_cast<uint8_t>(notification_type), 0};

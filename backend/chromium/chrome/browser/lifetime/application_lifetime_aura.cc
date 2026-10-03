@@ -15,10 +15,6 @@
 #include "ui/aura/window_event_dispatcher.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/shell.h"
-#include "chrome/browser/lifetime/application_lifetime_chromeos.h"
-#endif
 
 #if BUILDFLAG(ENABLE_CHROME_NOTIFICATIONS)
 #include "chrome/browser/notifications/notification_ui_manager.h"
@@ -30,14 +26,6 @@ void HandleAppExitingForPlatform() {
   // Close all non browser windows now. Those includes notifications
   // and windows created by Ash (launcher, background, etc).
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (ash::Shell::HasInstance()) {
-    // Releasing the capture will close any menus that might be open:
-    // http://crbug.com/40853120
-    aura::client::GetCaptureClient(ash::Shell::GetPrimaryRootWindow())
-        ->SetCapture(nullptr);
-  }
-#endif
 
 #if BUILDFLAG(ENABLE_CHROME_NOTIFICATIONS)
   // This clears existing notifications from the message center and their
@@ -52,20 +40,6 @@ void HandleAppExitingForPlatform() {
 
   views::Widget::CloseAllWidgets();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kDisableZeroBrowsersOpenForTests)) {
-    // App is exiting, release the keep alive on behalf of Aura Shell.
-    g_browser_process->platform_part()->UnregisterKeepAlive();
-    // Make sure we have notified the session manager that we are exiting.
-    // This might be called from FastShutdown() or CloseAllBrowsers(), but not
-    // if something prevents a browser from closing before SetTryingToQuit()
-    // gets called (e.g. browser->TabsNeedBeforeUnloadFired() is true).
-    // NotifyAndTerminate does nothing if called more than once.
-    browser_shutdown::NotifyAppTerminating();
-    StopSession();
-  }
-#endif
 }
 
 }  // namespace chrome

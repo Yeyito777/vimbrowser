@@ -86,9 +86,6 @@ WebContentsCaptureClient::CaptureResult WebContentsCaptureClient::CaptureAsync(
         return result.value_or(viz::CopyOutputBitmapWithMetadata()).bitmap;
       }).Then(std::move(callback)));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  SYSLOG(INFO) << "Screenshot taken";
-#endif
 
   return OK;
 }

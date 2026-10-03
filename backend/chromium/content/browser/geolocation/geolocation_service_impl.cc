@@ -23,9 +23,6 @@
 #include "services/network/public/mojom/permissions_policy/permissions_policy_feature.mojom.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
-#endif
 
 namespace content {
 
@@ -122,14 +119,6 @@ void GeolocationServiceImpl::Bind(
                     std::make_unique<GeolocationServiceImplContext>());
   receiver_set_.set_disconnect_handler(base::BindRepeating(
       &GeolocationServiceImpl::OnDisconnected, base::Unretained(this)));
-#if BUILDFLAG(IS_IOS)
-  device::GeolocationSystemPermissionManager*
-      geolocation_system_permission_manager =
-          device::GeolocationSystemPermissionManager::GetInstance();
-  if (geolocation_system_permission_manager) {
-    geolocation_system_permission_manager->RequestSystemPermission();
-  }
-#endif
 }
 
 void GeolocationServiceImpl::CreateGeolocation(

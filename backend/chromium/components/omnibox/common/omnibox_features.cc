@@ -7,11 +7,6 @@
 #include "base/feature_list.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/feature_map.h"
-#include "base/no_destructor.h"
-#include "components/omnibox/common/jni_headers/OmniboxFeatureMap_jni.h"
-#endif
 
 namespace omnibox {
 namespace {
@@ -346,64 +341,6 @@ BASE_FEATURE(kThinkingModelIconUpdate, base::FEATURE_DISABLED_BY_DEFAULT);
 // If enabled, animates the caret in the omnibox.
 BASE_FEATURE(kOmniboxAnimatedCaret, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// Accelerates time from cold start to focused Omnibox on low-end devices,
-// prioritizing Omnibox focus and background initialization.
-BASE_FEATURE(kJumpStartOmnibox, DISABLED);
-
-// Prevents intermediate AutocompleteResult updates from being sent to Java on
-// low-end devices. This aims at eliminating time spent on constructing,
-// measuring, and laying out views that are about to be discarded, and reducing
-// the volume of JNI jumps.
-BASE_FEATURE(kSuppressIntermediateACUpdatesOnLowEndDevices, DISABLED);
-
-// (Android only) Show tab groups via the search feature in the hub.
-BASE_FEATURE(kAndroidHubSearchTabGroups, ENABLED);
-
-// When enabled, delay focusTab to prioritize navigation
-// (https://crbug.com/374852568).
-BASE_FEATURE(kPostDelayedTaskFocusTab, ENABLED);
-
-// Controls various Omnibox Diagnostics features.
-BASE_FEATURE(kDiagnostics, "OmniboxDiagnostics", DISABLED);
-
-// When enabled, offer a desktop-like omnibox UI enhancement on large form
-// factors.
-BASE_FEATURE(kOmniboxImprovementForLFF, DISABLED);
-
-// If enabled, disables ligatures in the URL bar on Android.
-BASE_FEATURE(kUrlBarWithoutLigatures, ENABLED);
-
-// If enabled, Java-cached ZPS will be served.
-// The cached ZPS made sense on sub-4GB Android Go devices
-BASE_FEATURE(kServeJavaCachedZeroSuggest, ENABLED);
-
-namespace android {
-static int64_t JNI_OmniboxFeatureMap_GetNativeMap(JNIEnv* env) {
-  static const base::Feature* const kFeaturesExposedToJava[] = {
-      &kDiagnostics,
-      &kOmniboxTouchDownTriggerForPrefetch,
-      &kOmniboxAsyncViewInflation,
-      &kRichAutocompletion,
-      &kUrlBarWithoutLigatures,
-      &kUseFusedLocationProvider,
-      &kJumpStartOmnibox,
-      &kAndroidHubSearchTabGroups,
-      &kPostDelayedTaskFocusTab,
-      &kOmniboxMobileParityUpdateV2,
-      &kOmniboxXGeoPermissionGranularity,
-      &kOmniboxSiteSearch,
-      &kOmniboxMultimodalInput,
-      &kMultilineEditField,
-      &kOmniboxImprovementForLFF,
-      &kServeJavaCachedZeroSuggest,
-      &kRemoveSearchReadyOmnibox};
-  static base::NoDestructor<base::android::FeatureMap> kFeatureMap(
-      kFeaturesExposedToJava);
-  return reinterpret_cast<int64_t>(kFeatureMap.get());
-}
-}  // namespace android
-#endif  // BUILDFLAG(IS_ANDROID)
 // Note: no new flags beyond this point.
 
 namespace flag_descriptions {
@@ -413,7 +350,3 @@ const char kOmniboxDebugLogsDescription[] =
 }  // namespace flag_descriptions
 
 }  // namespace omnibox
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(OmniboxFeatureMap)
-#endif

@@ -26,17 +26,10 @@
 #include "components/webapps/common/web_app_id.h"
 #include "third_party/skia/include/core/SkColor.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/containers/flat_map.h"
-#include "base/test/test_reg_util_win.h"
-#endif
 
 class Profile;
 class SkBitmap;
 
-#if BUILDFLAG(IS_WIN)
-class ShellLinkItem;
-#endif
 
 namespace web_app {
 
@@ -86,10 +79,6 @@ class OsIntegrationTestOverrideImpl : public OsIntegrationTestOverride {
  public:
   using AppProtocolList =
       std::vector<std::tuple<webapps::AppId, std::vector<std::string>>>;
-#if BUILDFLAG(IS_WIN)
-  using JumpListEntryMap =
-      base::flat_map<std::wstring, std::vector<scoped_refptr<ShellLinkItem>>>;
-#endif
   using BlockingRegistration = OsIntegrationTestOverrideBlockingRegistration;
 
   // Returns the current test override. This will CHECK-fail if one does not
@@ -117,10 +106,6 @@ class OsIntegrationTestOverrideImpl : public OsIntegrationTestOverride {
   bool DeleteChromeAppsDir();
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-  bool DeleteDesktopDirOnWin();
-  bool DeleteApplicationMenuDirOnWin();
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX)
   bool DeleteDesktopDirOnLinux();
@@ -195,12 +180,6 @@ class OsIntegrationTestOverrideImpl : public OsIntegrationTestOverride {
 
   bool AreShortcutsMenuRegistered();
 
-#if BUILDFLAG(IS_WIN)
-  std::vector<SkColor> GetIconColorsForShortcutsMenu(
-      const std::wstring& app_user_model_id);
-  int GetCountOfShortcutIconsCreated(const std::wstring& app_user_model_id);
-  bool IsShortcutsMenuRegisteredForApp(const std::wstring& app_user_model_id);
-#endif  // BUILDFLAG(IS_WIN)
 
   // ------------------------------
   // === Uninstall Registration ===
@@ -227,25 +206,8 @@ class OsIntegrationTestOverrideImpl : public OsIntegrationTestOverride {
 
   OsIntegrationTestOverrideImpl* AsOsIntegrationTestOverrideImpl() override;
 
-#if BUILDFLAG(IS_WIN)
-  // These should not be called from tests, these are automatically
-  // called from production code in testing to set
-  // up OS integration data for shortcuts menu registration and
-  // unregistration.
-  void AddShortcutsMenuJumpListEntryForApp(
-      const std::wstring& app_user_model_id,
-      const std::vector<scoped_refptr<ShellLinkItem>>& shell_link_items)
-      override;
-  void DeleteShortcutsMenuJumpListEntryForApp(
-      const std::wstring& app_user_model_id) override;
-#endif
 
-#if BUILDFLAG(IS_WIN)
-  base::FilePath desktop() override;
-  base::FilePath application_menu() override;
-  base::FilePath quick_launch() override;
-  base::FilePath startup() override;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   bool IsChromeAppsValid() override;
   base::FilePath chrome_apps_folder() override;
   void EnableOrDisablePathOnLogin(const base::FilePath& file_path,
@@ -271,9 +233,6 @@ class OsIntegrationTestOverrideImpl : public OsIntegrationTestOverride {
   explicit OsIntegrationTestOverrideImpl(const base::FilePath& base_path);
   ~OsIntegrationTestOverrideImpl() override;
 
-#if BUILDFLAG(IS_WIN)
-  SkColor ReadColorFromShortcutMenuIcoFile(const base::FilePath& file_path);
-#endif
 
   // `on_destruction_` has its closure set only once (when BlockingRegistration
   // is destroyed) and executed when OsIntegrationTestOverrideImpl is destroyed.
@@ -292,34 +251,7 @@ class OsIntegrationTestOverrideImpl : public OsIntegrationTestOverride {
   // to be a specific path.
   base::ScopedTempDir outer_temp_dir_;
 
-#if BUILDFLAG(IS_WIN)
-  base::ScopedTempDir desktop_;
-  base::ScopedTempDir application_menu_;
-  base::ScopedTempDir quick_launch_;
-  base::ScopedTempDir startup_;
-
-  // The shortcut creation code on windows can save web application shortcuts to
-  // any of these paths, hence they need to be overriden.
-  std::unique_ptr<base::ScopedPathOverride> desktop_override_;
-  std::unique_ptr<base::ScopedPathOverride> desktop_common_override_;
-
-  std::unique_ptr<base::ScopedPathOverride> start_menu_override_;
-  std::unique_ptr<base::ScopedPathOverride> start_menu_common_override_;
-
-  std::unique_ptr<base::ScopedPathOverride> quick_launch_override_;
-
-  std::unique_ptr<base::ScopedPathOverride> startup_override_;
-  std::unique_ptr<base::ScopedPathOverride> startup_common_override_;
-
-  // This is used to ensure any registry changes by this test don't affect other
-  // parts of the the trybot and are cleaned up.
-  registry_util::RegistryOverrideManager registry_override_;
-
-  // Records all ShellLinkItems for a given AppUserModelId for handling
-  // shortcuts menu registration.
-  JumpListEntryMap jump_list_entry_map_;
-
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   base::ScopedTempDir chrome_apps_folder_;
   std::map<base::FilePath, bool> startup_enabled_;
 

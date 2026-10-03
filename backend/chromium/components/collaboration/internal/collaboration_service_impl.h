@@ -35,18 +35,6 @@ class TabGroupSyncService;
 
 namespace collaboration {
 
-#if BUILDFLAG(IS_IOS)
-// TODO(crbug.com/424385780): Clean this duplicate.
-// Values for the BrowserSignin policy.
-// VALUES MUST COINCIDE WITH THE BrowserSignin POLICY DEFINITION.
-// LINT.IfChange(BrowserSigninMode)
-enum class BrowserSigninMode {
-  kDisabled = 0,
-  kEnabled = 1,
-  kForced = 2,
-};
-// LINT.ThenChange(//ios/chrome/browser/policy/model/policy_util.h:BrowserSigninMode)
-#endif
 
 // The internal implementation of the CollaborationService.
 class CollaborationServiceImpl : public CollaborationService,

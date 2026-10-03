@@ -206,7 +206,6 @@ ci.builder(
         configs = [
             "android_builder_without_codecs",
             "android_with_static_analysis",
-            "android_desktop",
             "enable_android_secondary_abi",
             "release_builder",
             "remoteexec",
@@ -268,7 +267,6 @@ ci.builder(
         configs = [
             "android_builder_without_codecs",
             "android_with_static_analysis",
-            "android_desktop",
             "enable_android_secondary_abi",
             "release_builder",
             "remoteexec",
@@ -383,7 +381,6 @@ ci.builder(
             "official_optimize",
             "remoteexec",
             "android_builder_without_codecs",
-            "android_desktop",
             "full_symbols",
             "arm64",
         ],
@@ -435,7 +432,6 @@ ci.builder(
             "official_optimize",
             "remoteexec",
             "android_builder_without_codecs",
-            "android_desktop",
             "full_symbols",
             "x64",
         ],

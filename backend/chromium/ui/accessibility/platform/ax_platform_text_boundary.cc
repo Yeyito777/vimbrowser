@@ -49,50 +49,5 @@ ax::mojom::TextBoundary FromAtkTextGranularity(AtkTextGranularity granularity) {
 #endif  // ATK_CHECK_VERSION(2, 10, 0)
 #endif  // BUILDFLAG(USE_ATK)
 
-#if BUILDFLAG(IS_WIN)
-ax::mojom::TextBoundary FromIA2TextBoundary(IA2TextBoundaryType boundary) {
-  switch (boundary) {
-    case IA2_TEXT_BOUNDARY_CHAR:
-      return ax::mojom::TextBoundary::kCharacter;
-    case IA2_TEXT_BOUNDARY_WORD:
-      return ax::mojom::TextBoundary::kWordStart;
-    case IA2_TEXT_BOUNDARY_LINE:
-      return ax::mojom::TextBoundary::kLineStart;
-    case IA2_TEXT_BOUNDARY_SENTENCE:
-      return ax::mojom::TextBoundary::kSentenceStart;
-    case IA2_TEXT_BOUNDARY_PARAGRAPH:
-      return ax::mojom::TextBoundary::kParagraphStart;
-    case IA2_TEXT_BOUNDARY_ALL:
-      return ax::mojom::TextBoundary::kObject;
-  }
-}
-
-ax::mojom::TextBoundary FromUIATextUnit(TextUnit unit) {
-  // These are listed in order of their definition in the Microsoft
-  // documentation.
-  switch (unit) {
-    case TextUnit_Character:
-      return ax::mojom::TextBoundary::kCharacter;
-    case TextUnit_Format:
-      return ax::mojom::TextBoundary::kFormatStart;
-    case TextUnit_Word:
-      return ax::mojom::TextBoundary::kWordStart;
-    case TextUnit_Line:
-      return ax::mojom::TextBoundary::kLineStart;
-    case TextUnit_Paragraph:
-      // According to MSDN, a paragraph in UI Automation should include any
-      // trailing whitespace after the paragraph. In essence this means that
-      // when finding the next or previous paragraph start position, we should
-      // skip any empty paragraphs, i.e. paragraphs with only whitespace in
-      // them.
-      return ax::mojom::TextBoundary::kParagraphStartSkippingEmptyParagraphs;
-    case TextUnit_Page:
-      // UI Automation's TextUnit_Page cannot be reliably supported in a Web
-      // document. We return kWebPage which is the next best thing.
-    case TextUnit_Document:
-      return ax::mojom::TextBoundary::kWebPage;
-  }
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace ui

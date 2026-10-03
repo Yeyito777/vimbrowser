@@ -20,9 +20,6 @@
 #include "google_apis/gaia/gaia_id.h"
 #include "ui/gfx/image/image.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#endif
 
 // Value representing no picture URL associated with an account.
 extern const char kNoPictureURLFound[];
@@ -200,14 +197,12 @@ struct AccountInfo : public CoreAccountInfo {
   // Returns `kUnknown` the value is unknown.
   signin::Tribool CanApplyAccountLevelEnterprisePolicies() const;
 
-#if !BUILDFLAG(IS_IOS)
   bool IsEduAccount() const;
 
   // Returns true if the account email can be used in display fields.
   // If `capabilities.can_have_email_address_displayed()` is unknown at the time
   // this function is called, the email address will be considered displayable.
   bool CanHaveEmailAddressDisplayed() const;
-#endif
 
   // The following struct members are going to be moved to the private section
   // soon, do not use them directly.
@@ -329,55 +324,5 @@ std::ostream& operator<<(std::ostream& os, const CoreAccountInfo& account);
 bool operator==(const AccountInfo& l, const AccountInfo& r) = delete;
 bool operator!=(const AccountInfo& l, const AccountInfo& r) = delete;
 
-#if BUILDFLAG(IS_ANDROID)
-// Constructs a Java CoreAccountInfo from the provided C++ CoreAccountInfo.
-base::android::ScopedJavaLocalRef<jobject> ConvertToJavaCoreAccountInfo(
-    JNIEnv* env,
-    const CoreAccountInfo& account_info);
-
-// Constructs a Java AccountInfo from the provided C++ AccountInfo.
-base::android::ScopedJavaLocalRef<jobject> ConvertToJavaAccountInfo(
-    JNIEnv* env,
-    const AccountInfo& account_info);
-
-// Constructs a C++ CoreAccountInfo from the provided Java CoreAccountInfo.
-CoreAccountInfo ConvertFromJavaCoreAccountInfo(
-    JNIEnv* env,
-    const base::android::JavaRef<jobject>& j_core_account_info);
-
-// Constructs a C++ AccountInfo from the provided Java AccountInfo.
-AccountInfo ConvertFromJavaAccountInfo(
-    JNIEnv* env,
-    const base::android::JavaRef<jobject>& j_account_info);
-
-namespace jni_zero {
-template <>
-inline CoreAccountInfo FromJniType<CoreAccountInfo>(
-    JNIEnv* env,
-    const JavaRef<jobject>& j_core_account_info) {
-  return ConvertFromJavaCoreAccountInfo(env, j_core_account_info);
-}
-
-template <>
-inline ScopedJavaLocalRef<jobject> ToJniType(
-    JNIEnv* env,
-    const CoreAccountInfo& core_account_info) {
-  return ConvertToJavaCoreAccountInfo(env, core_account_info);
-}
-
-template <>
-inline AccountInfo FromJniType<AccountInfo>(
-    JNIEnv* env,
-    const JavaRef<jobject>& j_account_info) {
-  return ConvertFromJavaAccountInfo(env, j_account_info);
-}
-
-template <>
-inline ScopedJavaLocalRef<jobject> ToJniType(JNIEnv* env,
-                                             const AccountInfo& account_info) {
-  return ConvertToJavaAccountInfo(env, account_info);
-}
-}  // namespace jni_zero
-#endif
 
 #endif  // COMPONENTS_SIGNIN_PUBLIC_IDENTITY_MANAGER_ACCOUNT_INFO_H_

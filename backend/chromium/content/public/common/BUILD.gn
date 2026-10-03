@@ -13,10 +13,6 @@ import("//third_party/webrtc/webrtc.gni")
 import("//tools/ipc_fuzzer/ipc_fuzzer.gni")
 import("//ui/webui/webui_features.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 buildflag_header("buildflags") {
   header = "buildflags.h"
   flags = [
@@ -238,17 +234,6 @@ source_set("common_sources") {
     "widget_type.h",
   ]
 
-  if (is_win) {
-    sources += [ "font_cache_dispatcher_win.h" ]
-  }
-
-  if (is_android) {
-    sources += [
-      "resource_request_body_android.cc",
-      "resource_request_body_android.h",
-    ]
-  }
-
   configs += [
     "//build/config:precompiled_headers",
     "//content:content_implementation",
@@ -283,7 +268,6 @@ source_set("common_sources") {
   ]
   deps = [
     ":content_descriptor_keys",
-    "//build:android_buildflags",
     "//build:branding_buildflags",
     "//build/config/chromebox_for_meetings:buildflags",
 
@@ -311,18 +295,6 @@ source_set("common_sources") {
     deps += [ "//ui/aura" ]
   }
 
-  if (is_android) {
-    deps += [ "//content/public/android:content_main_dex_jni" ]
-  }
-
-  if (is_win) {
-    deps += [ "//sandbox/win:common" ]
-  }
-
-  if (is_chromeos) {
-    public_deps += [ "//media/capture/video/chromeos/public" ]
-  }
-
   if (is_linux || is_chromeos) {
     sources += [
       "zygote/sandbox_support_linux.h",
@@ -333,11 +305,6 @@ source_set("common_sources") {
 
   if (use_zygote) {
     sources += [ "zygote/zygote_handle.h" ]
-  }
-
-  if (rtc_use_pipewire) {
-    configs +=
-        [ "//third_party/webrtc/modules/desktop_capture:pipewire_config" ]
   }
 
   # //content/common needs to include public headers.
@@ -376,10 +343,6 @@ mojom("interfaces") {
     "webplugininfo.mojom",
     "window_container_type.mojom",
   ]
-
-  if (is_win) {
-    sources += [ "font_cache_win.mojom" ]
-  }
 
   deps = [
     "//mojo/public/mojom/base",
@@ -448,19 +411,4 @@ mojom("interfaces") {
 
 mojom("renderer_type") {
   sources = [ "media_playback_renderer_type.mojom" ]
-}
-
-if (is_android) {
-  java_cpp_features("java_features_srcjar") {
-    # External code should depend on ":common_java" instead.
-    visibility = [ ":*" ]
-    sources = [ "//content/public/common/content_features.cc" ]
-    class_name = "org.chromium.content_public.common.ContentFeatures"
-  }
-
-  android_library("common_java") {
-    # Right now, this only includes the Java features. But if we need more Java
-    # files, they should be added here as necessary.
-    srcjar_deps = [ ":java_features_srcjar" ]
-  }
 }

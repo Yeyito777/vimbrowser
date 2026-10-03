@@ -208,8 +208,6 @@ template("rust_static_library") {
       _rlib_path = "${_output_dir}/lib${_crate_name}.rlib"
       if (current_os == "aix") {
         # The AIX linker does not implement an option for this.
-      } else if (is_win) {
-        ldflags = [ "/WHOLEARCHIVE:${_rlib_path}" ]
       } else {
         ldflags = [ "-LinkWrapper,add-whole-archive=${_rlib_path}" ]
       }

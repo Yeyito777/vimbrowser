@@ -78,9 +78,7 @@
 #include "chrome/browser/safe_browsing/download_protection/download_protection_util.h"
 #endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/download/bubble/download_bubble_ui_controller.h"
-#endif
 
 using content::BrowserThread;
 
@@ -128,7 +126,6 @@ void PromptForScanningInBubble(content::WebContents* web_contents,
                                download::DownloadItem* download) {
   // ChromeOS does not have the download bubble and does not support local
   // password prompts for deep scans.
-#if !BUILDFLAG(IS_CHROMEOS)
   Browser* browser = chrome::FindBrowserWithTab(web_contents);
   if (!browser) {
     return;
@@ -138,7 +135,6 @@ void PromptForScanningInBubble(content::WebContents* web_contents,
       ->GetDownloadDisplayController()
       ->OpenSecuritySubpage(
           OfflineItemUtils::GetContentIdForDownload(download));
-#endif
 }
 
 // Records DownloadItemWarningData and maybe sends the Safe Browsing report.

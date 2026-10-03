@@ -235,10 +235,6 @@
   E(kActionWritingDirectionDefault, IDC_WRITING_DIRECTION_DEFAULT) \
   E(kActionWritingDirectionLtr, IDC_WRITING_DIRECTION_LTR) \
   E(kActionWritingDirectionRtl, IDC_WRITING_DIRECTION_RTL) \
-  /* Translate */ \
-  E(kActionTranslateOriginalLanguageBase, \
-    IDC_TRANSLATE_ORIGINAL_LANGUAGE_BASE) \
-  E(kActionTranslateTargetLanguageBase, IDC_TRANSLATE_TARGET_LANGUAGE_BASE) \
   /* Identifiers for platform-specific items. */ \
   /* Placed in a common file to help insure they never collide. */ \
   E(kActionViewMenu, IDC_VIEW_MENU) \
@@ -322,7 +318,6 @@
   E(kActionContentContextRemoveLinkToText, \
     IDC_CONTENT_CONTEXT_REMOVELINKTOTEXT) \
   /* Other items. */ \
-  E(kActionContentContextTranslate, IDC_CONTENT_CONTEXT_TRANSLATE) \
   E(kActionContentContextInspectElement, IDC_CONTENT_CONTEXT_INSPECTELEMENT) \
   E(kActionContentContextViewPageInfo, IDC_CONTENT_CONTEXT_VIEWPAGEINFO) \
   E(kActionContentContextLanguageSettings, \
@@ -355,8 +350,6 @@
     IDC_CONTENT_CONTEXT_SHOWALLSAVEDPASSWORDS) \
   E(kActionContentContextUsePasskeyFromAnotherDeviceTopLevel, \
     IDC_CONTENT_CONTEXT_USE_PASSKEY_FROM_ANOTHER_DEVICE) \
-  E(kActionContentContextPartialTranslate, \
-    IDC_CONTENT_CONTEXT_PARTIAL_TRANSLATE) \
   /* Frame items. */ \
   E(kActionContentContextReloadFrame, IDC_CONTENT_CONTEXT_RELOADFRAME) \
   E(kActionContentContextViewFrameSource, IDC_CONTENT_CONTEXT_VIEWFRAMESOURCE) \
@@ -529,10 +522,7 @@
   E(kActionOmniboxContextSetModelThinking, IDC_OMNIBOX_CONTEXT_SET_MODEL_THINKING)  \
   E(kActionOmniboxContextSetModelRegular, IDC_OMNIBOX_CONTEXT_SET_MODEL_REGULAR)  \
 
-#if BUILDFLAG(IS_CHROMEOS)
-#define CHROME_PLATFORM_SPECIFIC_ACTION_IDS \
-  E(kToggleMultitaskMenu, IDC_TOGGLE_MULTITASK_MENU)
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 #define CHROME_PLATFORM_SPECIFIC_ACTION_IDS \
   E(kUseSystemTitleBar, IDC_USE_SYSTEM_TITLE_BAR) \
   E(kRestoreWindow, IDC_RESTORE_WINDOW)
@@ -588,7 +578,6 @@
   E(kActionShowDownloads, IDC_SHOW_DOWNLOADS) \
   E(kActionClearBrowsingData, IDC_CLEAR_BROWSING_DATA) \
   E(kActionPrint, IDC_PRINT) \
-  E(kActionShowTranslate, IDC_SHOW_TRANSLATE) \
   E(kActionSendTabToSelf, IDC_SEND_TAB_TO_SELF) \
   E(kActionQrCodeGenerator, IDC_QRCODE_GENERATOR) \
   E(kActionRouteMedia, IDC_ROUTE_MEDIA) \

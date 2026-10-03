@@ -139,9 +139,6 @@ void EphemeralHomeModuleBackend::ExecuteModelWithInput(
       static_cast<size_t>(EphemeralHomeModuleRank::kNotShown);
   base::flat_set<EphemeralHomeModuleRank> filled_positions = {
       EphemeralHomeModuleRank::kNotShown};
-#if BUILDFLAG(IS_IOS)
-  filled_positions.insert(EphemeralHomeModuleRank::kLast);
-#endif  // BUILDFLAG(IS_IOS)
 
   for (const auto& card : all_cards) {
     CardSelectionSignals card_signals(&all_signals, card->card_name());

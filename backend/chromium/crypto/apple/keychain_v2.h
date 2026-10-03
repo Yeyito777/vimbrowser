@@ -14,9 +14,7 @@
 #include "base/types/expected.h"
 #include "crypto/crypto_export.h"
 
-#if !BUILDFLAG(IS_IOS_TVOS)
 #import <LocalAuthentication/LocalAuthentication.h>
-#endif
 
 namespace crypto::apple {
 
@@ -74,19 +72,15 @@ class CRYPTO_EXPORT KeychainV2 {
       std::string_view service_name,
       std::string_view account_name);
 
-#if !BUILDFLAG(IS_IOS)
   // TaskCopyValueForEntitlement wraps the |SecTaskCopyValueForEntitlement|
   // function. Not available on iOS.
   virtual base::apple::ScopedCFTypeRef<CFTypeRef> TaskCopyValueForEntitlement(
       SecTaskRef task,
       CFStringRef entitlement,
       CFErrorRef* error);
-#endif  // !BUILDFLAG(IS_IOS)
 
-#if !BUILDFLAG(IS_IOS_TVOS)
   // LAContextCanEvaluatePolicy wraps LAContext's canEvaluatePolicy method.
   virtual BOOL LAContextCanEvaluatePolicy(LAPolicy policy, NSError** error);
-#endif  // !BUILDFLAG(IS_IOS_TVOS)
 
  protected:
   virtual ~KeychainV2();

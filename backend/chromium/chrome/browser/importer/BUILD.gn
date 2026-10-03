@@ -64,11 +64,7 @@ source_set("impl") {
     "//components/password_manager/core/browser/password_store:password_store_interface",
   ]
 
-  if (is_win) {
-    sources += [ "firefox_profile_lock_win.cc" ]
-  } else {
-    sources += [ "firefox_profile_lock_posix.cc" ]
-  }
+  sources += [ "firefox_profile_lock_posix.cc" ]
 }
 
 source_set("browser_tests") {
@@ -85,25 +81,6 @@ source_set("browser_tests") {
     "//components/user_data_importer/common",
     "//testing/gtest",
   ]
-
-  if (is_win) {
-    sources += [
-      "edge_importer_browsertest_win.cc",
-      "ie_importer_browsertest_win.cc",
-    ]
-
-    deps += [
-      ":importer",
-      "//chrome/browser/ui",
-      "//chrome/common:constants",
-      "//chrome/test:test_support",
-      "//chrome/test:test_support_ui",
-      "//components/favicon_base",
-      "//components/search_engines",
-      "//content/test:test_support",
-      "//third_party/zlib/google:compression_utils",
-    ]
-  }
 }
 
 source_set("unit_tests") {

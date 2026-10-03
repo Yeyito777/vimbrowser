@@ -26,10 +26,8 @@ namespace autofill::payments {
 PaymentsFormDataImporter::PaymentsFormDataImporter(AutofillClient* client)
     : client_(CHECK_DEREF(client)),
       credit_card_save_manager_(std::make_unique<CreditCardSaveManager>(client))
-#if !BUILDFLAG(IS_IOS)
       ,
       iban_save_manager_(std::make_unique<IbanSaveManager>(client))
-#endif  // !BUILDFLAG(IS_IOS)
 {
 }
 

@@ -42,9 +42,6 @@
 #include "content/browser/renderer_host/browser_compositor_view_mac.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/win/window_impl.h"
-#endif
 
 namespace ui {
 class TouchSelectionController;

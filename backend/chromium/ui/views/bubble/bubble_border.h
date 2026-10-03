@@ -72,10 +72,6 @@ class VIEWS_EXPORT BubbleBorder : public Border {
 
   enum Shadow {
     STANDARD_SHADOW = 0,
-#if BUILDFLAG(IS_CHROMEOS)
-    // CHROMEOS_SYSTEM_UI_SHADOW uses ChromeOS system UI shadow style.
-    CHROMEOS_SYSTEM_UI_SHADOW,
-#endif
     // NO_SHADOW don't draw a stroke or a shadow. This is used for platforms
     // that provide their own shadows or UIs that doesn't need shadows.
     NO_SHADOW,
@@ -85,8 +81,6 @@ class VIEWS_EXPORT BubbleBorder : public Border {
     // On Mac, the native window server should provide its own shadow for
     // windows that could overlap the browser window.
     DIALOG_SHADOW = NO_SHADOW,
-#elif BUILDFLAG(IS_CHROMEOS)
-    DIALOG_SHADOW = CHROMEOS_SYSTEM_UI_SHADOW,
 #else
     DIALOG_SHADOW = STANDARD_SHADOW,
 #endif

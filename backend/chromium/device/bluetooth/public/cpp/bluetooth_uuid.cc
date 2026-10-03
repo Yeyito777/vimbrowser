@@ -16,11 +16,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <objbase.h>
-
-#include "base/win/win_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace device {
 
@@ -100,32 +95,11 @@ BluetoothUUID::BluetoothUUID(base::span<const uint8_t> uuid_in_bytes) {
   format_ = BluetoothUUID::kFormat128Bit;
 }
 
-#if BUILDFLAG(IS_WIN)
-BluetoothUUID::BluetoothUUID(GUID uuid) {
-  auto buffer = base::win::WStringFromGUID(uuid);
-  DCHECK_EQ('{', buffer[0]);
-  DCHECK_EQ('}', buffer[37]);
-
-  GetCanonicalUuid(base::WideToUTF8(buffer.substr(1, 36)), &value_,
-                   &canonical_value_, &format_);
-  DCHECK_EQ(kFormat128Bit, format_);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 BluetoothUUID::BluetoothUUID() : format_(kFormatInvalid) {}
 
 BluetoothUUID::~BluetoothUUID() = default;
 
-#if BUILDFLAG(IS_WIN)
-// static
-GUID BluetoothUUID::GetCanonicalValueAsGUID(std::string_view uuid) {
-  DCHECK_EQ(36u, uuid.size());
-  std::u16string braced_uuid = u'{' + base::UTF8ToUTF16(uuid) + u'}';
-  GUID guid;
-  CHECK_EQ(NOERROR, ::CLSIDFromString(base::as_wcstr(braced_uuid), &guid));
-  return guid;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 bool BluetoothUUID::IsValid() const {
   return format_ != kFormatInvalid;

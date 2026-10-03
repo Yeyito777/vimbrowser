@@ -50,12 +50,6 @@
   google_apis::DefaultApiKeys::kUnsetApiToken
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#if !defined(GOOGLE_API_KEY_ANDROID_NON_STABLE)
-#define GOOGLE_API_KEY_ANDROID_NON_STABLE \
-  google_apis::DefaultApiKeys::kUnsetApiToken
-#endif
-#endif
 
 #if !defined(GOOGLE_API_KEY_REMOTING)
 #define GOOGLE_API_KEY_REMOTING google_apis::DefaultApiKeys::kUnsetApiToken
@@ -66,46 +60,11 @@
 #define GOOGLE_API_KEY_SODA google_apis::DefaultApiKeys::kUnsetApiToken
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 // API key for the HaTS API.
 #if !defined(GOOGLE_API_KEY_HATS)
 #define GOOGLE_API_KEY_HATS google_apis::DefaultApiKeys::kUnsetApiToken
 #endif
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-// API key for the Nearby Sharing Service.
-#if !defined(GOOGLE_API_KEY_SHARING)
-#define GOOGLE_API_KEY_SHARING google_apis::DefaultApiKeys::kUnsetApiToken
-#endif
-
-// API key for the ReadAloud API.
-#if !defined(GOOGLE_API_KEY_READ_ALOUD)
-#define GOOGLE_API_KEY_READ_ALOUD google_apis::DefaultApiKeys::kUnsetApiToken
-#endif
-
-// API key for the Fresnel API.
-#if !defined(GOOGLE_API_KEY_FRESNEL)
-#define GOOGLE_API_KEY_FRESNEL google_apis::DefaultApiKeys::kUnsetApiToken
-#endif
-
-#if !defined(GOOGLE_API_KEY_BOCA)
-#define GOOGLE_API_KEY_BOCA google_apis::DefaultApiKeys::kUnsetApiToken
-#endif
-
-// API key for ChromeOS system services to resolve location.
-#if !defined(GOOGLE_API_KEY_CROS_SYSTEM_GEO)
-#define GOOGLE_API_KEY_CROS_SYSTEM_GEO \
-  google_apis::DefaultApiKeys::kUnsetApiToken
-#endif
-
-// API key for ChromeOS Chrome to resolve location.
-#if !defined(GOOGLE_API_KEY_CROS_CHROME_GEO)
-#define GOOGLE_API_KEY_CROS_CHROME_GEO \
-  google_apis::DefaultApiKeys::kUnsetApiToken
-#endif
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // These are used as shortcuts for developers and users providing
 // OAuth credentials via preprocessor defines or environment
@@ -133,21 +92,9 @@ constexpr ::google_apis::DefaultApiKeys GetDefaultApiKeysFromDefinedValues() {
 #endif
       .google_api_key = GOOGLE_API_KEY,
       .google_metrics_signing_key = GOOGLE_METRICS_SIGNING_KEY,
-#if BUILDFLAG(IS_ANDROID)
-      .google_api_key_android_non_stable = GOOGLE_API_KEY_ANDROID_NON_STABLE,
-#else
       .google_api_key_hats = GOOGLE_API_KEY_HATS,
-#endif  // BUILDFLAG(IS_ANDROID)
       .google_api_key_remoting = GOOGLE_API_KEY_REMOTING,
       .google_api_key_soda = GOOGLE_API_KEY_SODA,
-#if BUILDFLAG(IS_CHROMEOS)
-      .google_api_key_sharing = GOOGLE_API_KEY_SHARING,
-      .google_api_key_read_aloud = GOOGLE_API_KEY_READ_ALOUD,
-      .google_api_key_fresnel = GOOGLE_API_KEY_FRESNEL,
-      .google_api_key_boca = GOOGLE_API_KEY_BOCA,
-      .google_api_key_cros_system_geo_ = GOOGLE_API_KEY_CROS_SYSTEM_GEO,
-      .google_api_key_cros_chrome_geo_ = GOOGLE_API_KEY_CROS_CHROME_GEO,
-#endif
       .google_client_id_main = GOOGLE_CLIENT_ID_MAIN,
       .google_client_secret_main = GOOGLE_CLIENT_SECRET_MAIN,
       .google_client_id_remoting = GOOGLE_CLIENT_ID_REMOTING,

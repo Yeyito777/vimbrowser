@@ -11,10 +11,6 @@ import("//printing/buildflags/buildflags.gni")
 import("//services/screen_ai/buildflags/features.gni")
 import("//tools/grit/grit_rule.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 group("strings") {
   public_deps = [
     ":components_branded_strings",
@@ -40,16 +36,8 @@ grit_strings("components_strings") {
   ]
 
   outputs = [ "grit/components_strings.h" ]
-  if (is_android) {
-    create_android_resources = true
-  }
-  gritdeps = "../components_strings.grd.gritdeps"
-}
 
-if (is_android) {
-  java_strings_grd_prebuilt("components_strings_grd") {
-    generating_target = ":components_strings"
-  }
+  gritdeps = "../components_strings.grd.gritdeps"
 }
 
 grit_strings("components_branded_strings") {
@@ -60,29 +48,9 @@ grit_strings("components_branded_strings") {
 grit_strings("components_locale_settings") {
   source = "../components_locale_settings.grd"
   outputs = [ "grit/components_locale_settings.h" ]
-
-  if (is_android) {
-    create_android_resources = true
-  }
-}
-
-if (is_android) {
-  java_strings_grd_prebuilt("components_locale_settings_grd") {
-    generating_target = ":components_locale_settings"
-  }
 }
 
 grit_strings("privacy_sandbox_strings") {
   source = "../privacy_sandbox_strings.grd"
   outputs = [ "grit/privacy_sandbox_strings.h" ]
-
-  if (is_android) {
-    create_android_resources = true
-  }
-}
-
-if (is_android) {
-  java_strings_grd_prebuilt("privacy_sandbox_strings_grd") {
-    generating_target = ":privacy_sandbox_strings"
-  }
 }

@@ -135,10 +135,6 @@ bool MediaStorageUtil::GetDeviceInfoFromPath(const base::FilePath& path,
   // TODO(gbillock): Delete this stanza? Posix systems should have the root
   // volume information. If not, we should move the below into the
   // right GetStorageInfoForPath implementations.
-#if !BUILDFLAG(IS_POSIX)
-  if (!found_device)
-    return false;
-#endif
 
   // Handle non-removable devices. Note: this is just overwriting
   // good values from StorageMonitor.
@@ -166,9 +162,6 @@ base::FilePath MediaStorageUtil::FindDevicePathById(
   }
 
   DCHECK(
-#if BUILDFLAG(IS_CHROMEOS)
-      type == StorageInfo::MTP_OR_PTP ||
-#endif
       type == StorageInfo::REMOVABLE_MASS_STORAGE_WITH_DCIM ||
       type == StorageInfo::REMOVABLE_MASS_STORAGE_NO_DCIM);
   return base::FilePath(FindRemovableStorageLocationById(device_id));

@@ -18,10 +18,6 @@ component("views_content_client") {
     "views_content_main_delegate.h",
   ]
 
-  if (is_chromeos) {
-    sources += [ "views_content_client_main_parts_chromeos.cc" ]
-  }
-
   if (is_mac) {
     sources += [ "views_content_client_main_parts_mac.mm" ]
   }
@@ -53,20 +49,11 @@ component("views_content_client") {
       "views_content_client_main_parts_aura.h",
     ]
 
-    if (!is_chromeos) {
-      sources += [ "views_content_client_main_parts_desktop_aura.cc" ]
-    }
+    sources += [ "views_content_client_main_parts_desktop_aura.cc" ]
 
     deps += [
       "//ui/aura",
       "//ui/wm",
-    ]
-  }
-
-  if (is_chromeos) {
-    deps += [
-      "//ui/aura:test_support",
-      "//ui/wm:test_support",
     ]
   }
 }

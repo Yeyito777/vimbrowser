@@ -87,26 +87,6 @@ class CONTENT_EXPORT SystemMediaControlsNotifier
 
   // We want to hide the controls on the lock screen on Windows in certain
   // cases. We don't want this functionality on other OSes.
-#if BUILDFLAG(IS_WIN)
-  // Polls the current idle state of the system.
-  void CheckLockState();
-
-  // Called when the idle state changes from unlocked to locked.
-  void OnScreenLocked();
-
-  // Called when the idle state changes from locked to unlocked.
-  void OnScreenUnlocked();
-
-  // Helper functions for dealing with the timer that hides the System Media
-  // Transport Controls on the lock screen 5 seconds after the user pauses.
-  void StartHideSmtcTimer();
-  void StopHideSmtcTimer();
-  void HideSmtcTimerFired();
-
-  bool screen_locked_ = false;
-  base::RepeatingTimer lock_polling_timer_;
-  base::OneShotTimer hide_smtc_timer_;
-#endif  // BUILDFLAG(IS_WIN)
 
   // Our connection to the System Media Controls instance we should notify.
   // Owned by WebAppSystemMediaControls.

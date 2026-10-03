@@ -40,11 +40,6 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
   NOTREACHED();
 }
 
-#if BUILDFLAG(IS_WIN)
-bool ContentMainDelegate::ShouldHandleConsoleControlEvents() {
-  return false;
-}
-#endif
 
 bool ContentMainDelegate::ShouldLockSchemeRegistry() {
   return true;

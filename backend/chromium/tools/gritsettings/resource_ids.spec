@@ -577,10 +577,6 @@
     "META": {"sizes": {"includes": [20]}},
     "includes": [4500],
   },
-  "<(SHARED_INTERMEDIATE_DIR)/chrome/browser/resources/on_device_translation_internals/resources.grd": {
-    "META": {"sizes": {"includes": [5]}},
-    "includes": [4510],
-  },
   "<(SHARED_INTERMEDIATE_DIR)/chrome/browser/resources/password_manager/resources.grd": {
     "META": {"sizes": {"includes": [200]}},
     "includes": [4520],
@@ -1240,10 +1236,6 @@
   "<(SHARED_INTERMEDIATE_DIR)/components/signin/core/browser/resources/resources.grd": {
     "META": {"sizes": {"includes": [5]}},
     "includes": [7430],
-  },
-  "<(SHARED_INTERMEDIATE_DIR)/components/translate/translate_internals/resources.grd": {
-    "META": {"sizes": {"includes": [5]}},
-    "includes": [7435],
   },
   "<(SHARED_INTERMEDIATE_DIR)/components/ukm/debug/resources.grd": {
     "META": {"sizes": {"includes": [5]}},

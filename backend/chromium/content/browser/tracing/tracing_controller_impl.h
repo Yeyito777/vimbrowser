@@ -99,9 +99,6 @@ class TracingControllerImpl : public TracingController,
 
   void InitStartupTracingForDuration();
   void EndStartupTracing();
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnMachineStatisticsLoaded();
-#endif
 
   mojo::Remote<tracing::mojom::ConsumerHost> consumer_host_;
   mojo::Remote<tracing::mojom::TracingSessionHost> tracing_session_host_;
@@ -116,11 +113,6 @@ class TracingControllerImpl : public TracingController,
 
   std::unique_ptr<TracingDelegate> delegate_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  bool are_statistics_loaded_ = false;
-  std::string hardware_class_;
-  base::WeakPtrFactory<TracingControllerImpl> weak_ptr_factory_{this};
-#endif
 };
 
 }  // namespace content

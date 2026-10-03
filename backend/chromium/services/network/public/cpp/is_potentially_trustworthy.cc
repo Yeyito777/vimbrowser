@@ -234,13 +234,6 @@ std::vector<std::string> ParseSecureOriginAllowlistFromCmdline() {
 
   std::vector<std::string> origin_patterns =
       ParseSecureOriginAllowlist(origins_str);
-#if BUILDFLAG(IS_CHROMEOS)
-  // For Crostini, we allow access to the default VM/container as a secure
-  // origin via the hostname penguin.linux.test. We are required to use a
-  // wildcard for the prefix because we do not know what the port number is.
-  // https://chromium.googlesource.com/chromiumos/docs/+/main/containers_and_vms.md
-  origin_patterns.push_back("*.linux.test");
-#endif
   return origin_patterns;
 }
 

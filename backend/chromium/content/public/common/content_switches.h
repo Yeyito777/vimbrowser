@@ -180,9 +180,7 @@ CONTENT_EXPORT extern const char kRendererProcessLimit[];
 CONTENT_EXPORT extern const char kRendererStartupDialog[];
 CONTENT_EXPORT extern const char kRunManualTestsFlag[];
 extern const char kSandboxIPCProcess[];
-#if !BUILDFLAG(IS_ANDROID)
 CONTENT_EXPORT extern const char kSharedArrayBufferUnrestrictedAccessAllowed[];
-#endif
 CONTENT_EXPORT extern const char kSharedFiles[];
 CONTENT_EXPORT extern const char kSingleProcess[];
 CONTENT_EXPORT extern const char kSitePerProcess[];
@@ -238,44 +236,12 @@ CONTENT_EXPORT extern const char kWebXrRuntimeOpenXr[];
 CONTENT_EXPORT extern const char kZygoteCmdPrefix[];
 CONTENT_EXPORT extern const char kZygoteProcess[];
 
-#if BUILDFLAG(IS_ANDROID)
-CONTENT_EXPORT extern const char kDisableMediaSessionAPI[];
-CONTENT_EXPORT extern const char kDisableOoprDebugCrashDump[];
-CONTENT_EXPORT extern const char kDisableScreenOrientationLock[];
-CONTENT_EXPORT extern const char kDisableSiteIsolationForPolicy[];
-CONTENT_EXPORT extern const char kDisableTimeoutsForProfiling[];
-CONTENT_EXPORT extern const char kEnableAdaptiveSelectionHandleOrientation[];
-CONTENT_EXPORT extern const char kEnableLongpressDragSelection[];
-CONTENT_EXPORT extern const char kForceOnlineConnectionStateForIndicator[];
-CONTENT_EXPORT extern const char kRemoteDebuggingSocketName[];
-CONTENT_EXPORT extern const char kRendererWaitForJavaDebugger[];
-CONTENT_EXPORT extern const char kJavalessRenderers[];
-#endif
 
-#if BUILDFLAG(IS_IOS)
-CONTENT_EXPORT extern const char kPreventResizingContentsForTesting[];
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 CONTENT_EXPORT extern const char kEnableSpeechDispatcher[];
 #endif
 
-#if BUILDFLAG(IS_WIN)
-CONTENT_EXPORT extern const char kPrefetchArgumentRenderer[];
-CONTENT_EXPORT extern const char kPrefetchArgumentGpu[];
-CONTENT_EXPORT extern const char kPrefetchArgumentOther[];
-// This switch contains the device scale factor passed to certain processes
-// like renderers, etc.
-CONTENT_EXPORT extern const char kDeviceScaleFactor[];
-CONTENT_EXPORT extern const char kDisableLegacyIntermediateWindow[];
-// Switch to pass the font cache shared memory handle to the renderer.
-CONTENT_EXPORT extern const char kFontCacheSharedHandle[];
-CONTENT_EXPORT extern const char kRaiseTimerFrequency[];
-CONTENT_EXPORT extern const char kGpu2StartupDialog[];
-CONTENT_EXPORT extern const char kAudioProcessHighPriority[];
-// Pipe names for the incoming and outbound messages.
-CONTENT_EXPORT extern const char kRemoteDebuggingIoPipes[];
-#endif
 
 #if defined(ENABLE_IPC_FUZZER)
 extern const char kIpcDumpDirectory[];

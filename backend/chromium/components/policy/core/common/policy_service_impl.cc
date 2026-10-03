@@ -35,13 +35,7 @@
 #include "components/strings/grit/components_strings.h"
 #include "extensions/buildflags/buildflags.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/policy/core/common/android/policy_service_android.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/policy/core/common/default_chrome_apps_migrator.h"
-#endif
 
 namespace policy {
 
@@ -52,11 +46,7 @@ namespace {
 void DowngradeMetricsReportingToRecommendedPolicy(PolicyMap* policies) {
   // Capture both the Chrome-only and device-level policies on Chrome OS.
   const std::vector<const char*> metrics_keys = {
-#if BUILDFLAG(IS_CHROMEOS)
-      policy::key::kDeviceMetricsReportingEnabled,
-#else
       policy::key::kMetricsReportingEnabled,
-#endif
   };
   for (const char* policy_key : metrics_keys) {
     PolicyMap::Entry* policy = policies->GetMutable(policy_key);
@@ -81,14 +71,10 @@ base::flat_set<std::string> GetStringListPolicyItems(
 }
 
 bool IsUserCloudMergingAllowed(const PolicyMap& policies) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return false;
-#else
   const base::Value* cloud_user_policy_merge_value =
       policies.GetValue(key::kCloudUserPolicyMerge, base::Value::Type::BOOLEAN);
   return cloud_user_policy_merge_value &&
          cloud_user_policy_merge_value->GetBool();
-#endif
 }
 
 void AddPolicyMessages(PolicyMap& policies) {
@@ -293,15 +279,6 @@ void PolicyServiceImpl::RefreshPolicies(base::OnceClosure callback,
   }
 }
 
-#if BUILDFLAG(IS_ANDROID)
-android::PolicyServiceAndroid* PolicyServiceImpl::GetPolicyServiceAndroid() {
-  if (!policy_service_android_) {
-    policy_service_android_ =
-        std::make_unique<android::PolicyServiceAndroid>(this);
-  }
-  return policy_service_android_.get();
-}
-#endif
 
 void PolicyServiceImpl::UnthrottleInitialization() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -441,17 +418,11 @@ PolicyBundle PolicyServiceImpl::MergePolicyBundles(
   // Merge from each provider in their order of priority.
   const PolicyNamespace chrome_namespace(POLICY_DOMAIN_CHROME, std::string());
   PolicyBundle bundle;
-#if BUILDFLAG(IS_CHROMEOS)
-  DefaultChromeAppsMigrator chrome_apps_migrator;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   for (const PolicyBundle* policy_bundle : bundles) {
     PolicyBundle provided_bundle = policy_bundle->Clone();
     IgnoreUserCloudPrecedencePolicies(&provided_bundle.Get(chrome_namespace));
     DowngradeMetricsReportingToRecommendedPolicy(
         &provided_bundle.Get(chrome_namespace));
-#if BUILDFLAG(IS_CHROMEOS)
-    chrome_apps_migrator.Migrate(&provided_bundle.Get(chrome_namespace));
-#endif  // BUILDFLAG(IS_CHROMEOS)
     bundle.MergeFrom(provided_bundle);
   }
 

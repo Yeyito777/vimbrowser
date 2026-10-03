@@ -63,14 +63,6 @@
 #include "ui/views/widget/tooltip_manager.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/aura/client/screen_position_client.h"
-#include "ui/aura/window_event_dispatcher.h"
-#include "ui/aura/window_tree_host.h"
-#include "ui/base/win/internal_constants.h"
-#include "ui/display/win/screen_win.h"
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 #if defined(USE_AURA)
 #include "ui/aura/window.h"
@@ -343,103 +335,6 @@ View* GetNextFocusableView(View* ancestor, View* start_at, bool forward) {
   return nullptr;
 }
 
-#if BUILDFLAG(IS_WIN)
-// Determines the correct coordinates and window to repost |event| to, if it is
-// a mouse or touch event.
-static void RepostEventImpl(const ui::LocatedEvent* event,
-                            const gfx::Point& screen_loc,
-                            gfx::NativeView native_view,
-                            gfx::NativeWindow window) {
-  if (!event->IsMouseEvent() && !event->IsTouchEvent()) {
-    // TODO(rbyers): Gesture event repost is tricky to get right
-    // crbug.com/170987.
-    DCHECK(event->IsGestureEvent());
-    return;
-  }
-
-  if (!native_view) {
-    return;
-  }
-
-  gfx::Point screen_loc_pixels =
-      display::win::GetScreenWin()->DIPToScreenPoint(screen_loc);
-  HWND target_window = ::WindowFromPoint(screen_loc_pixels.ToPOINT());
-  // If we don't find a native window for the HWND at the current location,
-  // then attempt to find a native window from its parent if one exists.
-  // There are HWNDs created outside views, which don't have associated
-  // native windows.
-  if (!window) {
-    HWND parent = ::GetParent(target_window);
-    if (parent) {
-      aura::WindowTreeHost* host =
-          aura::WindowTreeHost::GetForAcceleratedWidget(parent);
-      if (host) {
-        target_window = parent;
-        window = host->window();
-      }
-    }
-  }
-  // Convert screen_loc to pixels for the Win32 API's like WindowFromPoint,
-  // PostMessage/SendMessage to work correctly. These API's expect the
-  // coordinates to be in pixels.
-  if (event->IsMouseEvent()) {
-    HWND source_window = HWNDForNativeView(native_view);
-    if (!target_window || !source_window ||
-        GetWindowThreadProcessId(source_window, nullptr) !=
-            GetWindowThreadProcessId(target_window, nullptr)) {
-      // Even though we have mouse capture, windows generates a mouse event if
-      // the other window is in a separate thread. Only repost an event if
-      // |target_window| and |source_window| were created on the same thread,
-      // else double events can occur and lead to bad behavior.
-      return;
-    }
-
-    // Determine whether the click was in the client area or not.
-    // NOTE: WM_NCHITTEST coordinates are relative to the screen.
-    LPARAM coords = MAKELPARAM(screen_loc_pixels.x(), screen_loc_pixels.y());
-    LRESULT nc_hit_result = SendMessage(target_window, WM_NCHITTEST, 0, coords);
-    const bool client_area = nc_hit_result == HTCLIENT;
-
-    int window_x = screen_loc_pixels.x();
-    int window_y = screen_loc_pixels.y();
-    if (client_area) {
-      POINT pt = {window_x, window_y};
-      ScreenToClient(target_window, &pt);
-      window_x = pt.x;
-      window_y = pt.y;
-    }
-
-    WPARAM target = client_area ? event->native_event().wParam
-                                : static_cast<WPARAM>(nc_hit_result);
-    LPARAM window_coords = MAKELPARAM(window_x, window_y);
-    PostMessage(target_window, event->native_event().message, target,
-                window_coords);
-    return;
-  }
-
-  if (!window) {
-    return;
-  }
-
-  aura::Window* root = window->GetRootWindow();
-  aura::client::ScreenPositionClient* spc =
-      aura::client::GetScreenPositionClient(root);
-  if (!spc) {
-    return;
-  }
-
-  gfx::Point root_loc(screen_loc);
-  spc->ConvertPointFromScreen(root, &root_loc);
-
-  std::unique_ptr<ui::Event> clone = event->Clone();
-  std::unique_ptr<ui::LocatedEvent> located_event(
-      static_cast<ui::LocatedEvent*>(clone.release()));
-  located_event->set_location(root_loc);
-  located_event->set_root_location(root_loc);
-
-  root->GetHost()->dispatcher()->RepostEvent(located_event.get());
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -1578,11 +1473,6 @@ void MenuController::TurnOffMenuSelectionHoldForTest() {
 }
 
 ui::ColorId MenuController::GetSeparatorColorId() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (use_ash_system_ui_layout_) {
-    return ui::kColorAshSystemUIMenuSeparator;
-  }
-#endif
   return ui::kColorMenuSeparator;
 }
 
@@ -1998,23 +1888,6 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
       break;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-    // On Windows, pressing Alt and F10 keys should hide the menu to match the
-    // OS behavior.
-    case ui::VKEY_MENU:
-      Cancel(ExitType::kAll);
-      break;
-    // On Windows, the Shift+F10 shortcut is equivalent to ui::VKEY_APPS,
-    // and will open the context menu for the selected item or the focused
-    // control.
-    case ui::VKEY_F10:
-      if (event.IsShiftDown()) {
-        ShowContextMenu();
-      } else {
-        Cancel(ExitType::kAll);
-      }
-      break;
-#endif
 
     default:
       break;
@@ -3377,37 +3250,6 @@ void MenuController::RepostEventAndCancel(SubmenuView* source,
                                           const ui::LocatedEvent* event) {
   const gfx::Point screen_loc = ConvertToScreen(*source, event->location());
 
-#if BUILDFLAG(IS_WIN)
-  if (event->IsMouseEvent() || event->IsTouchEvent()) {
-    base::WeakPtr<MenuController> this_ref = AsWeakPtr();
-    if (state_.item) {
-      // This must be done before we ReleaseCapture() below, which can lead to
-      // deleting the `source`.
-      gfx::NativeView native_view = source->GetWidget()->GetNativeView();
-      gfx::NativeWindow window =
-          native_view
-              ? display::Screen::Get()->GetWindowAtScreenPoint(screen_loc)
-              : nullptr;
-
-      state_.item->GetRootMenuItem()->GetSubmenu()->ReleaseCapture();
-
-      // We're going to close and we own the event capture. We need to repost
-      // the event, otherwise the window the user clicked on won't get the
-      // event.
-      RepostEventImpl(event, screen_loc, native_view, window);
-    } else {
-      // We some times get an event after closing all the menus. Ignore it. Make
-      // sure the menu is in fact not visible. If the menu is visible, then
-      // we're in a bad state where we think the menu isn't visible but it is.
-      DCHECK(!source->GetWidget()->IsVisible());
-    }
-
-    // Reposting the event may have deleted this, if so exit.
-    if (!this_ref) {
-      return;
-    }
-  }
-#endif
 
   // Determine target to see if a complete or partial close of the menu should
   // occur.
@@ -3577,25 +3419,6 @@ MenuItemView* MenuController::ExitTopMostMenu() {
   // Close any open menus.
   SetSelection(nullptr, SELECTION_UPDATE_IMMEDIATELY | SELECTION_EXIT);
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, if we select the menu item by touch and if the window at the
-  // location is another window on the same thread, that window gets a
-  // WM_MOUSEACTIVATE message and ends up activating itself, which is not
-  // correct. We workaround this by setting a property on the window at the
-  // current cursor location. We check for this property in our
-  // WM_MOUSEACTIVATE handler and don't activate the window if the property is
-  // set.
-  if (item_selected_by_touch_) {
-    item_selected_by_touch_ = false;
-    POINT cursor_pos;
-    ::GetCursorPos(&cursor_pos);
-    HWND window = ::WindowFromPoint(cursor_pos);
-    if (::GetWindowThreadProcessId(window, nullptr) == ::GetCurrentThreadId()) {
-      ::SetProp(window, ui::kIgnoreTouchMouseActivateForWindow,
-                reinterpret_cast<HANDLE>(true));
-    }
-  }
-#endif
 
   std::unique_ptr<MenuButtonController::PressedLock> nested_pressed_lock;
   bool nested_menu = !menu_stack_.empty();

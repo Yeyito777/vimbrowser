@@ -52,7 +52,7 @@ group("deps") {
       # Some `target_os`s do not support 32-bit platforms anymore.  The
       # selection below is _loosely_ based on `is_valid_x86_target` from
       # the top-level `//BUILD.gn`.
-      if (is_win || is_android) {
+      if (is_win) {
         deps += [ "//build/rust/tests/test_build_rs_target_arch_x86" ]
       }
     }

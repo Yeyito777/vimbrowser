@@ -19,14 +19,8 @@
 #include "net/socket/tcp_socket.h"
 #include "services/network/public/cpp/transferable_socket.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <winsock2.h>
-
-#include "base/scoped_generic.h"
-#else
 #include <netinet/in.h>
 #include <sys/socket.h>
-#endif
 
 namespace network {
 
@@ -38,37 +32,6 @@ using CreateSocketCallback = SocketBrokerImpl::CreateTcpSocketCallback;
 static_assert(std::same_as<CreateSocketCallback,
                            SocketBrokerImpl::CreateUdpSocketCallback>);
 
-#if BUILDFLAG(IS_WIN)
-struct SocketDescriptorTraitsWin {
-  static void Free(net::SocketDescriptor socket) { ::closesocket(socket); }
-  static net::SocketDescriptor InvalidValue() { return net::kInvalidSocket; }
-};
-
-using ScopedSocketDescriptor =
-    base::ScopedGeneric<net::SocketDescriptor, SocketDescriptorTraitsWin>;
-
-net::Error GetSystemError() {
-  return net::MapSystemError(::WSAGetLastError());
-}
-
-// Encapsulates the platform-specific code to transfer `socket` to `callback`
-// for target process `process_id`, also passing `rv`. SECURITY: There isn't a
-// good way to check that `process_id` is really the process ID of the calling
-// process, which means the caller could pass an invalid process ID or the
-// process ID of another process. In the first case, the OS should catch the
-// problem and the transfer will fail. In the second case, the caller could pass
-// on the socket to a third process, but since it can already perform network
-// operations on behalf of a third process if it chooses to this doesn't
-// constitute a privilege escalation.
-void TransferSocketToCallback(CreateSocketCallback callback,
-                              ScopedSocketDescriptor socket,
-                              uint32_t process_id,
-                              int rv) {
-  std::move(callback).Run(
-      network::TransferableSocket(socket.release(), process_id), rv);
-}
-
-#else
 
 using ScopedSocketDescriptor = base::ScopedFD;
 
@@ -83,7 +46,6 @@ void TransferSocketToCallback(CreateSocketCallback callback,
   std::move(callback).Run(network::TransferableSocket(socket.release()), rv);
 }
 
-#endif  // BUILDFLAG(IS_WIN)
 
 enum class SocketType {
   kStream,
@@ -121,27 +83,6 @@ SocketBrokerImpl::SocketBrokerImpl() = default;
 
 SocketBrokerImpl::~SocketBrokerImpl() = default;
 
-#if BUILDFLAG(IS_WIN)
-
-void SocketBrokerImpl::CreateTcpSocket(net::AddressFamily address_family,
-                                       uint32_t process_id,
-                                       CreateTcpSocketCallback callback) {
-  auto [socket, rv] = CreateSocket(address_family, SocketType::kStream,
-                                   socket_creation_interceptor_);
-  TransferSocketToCallback(std::move(callback), std::move(socket), process_id,
-                           rv);
-}
-
-void SocketBrokerImpl::CreateUdpSocket(net::AddressFamily address_family,
-                                       uint32_t process_id,
-                                       CreateUdpSocketCallback callback) {
-  auto [socket, rv] = CreateSocket(address_family, SocketType::kDatagram,
-                                   socket_creation_interceptor_);
-  TransferSocketToCallback(std::move(callback), std::move(socket), process_id,
-                           rv);
-}
-
-#else
 
 void SocketBrokerImpl::CreateTcpSocket(net::AddressFamily address_family,
                                        CreateTcpSocketCallback callback) {
@@ -157,7 +98,6 @@ void SocketBrokerImpl::CreateUdpSocket(net::AddressFamily address_family,
   TransferSocketToCallback(std::move(callback), std::move(socket), rv);
 }
 
-#endif  // BUILDFLAG(IS_WIN)
 
 mojo::PendingRemote<mojom::SocketBroker> SocketBrokerImpl::BindNewRemote() {
   mojo::PendingRemote<mojom::SocketBroker> pending_remote;

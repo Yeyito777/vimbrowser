@@ -11,9 +11,6 @@
 
 namespace device {
 
-#if BUILDFLAG(IS_WIN)
-DEVICE_BASE_EXPORT BASE_DECLARE_FEATURE(kNewBLEGattSessionHandling);
-#endif  // BUILDFLAG(IS_WIN)
 
 // New features should be added to the device::features namespace.
 
@@ -23,18 +20,8 @@ namespace features {
 DEVICE_BASE_EXPORT BASE_DECLARE_FEATURE(kWebBluetoothConfirmPairingSupport);
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_WIN)
-DEVICE_BASE_EXPORT BASE_DECLARE_FEATURE(
-    kUncachedGattDiscoveryForGattConnection);
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_ANDROID)
-DEVICE_BASE_EXPORT BASE_DECLARE_FEATURE(kGmsCoreLocationRequestParamOverride);
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_ANDROID)
-DEVICE_BASE_EXPORT BASE_DECLARE_FEATURE(kWebSerialWiredDevicesAndroid);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace features
 }  // namespace device

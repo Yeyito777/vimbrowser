@@ -63,11 +63,6 @@
 #include "net/cert/internal/trust_store_chrome.h"
 #endif  // CHROME_ROOT_STORE_SUPPORTED
 
-#if BUILDFLAG(IS_ANDROID)
-#include "net/cert/cert_verify_proc_android.h"
-#elif BUILDFLAG(IS_IOS)
-#include "net/cert/cert_verify_proc_ios.h"
-#endif
 
 namespace net {
 
@@ -373,32 +368,10 @@ base::DictValue CertVerifyParams(X509Certificate* cert,
 scoped_refptr<CertVerifyProc> CertVerifyProc::CreateSystemVerifyProc(
     scoped_refptr<CertNetFetcher> cert_net_fetcher,
     scoped_refptr<CRLSet> crl_set) {
-#if BUILDFLAG(IS_ANDROID)
-  return base::MakeRefCounted<CertVerifyProcAndroid>(
-      std::move(cert_net_fetcher), std::move(crl_set));
-#elif BUILDFLAG(IS_IOS)
-  return base::MakeRefCounted<CertVerifyProcIOS>(std::move(crl_set));
-#else
 #error Unsupported platform
-#endif
 }
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-// static
-scoped_refptr<CertVerifyProc> CertVerifyProc::CreateBuiltinVerifyProc(
-    scoped_refptr<CertNetFetcher> cert_net_fetcher,
-    scoped_refptr<CRLSet> crl_set,
-    std::unique_ptr<CTVerifier> ct_verifier,
-    scoped_refptr<CTPolicyEnforcer> ct_policy_enforcer,
-    const InstanceParams instance_params,
-    std::optional<network_time::TimeTracker> time_tracker) {
-  return CreateCertVerifyProcBuiltin(
-      std::move(cert_net_fetcher), std::move(crl_set), std::move(ct_verifier),
-      std::move(ct_policy_enforcer), CreateSslSystemTrustStore(),
-      instance_params, std::move(time_tracker));
-}
-#endif
 
 #if BUILDFLAG(CHROME_ROOT_STORE_SUPPORTED)
 // static

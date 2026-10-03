@@ -41,11 +41,7 @@ static constexpr int kDropTargetHideForOSWidth =
     0;
 #endif
 static constexpr double kDropTargetHideForOSPercentage =
-#if BUILDFLAG(IS_WIN)
-    1.4;
-#else
     0;
-#endif
 
 // Returns a value between `min_value` and `max_value`, scaled linearly
 // according to `current_width`.

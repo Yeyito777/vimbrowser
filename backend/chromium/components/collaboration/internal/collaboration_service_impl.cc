@@ -51,9 +51,6 @@ CollaborationServiceImpl::CollaborationServiceImpl(
       identity_manager_(identity_manager),
       profile_prefs_(profile_prefs),
       local_prefs_(local_prefs) {
-#if BUILDFLAG(IS_IOS)
-  CHECK(local_prefs_);
-#endif
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   // Initialize ServiceStatus.
   current_status_.sync_status = SyncStatus::kNotSyncing;
@@ -435,13 +432,6 @@ SigninStatus CollaborationServiceImpl::GetSigninStatus() {
     status = SigninStatus::kSigninDisabled;
   }
 
-#if BUILDFLAG(IS_IOS)
-  BrowserSigninMode policy_mode = static_cast<BrowserSigninMode>(
-      local_prefs_->GetInteger(::prefs::kBrowserSigninPolicy));
-  if (policy_mode == BrowserSigninMode::kDisabled) {
-    status = SigninStatus::kSigninDisabled;
-  }
-#endif
 
   return status;
 }
@@ -466,24 +456,11 @@ CollaborationStatus CollaborationServiceImpl::GetCollaborationStatus() {
   }
 
   // Check if device policy allow signin.
-#if BUILDFLAG(IS_IOS)
-  BrowserSigninMode policy_mode = static_cast<BrowserSigninMode>(
-      local_prefs_->GetInteger(::prefs::kBrowserSigninPolicy));
-  if (policy_mode == BrowserSigninMode::kDisabled) {
-    return CollaborationStatus::kDisabledForPolicy;
-  }
-#elif BUILDFLAG(IS_ANDROID)
-  if (!profile_prefs_->GetBoolean(::prefs::kSigninAllowed) &&
-      profile_prefs_->IsManagedPreference(::prefs::kSigninAllowed)) {
-    return CollaborationStatus::kDisabledForPolicy;
-  }
-#else
   if (!profile_prefs_->GetBoolean(::prefs::kSigninAllowedOnNextStartup) &&
       profile_prefs_->IsManagedPreference(
           ::prefs::kSigninAllowedOnNextStartup)) {
     return CollaborationStatus::kDisabledForPolicy;
   }
-#endif
 
   // Check if device policy allow sync.
   if (current_status_.sync_status == SyncStatus::kSyncDisabledByEnterprise) {

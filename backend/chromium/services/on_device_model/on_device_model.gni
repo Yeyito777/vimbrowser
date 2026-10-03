@@ -4,12 +4,9 @@
 
 import("//build/config/chrome_build.gni")
 import("//build/config/gclient_args.gni")
-import("//chromeos/components/libsegmentation/buildflags.gni")
 import("//components/optimization_guide/features.gni")
 
-declare_args() {
-  is_cbx = is_chromeos && overlay_include_cbx
-}
+is_cbx = false
 
 declare_args() {
   # The on device model service is only enabled on a subset of platforms.

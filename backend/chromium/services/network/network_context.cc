@@ -201,9 +201,6 @@
 #include "services/network/p2p/socket_manager.h"
 #endif  // BUILDFLAG(IS_P2P_ENABLED)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/application_status_listener.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace network {
 
@@ -429,49 +426,6 @@ base::RepeatingCallback<bool(const GURL&)> BuildUrlFilter(
                 : base::NullCallback();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-class NetworkContextApplicationStatusListener
-    : public base::android::ApplicationStatusListener {
- public:
-  // Sets `get_callback` to be a callback that returns nullptr if the created
-  // NetworkContextApplicationStatusListener has been destroyed, and the
-  // listener itself, otherwise. It's a constructor argument to avoid needing
-  // a cast, moving this into the header, or other complexities around
-  // `app_status_listeners_` being a vector of the parent class.
-  explicit NetworkContextApplicationStatusListener(
-      disk_cache::ApplicationStatusListenerGetter& get_callback) {
-    get_callback =
-        base::BindRepeating(&NetworkContextApplicationStatusListener::
-                                ReturnAppStatusListenerIfAlive,
-                            weak_ptr_factory_.GetWeakPtr());
-  }
-
-  // base::android::ApplicationStatusListener implementation:
-  void SetCallback(const ApplicationStateChangeCallback& callback) override {
-    DCHECK(!callback_);
-    DCHECK(callback);
-    callback_ = callback;
-  }
-
-  void Notify(base::android::ApplicationState state) override {
-    if (callback_) {
-      callback_.Run(state);
-    }
-  }
-
- private:
-  static base::android::ApplicationStatusListener*
-  ReturnAppStatusListenerIfAlive(
-      base::WeakPtr<base::android::ApplicationStatusListener> listener) {
-    return listener.get();
-  }
-
-  ApplicationStateChangeCallback callback_;
-  base::WeakPtrFactory<base::android::ApplicationStatusListener>
-      weak_ptr_factory_{this};
-};
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 struct TestVerifyCertState {
   net::CertVerifyResult result;
@@ -719,12 +673,6 @@ NetworkContext::NetworkContext(
     if (params_->file_paths &&
         params_->file_paths->shared_dictionary_directory &&
         !params_->file_paths->shared_dictionary_directory->path().empty()) {
-#if BUILDFLAG(IS_ANDROID)
-      disk_cache::ApplicationStatusListenerGetter get_callback;
-      app_status_listeners_.push_back(
-          std::make_unique<NetworkContextApplicationStatusListener>(
-              get_callback));
-#endif  // BUILDFLAG(IS_ANDROID)
       // TODO(crbug.com/40255884): Set `file_operations_factory` to support
       // sandboxed network service on Android.
       shared_dictionary_manager_ = SharedDictionaryManager::CreateOnDisk(
@@ -734,9 +682,6 @@ NetworkContext::NetworkContext(
               FILE_PATH_LITERAL("cache")),
           params_->shared_dictionary_cache_max_size,
           shared_dictionary::kDictionaryMaxCountPerNetworkContext,
-#if BUILDFLAG(IS_ANDROID)
-          std::move(get_callback),
-#endif  // BUILDFLAG(IS_ANDROID)
           /*file_operations_factory=*/nullptr);
     } else {
       shared_dictionary_manager_ = SharedDictionaryManager::CreateInMemory(
@@ -786,12 +731,6 @@ NetworkContext::NetworkContext(
 
   socket_factory_ = std::make_unique<SocketFactory>(
       url_request_context_->net_log(), url_request_context_);
-#if BUILDFLAG(IS_WIN)
-  if (params_->socket_brokers) {
-    socket_factory_->BindSocketBroker(
-        std::move(params_->socket_brokers->server));
-  }
-#endif
   resource_scheduler_ = std::make_unique<ResourceScheduler>();
 
   if (params_->http_auth_static_network_context_params) {
@@ -817,11 +756,6 @@ NetworkContext::NetworkContext(
   sct_auditing_handler()->SetMode(params_->sct_auditing_mode);
 #endif  // BUILDFLAG(IS_CT_SUPPORTED)
 
-#if BUILDFLAG(IS_ANDROID)
-  if (params_->cookie_manager) {
-    GetCookieManager(std::move(params_->cookie_manager));
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   CreateURLLoaderFactoryForCertNetFetcher(
       std::move(url_loader_factory_for_cert_net_fetcher_receiver));
@@ -2577,45 +2511,6 @@ void NetworkContext::SetCorsNonWildcardRequestHeadersSupport(bool value) {
       cors::NonWildcardRequestHeadersSupport(value);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void NetworkContext::LookupProxyAuthCredentials(
-    const net::ProxyServer& proxy_server,
-    const std::string& auth_scheme,
-    const std::string& realm,
-    LookupProxyAuthCredentialsCallback callback) {
-  net::HttpAuth::Scheme net_scheme =
-      net::HttpAuth::StringToScheme(base::ToLowerASCII(auth_scheme));
-  if (net_scheme == net::HttpAuth::Scheme::AUTH_SCHEME_MAX) {
-    std::move(callback).Run(std::nullopt);
-    return;
-  }
-  net::HttpAuthCache* http_auth_cache =
-      url_request_context_->http_transaction_factory()
-          ->GetSession()
-          ->http_auth_cache();
-  // TODO(crbug.com/40704785): Mapping proxy addresses to URLs is a
-  // lossy conversion, shouldn't do this.
-  const char* scheme =
-      proxy_server.is_secure_http_like() ? "https://" : "http://";
-  url::SchemeHostPort scheme_host_port(
-      GURL(scheme + proxy_server.host_port_pair().ToString()));
-  if (!scheme_host_port.IsValid()) {
-    std::move(callback).Run(std::nullopt);
-    return;
-  }
-
-  //  Unlike server credentials, proxy credentials are not keyed on
-  //  NetworkAnonymizationKey.
-  net::HttpAuthCache::Entry* entry = http_auth_cache->Lookup(
-      scheme_host_port, net::HttpAuth::AUTH_PROXY, realm, net_scheme,
-      net::NetworkAnonymizationKey());
-  if (entry) {
-    std::move(callback).Run(entry->credentials());
-  } else {
-    std::move(callback).Run(std::nullopt);
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 const net::HttpAuthPreferences* NetworkContext::GetHttpAuthPreferences() const {
   return &http_auth_merged_preferences_;
@@ -2655,10 +2550,6 @@ void NetworkContext::OnHttpAuthDynamicParamsChanged(
       http_auth_dynamic_network_service_params->ntlm_v2_enabled);
 #endif  // BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 
-#if BUILDFLAG(IS_ANDROID)
-  http_auth_merged_preferences_.set_auth_android_negotiate_account_type(
-      http_auth_dynamic_network_service_params->android_negotiate_account_type);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
   http_auth_merged_preferences_.set_allow_gssapi_library_load(
@@ -2802,18 +2693,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
         std::move(params_->proxy_resolver_factory));
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (params_->system_proxy_resolver) {
-    builder.SetMojoWindowsSystemProxyResolver(
-        std::move(params_->system_proxy_resolver));
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (params_->dhcp_wpad_url_client) {
-    builder.SetDhcpWpadUrlClient(std::move(params_->dhcp_wpad_url_client));
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (!params_->http_cache_enabled) {
     builder.DisableHttpCache();
@@ -2877,11 +2757,6 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
     }
     cache_params.reset_cache = params_->reset_http_cache_backend;
 
-#if BUILDFLAG(IS_ANDROID)
-    app_status_listeners_.push_back(
-        std::make_unique<NetworkContextApplicationStatusListener>(
-            cache_params.app_status_listener_getter));
-#endif  // BUILDFLAG(IS_ANDROID)
     builder.EnableHttpCache(cache_params);
   }
 
@@ -3066,13 +2941,6 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
         command_line->GetSwitchValueASCII(switches::kHostRules));
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (params_->socket_brokers) {
-    builder.set_client_socket_factory(
-        std::make_unique<BrokeredClientSocketFactory>(
-            std::move(params_->socket_brokers->client)));
-  }
-#endif
 
   require_network_anonymization_key_ =
       params_->require_network_anonymization_key;
@@ -3090,9 +2958,6 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
     builder.set_require_network_anonymization_key(true);
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  builder.set_check_cleartext_permitted(params_->check_clear_text_permitted);
-#endif  // BUILDFLAG(IS_ANDROID)
 
   if (params_->device_bound_sessions_enabled) {
     builder.set_has_device_bound_session_service(true);
@@ -3122,9 +2987,6 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
     }
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  builder.enable_stale_dns_resolver(params_->stale_dns_enabled);
-#endif  // BUILDFLAG(IS_ANDROID)
 
   if (on_url_request_context_builder_configured) {
     std::move(on_url_request_context_builder_configured).Run(&builder);
@@ -3197,21 +3059,14 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
       crypto_delegate = std::make_unique<CookieOSCryptAsyncDelegate>(
           std::move(params_->cookie_encryption_provider));
     } else {
-#if !BUILDFLAG(IS_ANDROID)
       // A cookie crypto delegate should not be created on Android to
       // match the behavior of cookie_config::GetCookieCryptoDelegate().
       // See https://crbug.com/449652881
       NOTREACHED();
-#endif
     }
   }
 
-#if BUILDFLAG(IS_WIN)
-  const bool enable_exclusive_access =
-      network_service()->exclusive_cookie_database_locking();
-#else
   const bool enable_exclusive_access = false;
-#endif  // BUILDFLAG(IS_WIN)
 
   scoped_refptr<net::SQLitePersistentCookieStore> sqlite_store(
       new net::SQLitePersistentCookieStore(

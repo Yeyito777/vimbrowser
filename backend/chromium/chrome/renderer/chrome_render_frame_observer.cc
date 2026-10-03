@@ -43,8 +43,6 @@
 #include "components/no_state_prefetch/renderer/no_state_prefetch_utils.h"
 #include "components/offline_pages/buildflags/buildflags.h"
 #include "components/optimization_guide/content/renderer/page_text_agent.h"
-#include "components/translate/content/renderer/translate_agent.h"
-#include "components/translate/core/common/translate_util.h"
 #include "components/web_cache/renderer/web_cache_impl.h"
 #include "content/public/common/bindings_policy.h"
 #include "content/public/common/buildflags.h"
@@ -190,7 +188,6 @@ ChromeRenderFrameObserver::ChromeRenderFrameObserver(
     content::RenderFrame* render_frame,
     web_cache::WebCacheImpl* web_cache_impl)
     : content::RenderFrameObserver(render_frame),
-      translate_agent_(nullptr),
       page_text_agent_(new optimization_guide::PageTextAgent(render_frame)),
       actor_journal_(std::make_unique<actor::Journal>()),
       web_cache_impl_(web_cache_impl) {
@@ -207,8 +204,6 @@ ChromeRenderFrameObserver::ChromeRenderFrameObserver(
   SetClientSidePhishingDetection();
 #endif
 
-  translate_agent_ =
-      new translate::TranslateAgent(render_frame, ISOLATED_WORLD_ID_TRANSLATE);
 }
 
 ChromeRenderFrameObserver::~ChromeRenderFrameObserver() = default;
@@ -242,18 +237,10 @@ void ChromeRenderFrameObserver::ReadyToCommitNavigation(
   if (render_frame()->IsMainFrame() && web_cache_impl_)
     web_cache_impl_->ExecutePendingClearCache();
 
-  // Let translate_agent do any preparatory work before the new document loads.
-  if (translate_agent_) {
-    translate_agent_->PrepareForNewDocument();
-  }
 }
 
 void ChromeRenderFrameObserver::DidSetPageLifecycleState(
     blink::BFCacheStateChange bfcache_change) {
-  if (bfcache_change == blink::BFCacheStateChange::kRestoredFromBFCache &&
-      translate_agent_) {
-    translate_agent_->RenewPageRegistration();
-  }
   if (bfcache_change == blink::BFCacheStateChange::kStoredToBFCache) {
     // Reset actor state if entering the BFCache
     page_stability_monitor_.reset();
@@ -701,21 +688,18 @@ void ChromeRenderFrameObserver::OnRenderFrameObserverRequest(
   receivers_.Add(this, std::move(receiver));
 }
 
-bool ChromeRenderFrameObserver::ShouldCapturePageTextForTranslateOrPhishing(
+bool ChromeRenderFrameObserver::ShouldCapturePageTextForPhishing(
     blink::WebMeaningfulLayout layout_type) const {
   WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame) {
     return false;
   }
 
-  //////////////////////////////////////////////////////////////////////////////
-  // Check |frame| for conditions shared by both Translate and Phishing.
-
   if (!render_frame()->IsMainFrame()) {
     return false;
   }
 
-  // |kVisuallyNonEmpty| is ignored by Translate and Phishing.
+  // |kVisuallyNonEmpty| is ignored by phishing detection.
   switch (layout_type) {
     case blink::WebMeaningfulLayout::kFinishedParsing:
     case blink::WebMeaningfulLayout::kFinishedLoading:
@@ -746,33 +730,25 @@ bool ChromeRenderFrameObserver::ShouldCapturePageTextForTranslateOrPhishing(
     return false;
   }
 
-  //////////////////////////////////////////////////////////////////////////////
-  // Translate specific checks.
-  bool should_capture_for_translate = !!translate_agent_;
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Phishing specific checks.
   bool should_capture_for_phishing = false;
 
 #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   should_capture_for_phishing = phishing_classifier_->is_ready();
 #endif
 
-  return should_capture_for_translate || should_capture_for_phishing;
+  return should_capture_for_phishing;
 }
 
 void ChromeRenderFrameObserver::CapturePageText(
     blink::WebMeaningfulLayout layout_type) {
-  bool capture_for_translate_phishing =
-      ShouldCapturePageTextForTranslateOrPhishing(layout_type);
+  bool capture_for_phishing = ShouldCapturePageTextForPhishing(layout_type);
 
-  uint32_t capture_max_size =
-      capture_for_translate_phishing ? kMaxIndexChars : 0;
+  uint32_t capture_max_size = capture_for_phishing ? kMaxIndexChars : 0;
   auto text_callback = page_text_agent_->MaybeRequestTextDumpOnLayoutEvent(
       layout_type, &capture_max_size);
   bool capture_for_opt_guide = !!text_callback;
 
-  if (!capture_for_translate_phishing && !capture_for_opt_guide) {
+  if (!capture_for_phishing && !capture_for_opt_guide) {
     return;
   }
   DCHECK_GT(capture_max_size, 0U);
@@ -785,13 +761,6 @@ void ChromeRenderFrameObserver::CapturePageText(
         WebFrameContentDumper::DumpFrameTreeAsText(
             render_frame()->GetWebFrame(), capture_max_size)
             .Utf16());
-  }
-
-  // Language detection should run only once. Parsing finishes before the page
-  // loads, so attempt detection here first.
-  if (translate_agent_ &&
-      (layout_type == blink::WebMeaningfulLayout::kFinishedParsing)) {
-    translate_agent_->PageCaptured(contents);
   }
 
   if (text_callback) {

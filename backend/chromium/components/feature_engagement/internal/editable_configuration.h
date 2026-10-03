@@ -36,12 +36,6 @@ class EditableConfiguration : public Configuration {
   const Configuration::GroupConfigMap& GetRegisteredGroupConfigs()
       const override;
   const std::vector<std::string> GetRegisteredGroups() const override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void UpdateConfig(const base::Feature& feature,
-                    const ConfigurationProvider* provider) override;
-  const Configuration::EventPrefixSet& GetRegisteredAllowedEventPrefixes()
-      const override;
-#endif
 
   // Adds a new FeatureConfig to the current configurations. If it already
   // exists, the contents are replaced.

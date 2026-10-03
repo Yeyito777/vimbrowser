@@ -16,12 +16,6 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/native_ui_types.h"
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <fuchsia/element/cpp/fidl.h>
-#include <fuchsia/ui/composition/cpp/fidl.h>
-#include <fuchsia/ui/views/cpp/fidl.h>
-#include <ui/platform_window/fuchsia/view_ref_pair.h>
-#endif
 
 namespace gfx {
 class ImageSkia;
@@ -52,9 +46,6 @@ enum class PlatformWindowShadowType {
 
 class WorkspaceExtensionDelegate;
 
-#if BUILDFLAG(IS_FUCHSIA)
-class ScenicWindowDelegate;
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 class X11ExtensionDelegate;
@@ -84,27 +75,6 @@ struct COMPONENT_EXPORT(PLATFORM_WINDOW) PlatformWindowInitProperties {
   // Widget::InitProperties::WindowOpacity.
   PlatformWindowOpacity opacity = PlatformWindowOpacity::kOpaqueWindow;
 
-#if BUILDFLAG(IS_FUCHSIA)
-  // Scenic 3D API uses `view_token` for links, whereas Flatland
-  // API uses `view_creation_token`. Therefore, at most one of these fields must
-  // be set. If `allow_null_view_token_for_test` is true, they may both be
-  // false.
-  fuchsia::ui::views::ViewToken view_token;
-  fuchsia::ui::views::ViewCreationToken view_creation_token;
-
-  ViewRefPair view_ref_pair;
-
-  // Used to coordinate window closure requests with the shell.
-  fuchsia::element::ViewControllerPtr view_controller;
-
-  // Specifies whether handling of keypress events from the system is enabled.
-  bool enable_keyboard = false;
-
-  // Specifies whether system virtual keyboard support is enabled.
-  bool enable_virtual_keyboard = false;
-
-  raw_ptr<ScenicWindowDelegate> scenic_window_delegate = nullptr;
-#endif
 
   // See Widget::InitParams for details.
   bool accept_events = true;

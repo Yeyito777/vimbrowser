@@ -103,8 +103,7 @@ std::unique_ptr<syncer::DeviceInfo> CreateDevice(
       /*paask_info=*/std::nullopt,
       /*fcm_registration_token=*/std::string(),
       /*interested_data_types=*/syncer::DataTypeSet(),
-      /*auto_sign_out_last_signin_timestamp=*/std::nullopt,
-      /*desktop_to_ios_promo_receiving_enabled=*/false);
+      /*auto_sign_out_last_signin_timestamp=*/std::nullopt);
 }
 
 sync_pb::DataTypeState StateWithEncryption(
@@ -1138,8 +1137,7 @@ TEST_F(SendTabToSelfBridgeTest,
       /*sharing_info=*/std::nullopt, /*paask_info=*/std::nullopt,
       /*fcm_registration_token=*/std::string(),
       /*interested_data_types=*/syncer::DataTypeSet(),
-      /*auto_sign_out_last_signin_timestamp=*/std::nullopt,
-      /*desktop_to_ios_promo_receiving_enabled=*/false);
+      /*auto_sign_out_last_signin_timestamp=*/std::nullopt);
   syncer::DeviceDisplayNames names1 =
       syncer::GetDeviceDisplayNames(device1.get());
   ASSERT_EQ("Manufacturer Phone model1", names1.full_name);
@@ -1160,8 +1158,7 @@ TEST_F(SendTabToSelfBridgeTest,
       /*sharing_info=*/std::nullopt, /*paask_info=*/std::nullopt,
       /*fcm_registration_token=*/std::string(),
       /*interested_data_types=*/syncer::DataTypeSet(),
-      /*auto_sign_out_last_signin_timestamp=*/std::nullopt,
-      /*desktop_to_ios_promo_receiving_enabled=*/false);
+      /*auto_sign_out_last_signin_timestamp=*/std::nullopt);
   syncer::DeviceDisplayNames names2 =
       syncer::GetDeviceDisplayNames(device2.get());
   ASSERT_EQ("Manufacturer Phone model2", names2.full_name);
@@ -1313,8 +1310,7 @@ TEST_F(SendTabToSelfBridgeTest, GetTargetDeviceInfoSortedList_FormFactors) {
       /*sharing_info=*/std::nullopt, /*paask_info=*/std::nullopt,
       /*fcm_registration_token=*/std::string(),
       /*interested_data_types=*/syncer::DataTypeSet(),
-      /*auto_sign_out_last_signin_timestamp=*/std::nullopt,
-      /*desktop_to_ios_promo_receiving_enabled=*/false);
+      /*auto_sign_out_last_signin_timestamp=*/std::nullopt);
 
   std::unique_ptr<syncer::DeviceInfo> phone = std::make_unique<
       syncer::DeviceInfo>(
@@ -1330,8 +1326,7 @@ TEST_F(SendTabToSelfBridgeTest, GetTargetDeviceInfoSortedList_FormFactors) {
       /*sharing_info=*/std::nullopt, /*paask_info=*/std::nullopt,
       /*fcm_registration_token=*/std::string(),
       /*interested_data_types=*/syncer::DataTypeSet(),
-      /*auto_sign_out_last_signin_timestamp=*/std::nullopt,
-      /*desktop_to_ios_promo_receiving_enabled=*/false);
+      /*auto_sign_out_last_signin_timestamp=*/std::nullopt);
 
   AddTestDevice(desktop.get());
   AddTestDevice(phone.get());

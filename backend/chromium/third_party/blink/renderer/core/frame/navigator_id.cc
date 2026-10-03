@@ -62,9 +62,6 @@ String NavigatorID::platform() const {
 #if BUILDFLAG(IS_MAC)
   // Match Safari and Mozilla on Mac x86.
   return "MacIntel";
-#elif BUILDFLAG(IS_WIN)
-  // Match Safari and Mozilla on Windows.
-  return "Win32";
 #else  // Unix-like systems
   struct utsname osname;
   DEFINE_THREAD_SAFE_STATIC_LOCAL(ThreadSpecific<String>, platform_name, ());

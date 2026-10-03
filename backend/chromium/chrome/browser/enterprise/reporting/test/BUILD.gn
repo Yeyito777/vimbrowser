@@ -27,11 +27,6 @@ static_library("test_support") {
 
   if (is_mac || is_linux || is_win) {
     sources += [ "test_utils_desktop.cc" ]
-  } else if (is_android) {
-    sources += [ "test_utils_android.cc" ]
-    deps += [
-      "//components/safe_browsing/android:safe_browsing_api_handler",
-      "//components/safe_browsing/android:safe_browsing_api_handler_util",
-    ]
+  } else {
   }
 }

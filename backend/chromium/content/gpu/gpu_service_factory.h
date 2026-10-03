@@ -13,7 +13,6 @@
 #include "gpu/config/gpu_feature_info.h"
 #include "gpu/config/gpu_info.h"
 #include "gpu/config/gpu_preferences.h"
-#include "media/base/android_overlay_mojo_factory.h"
 #include "media/mojo/buildflags.h"
 #include "media/mojo/mojom/media_service.mojom.h"
 #include "services/service_manager/public/mojom/service.mojom.h"
@@ -32,8 +31,7 @@ class GpuServiceFactory {
       const gpu::GpuDriverBugWorkarounds& gpu_workarounds,
       const gpu::GpuFeatureInfo& gpu_feature_info,
       const gpu::GPUInfo& gpu_info,
-      base::WeakPtr<media::MediaGpuChannelManager> media_gpu_channel_manager,
-      media::AndroidOverlayMojoFactoryCB android_overlay_factory_cb);
+      base::WeakPtr<media::MediaGpuChannelManager> media_gpu_channel_manager);
 
   GpuServiceFactory(const GpuServiceFactory&) = delete;
   GpuServiceFactory& operator=(const GpuServiceFactory&) = delete;
@@ -51,7 +49,6 @@ class GpuServiceFactory {
   // implementation doesn't care.
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
   base::WeakPtr<media::MediaGpuChannelManager> media_gpu_channel_manager_;
-  media::AndroidOverlayMojoFactoryCB android_overlay_factory_cb_;
   gpu::GpuPreferences gpu_preferences_;
   gpu::GpuDriverBugWorkarounds gpu_workarounds_;
   gpu::GpuFeatureInfo gpu_feature_info_;

@@ -141,9 +141,7 @@ void SpeechRecognitionServiceImpl::BindAudioSourceFetcher(
 
 // On Chrome OS, CrosSpeechRecognitionRecognizerImpl will create its own
 // CrosSodaClient.
-#if !BUILDFLAG(IS_CHROMEOS)
   recognizer->CreateSodaClient(binary_path_);
-#endif
 
   const bool is_multi_channel_supported =
       SpeechRecognitionRecognizerImpl::IsMultichannelSupported();

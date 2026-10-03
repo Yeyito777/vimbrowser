@@ -22,9 +22,6 @@
 #include "ui/gfx/geometry/transform.h"
 #include "ui/gfx/geometry/transform_operations.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <float.h>
-#endif
 
 namespace gfx {
 
@@ -249,11 +246,7 @@ int Tween::IntValueBetween(double value, int start, int target) {
     delta--;
   else
     delta++;
-#if BUILDFLAG(IS_WIN)
-  return start + static_cast<int>(value * _nextafter(delta, 0));
-#else
   return start + static_cast<int>(value * nextafter(delta, 0));
-#endif
 }
 
 // static

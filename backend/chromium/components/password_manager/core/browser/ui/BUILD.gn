@@ -41,14 +41,14 @@ source_set("ui") {
     "saved_passwords_presenter.cc",
     "saved_passwords_presenter.h",
   ]
-  if (!is_android) {
-    sources += [
-      "bulk_leak_check_service_adapter.cc",
-      "bulk_leak_check_service_adapter.h",
-      "insecure_credentials_manager.cc",
-      "insecure_credentials_manager.h",
-    ]
-  }
+
+  sources += [
+    "bulk_leak_check_service_adapter.cc",
+    "bulk_leak_check_service_adapter.h",
+    "insecure_credentials_manager.cc",
+    "insecure_credentials_manager.h",
+  ]
+
   public_deps = [ ":credential_ui_entry" ]
 
   deps = [
@@ -70,15 +70,13 @@ source_set("ui") {
     "//url",
   ]
 
-  if (!is_android) {
-    sources += [
-      "reuse_check_utility.cc",
-      "reuse_check_utility.h",
-      "weak_check_utility.cc",
-      "weak_check_utility.h",
-    ]
-    deps += [ "//third_party/zxcvbn-cpp" ]
-  }
+  sources += [
+    "reuse_check_utility.cc",
+    "reuse_check_utility.h",
+    "weak_check_utility.cc",
+    "weak_check_utility.h",
+  ]
+  deps += [ "//third_party/zxcvbn-cpp" ]
 }
 
 source_set("unit_tests") {
@@ -92,14 +90,13 @@ source_set("unit_tests") {
     "post_save_compromised_helper_unittest.cc",
     "saved_passwords_presenter_unittest.cc",
   ]
-  if (!is_android) {
-    sources += [
-      "bulk_leak_check_service_adapter_unittest.cc",
-      "insecure_credentials_manager_unittest.cc",
-      "reuse_check_utility_unittest.cc",
-      "weak_check_utility_unittest.cc",
-    ]
-  }
+
+  sources += [
+    "bulk_leak_check_service_adapter_unittest.cc",
+    "insecure_credentials_manager_unittest.cc",
+    "reuse_check_utility_unittest.cc",
+    "weak_check_utility_unittest.cc",
+  ]
 
   deps = [
     ":ui",

@@ -25,10 +25,6 @@ source_set("infobars") {
   if (toolkit_views) {
     public_deps += [ "//chrome/browser/ui/views/infobars" ]
   }
-
-  if (is_android) {
-    public_deps += [ "//components/infobars/android" ]
-  }
 }
 
 source_set("test_support") {

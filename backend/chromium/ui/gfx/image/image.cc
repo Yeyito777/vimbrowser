@@ -22,10 +22,7 @@
 #include "ui/gfx/image/image_png_rep.h"
 #include "ui/gfx/image/image_skia.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "base/apple/foundation_util.h"
-#include "ui/gfx/image/image_skia_util_ios.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "base/apple/foundation_util.h"
 #include "base/mac/mac_util.h"
 #include "ui/gfx/image/image_skia_util_mac.h"
@@ -248,16 +245,7 @@ const ImageSkia* Image::ToImageSkia() const {
             internal::ImageSkiaFromPNG(png_rep->image_reps()));
         break;
       }
-#if BUILDFLAG(IS_IOS)
-      case kImageRepCocoaTouch: {
-        const internal::ImageRepCocoaTouch* native_rep =
-            GetRepresentation(kImageRepCocoaTouch, true)
-                ->AsImageRepCocoaTouch();
-        scoped_rep = std::make_unique<internal::ImageRepSkia>(
-            ImageSkiaFromUIImage(UIImageOfImageRepCocoaTouch(native_rep)));
-        break;
-      }
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
       case kImageRepCocoa: {
         const internal::ImageRepCocoa* native_rep =
             GetRepresentation(kImageRepCocoa, true)->AsImageRepCocoa();
@@ -275,35 +263,7 @@ const ImageSkia* Image::ToImageSkia() const {
   return rep->AsImageRepSkia()->image();
 }
 
-#if BUILDFLAG(IS_IOS)
-UIImage* Image::ToUIImage() const {
-  const internal::ImageRep* rep = GetRepresentation(kImageRepCocoaTouch, false);
-  if (!rep) {
-    std::unique_ptr<internal::ImageRep> scoped_rep;
-    switch (DefaultRepresentationType()) {
-      case kImageRepPNG: {
-        const internal::ImageRepPNG* png_rep =
-            GetRepresentation(kImageRepPNG, true)->AsImageRepPNG();
-        scoped_rep = internal::MakeImageRepCocoaTouch(
-            internal::UIImageFromPNG(png_rep->image_reps()));
-        break;
-      }
-      case kImageRepSkia: {
-        const internal::ImageRepSkia* skia_rep =
-            GetRepresentation(kImageRepSkia, true)->AsImageRepSkia();
-        UIImage* image = UIImageFromImageSkia(*skia_rep->image());
-        scoped_rep = internal::MakeImageRepCocoaTouch(image);
-        break;
-      }
-      default:
-        NOTREACHED();
-    }
-    CHECK(scoped_rep);
-    rep = AddRepresentation(std::move(scoped_rep));
-  }
-  return UIImageOfImageRepCocoaTouch(rep->AsImageRepCocoaTouch());
-}
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 NSImage* Image::ToNSImage() const {
   const internal::ImageRep* rep = GetRepresentation(kImageRepCocoa, false);
   if (!rep) {
@@ -352,15 +312,7 @@ scoped_refptr<base::RefCountedMemory> Image::As1xPNGBytes() const {
 
   scoped_refptr<base::RefCountedMemory> png_bytes;
   switch (DefaultRepresentationType()) {
-#if BUILDFLAG(IS_IOS)
-    case kImageRepCocoaTouch: {
-      const internal::ImageRepCocoaTouch* cocoa_touch_rep =
-          GetRepresentation(kImageRepCocoaTouch, true)->AsImageRepCocoaTouch();
-      png_bytes = internal::Get1xPNGBytesFromUIImage(
-          internal::UIImageOfImageRepCocoaTouch(cocoa_touch_rep));
-      break;
-    }
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
     case kImageRepCocoa: {
       const internal::ImageRepCocoa* cocoa_rep =
           GetRepresentation(kImageRepCocoa, true)->AsImageRepCocoa();

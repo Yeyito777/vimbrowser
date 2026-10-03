@@ -21,12 +21,9 @@
 #include "chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.h"
 #include "chrome/browser/ui/hats/hats_service.h"
 #include "chrome/browser/ui/page_action/page_action_icon_type.h"
-#include "chrome/browser/ui/translate/partial_translate_bubble_model.h"
 #include "chrome/browser/ui/webui/tab_search/tab_search.mojom.h"
 #include "chrome/common/buildflags.h"
 #include "components/content_settings/core/common/content_settings_types.h"
-#include "components/translate/core/browser/translate_step.h"
-#include "components/translate/core/common/translate_errors.h"
 #include "ui/base/base_window.h"
 #include "ui/base/interaction/element_identifier.h"
 #include "ui/base/mojom/window_show_state.mojom-forward.h"
@@ -34,9 +31,6 @@
 #include "ui/gfx/native_ui_types.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#error This file should only be included on desktop.
-#endif
 
 class Browser;
 class BrowserView;
@@ -89,19 +83,6 @@ class ThemeProvider;
 namespace web_modal {
 class WebContentsModalDialogHost;
 }
-
-enum class ShowTranslateBubbleResult {
-  // The Full Page Translate bubble was successfully shown.
-  kSuccess,
-
-  // The various reasons for which the Full Page Translate bubble could fail to
-  // be shown.
-  kBrowserWindowNotValid,
-  kBrowserWindowMinimized,
-  kBrowserWindowNotActive,
-  kWebContentsNotActive,
-  kEditableFieldIsActive,
-};
 
 enum class BrowserThemeChangeType {
   // User changes the browser theme.
@@ -450,32 +431,10 @@ class BrowserWindow : public ui::BaseWindow {
   ShowSendTabToSelfPromoBubble(content::WebContents* contents,
                                bool show_signin_button) = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Toggles the multitask menu on the browser frame size button.
-  virtual void ToggleMultitaskMenu() = 0;
-#else
   // Shows the Sharing Hub bubble. This must only be called as a direct result
   // of user action.
   virtual sharing_hub::SharingHubBubbleView* ShowSharingHubBubble(
       share::ShareAttempt attempt) = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
-  // Shows the Full Page Translate bubble.
-  //
-  // |is_user_gesture| is true when the bubble is shown on the user's deliberate
-  // action.
-  virtual ShowTranslateBubbleResult ShowTranslateBubble(
-      content::WebContents* contents,
-      translate::TranslateStep step,
-      const std::string& source_language,
-      const std::string& target_language,
-      translate::TranslateErrors error_type,
-      bool is_user_gesture) = 0;
-
-  // Shows the Partial Translate bubble.
-  virtual void StartPartialTranslate(const std::string& source_language,
-                                     const std::string& target_language,
-                                     const std::u16string& text_selection) = 0;
 
   // Returns the DownloadBubbleUIController. Returns null if Download Bubble
   // UI is not enabled, or if the download toolbar button does not exist.

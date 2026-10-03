@@ -2,12 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//components/gcm_driver/config.gni")
-
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 static_library("instance_id") {
   sources = [
     "instance_id.cc",
@@ -20,26 +14,16 @@ static_library("instance_id") {
 
   deps = [
     "//base",
-    "//components/gcm_driver:gcm_buildflags",
     "//components/keyed_service/core",
     "//components/prefs",
     "//crypto",
     "//services/network/public/mojom",
   ]
 
-  if (use_gcm_from_platform) {
-    assert(is_android)
-    sources += [
-      "instance_id_android.cc",
-      "instance_id_android.h",
-    ]
-    deps += [ "android:jni_headers" ]
-  } else {
-    sources += [
-      "instance_id_impl.cc",
-      "instance_id_impl.h",
-    ]
-  }
+  sources += [
+    "instance_id_impl.cc",
+    "instance_id_impl.h",
+  ]
 }
 
 static_library("test_support") {
@@ -56,14 +40,6 @@ static_library("test_support") {
     "//net",
     "//testing/gtest",
   ]
-
-  if (is_android) {
-    sources += [
-      "scoped_use_fake_instance_id_android.cc",
-      "scoped_use_fake_instance_id_android.h",
-    ]
-    deps += [ "android:test_support_jni_headers" ]
-  }
 }
 
 source_set("unit_tests") {
@@ -74,15 +50,8 @@ source_set("unit_tests") {
     ":instance_id",
     ":test_support",
     "//base",
-    "//components/gcm_driver:gcm_buildflags",
     "//google_apis/gcm",
     "//net:test_support",
     "//testing/gtest",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("instance_id_java_enums_srcjar") {
-    sources = [ "instance_id.h" ]
-  }
 }

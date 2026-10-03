@@ -185,18 +185,6 @@ ui::mojom::WindowShowState DetermineWindowShowState(
     return ui::mojom::WindowShowState::kFullscreen;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // In ChromeOS, LaunchType::kFullscreen launches in a maximized app window and
-  // LaunchType::kWindow launches in a default app window.
-  extensions::LaunchType launch_type =
-      extensions::GetLaunchType(ExtensionPrefs::Get(profile), extension);
-  if (launch_type == extensions::LaunchType::kFullscreen) {
-    return ui::mojom::WindowShowState::kMaximized;
-  }
-  if (launch_type == extensions::LaunchType::kWindow) {
-    return ui::mojom::WindowShowState::kDefault;
-  }
-#endif
 
   return ui::mojom::WindowShowState::kDefault;
 }
@@ -278,11 +266,6 @@ WebContents* OpenApplicationTab(Profile* profile,
     contents = params.navigated_or_inserted_contents;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // In ChromeOS, extensions::LaunchType::kFullscreen launches in the
-  // OpenApplicationWindow function i.e. it should not reach here.
-  DCHECK(launch_type != extensions::LaunchType::kFullscreen);
-#else
   // TODO(skerner):  If we are already in full screen mode, and the user set the
   // app to open as a regular or pinned tab, what should happen? Today we open
   // the tab, but stay in full screen mode.  Should we leave full screen mode in
@@ -291,7 +274,6 @@ WebContents* OpenApplicationTab(Profile* profile,
       !browser->window()->IsFullscreen()) {
     chrome::ToggleFullscreenMode(browser, /*user_initiated=*/false);
   }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   return contents;
 }
 

@@ -24,48 +24,6 @@ static_library("home_modules") {
     "send_tab_notification_promo.h",
   ]
 
-  if (is_ios) {
-    sources += [
-      "address_bar_position_ephemeral_module.cc",
-      "address_bar_position_ephemeral_module.h",
-      "app_bundle_promo_ephemeral_module.cc",
-      "app_bundle_promo_ephemeral_module.h",
-      "autofill_passwords_ephemeral_module.cc",
-      "autofill_passwords_ephemeral_module.h",
-      "default_browser_promo_ephemeral_module.cc",
-      "default_browser_promo_ephemeral_module.h",
-      "enhanced_safe_browsing_ephemeral_module.cc",
-      "enhanced_safe_browsing_ephemeral_module.h",
-      "home_modules_card_registry_ios.cc",
-      "home_modules_card_registry_ios.h",
-      "lens_ephemeral_module.cc",
-      "lens_ephemeral_module.h",
-      "save_passwords_ephemeral_module.cc",
-      "save_passwords_ephemeral_module.h",
-    ]
-  }
-
-  if (is_android) {
-    sources += [
-      "auxiliary_search_promo.cc",
-      "auxiliary_search_promo.h",
-      "default_browser_promo.cc",
-      "default_browser_promo.h",
-      "history_sync_promo.cc",
-      "history_sync_promo.h",
-      "home_modules_card_registry_android.cc",
-      "home_modules_card_registry_android.h",
-      "quick_delete_promo.cc",
-      "quick_delete_promo.h",
-      "tab_group_promo.cc",
-      "tab_group_promo.h",
-      "tab_group_sync_promo.cc",
-      "tab_group_sync_promo.h",
-      "tips_notifications_promo.cc",
-      "tips_notifications_promo.h",
-    ]
-  }
-
   deps = [
     ":constants",
     "//base",
@@ -105,32 +63,6 @@ source_set("unit_tests") {
     "test_utils.cc",
     "test_utils.h",
   ]
-
-  if (is_ios) {
-    sources += [
-      "address_bar_position_ephemeral_module_unittest.cc",
-      "app_bundle_promo_ephemeral_module_unittest.cc",
-      "autofill_passwords_ephemeral_module_unittest.cc",
-      "default_browser_promo_ephemeral_module_unittest.cc",
-      "enhanced_safe_browsing_ephemeral_module_unittest.cc",
-      "home_modules_card_registry_ios_unittest.cc",
-      "lens_ephemeral_module_unittest.cc",
-      "save_passwords_ephemeral_module_unittest.cc",
-    ]
-  }
-
-  if (is_android) {
-    sources += [
-      "auxiliary_search_promo_unittest.cc",
-      "default_browser_promo_unittest.cc",
-      "history_sync_promo_unittest.cc",
-      "home_modules_card_registry_android_unittest.cc",
-      "quick_delete_promo_unittest.cc",
-      "tab_group_promo_unittest.cc",
-      "tab_group_sync_promo_unittest.cc",
-      "tips_notifications_promo_unittest.cc",
-    ]
-  }
 
   deps = [
     ":constants",

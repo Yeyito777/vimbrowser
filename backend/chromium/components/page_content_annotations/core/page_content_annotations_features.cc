@@ -26,11 +26,7 @@ constexpr auto enabled_by_default_desktop_only =
 #endif
 
 constexpr auto enabled_by_default_non_ios =
-#if BUILDFLAG(IS_IOS)
-    base::FEATURE_DISABLED_BY_DEFAULT;
-#else
     base::FEATURE_ENABLED_BY_DEFAULT;
-#endif
 
 constexpr auto enabled_by_default_non_arm32 =
 #if defined(ARCH_CPU_ARMEL)
@@ -40,11 +36,7 @@ constexpr auto enabled_by_default_non_arm32 =
 #endif
 
 constexpr auto enabled_by_default_ios_only =
-#if BUILDFLAG(IS_IOS)
-    base::FEATURE_ENABLED_BY_DEFAULT;
-#else
     base::FEATURE_DISABLED_BY_DEFAULT;
-#endif
 
 const base::FeatureParam<base::TimeDelta> kAnnotatedPageContentCaptureDelay{
     &kAnnotatedPageContentExtraction, "capture_delay", base::Seconds(5)};

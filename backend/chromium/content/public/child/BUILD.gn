@@ -8,9 +8,8 @@ group("child") {
     public_deps = [ "//content" ]
   } else {
     public_deps = [ ":child_sources" ]
-    if (!is_android) {
-      public_deps += [ "//content/gpu" ]
-    }
+
+    public_deps += [ "//content/gpu" ]
   }
 }
 
@@ -22,10 +21,6 @@ source_set("child_sources") {
     "child_thread.h",
     "image_decoder_utils.h",
   ]
-
-  if (is_win) {
-    sources += [ "dwrite_font_proxy_init_win.h" ]
-  }
 
   if (is_win || is_linux) {
     sources += [ "font_integration_init.h" ]

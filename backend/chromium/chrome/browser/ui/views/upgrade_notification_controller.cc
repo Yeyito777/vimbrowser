@@ -10,11 +10,6 @@
 #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
 #include "chrome/browser/ui/dialogs/outdated_upgrade_bubble.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/ui/browser_element_identifiers.h"
-#include "chrome/browser/ui/views/interaction/browser_elements_views.h"
-#include "ui/views/bubble/bubble_dialog_delegate_view.h"
-#endif
 
 UpgradeNotificationController::~UpgradeNotificationController() = default;
 
@@ -29,27 +24,8 @@ void UpgradeNotificationController::OnOutdatedInstallNoAutoUpdate() {
 }
 
 void UpgradeNotificationController::OnCriticalUpgradeInstalled() {
-#if BUILDFLAG(IS_WIN)
-  auto* const anchor_view = BrowserElementsViews::From(&*browser_)
-                                ->GetView(kToolbarAppMenuButtonElementId);
-  if (!anchor_view) {
-    return;
-  }
-
-  views::BubbleDialogDelegateView::CreateBubble(
-      std::make_unique<CriticalNotificationBubbleView>(anchor_view))
-      ->Show();
-#endif
 }
 
-#if BUILDFLAG(IS_WIN)
-std::unique_ptr<CriticalNotificationBubbleView>
-UpgradeNotificationController::GetCriticalNotificationBubbleViewForTest() {
-  views::View* const anchor_view = BrowserElementsViews::From(&*browser_)
-                                       ->GetView(kToolbarActionViewElementId);
-  return std::make_unique<CriticalNotificationBubbleView>(anchor_view);
-}
-#endif
 
 UpgradeNotificationController::UpgradeNotificationController(
     BrowserWindowInterface* browser)

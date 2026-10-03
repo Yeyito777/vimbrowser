@@ -597,72 +597,7 @@
   E_CPONLY(kColorWebNativeControlSliderPressed) \
   E_CPONLY(kColorWindowBackground)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#define CHROMEOS_ASH_COLOR_IDS \
-  /* Colors for illustrations */ \
-  E_CPONLY(kColorNativeColor1) \
-  E_CPONLY(kColorNativeColor1Shade1) \
-  E_CPONLY(kColorNativeColor1Shade2) \
-  E_CPONLY(kColorNativeColor2) \
-  E_CPONLY(kColorNativeColor3) \
-  E_CPONLY(kColorNativeColor4) \
-  E_CPONLY(kColorNativeColor5) \
-  E_CPONLY(kColorNativeColor6) \
-  E_CPONLY(kColorNativeBaseColor) \
-  E_CPONLY(kColorNativeSecondaryColor) \
-  E_CPONLY(kColorNativeOnPrimaryContainerColor) \
-  E_CPONLY(kColorNativeAnalogColor) \
-  E_CPONLY(kColorNativeMutedColor) \
-  E_CPONLY(kColorNativeComplementColor) \
-  E_CPONLY(kColorNativeOnGradientColor)
-#define PLATFORM_SPECIFIC_COLOR_IDS \
-  CHROMEOS_ASH_COLOR_IDS \
-  /* NOTE: Nearly all of the following CrOS color ids will need to be re- */ \
-  /* evaluated once CrOS fully supports the color pipeline. */ \
-  E_CPONLY(kColorAshActionLabelFocusRingEdit) \
-  E_CPONLY(kColorAshActionLabelFocusRingError) \
-  E_CPONLY(kColorAshActionLabelFocusRingHover) \
-  \
-  /* TODO(skau): Remove Compat value when dark/light mode launches. */ \
-  E_CPONLY(kColorAshAppListFocusRingCompat) \
-  E_CPONLY(kColorAshAppListFocusRingNoKeyboard) \
-  E_CPONLY(kColorAshAppListSeparator) \
-  E_CPONLY(kColorAshAppListSeparatorLight) \
-  E_CPONLY(kColorAshArcInputMenuSeparator) \
-  E_CPONLY(kColorAshFocusRing) \
-  /* TODO(kylixrd): Determine whether this special color should follow */ \
-  /* light/dark mode. Remove if it should equal kColorAshFocusRing. */ \
-  E_CPONLY(kColorAshInputOverlayFocusRing) \
-  E_CPONLY(kColorAshIconInOobe) \
-  \
-  /* TODO(crbug/1319917): Remove these when dark light mode is launched. */ \
-  E_CPONLY(kColorAshLightFocusRing) \
-  \
-  E_CPONLY(kColorAshOnboardingFocusRing) \
-  \
-  E_CPONLY(kColorAshPrivacyIndicatorsBackground) \
-  \
-  E_CPONLY(kColorAshSystemUIMenuBackground) \
-  E_CPONLY(kColorAshSystemUIMenuIcon) \
-  E_CPONLY(kColorAshSystemUIMenuItemBackgroundSelected) \
-  E_CPONLY(kColorAshSystemUIMenuSeparator) \
-  \
-  /* TODO(b/291622042): Delete these colors when Jelly is launched */ \
-  E_CPONLY(kColorHighlightBorderBorder1) \
-  E_CPONLY(kColorHighlightBorderBorder2) \
-  E_CPONLY(kColorHighlightBorderBorder3) \
-  E_CPONLY(kColorHighlightBorderHighlight1) \
-  E_CPONLY(kColorHighlightBorderHighlight2) \
-  E_CPONLY(kColorHighlightBorderHighlight3) \
-  \
-  E_CPONLY(kColorCrosSystemHighlight) \
-  E_CPONLY(kColorCrosSystemHighlightBorder) \
-  E_CPONLY(kColorCrosSystemHighlightBorder1) \
-  \
-  E_CPONLY(kColorCrosSysPositive) \
-  E_CPONLY(kColorCrosSysComplementVariant) \
-  E_CPONLY(kColorCrosSysInputFieldOnBase)
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 #define PLATFORM_SPECIFIC_COLOR_IDS \
   E_CPONLY(kColorNativeBoxFrameBorder)\
   E_CPONLY(kColorNativeHeaderButtonBorderActive) \
@@ -674,20 +609,6 @@
   E_CPONLY(kColorNativeTabForegroundInactiveFrameInactive) \
   E_CPONLY(kColorNativeTextfieldBorderUnfocused)\
   E_CPONLY(kColorNativeToolbarBackground)
-#elif BUILDFLAG(IS_WIN)
-#define PLATFORM_SPECIFIC_COLOR_IDS \
-  E_CPONLY(kColorNativeBtnFace) \
-  E_CPONLY(kColorNativeBtnHighlight) \
-  E_CPONLY(kColorNativeBtnShadow) \
-  E_CPONLY(kColorNativeBtnText) \
-  E_CPONLY(kColorNativeGrayText) \
-  E_CPONLY(kColorNativeHighlight) \
-  E_CPONLY(kColorNativeHighlightText) \
-  E_CPONLY(kColorNativeHotlight) \
-  E_CPONLY(kColorNativeMenuHilight) \
-  E_CPONLY(kColorNativeScrollbar) \
-  E_CPONLY(kColorNativeWindow) \
-  E_CPONLY(kColorNativeWindowText)
 #else
 #define PLATFORM_SPECIFIC_COLOR_IDS
 #endif

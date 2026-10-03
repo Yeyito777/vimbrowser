@@ -118,9 +118,6 @@ struct WebPrintParams;
 struct WebPrintPresetOptions;
 struct WebScriptSource;
 
-#if BUILDFLAG(IS_WIN)
-struct WebFontFamilyNames;
-#endif
 
 namespace mojom {
 enum class TreeScopeType;
@@ -920,10 +917,6 @@ class BLINK_EXPORT WebLocalFrame : public WebFrame {
 
   // Fonts --------------------------------------------------------------------
 
-#if BUILDFLAG(IS_WIN)
-  // Returns the font family names currently used.
-  virtual WebFontFamilyNames GetWebFontFamilyNames() const = 0;
-#endif
 
   // Testing ------------------------------------------------------------------
 

@@ -22,23 +22,7 @@ namespace {
 // Returns string that represents system in UserAgent.
 std::string GetSystemString() {
   std::string system;
-#if BUILDFLAG(IS_CHROMEOS)
-  system = "CROS ";
-#elif BUILDFLAG(IS_ANDROID)
-  if (ui::GetDeviceFormFactor() == ui::DEVICE_FORM_FACTOR_TABLET) {
-    system = "ANDROID-TABLET ";
-  } else {
-    system = "ANDROID-PHONE ";
-  }
-#elif BUILDFLAG(IS_IOS)
-  if (ui::GetDeviceFormFactor() == ui::DEVICE_FORM_FACTOR_TABLET) {
-    system = "IOS-TABLET ";
-  } else {
-    system = "IOS-PHONE ";
-  }
-#elif BUILDFLAG(IS_WIN)
-  system = "WIN ";
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   system = "LINUX ";
 #elif BUILDFLAG(IS_FREEBSD)
   system = "FREEBSD ";

@@ -17,8 +17,6 @@ source_set("image_writer") {
       "disk_unmounter_mac.h",
       "image_writer_mac.cc",
     ]
-  } else if (is_win) {
-    sources += [ "image_writer_win.cc" ]
   } else {
     sources += [ "image_writer_stub.cc" ]
   }

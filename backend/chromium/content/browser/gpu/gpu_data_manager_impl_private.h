@@ -72,20 +72,6 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
   void UpdateGpuInfo(
       const gpu::GPUInfo& gpu_info,
       const std::optional<gpu::GPUInfo>& optional_gpu_info_for_hardware_gpu);
-#if BUILDFLAG(IS_WIN)
-  void UpdateDirectXInfo(uint32_t d3d12_feature_level,
-                         uint32_t directml_feature_level);
-  void UpdateVulkanInfo(uint32_t vulkan_version);
-  void UpdateDevicePerfInfo(const gpu::DevicePerfInfo& device_perf_info);
-
-  void UpdateOverlayInfo(const gpu::OverlayInfo& overlay_info);
-  void UpdateDXGIInfo(gfx::mojom::DXGIInfoPtr dxgi_info);
-  void UpdateDirectXRequestStatus(bool request_continues);
-  void UpdateVulkanRequestStatus(bool request_continues);
-  bool DirectXRequested() const;
-  bool VulkanRequested() const;
-  void TerminateInfoCollectionGpuProcess();
-#endif
   void PostCreateThreads();
   void UpdateDawnInfo(const std::vector<std::string>& dawn_info_list);
 
@@ -251,14 +237,6 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
   gpu::GpuFeatureInfo gpu_feature_info_;
   FixedGpuInfo fixed_gpu_info_;
   gpu::GPUInfo gpu_info_;
-#if BUILDFLAG(IS_WIN)
-  bool gpu_info_dx_valid_ = false;
-  bool gpu_info_dx_requested_ = false;
-  bool gpu_info_dx_request_failed_ = false;
-  bool gpu_info_vulkan_valid_ = false;
-  bool gpu_info_vulkan_requested_ = false;
-  bool gpu_info_vulkan_request_failed_ = false;
-#endif
   // The Dawn info queried from the GPU process.
   std::vector<std::string> dawn_info_list_;
 

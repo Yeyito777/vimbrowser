@@ -55,12 +55,6 @@ struct DecodedImage {
 // the same decoded result.
 DecodedImage ScopedVAImageToDecodedImage(const ScopedVAImage* scoped_va_image);
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::unique_ptr<DecodedImage> NativePixmapToDecodedImage(
-    gfx::NativePixmapHandle& handle,
-    const gfx::Size& size,
-    const viz::SharedImageFormat& format);
-#endif
 
 // Compares the result of sw decoding |reference_image| with |hw_decoded_image|
 // using SSIM. Returns true if all conversions work and SSIM is at least

@@ -19,9 +19,6 @@
 #include "build/build_config.h"
 #include "components/storage_monitor/storage_info.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "services/device/public/mojom/mtp_manager.mojom-forward.h"
-#endif
 
 class MediaFileSystemRegistryTest;
 class MediaGalleriesPlatformAppBrowserTest;
@@ -106,9 +103,6 @@ class COMPONENT_EXPORT(STORAGE_MONITOR) StorageMonitor {
       const base::FilePath& path,
       StorageInfo* device_info) const = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  virtual device::mojom::MtpManager* media_transfer_protocol_manager() = 0;
-#endif
 
   // Returns information for all known storages on the system,
   // including fixed and removable storages.

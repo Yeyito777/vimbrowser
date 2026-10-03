@@ -124,10 +124,8 @@ void ProfileReportGenerator::GetExtensionPolicyInfo() {
 }
 
 void ProfileReportGenerator::GetPolicyFetchTimestampInfo() {
-#if !BUILDFLAG(IS_CHROMEOS)
   AppendCloudPolicyFetchTimestamp(
       report_.get(), delegate_->GetCloudPolicyManager(is_machine_scope_));
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }
 
 }  // namespace enterprise_reporting

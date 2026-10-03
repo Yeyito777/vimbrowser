@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CONTENT_PUBLIC_BROWSER_CONTENT_BROWSER_CLIENT_H_
+#if !defined(CONTENT_PUBLIC_BROWSER_CONTENT_BROWSER_CLIENT_H_)
 #define CONTENT_PUBLIC_BROWSER_CONTENT_BROWSER_CLIENT_H_
 
 #include <stddef.h>
@@ -92,7 +92,6 @@
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_error.mojom-forward.h"
 #include "third_party/blink/public/mojom/manifest/manifest.mojom-forward.h"
 #include "third_party/blink/public/mojom/navigation/navigation_params.mojom-forward.h"
-#include "third_party/blink/public/mojom/on_device_translation/translation_manager.mojom-forward.h"
 #include "third_party/blink/public/mojom/origin_trials/origin_trials_settings.mojom-forward.h"
 #include "third_party/blink/public/mojom/payments/secure_payment_confirmation_service.mojom-forward.h"
 #include "third_party/blink/public/mojom/worker/shared_worker_info.mojom.h"
@@ -108,9 +107,7 @@
 #include "content/public/browser/posix_file_descriptor_info.h"
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "third_party/blink/public/mojom/installedapp/related_application.mojom-forward.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 namespace net {
 class SiteForCookies;
@@ -287,16 +284,8 @@ struct OpenURLParams;
 struct Referrer;
 struct ServiceWorkerVersionBaseInfo;
 
-#if BUILDFLAG(IS_ANDROID)
-class TtsEnvironmentAndroid;
-#else
 class AuthenticatorRequestClientDelegate;
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-class SmartCardDelegate;
-class TtsControllerDelegate;
-#endif
 
 // Embedder API (or SPI) for participating in browser logic, to be implemented
 // by the client of the content browser. See ChromeContentBrowserClient for the
@@ -803,11 +792,9 @@ class CONTENT_EXPORT ContentBrowserClient {
       BrowserContext* browser_context,
       const GURL& url);
 
-#if !BUILDFLAG(IS_ANDROID)
   // Returns true if the given |url| is for the initial WebUI scheme used
   // by features like the WebUI reload button.
   virtual bool IsInitialWebUIURL(const GURL& url);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Returns true if the given `url` hosts a Top Chrome WebUI.
   // This allows the embedder to identify WebUIs that are part of the browser
@@ -1370,10 +1357,6 @@ class CONTENT_EXPORT ContentBrowserClient {
   virtual device::GeolocationSystemPermissionManager*
   GetGeolocationSystemPermissionManager();
 
-#if BUILDFLAG(IS_ANDROID)
-  // Allows an embedder to decide whether to use the GmsCoreLocationProvider.
-  virtual bool ShouldUseGmsCoreGeolocationProvider();
-#endif
 
   // Allows the embedder to provide a storage partition configuration for a
   // site. A storage partition configuration includes a domain of the embedder's
@@ -1492,10 +1475,6 @@ class CONTENT_EXPORT ContentBrowserClient {
   GetOnDeviceSpeechRecognitionAvailabilityStatus(BrowserContext* context,
                                                  const std::string& language);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Allows the embedder to return a delegate for the TtsController.
-  virtual TtsControllerDelegate* GetTtsControllerDelegate();
-#endif
 
   // Applies policy-dictated changes to the manifest that was loaded from the
   // provided render_frame_host.
@@ -1505,11 +1484,9 @@ class CONTENT_EXPORT ContentBrowserClient {
   // Allows the embedder to return a TTS platform implementation.
   virtual TtsPlatform* GetTtsPlatform();
 
-#if !BUILDFLAG(IS_ANDROID)
   // Allows the embedder to return a DirectSocketsDelegate
   // implementation.
   virtual DirectSocketsDelegate* GetDirectSocketsDelegate();
-#endif
 
   // Called by WebContents to override the web preferences that are used by
   // the renderer. The content layer will add its own settings, and then it's up
@@ -1834,74 +1811,6 @@ class CONTENT_EXPORT ContentBrowserClient {
       content::PosixFileDescriptorInfo* mappings) {}
 #endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC) || BUILDFLAG(IS_FUCHSIA)
 
-#if BUILDFLAG(IS_WIN)
-  // Defines flags that can be passed to PreSpawnChild.
-  enum ChildSpawnFlags {
-    kChildSpawnFlagNone = 0,
-  };
-
-  // Defines flags that can be passed to GetAppContainerSidForSandboxType.
-  enum AppContainerFlags {
-    kAppContainerFlagNone = 0,
-    kAppContainerFlagDisableAppContainer = 1 << 0,
-  };
-
-  // This may be called on the PROCESS_LAUNCHER thread before the child process
-  // configuration is set. It gives the embedder a chance to modify the sandbox
-  // configuration. Returns false if configuration is invalid and the child
-  // should not spawn. Only use this for embedder-specific policies, since the
-  // bulk of sandbox policies should go inside the relevant
-  // SandboxedProcessLauncherDelegate.
-  virtual bool PreSpawnChild(sandbox::TargetConfig* config,
-                             sandbox::mojom::Sandbox sandbox_type,
-                             ChildSpawnFlags flags);
-
-  // This may be called on the PROCESS_LAUNCHER thread before the child process
-  // is launched. It gives the embedder a chance to indicate that a process will
-  // not be compatible with Hardware-enforced Stack Protection (CET).
-  // |utility_sub_type| should match that provided on the command line to the
-  // child process. Only use this for embedder-specific processes, and prefer to
-  // key off Sandbox in the relevant SandboxedProcessLauncherDelegate.
-  virtual bool IsUtilityCetCompatible(const std::string& utility_sub_type);
-
-  // Returns the AppContainer SID for the specified sandboxed process type, or
-  // empty string if this sandboxed process type does not support living inside
-  // an AppContainer. Called on PROCESS_LAUNCHER thread.
-  // `flags` can signal to the embedder any special behavior that should happen
-  // for the `sandbox_type`.
-  virtual std::wstring GetAppContainerSidForSandboxType(
-      sandbox::mojom::Sandbox sandbox_type,
-      AppContainerFlags flags);
-
-  // Returns true if App Container should be disabled for the specified
-  // `sandbox_type`. This is called on the UI thread.
-  virtual bool IsAppContainerDisabled(sandbox::mojom::Sandbox sandbox_type);
-
-  // Returns the LPAC capability name to use for file data that the network
-  // service needs to access to when running within LPAC sandbox. Embedders
-  // should override this with their own unique name to ensure security of the
-  // network service data.
-  virtual std::wstring GetLPACCapabilityNameForNetworkService();
-
-  // Performs a fast and orderly shutdown of the browser. If present,
-  // `control_type` is a CTRL_* value from a Windows console control handler;
-  // see https://learn.microsoft.com/en-us/windows/console/handlerroutine.
-  virtual void SessionEnding(std::optional<DWORD> control_type) {}
-
-  // Returns true if the audio process should run with high priority. false
-  // otherwise.
-  virtual bool ShouldEnableAudioProcessHighPriority();
-
-  // Returns true if the renderer process should run with the
-  // RestrictCoreSharing mitigation policy. This policy ensures that no other
-  // processes are scheduled on the same CPU core as the renderer process.
-  virtual bool ShouldRestrictCoreSharingOnRenderer();
-
-  // Obtains the name of the security attribute in the browser process token, to
-  // be used in child process tokens, or nullopt if there is no security
-  // attribute.
-  virtual std::optional<std::wstring> GetWindowsSecurityAttributeName() const;
-#endif
 
   // Binds a new media remoter service to |receiver|, if supported by the
   // embedder, for the |source| that lives in the render frame represented
@@ -2340,27 +2249,6 @@ class CONTENT_EXPORT ContentBrowserClient {
   // convention is to put new constants under a subdict at the key "clientInfo".
   virtual base::DictValue GetNetLogConstants();
 
-#if BUILDFLAG(IS_ANDROID)
-  // Only used by Android WebView.
-  // Returns:
-  //   true  - The check was successfully performed without throwing a
-  //           Java exception. |*ignore_navigation| is set to the
-  //           result of the check in this case.
-  //   false - A Java exception was thrown. It is no longer safe to
-  //           make JNI calls, because of the uncleared exception.
-  //           Callers should return to the message loop as soon as
-  //           possible, so that the exception can be rethrown.
-  virtual bool ShouldOverrideUrlLoading(FrameTreeNodeId frame_tree_node_id,
-                                        bool browser_initiated,
-                                        const GURL& gurl,
-                                        const std::string& request_method,
-                                        bool has_user_gesture,
-                                        bool is_redirect,
-                                        bool is_outermost_main_frame,
-                                        bool is_prerendering,
-                                        ui::PageTransition transition,
-                                        bool* ignore_navigation);
-#endif
 
   // Returns true if navigation can synchronously continue if the frame being
   // navigated (and all child frames) do not have beforeunload handlers.
@@ -2441,10 +2329,6 @@ class CONTENT_EXPORT ContentBrowserClient {
   // API.
   virtual FontAccessDelegate* GetFontAccessDelegate();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Allows the embedder to provide an implementation of the Web Smart Card API.
-  virtual SmartCardDelegate* GetSmartCardDelegate();
-#endif
 
   // Attempt to open the Payment Handler window inside its corresponding
   // PaymentRequest UI surface. Returns true if the ContentBrowserClient
@@ -2471,7 +2355,6 @@ class CONTENT_EXPORT ContentBrowserClient {
   // Authentication API.
   virtual WebAuthenticationDelegate* GetWebAuthenticationDelegate();
 
-#if !BUILDFLAG(IS_ANDROID)
   // Returns an AuthenticatorRequestClientDelegate subclass instance to provide
   // embedder-specific configuration for a single Web Authentication API request
   // being serviced in a given RenderFrame. The instance is guaranteed to be
@@ -2480,7 +2363,6 @@ class CONTENT_EXPORT ContentBrowserClient {
   // now.
   virtual std::unique_ptr<AuthenticatorRequestClientDelegate>
   GetWebAuthenticationRequestDelegate(RenderFrameHost* render_frame_host);
-#endif
 
   // Get platform ClientCertStore. May return nullptr. Called on the UI thread.
   virtual std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
@@ -2701,27 +2583,6 @@ class CONTENT_EXPORT ContentBrowserClient {
                                            BrowserContext* context,
                                            RenderFrameHost* render_frame_host);
 
-#if BUILDFLAG(IS_ANDROID)
-  // Defines the heuristics we can use to enable wide color gamut (WCG).
-  enum class WideColorGamutHeuristic {
-    kUseDisplay,  // Use WCG if display supports it.
-    kUseWindow,   // Use WCG if window is WCG.
-    kNone,        // Never use WCG.
-  };
-
-  // Returns kNone by default.
-  virtual WideColorGamutHeuristic GetWideColorGamutHeuristic();
-
-  // Creates the TtsEnvironmentAndroid. A return value of null results in using
-  // a default implementation.
-  virtual std::unique_ptr<TtsEnvironmentAndroid> CreateTtsEnvironmentAndroid();
-
-  // If enabled, DialogOverlays will observe the container view for location
-  // changes and reposition themselves automatically. Note that this comes with
-  // some overhead and should only be enabled if the embedder itself can be
-  // moved. Defaults to false.
-  virtual bool ShouldObserveContainerViewLocationForDialogOverlays();
-#endif
 
   // Obtains the list of MIME types that are for plugins with external handlers.
   virtual base::flat_set<std::string> GetPluginMimeTypesWithExternalHandlers(
@@ -3273,16 +3134,6 @@ class CONTENT_EXPORT ContentBrowserClient {
       RenderFrameHost* rfh,
       mojo::PendingReceiver<blink::mojom::AIManager> receiver);
 
-  // Binds the TranslationManager for the given `process_host`,
-  // `browser_context`, `context_user_data` and `origin` to `receiver`. The
-  // created TranslationManager will be owned by the `context_user_data`.
-  virtual void BindTranslationManager(
-      RenderProcessHost* process_host,
-      BrowserContext* browser_context,
-      base::SupportsUserData* context_user_data,
-      const url::Origin& origin,
-      mojo::PendingReceiver<blink::mojom::TranslationManager> receiver);
-
   // Binds to a singleton new instance of
   // `language_detection::ContentLanguageDetectionDriver` which receives the
   // model from a local file specified by a flag param..
@@ -3292,7 +3143,6 @@ class CONTENT_EXPORT ContentBrowserClient {
       mojo::PendingReceiver<
           language_detection::mojom::ContentLanguageDetectionDriver> receiver);
 
-#if !BUILDFLAG(IS_ANDROID)
   // Given the last committed URL of the RenderFrameHost, |frame_url|, and the
   // |manifest_id| of an app, the embedder should call |callback| with the
   // first matching web app ensuring:
@@ -3308,7 +3158,6 @@ class CONTENT_EXPORT ContentBrowserClient {
       content::BrowserContext* browser_context,
       base::OnceCallback<void(std::optional<blink::mojom::RelatedApplication>)>
           callback);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Indicates whether this client allows paint holding in cross-origin
   // navigations even if there was no user activation.
@@ -3380,12 +3229,10 @@ class CONTENT_EXPORT ContentBrowserClient {
   // allows a prerender fall back to prefetch if available.
   virtual bool UsePrefetchPrerenderIntegration();
 
-#if !BUILDFLAG(IS_ANDROID)
   // Gives the content embedder a chance to disallow a credential request,
   // for example if there's an active actor task in the tab associated with
   // `web_contents`.
   virtual bool ShouldDisallowCredentialRequest(WebContents* web_contents);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Whether to animate back-forward transition gestures with a screenshot of
   // the destination.

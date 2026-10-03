@@ -25,26 +25,12 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/webui/system_apps/public/system_web_app_type.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class Profile;
 
 namespace apps_util {
 
-#if BUILDFLAG(IS_CHROMEOS)
-inline constexpr char kVirtualTaskPrefix[] = "VirtualTask/";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool IsFileManagerVirtualTaskPolicyId(std::string_view policy_id);
-
-// Maps `policy_id` which represents a virtual task to an actual `id` of
-// this virtual task.
-std::optional<std::string_view> GetVirtualTaskIdFromPolicyId(
-    std::string_view policy_id);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Transforms the provided |raw_policy_id| if necessary.
 // For Web Apps, converts it to GURL and returns the spec().

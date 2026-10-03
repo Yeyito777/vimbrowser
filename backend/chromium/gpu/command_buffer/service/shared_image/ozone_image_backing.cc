@@ -132,9 +132,6 @@ gfx::GpuMemoryBufferHandle OzoneImageBacking::GetGpuMemoryBufferHandle() {
 gfx::GpuMemoryBufferHandle
 OzoneImageBacking::GetSinglePlaneGpuMemoryBufferHandle(uint32_t index) {
   gfx::NativePixmapHandle native_pixmap_handle = pixmap_->ExportHandle();
-#if BUILDFLAG(IS_FUCHSIA)
-  NOTREACHED() << "Cannot get single plane from GPU memory buffer";
-#else
   DCHECK(native_pixmap_handle.modifier == 0);
   auto& planes = native_pixmap_handle.planes;
   CHECK(!planes.empty());
@@ -142,7 +139,6 @@ OzoneImageBacking::GetSinglePlaneGpuMemoryBufferHandle(uint32_t index) {
   planes[0] = std::move(planes[index]);
   planes.resize(1);
   return gfx::GpuMemoryBufferHandle(std::move(native_pixmap_handle));
-#endif  // BUILDFLAG(IS_FUCHSIA)
 }
 
 std::unique_ptr<DawnImageRepresentation> OzoneImageBacking::ProduceDawn(

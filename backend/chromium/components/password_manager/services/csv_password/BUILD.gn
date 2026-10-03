@@ -3,24 +3,18 @@
 # found in the LICENSE file.
 
 source_set("lib") {
-  if (!is_ios) {
-    sources = [
-      "csv_password_parser_impl.cc",
-      "csv_password_parser_impl.h",
-    ]
-    deps = [
-      "//base",
-      "//components/password_manager/core/browser/import:csv",
-      "//mojo/public/cpp/bindings",
-    ]
-  }
+  sources = [
+    "csv_password_parser_impl.cc",
+    "csv_password_parser_impl.h",
+  ]
+  deps = [
+    "//base",
+    "//components/password_manager/core/browser/import:csv",
+    "//mojo/public/cpp/bindings",
+  ]
 
   public_deps =
       [ "//components/password_manager/services/csv_password/public/mojom" ]
-  if (is_ios) {
-    public_deps +=
-        [ "//components/password_manager/services/csv_password/ios:lib" ]
-  }
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 }
@@ -30,20 +24,15 @@ source_set("service") {
     "//components/password_manager/services/csv_password/public/mojom",
     "//mojo/public/cpp/bindings",
   ]
-  if (is_ios) {
-    public_deps +=
-        [ "//components/password_manager/services/csv_password/ios:service" ]
-  } else {
-    sources = [
-      "csv_password_parser_service.cc",
-      "csv_password_parser_service.h",
-    ]
+  sources = [
+    "csv_password_parser_service.cc",
+    "csv_password_parser_service.h",
+  ]
 
-    deps = [
-      "//components/strings",
-      "//content/public/browser",
-    ]
-  }
+  deps = [
+    "//components/strings",
+    "//content/public/browser",
+  ]
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 }

@@ -60,19 +60,6 @@ class ChromeJsErrorReportProcessor : public JsErrorReportProcessor {
     return recent_error_reports_;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Force the error report processor to use the less-commonly-used temp file
-  // solution for communicating with crash_reporter. This is normally only used
-  // on old kernels without memfd_create, so we don't get good unit test
-  // coverage unless we force it.
-  void set_force_non_memfd_for_test() { force_non_memfd_for_test_ = true; }
-
-  // Set the length of time we want for the crash_reporter (or the
-  // mock_crash_reporter) to finish.
-  void set_maximium_wait_for_crash_reporter_for_test(base::TimeDelta max_wait) {
-    maximium_wait_for_crash_reporter_ = max_wait;
-  }
-#endif
 
  protected:
   // Non-tests should call ChromeJsErrorReportProcessor::Create() instead.
@@ -83,13 +70,6 @@ class ChromeJsErrorReportProcessor : public JsErrorReportProcessor {
   // wrapper to allow dependency injection.
   virtual variations::ExperimentListInfo GetExperimentListInfo() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Returns the first element(s) of the crash_reporter argv. By default, this
-  // is just the command name (so {"/sbin/crash_reporter"}). Virtual so that
-  // tests can override and can provide additional arguments to the test binary
-  // if needed.
-  virtual std::vector<std::string> GetCrashReporterArgvStart();
-#else
   // Determines the version of the OS we are on. Virtual so that tests can
   // override. On Chrome OS, this information is added by the crash_reporter.
   virtual std::string GetOsVersion();
@@ -108,7 +88,6 @@ class ChromeJsErrorReportProcessor : public JsErrorReportProcessor {
   // feedback reports.
   virtual void UpdateReportDatabase(std::string remote_report_id,
                                     base::Time report_time);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
  private:
   struct PlatformInfo;
@@ -154,31 +133,6 @@ class ChromeJsErrorReportProcessor : public JsErrorReportProcessor {
   // Add parameters indicating the current field trial experiments.
   void AddExperimentIds(ParameterMap& params);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Write the parameters (and the stack_trace, if present) into a string
-  // suitable for passing the crash_reporter. Returns the string.
-  //
-  // Format is the same key:length:value format used by Crashpad and Breakpad
-  // when talking to crash_reporter. Example:
-  // value1:5:abcdevalue2:10:hellothere
-  static std::string ParamsToCrashReporterString(
-      const ParameterMap& params,
-      const std::optional<std::string>& stack_trace);
-
-  void SendReportViaCrashReporter(ParameterMap params,
-                                  std::optional<std::string> stack_trace,
-                                  base::ScopedClosureRunner callback_runner);
-  void WaitForCrashReporter(base::Process process,
-                            base::Time process_creation_time,
-                            base::ScopedClosureRunner file_cleanup,
-                            base::ScopedClosureRunner external_callback_runner);
-
-  bool force_non_memfd_for_test_ = false;
-
-  // If crash_reporter isn't finished after this long, kill it and clean up
-  // anyways.
-  base::TimeDelta maximium_wait_for_crash_reporter_;
-#else
   // Turn the parameter key/value pairs into a list of parameters suitable for
   // being the query part of a URL. Does URL escaping and such.
   static std::string BuildPostRequestQueryString(const ParameterMap& params);
@@ -188,7 +142,6 @@ class ChromeJsErrorReportProcessor : public JsErrorReportProcessor {
                          base::Time report_time,
                          std::optional<std::string> response_body);
 
-#endif
 
   // For JavaScript error reports, a mapping of message+product+line+column to
   // the last time we sent an error message for that

@@ -28,7 +28,6 @@
 #include "extensions/common/mojom/view_type.mojom.h"
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/services/speech/buildflags/buildflags.h"
 #if BUILDFLAG(ENABLE_SPEECH_SERVICE)
 #include "chrome/browser/browser_process.h"
@@ -38,12 +37,9 @@
 
 #if BUILDFLAG(ENABLE_BROWSER_SPEECH_SERVICE)
 #include "chrome/browser/speech/speech_recognition_service_factory.h"
-#elif BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/speech/cros_speech_recognition_service_factory.h"
 #endif  // BUILDFLAG(ENABLE_BROWSER_SPEECH_SERVICE)
 
 #endif  // BUILDFLAG(ENABLE_SPEECH_SERVICE)
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 using content::BrowserThread;
 using content::SpeechRecognitionManager;
@@ -122,7 +118,6 @@ ChromeSpeechRecognitionManagerDelegate::GetEventListener() {
   return this;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void ChromeSpeechRecognitionManagerDelegate::BindSpeechRecognitionContext(
     mojo::PendingReceiver<media::mojom::SpeechRecognitionContext>
         recognition_receiver,
@@ -139,10 +134,6 @@ void ChromeSpeechRecognitionManagerDelegate::BindSpeechRecognitionContext(
             auto* profile = ProfileManager::GetLastUsedProfileIfLoaded();
             auto* factory =
                 SpeechRecognitionServiceFactory::GetForProfile(profile);
-#elif BUILDFLAG(IS_CHROMEOS)
-            auto* profile = ProfileManager::GetPrimaryUserProfile();
-            auto* factory =
-                CrosSpeechRecognitionServiceFactory::GetForProfile(profile);
 #else
 #error "No speech recognition service factory on this platform."
 #endif  // BUILDFLAG(ENABLE_BROWSER_SPEECH_SERVICE)
@@ -158,7 +149,6 @@ void ChromeSpeechRecognitionManagerDelegate::BindSpeechRecognitionContext(
           language, std::move(recognition_receiver)));
 #endif  // BUILDFLAG(ENABLE_SPEECH_SERVICE)
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // static.
 void ChromeSpeechRecognitionManagerDelegate::CheckRenderFrameType(

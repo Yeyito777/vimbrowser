@@ -21,9 +21,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace crashpad {
 

@@ -488,11 +488,9 @@ void TextIteratorAlgorithm<Strategy>::Advance() {
           // sibling shadow root, if any.
           const auto* shadow_root = DynamicTo<ShadowRoot>(node_);
           if (!shadow_root) {
-#if !BUILDFLAG(IS_ANDROID)
             // TODO(crbug.com/421311110): Hits at chrome://extensions,
             // chrome://flags, etc.
             NOTREACHED();
-#endif  // !BUILDFLAG(IS_ANDROID)
             should_stop_ = true;
             return;
           }

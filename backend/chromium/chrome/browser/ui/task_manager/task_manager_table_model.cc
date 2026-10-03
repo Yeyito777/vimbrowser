@@ -367,9 +367,6 @@ TaskManagerTableModel::~TaskManagerTableModel() {
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
   task_manager::RecordTabSwitchEvent(CategoryRecord::kBrowser,
                                      system_total_time_);
-#elif BUILDFLAG(IS_CHROMEOS)
-  task_manager::RecordTabSwitchEvent(CategoryRecord::kSystem,
-                                     system_total_time_);
 #endif
 
   task_manager::RecordTabSwitchEvent(CategoryRecord::kAll, all_total_time_);

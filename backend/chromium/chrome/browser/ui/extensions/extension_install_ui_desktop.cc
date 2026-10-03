@@ -32,15 +32,7 @@
 #include "extensions/browser/install/crx_install_error.h"
 #include "extensions/common/extension.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/notifier_catalogs.h"
-#include "ash/public/cpp/system/toast_data.h"
-#include "ash/public/cpp/system/toast_manager.h"
-#include "chrome/grit/generated_resources.h"
-#include "ui/base/l10n/l10n_util.h"
-#else
 #include "chrome/common/url_constants.h"
-#endif
 
 using content::BrowserThread;
 using content::WebContents;
@@ -57,26 +49,10 @@ BrowserWindowInterface* FindOrCreateVisibleBrowser(Profile* profile) {
   return browser;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Toast id and duration for extension install success.
-constexpr char kExtensionInstallSuccessToastId[] = "extension_install_success";
-
-void ShowToast(const std::string& id,
-               ash::ToastCatalogName catalog_name,
-               const std::u16string& text) {
-  ash::ToastManager::Get()->Show(ash::ToastData(id, catalog_name, text));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void ShowAppInstalledNotification(
     scoped_refptr<const extensions::Extension> extension,
     Profile* profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-  ShowToast(kExtensionInstallSuccessToastId,
-            ash::ToastCatalogName::kExtensionInstallSuccess,
-            l10n_util::GetStringFUTF16(IDS_EXTENSION_NOTIFICATION_INSTALLED,
-                                       base::UTF8ToUTF16(extension->name())));
-#else
   Profile* current_profile = profile->GetOriginalProfile();
   BrowserWindowInterface* browser_window =
       FindOrCreateVisibleBrowser(current_profile);
@@ -85,7 +61,6 @@ void ShowAppInstalledNotification(
       browser_window->GetBrowserForMigrationOnly(),
       GURL(chrome::kChromeUIAppsURL)));
   Navigate(&params);
-#endif
 }
 
 }  // namespace

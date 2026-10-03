@@ -7,24 +7,13 @@
 #include "build/build_config.h"
 #include "content/browser/device_posture/device_posture_platform_provider_default.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "content/browser/device_posture/device_posture_platform_provider_win.h"
-#elif BUILDFLAG(IS_ANDROID)
-#include "content/browser/device_posture/device_posture_platform_provider_android.h"
-#endif
 
 namespace content {
 
 // static
 std::unique_ptr<DevicePosturePlatformProvider>
 DevicePosturePlatformProvider::Create(WebContents* web_contents) {
-#if BUILDFLAG(IS_WIN)
-  return std::make_unique<DevicePosturePlatformProviderWin>();
-#elif BUILDFLAG(IS_ANDROID)
-  return std::make_unique<DevicePosturePlatformProviderAndroid>(web_contents);
-#else
   return std::make_unique<DevicePosturePlatformProviderDefault>();
-#endif
 }
 
 DevicePosturePlatformProvider::DevicePosturePlatformProvider() = default;

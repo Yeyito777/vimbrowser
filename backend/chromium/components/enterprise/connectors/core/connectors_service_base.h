@@ -102,9 +102,7 @@ class ConnectorsServiceBase {
   // Observe if reporting policies have changed to include telemetry event.
   void ObserveTelemetryReporting(base::RepeatingCallback<void()> callback);
 
-#if !BUILDFLAG(IS_CHROMEOS)
   std::optional<std::string> GetProfileDmToken() const;
-#endif
 
   // Testing functions.
   ConnectorsManagerBase* ConnectorsManagerBaseForTesting();

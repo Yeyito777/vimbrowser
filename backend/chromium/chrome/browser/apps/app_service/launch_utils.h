@@ -18,10 +18,6 @@
 #include "extensions/common/constants.h"
 #include "ui/base/window_open_disposition.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/apps/app_service/app_service_proxy_forward.h"
-#include "chromeos/ash/experiences/arc/mojom/app.mojom-forward.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class Browser;
 class Profile;
@@ -79,42 +75,6 @@ int GetEventFlags(WindowOpenDisposition disposition, bool prefer_container);
 int GetSessionIdForRestoreFromWebContents(
     const content::WebContents* web_contents);
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Helper to convert apps::mojom::WindowInfoPtr to arc::mojom::WindowInfoPtr.
-arc::mojom::WindowInfoPtr MakeArcWindowInfo(WindowInfoPtr window_info);
-
-// Container for holding possible app IDs that can launch a PWA for a given URL.
-struct AppIdsToLaunchForUrl {
-  AppIdsToLaunchForUrl();
-  AppIdsToLaunchForUrl(AppIdsToLaunchForUrl&&);
-  ~AppIdsToLaunchForUrl();
-
-  // Apps that can handle a given URL.
-  std::vector<std::string> candidates;
-  // The users preference for an app to handle a given URL.
-  std::optional<std::string> preferred;
-};
-
-// Takes a `url` and returns a vector of app IDs and the users preferred choice
-// of app that can launch a PWA for the given `url`.
-AppIdsToLaunchForUrl FindAppIdsToLaunchForUrl(AppServiceProxy* proxy,
-                                              const GURL& url);
-
-// Checks to see if any apps handle `url` and is selected as the users
-// preference. If so, launches the preferred app, otherwise opens `url` in a
-// browser tab.
-void MaybeLaunchPreferredAppForUrl(Profile* profile,
-                                   const GURL& url,
-                                   LaunchSource launch_source);
-
-// Launches `url` in a suitable installed app, or in the browser if no app is
-// installed. If one app is installed which can handle `url`, it will always be
-// opened. If multiple apps are installed, any app which is preferred by the
-// user will be opened.
-void LaunchUrlInInstalledAppOrBrowser(Profile* profile,
-                                      const GURL& url,
-                                      LaunchSource launch_source);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace apps
 

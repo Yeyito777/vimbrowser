@@ -171,23 +171,12 @@
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8-extension.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include <cpu-features.h>
-#include "media/base/android/media_codec_util.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
 #include "content/renderer/theme_helper_mac.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <objbase.h>
-
-#include <windows.h>
-
-#include "content/renderer/media/win/dcomp_texture_factory.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "content/child/sandboxed_process_thread_type_handler.h"
@@ -212,10 +201,6 @@
 #include "media/mojo/mojom/interface_factory.mojom.h"
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "media/mojo/clients/mojo_codec_factory_fuchsia.h"
-#include "media/mojo/mojom/fuchsia_media.mojom.h"
-#endif
 
 #if BUILDFLAG(CLANG_PROFILING_INSIDE_SANDBOX)
 #include "base/test/clang_profiling.h"
@@ -541,9 +526,7 @@ void RenderThreadImpl::Init() {
   } else if (command_line.HasSwitch(switches::kEnableLCDText)) {
     is_lcd_text_enabled_ = true;
   } else {
-#if BUILDFLAG(IS_ANDROID)
-    is_lcd_text_enabled_ = false;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
     is_lcd_text_enabled_ = IsSubpixelAntialiasingAvailable();
 #else
     is_lcd_text_enabled_ = true;
@@ -955,19 +938,9 @@ media::GpuVideoAcceleratorFactories* RenderThreadImpl::GetGpuFactories() {
 
   const bool enable_gpu_memory_buffers =
       !is_gpu_compositing_disabled_ &&
-#if !BUILDFLAG(IS_ANDROID)
       !cmd_line->HasSwitch(switches::kDisableGpuMemoryBufferVideoFrames);
-#else
-      cmd_line->HasSwitch(switches::kEnableGpuMemoryBufferVideoFrames);
-#endif
   const bool enable_media_stream_gpu_memory_buffers = enable_gpu_memory_buffers;
   bool enable_video_gpu_memory_buffers = enable_gpu_memory_buffers;
-#if BUILDFLAG(IS_WIN)
-  enable_video_gpu_memory_buffers =
-      enable_video_gpu_memory_buffers &&
-      (cmd_line->HasSwitch(switches::kEnableGpuMemoryBufferVideoFrames) ||
-       gpu_channel_host->gpu_info().overlay_info.supports_overlays);
-#endif  // BUILDFLAG(IS_WIN)
 
   auto codec_factory = CreateMediaMojoCodecFactory(
       media_context_provider, enable_video_decode_accelerator,
@@ -1094,21 +1067,6 @@ RenderThreadImpl::SharedMainThreadContextProvider() {
   return shared_main_thread_contexts_;
 }
 
-#if BUILDFLAG(IS_WIN)
-scoped_refptr<DCOMPTextureFactory> RenderThreadImpl::GetDCOMPTextureFactory() {
-  DCHECK(IsMainThread());
-  if (!dcomp_texture_factory_.get() || dcomp_texture_factory_->IsLost()) {
-    scoped_refptr<gpu::GpuChannelHost> channel = EstablishGpuChannelSync();
-    if (!channel) {
-      dcomp_texture_factory_ = nullptr;
-      return nullptr;
-    }
-    dcomp_texture_factory_ = DCOMPTextureFactory::Create(
-        std::move(channel), GetMediaSequencedTaskRunner());
-  }
-  return dcomp_texture_factory_;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 base::WaitableEvent* RenderThreadImpl::GetShutdownEvent() {
   return ChildProcess::current()->GetShutDownEvent();
@@ -1404,15 +1362,6 @@ void RenderThreadImpl::OnNetworkQualityChanged(
       transport_rtt, downlink_throughput_kbps);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void RenderThreadImpl::SetWebKitSharedTimersSuspended(bool suspend) {
-  if (suspend) {
-    main_thread_scheduler_->PauseTimersForAndroidWebView();
-  } else {
-    main_thread_scheduler_->ResumeTimersForAndroidWebView();
-  }
-}
-#endif
 
 #if BUILDFLAG(IS_MAC)
 void RenderThreadImpl::UpdateScrollbarTheme(
@@ -1484,19 +1433,11 @@ RenderThreadImpl::GetMediaSequencedTaskRunner() {
   }
   if (!media_thread_) {
     media_thread_ = std::make_unique<base::Thread>("Media");
-#if BUILDFLAG(IS_FUCHSIA)
-    // Start IO thread on Fuchsia to make that thread usable for FIDL.
-    base::Thread::Options options(base::MessagePumpType::IO, 0);
-    // TODO(crbug.com/40250424): Use kDisplayCritical to address media latency
-    // on Fuchsia until alignment on new media thread types is achieved.
-    options.thread_type = base::ThreadType::kPresentation;
-#else
     base::Thread::Options options;
     if (base::FeatureList::IsEnabled(
             blink::features::kWebRtcUseMediaThreadTypes)) {
       options.thread_type = base::ThreadType::kPresentation;
     }
-#endif
     media_thread_->StartWithOptions(std::move(options));
   }
   return media_thread_->task_runner();
@@ -1659,14 +1600,6 @@ RenderThreadImpl::CreateMediaMojoCodecFactory(
       GetMediaSequencedTaskRunner(), context_provider,
       enable_video_decode_accelerator, enable_video_encode_accelerator,
       std::move(vea_provider), std::move(interface_factory));
-#elif BUILDFLAG(IS_FUCHSIA)
-  mojo::PendingRemote<media::mojom::FuchsiaMediaCodecProvider>
-      media_codec_provider;
-  BindHostReceiver(media_codec_provider.InitWithNewPipeAndPassReceiver());
-  return std::make_unique<media::MojoCodecFactoryFuchsia>(
-      GetMediaSequencedTaskRunner(), context_provider,
-      enable_video_decode_accelerator, enable_video_encode_accelerator,
-      std::move(vea_provider), std::move(media_codec_provider));
 #else
   return std::make_unique<media::MojoCodecFactoryDefault>(
       GetMediaSequencedTaskRunner(), context_provider,
@@ -1675,23 +1608,5 @@ RenderThreadImpl::CreateMediaMojoCodecFactory(
 #endif
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void RenderThreadImpl::SetPrivateMemoryFootprint(
-    uint64_t private_memory_footprint_bytes) {
-  GetRendererHost()->SetPrivateMemoryFootprint(private_memory_footprint_bytes);
-}
-
-void RenderThreadImpl::OnMemoryPressureFromBrowserReceived(
-    base::MemoryPressureLevel level) {
-  // To avoid that the browser process requests a signal while a renderer
-  // is creating and blink has not been initialized yet, check
-  // |blink_platform_impl_| here.
-  if (!blink_platform_impl_) {
-    return;
-  }
-  blink::RequestUserLevelMemoryPressureSignal(level);
-}
-
-#endif
 
 }  // namespace content

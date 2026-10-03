@@ -144,15 +144,8 @@ constexpr int kRecentTabsCommandIdOffset =
 constexpr int kTabGroupsCommandIdOffset =
     AppMenuModel::kMinTabGroupsCommandId - IDC_FIRST_UNBOUNDED_MENU;
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Extra horizontal space to reserve for the fullscreen button.
-constexpr int kFullscreenPadding = 74;
-// Padding to left and right of the XX% label.
-constexpr int kZoomLabelHorizontalPadding = kHorizontalPadding;
-#else
 constexpr int kFullscreenPadding = 38;
 constexpr int kZoomLabelHorizontalPadding = 2;
-#endif
 
 // Returns true if |command_id| identifies a bookmark menu item.
 bool IsBookmarkCommand(int command_id) {
@@ -569,16 +562,7 @@ class FullscreenButton : public ImageButton {
     SetTooltipText(l10n_util::GetStringUTF16(accname_string_id));
     GetViewAccessibility().SetName(GetAccessibleNameForAppMenuItem(
         &menu_model_.get(), button_index_, accname_string_id,
-#if BUILDFLAG(IS_CHROMEOS)
-        // ChromeOS uses a dedicated "fullscreen" media key for fullscreen
-        // mode on most ChromeOS devices which cannot be specified in the
-        // standard way here, so omit the accelerator to avoid providing
-        // misleading or confusing information to screen reader users.
-        // See crbug.com/1110468 for more context.
-        /*add_accelerator_text=*/false
-#else
         /*add_accelerator_text=*/true
-#endif
         ));
   }
 
@@ -730,11 +714,9 @@ class AppMenu::ZoomView : public AppMenuView, public views::WidgetObserver {
     //
     // Do not do this for ChromeOS and investigate whether it is possible to do
     // so for all other platforms.
-#if !BUILDFLAG(IS_CHROMEOS)
     // An accessibility role of kAlert will ensure that any updates to the zoom
     // level can be picked up by screen readers.
     zoom_label->GetViewAccessibility().SetRole(ax::mojom::Role::kAlert);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
     zoom_label_ = AddChildView(std::move(zoom_label));
 
@@ -1650,12 +1632,6 @@ void AppMenu::PopulateMenu(MenuItemView* parent, MenuModel* model) {
         break;
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-      case IDC_TAKE_SCREENSHOT:
-        DCHECK(!screenshot_menu_item_);
-        screenshot_menu_item_ = item;
-        break;
-#endif
 
       case IDC_RECENT_TABS_MENU:
         DCHECK(!recent_tabs_menu_model_delegate_.get());

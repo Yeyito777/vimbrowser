@@ -37,9 +37,6 @@
 #include "third_party/icu/source/common/unicode/locid.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "device/fido/win/webauthn_api.h"
-#endif
 
 using content::BrowserThread;
 
@@ -1030,17 +1027,6 @@ void PasskeysHandler::HandleManagePasskeys(const base::ListValue& args) {
 
   AllowJavascript();
 
-#if BUILDFLAG(IS_WIN)
-  auto* windows_api = device::WinWebAuthnApi::GetDefault();
-  // webauthn.dll version six includes management support, so if at least that
-  // version is found then Windows does management natively.
-  constexpr int kWebAuthnDLLWithManagementSupport = 6;
-  if (windows_api->IsAvailable() &&
-      windows_api->Version() >= kWebAuthnDLLWithManagementSupport) {
-    platform_util::OpenExternal(GURL("ms-settings:savedpasskeys"));
-    return;
-  }
-#endif
 
   // If no system management exists, fall back to Chrome's own settings UI.
   chrome::ShowSettingsSubPage(

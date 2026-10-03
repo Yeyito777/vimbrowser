@@ -6,10 +6,6 @@ import("//build/config/ui.gni")
 import("//gpu/vulkan/features.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")  # For `target_platform`
-}
-
 group("common") {
   if (is_component_build) {
     public_deps = [ "//gpu" ]
@@ -58,20 +54,6 @@ source_set("ipc_common_sources") {
     "result_codes.h",
   ]
 
-  if (is_win) {
-    sources += [
-      "dxgi_helpers.cc",
-      "dxgi_helpers.h",
-    ]
-    libs = [
-      "d3d11.lib",
-      "dxguid.lib",
-    ]
-  }
-  if (is_android) {
-    visibility += [ "//media/gpu" ]
-  }
-
   configs += [
     "//gpu:gpu_implementation",
     "//third_party/khronos:khronos_headers",
@@ -107,19 +89,6 @@ source_set("ipc_common_sources") {
       "ios/be_layer_hierarchy_transport.cc",
       "ios/be_layer_hierarchy_transport.h",
     ]
-  }
-
-  if (is_android) {
-    sources += [
-      "android/android_hardware_buffer_utils.cc",
-      "android/android_hardware_buffer_utils.h",
-      "gpu_surface_lookup.cc",
-      "gpu_surface_lookup.h",
-      "gpu_surface_tracker.cc",
-      "gpu_surface_tracker.h",
-    ]
-    libs = [ "android" ]
-    deps += [ "//ui/gl:surface_jni_headers" ]
   }
 
   if (use_ozone) {
@@ -207,7 +176,6 @@ mojom("gpu_channel_mojom") {
 }
 
 mojom("shared_image_pool_client_interface") {
-  generate_java = true
   visibility = [
     "//gpu/*",
     "//services/*",
@@ -220,7 +188,6 @@ mojom("shared_image_pool_client_interface") {
 }
 
 mojom("surface_handle") {
-  generate_java = true
   sources = [ "surface_handle.mojom" ]
   cpp_typemaps = [
     {
@@ -238,7 +205,6 @@ mojom("surface_handle") {
 }
 
 mojom("interfaces") {
-  generate_java = true
   sources = [
     "capabilities.mojom",
     "constants.mojom",
@@ -258,10 +224,6 @@ mojom("interfaces") {
     "sync_token.mojom",
     "vulkan_ycbcr_info.mojom",
   ]
-
-  if (is_win) {
-    sources += [ "luid.mojom" ]
-  }
 
   public_deps = [
     ":gpu_preferences_interface",
@@ -541,23 +503,6 @@ mojom("interfaces") {
     },
   ]
 
-  if (is_win) {
-    cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "gpu.mojom.OverlayInfo"
-            cpp = "::gpu::OverlayInfo"
-          },
-          {
-            mojom = "gpu.mojom.Direct3DFeatureLevel"
-            cpp = "::D3D_FEATURE_LEVEL"
-          },
-        ]
-      },
-    ]
-  }
-
   blink_cpp_typemaps = [
     {
       types = [
@@ -605,37 +550,6 @@ mojom("interfaces") {
     },
   ]
 
-  if (is_win) {
-    cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "gpu.mojom.Luid"
-            cpp = "::CHROME_LUID"
-          },
-        ]
-        traits_headers = [ "luid_mojom_traits.h" ]
-        traits_sources = [ "luid_mojom_traits.cc" ]
-        traits_public_deps = [
-          ":mojom_traits",
-          "//gpu/config",
-        ]
-      },
-    ]
-    blink_cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "gpu.mojom.Luid"
-            cpp = "::CHROME_LUID"
-          },
-        ]
-        traits_headers = [ "luid_mojom_traits.h" ]
-        traits_public_deps = []
-      },
-    ]
-  }
-
   cpp_proxy_target = ":common"
   export_class_attribute = "GPU_EXPORT"
   export_header = "gpu/gpu_export.h"
@@ -651,7 +565,6 @@ mojom("interfaces") {
 }
 
 mojom("gpu_preferences_interface") {
-  generate_java = true
   sources = [ "gpu_preferences.mojom" ]
 
   public_deps = [
@@ -689,7 +602,6 @@ mojom("gpu_preferences_interface") {
 
 if (enable_vulkan) {
   mojom("vulkan_interface") {
-    generate_java = true
     webui_module_path = "/"
     generate_legacy_js_bindings = true
 
@@ -778,9 +690,6 @@ source_set("mojom_traits") {
     public_deps += [ "//gpu/vulkan" ]
   }
 
-  if (is_android) {
-    sources += [ "vulkan_ycbcr_info_mojom_traits.h" ]
-  }
   configs += [ "//gpu:gpu_implementation" ]
 }
 

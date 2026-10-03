@@ -184,8 +184,5 @@ SplitStringPieceUsingSubstr(std::string_view input LIFETIME_BOUND,
 
 }  // namespace base
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/string_split_win.h"
-#endif
 
 #endif  // BASE_STRINGS_STRING_SPLIT_H_

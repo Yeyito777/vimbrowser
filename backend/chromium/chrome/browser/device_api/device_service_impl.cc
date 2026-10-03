@@ -33,60 +33,8 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_pref_names.h"
-#include "chrome/browser/ash/app_mode/isolated_web_app/kiosk_iwa_data.h"
-#include "chrome/browser/ash/app_mode/isolated_web_app/kiosk_iwa_manager.h"
-#include "chrome/browser/ash/app_mode/web_app/kiosk_web_app_data.h"
-#include "chrome/browser/ash/app_mode/web_app/kiosk_web_app_manager.h"
-#include "chrome/common/url_constants.h"
-#include "chromeos/components/kiosk/kiosk_utils.h"
-#include "components/user_manager/user_manager.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
-#if BUILDFLAG(IS_CHROMEOS)
-
-// Returns an origin of the current kiosk web app.
-// Should only be called when the current user is a web kiosk.
-url::Origin GetWebKioskOrigin() {
-  const AccountId& account_id =
-      user_manager::UserManager::Get()->GetPrimaryUser()->GetAccountId();
-  CHECK(ash::KioskWebAppManager::IsInitialized());
-  const ash::KioskWebAppData* app_data =
-      ash::KioskWebAppManager::Get()->GetAppByAccountId(account_id);
-  return url::Origin::Create(CHECK_DEREF(app_data).install_url());
-}
-
-// Returns an origin of the current kiosk isolated web app.
-// Should only be called when the current user is an IWA kiosk.
-url::Origin GetIwaKioskOrigin() {
-  const AccountId& account_id =
-      user_manager::UserManager::Get()->GetPrimaryUser()->GetAccountId();
-  const ash::KioskIwaData* iwa_data =
-      CHECK_DEREF(ash::KioskIwaManager::Get()).GetApp(account_id);
-  return CHECK_DEREF(iwa_data).origin();
-}
-
-std::optional<url::Origin> MaybeGetCurrentKioskOrigin() {
-  if (chromeos::IsWebKioskSession()) {
-    return GetWebKioskOrigin();
-  }
-  if (chromeos::IsIwaKioskSession()) {
-    return GetIwaKioskOrigin();
-  }
-  return std::nullopt;
-}
-
-// Check whether the target origin is the same as the main application running
-// in the Kiosk session.
-bool IsEqualToKioskOrigin(const url::Origin& origin) {
-  std::optional<url::Origin> current_kiosk_origin =
-      MaybeGetCurrentKioskOrigin();
-  return current_kiosk_origin.has_value() &&
-         (current_kiosk_origin.value() == origin);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 Profile* GetProfile(content::RenderFrameHost& host) {
   return Profile::FromBrowserContext(host.GetBrowserContext());
@@ -136,13 +84,7 @@ bool IsForceInstalledIwaOrigin(content::RenderFrameHost& host,
 }
 
 bool IsAffiliatedUser() {
-#if BUILDFLAG(IS_CHROMEOS)
-  const user_manager::User* user =
-      user_manager::UserManager::Get()->GetPrimaryUser();
-  return (user != nullptr) && user->IsAffiliated();
-#else
   return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 bool IsTrustedContext(content::RenderFrameHost& host,
@@ -152,19 +94,6 @@ bool IsTrustedContext(content::RenderFrameHost& host,
     return false;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (IsRunningInAppMode()) {
-    if (base::FeatureList::IsEnabled(
-            permissions::features::
-                kAllowMultipleOriginsForWebKioskPermissions)) {
-      return IsEqualToKioskOrigin(origin) ||
-             IsWebKioskOriginAllowed(GetProfile(host)->GetPrefs(),
-                                     origin.GetURL());
-    }
-
-    return IsEqualToKioskOrigin(origin);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   return IsForceInstalledIwaOrigin(host, origin) ||
          IsDevModeInstalledIwaOrigin(host, origin);
 }
@@ -205,12 +134,6 @@ DeviceServiceImpl::DeviceServiceImpl(
       ::prefs::kIsolatedWebAppInstallForceList,
       base::BindRepeating(&DeviceServiceImpl::OnDisposingIfNeeded,
                           base::Unretained(this)));
-#if BUILDFLAG(IS_CHROMEOS)
-  pref_change_registrar_.Add(
-      ash::prefs::kKioskBrowserPermissionsAllowedForOrigins,
-      base::BindRepeating(&DeviceServiceImpl::OnDisposingIfNeeded,
-                          base::Unretained(this)));
-#endif  // BUILDFLAG(IS_CHROMEOS)
   content_settings_observation_.Observe(
       HostContentSettingsMapFactory::GetForProfile(profile));
   auto& provider = CHECK_DEREF(web_app::WebAppProvider::GetForWebApps(profile));

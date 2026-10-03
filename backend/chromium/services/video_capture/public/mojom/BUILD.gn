@@ -25,13 +25,6 @@ mojom("mojom") {
   ]
 
   public_deps = [ "//sandbox/policy/mojom" ]
-
-  if (is_chromeos) {
-    deps += [
-      "//components/chromeos_camera/common",
-      "//media/capture/video/chromeos/mojom:cros_camera",
-    ]
-  }
 }
 
 mojom("constants") {

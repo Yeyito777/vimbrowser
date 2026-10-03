@@ -15,12 +15,7 @@
 #include "components/policy/core/common/policy_service.h"
 #include "components/policy/core/common/policy_service_impl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/policy/core/user_cloud_policy_manager_ash.h"
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#else  // Non-ChromeOS.
 #include "components/policy/core/common/cloud/cloud_policy_manager.h"
-#endif
 
 namespace policy {
 
@@ -44,27 +39,9 @@ CreateProfilePolicyConnectorForBrowserContext(
   const user_manager::User* user = nullptr;
   const CloudPolicyStore* policy_store = nullptr;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  Profile* const profile = Profile::FromBrowserContext(context);
-  if (ash::ProfileHelper::IsUserProfile(profile)) {
-    user = ash::ProfileHelper::Get()->GetUserByProfile(profile);
-    CHECK(user);
-  }
-
-  // On ChromeOS, we always pass nullptr for the |cloud_policy_manager|.
-  // This is because the |policy_provider| could be a
-  // UserCloudPolicyManagerAsh which should be obtained via
-  // UserPolicyManagerFactoryChromeOS APIs.
-  CloudPolicyManager* user_cloud_policy_manager =
-      profile->GetUserCloudPolicyManagerAsh();
-  if (user_cloud_policy_manager) {
-    policy_store = user_cloud_policy_manager->core()->store();
-  }
-#else
   if (cloud_policy_manager) {
     policy_store = cloud_policy_manager->core()->store();
   }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return CreateAndInitProfilePolicyConnector(
       schema_registry, browser_policy_connector, policy_provider, policy_store,

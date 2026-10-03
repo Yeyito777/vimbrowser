@@ -67,7 +67,6 @@
 #include "components/sync/protocol/theme_specifics.pb.h"
 #include "components/sync/protocol/theme_types.pb.h"
 #include "components/sync/protocol/typed_url_specifics.pb.h"
-#include "components/sync/protocol/unencrypted_sharing_message.pb.h"
 #include "components/sync/protocol/unique_position.pb.h"
 #include "components/sync/protocol/user_consent_specifics.pb.h"
 #include "components/sync/protocol/user_event_specifics.pb.h"
@@ -656,11 +655,6 @@ VISIT_PROTO_FIELDS(const sync_pb::DeviceInfoSpecifics& proto) {
   VISIT_ENUM(device_form_factor);
 }
 
-VISIT_PROTO_FIELDS(const sync_pb::DesktopToMobilePromoMessage& proto) {
-  VISIT(push_notification);
-  VISIT(promo_type);
-}
-
 VISIT_PROTO_FIELDS(const sync_pb::EligiblePriceRange& proto) {
   VISIT(currency);
   VISIT(min_price_in_micros);
@@ -671,8 +665,6 @@ VISIT_PROTO_FIELDS(const sync_pb::FeatureSpecificFields& proto) {
   VISIT(send_tab_to_self_receiving_enabled);
   VISIT_ENUM(send_tab_to_self_receiving_type);
   VISIT(auto_sign_out_last_signin_timestamp_windows_epoch_micros);
-  VISIT(desktop_to_ios_promo_receiving_enabled);
-  VISIT_REP(desktop_to_ios_promo_receiving_types);
 }
 
 VISIT_PROTO_FIELDS(const sync_pb::SharingSpecificFields& proto) {
@@ -680,7 +672,6 @@ VISIT_PROTO_FIELDS(const sync_pb::SharingSpecificFields& proto) {
   VISIT(sender_id_fcm_token_v2);
   VISIT_BYTES(sender_id_p256dh_v2);
   VISIT_BYTES(sender_id_auth_secret_v2);
-  VISIT(chime_representative_target_id);
 }
 
 VISIT_PROTO_FIELDS(const sync_pb::PhoneAsASecurityKeySpecificFields& proto) {
@@ -1259,22 +1250,6 @@ VISIT_PROTO_FIELDS(const sync_pb::PriorityPreferenceSpecifics& proto) {
   VISIT(preference);
 }
 
-VISIT_PROTO_FIELDS(const sync_pb::PushNotificationMessage& proto) {
-  VISIT(title);
-  VISIT(text);
-  VISIT_REP(icon);
-  VISIT(favicon);
-  VISIT(destination_url);
-  VISIT(placeholder_title);
-  VISIT(placeholder_body);
-  VISIT(push_notification_client_id);
-}
-
-VISIT_PROTO_FIELDS(const sync_pb::PushNotificationMessage::Image& proto) {
-  VISIT(url);
-  VISIT(alt_text);
-}
-
 VISIT_PROTO_FIELDS(const sync_pb::ReadingListSpecifics& proto) {
   VISIT(entry_id);
   VISIT(title);
@@ -1349,22 +1324,6 @@ VISIT_PROTO_FIELDS(const sync_pb::SearchEngineSpecifics& proto) {
   VISIT(new_tab_url);
   VISIT_ENUM(is_active);
   VISIT(starter_pack_id);
-}
-
-VISIT_PROTO_FIELDS(const sync_pb::SendTabToSelfPush& proto) {
-  VISIT(title);
-  VISIT(text);
-  VISIT_REP(icon);
-  VISIT(favicon);
-  VISIT(destination_url);
-  VISIT(placeholder_title);
-  VISIT(placeholder_body);
-  VISIT(entry_unique_guid);
-}
-
-VISIT_PROTO_FIELDS(const sync_pb::SendTabToSelfPush::Image& proto) {
-  VISIT(url);
-  VISIT(alt_text);
 }
 
 VISIT_PROTO_FIELDS(const sync_pb::SendTabToSelfSpecifics& proto) {
@@ -1468,7 +1427,6 @@ VISIT_PROTO_FIELDS(const sync_pb::SharingMessageSpecifics& proto) {
   VISIT(message_id);
   VISIT(channel_configuration);
   VISIT_BYTES(payload);
-  VISIT(unencrypted_payload);
 }
 
 VISIT_PROTO_FIELDS(const sync_pb::SharingMessageSpecifics::
@@ -1478,19 +1436,10 @@ VISIT_PROTO_FIELDS(const sync_pb::SharingMessageSpecifics::
   VISIT(priority);
 }
 
-VISIT_PROTO_FIELDS(const sync_pb::SharingMessageSpecifics::
-                       ChannelConfiguration::ChimeChannelConfiguration& proto) {
-  VISIT_BYTES(device_token);
-  VISIT_ENUM(channel_type);
-  VISIT(type_id);
-  VISIT(representative_target_id);
-}
-
 VISIT_PROTO_FIELDS(
     const sync_pb::SharingMessageSpecifics::ChannelConfiguration& proto) {
   VISIT(fcm);
   VISIT_BYTES(server);
-  VISIT(chime);
 }
 
 VISIT_PROTO_FIELDS(const sync_pb::SyncCycleCompletedEventInfo& proto) {
@@ -1701,11 +1650,6 @@ VISIT_PROTO_FIELDS(const sync_pb::TypedUrlSpecifics& proto) {
   VISIT(hidden);
   VISIT_REP(visits);
   VISIT_REP(visit_transitions);
-}
-
-VISIT_PROTO_FIELDS(const sync_pb::UnencryptedSharingMessage& proto) {
-  VISIT(sender_guid);
-  VISIT(sender_device_name);
 }
 
 VISIT_PROTO_FIELDS(const sync_pb::UniquePosition& proto) {

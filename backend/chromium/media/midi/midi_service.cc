@@ -105,9 +105,6 @@ scoped_refptr<base::SingleThreadTaskRunner> MidiService::GetTaskRunner(
   if (!threads_[runner_id]) {
     threads_[runner_id] = std::make_unique<base::Thread>(
         base::StringPrintf("MidiServiceThread(%zu)", runner_id));
-#if BUILDFLAG(IS_WIN)
-    threads_[runner_id]->init_com_with_mta(true);
-#endif
     threads_[runner_id]->Start();
   }
   return threads_[runner_id]->task_runner();

@@ -265,9 +265,6 @@
 	path = third_party/arcore-android-sdk/src
 	url = https://chromium.googlesource.com/external/github.com/google-ar/arcore-android-sdk
 	gclient-condition = checkout_android
-[submodule "third_party/hunspell_dictionaries"]
-	path = third_party/hunspell_dictionaries
-	url = https://chromium.googlesource.com/chromium/deps/hunspell_dictionaries
 [submodule "third_party/icu"]
 	path = third_party/icu
 	url = https://chromium.googlesource.com/chromium/deps/icu
@@ -697,10 +694,6 @@
 [submodule "chrome/browser/resources/webui_browser/internal"]
 	path = chrome/browser/resources/webui_browser/internal
 	url = https://chrome-internal.googlesource.com/chrome/browser/resources/webui_browser/internal
-	gclient-condition = checkout_src_internal
-[submodule "chrome/browser/spellchecker/internal"]
-	path = chrome/browser/spellchecker/internal
-	url = https://chrome-internal.googlesource.com/chrome/spellchecker/internal
 	gclient-condition = checkout_src_internal
 [submodule "chrome/common/request_header_integrity/internal"]
 	path = chrome/common/request_header_integrity/internal

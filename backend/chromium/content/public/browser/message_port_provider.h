@@ -15,9 +15,6 @@
 #include "third_party/blink/public/common/messaging/string_message_codec.h"
 #include "third_party/blink/public/common/messaging/web_message_port.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#endif
 
 #if BUILDFLAG(IS_FUCHSIA) ||           \
     BUILDFLAG(ENABLE_CAST_RECEIVER) && \
@@ -45,20 +42,6 @@ class CONTENT_EXPORT MessagePortProvider {
                                  const url::Origin* target_origin,
                                  const blink::WebMessagePayload& data);
 
-#if BUILDFLAG(IS_ANDROID)
-  // TODO(449581913): Rather than processing serialized strings here, we should
-  // to teach the Android side of the house to use `org.chromium.url.Origin`
-  // and to pass those across the JNI boundary (in e.g.
-  // `org.chromium.content_public.browser.WebContents.postMessageToMainFrame`).
-  static void PostMessageToFrame(
-      Page& page,
-      JNIEnv* env,
-      const base::android::JavaRef<jstring>& source_origin,
-      const base::android::JavaRef<jstring>& target_origin,
-      /* org.chromium.content_public.browser.MessagePayload */
-      const base::android::JavaRef<jobject>& payload,
-      const base::android::JavaRef<jobjectArray>& ports);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Fuchsia WebEngine always uses this version.
 // Some Cast Receiver implementations use it too.

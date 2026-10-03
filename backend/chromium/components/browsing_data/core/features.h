@@ -10,9 +10,6 @@
 namespace browsing_data::features {
 
 // Pipes down the BrowsingDataModel to power site settings on Android.
-#if BUILDFLAG(IS_ANDROID)
-BASE_DECLARE_FEATURE(kBrowsingDataModel);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 // Enables a revamped Delete Browsing Data dialog. This includes UI changes,

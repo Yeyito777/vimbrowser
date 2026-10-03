@@ -29,13 +29,7 @@
 #include "ui/gfx/native_ui_types.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/aura/window_tree_host.h"
-#endif
 
 namespace eye_dropper {
 
@@ -100,14 +94,6 @@ class EyeDropperView::ScreenCapturer
 EyeDropperView::ScreenCapturer::ScreenCapturer(EyeDropperView* owner)
     : owner_(owner) {
   static bool allow_wgc_screen_capturer =
-#if BUILDFLAG(IS_WIN)
-      // Allow WGC screen capture if Windows version is greater or equal
-      // than 10.0.20348.0, as the following API, which controls if a border is
-      // to be painted around the captured content, needs to be present as the
-      // border should not be shown during eye dropper color selection:
-      // https://learn.microsoft.com/en-us/uwp/api/windows.graphics.capture.graphicscapturesession.isborderrequired
-      base::win::GetVersion() >= base::win::Version::SERVER_2022 &&
-#endif  // BUILDFLAG(IS_WIN)
       base::FeatureList::IsEnabled(features::kAllowEyeDropperWGCScreenCapture);
   auto options = content::desktop_capture::CreateDesktopCaptureOptions();
 
@@ -162,17 +148,8 @@ void EyeDropperView::ScreenCapturer::OnCaptureResult(
   original_offset_x_ = 0;
   original_offset_y_ = 0;
   for (const auto& display : display::Screen::Get()->GetAllDisplays()) {
-#if BUILDFLAG(IS_WIN)
-    // The window parameter is intentionally passed as nullptr on Windows
-    // because a non-null window parameter causes errors when restoring windows
-    // to saved positions in variable-DPI situations. See
-    // https://crbug.com/1224715 for details.
-    gfx::Rect scaled_bounds = display::Screen::Get()->DIPToScreenRectInWindow(
-        /*window=*/nullptr, display.bounds());
-#else
     gfx::Rect scaled_bounds = gfx::ScaleToEnclosingRect(
         display.bounds(), display.device_scale_factor());
-#endif
     if (scaled_bounds.origin().x() < original_offset_x_) {
       original_offset_x_ = scaled_bounds.origin().x();
     }
@@ -245,23 +222,12 @@ EyeDropperView::EyeDropperView(gfx::NativeView parent,
   CaptureInput();
   auto* screen = display::Screen::Get();
   gfx::Point initial_position = screen->GetCursorScreenPoint();
-#if BUILDFLAG(IS_CHROMEOS)
-  if (screen->InTabletMode()) {
-    initial_position =
-        screen->GetDisplayForNewWindows().work_area().CenterPoint();
-  }
-#endif
   UpdatePosition(initial_position);
 
   // The ignore selection time should be long enough to allow the user to see
   // the UI.
   ignore_selection_time_ = base::TimeTicks::Now() + base::Milliseconds(500);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Add an observation so the capture can be updated as the eye dropper window
-  // moves between displays.
-  window_observation_.Observe(GetWidget()->GetNativeWindow());
-#endif
 }
 
 EyeDropperView::~EyeDropperView() {
@@ -302,15 +268,6 @@ void EyeDropperView::OnPaint(gfx::Canvas* view_canvas) {
   const SkBitmap frame = screen_capturer_->GetBitmap();
   gfx::Point center_position_px;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS only captures a single display at a time, and we need to convert
-  // the cursor position to display (root window) local pixel coordinates.
-  aura::Window* window = GetWidget()->GetNativeWindow();
-  const gfx::Point center_position =
-      window->GetBoundsInRootWindow().CenterPoint();
-  center_position_px =
-      window->GetHost()->GetRootTransform().MapPoint(center_position);
-#else
   // The captured frame is not scaled so we need to use widget's bounds in
   // pixels to have the magnified region match cursor position.
   center_position_px =
@@ -320,7 +277,6 @@ void EyeDropperView::OnPaint(gfx::Canvas* view_canvas) {
           .CenterPoint();
   center_position_px.Offset(-screen_capturer_->original_offset_x(),
                             -screen_capturer_->original_offset_y());
-#endif
 
   view_canvas->DrawImageInt(gfx::ImageSkia::CreateFrom1xBitmap(frame),
                             center_position_px.x() - pixel_count / 2,
@@ -393,17 +349,6 @@ void EyeDropperView::OnWidgetMove() {
   SchedulePaint();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void EyeDropperView::OnWindowAddedToRootWindow(aura::Window* window) {
-  display::Display display =
-      display::Screen::Get()->GetDisplayNearestWindow(window);
-  CaptureScreen(display.id());
-}
-
-void EyeDropperView::OnWindowDestroying(aura::Window* window) {
-  window_observation_.Reset();
-}
-#endif
 
 void EyeDropperView::CaptureScreen(
     std::optional<webrtc::DesktopCapturer::SourceId> screen) {

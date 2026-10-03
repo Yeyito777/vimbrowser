@@ -25,16 +25,11 @@ class WebUIAllUrlsBrowserTest
 
  protected:
   void SetUpCommandLine(base::CommandLine* command_line) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetUpOnMainThread() override;
-#endif
   void WaitBeforeNavigation();
 
  private:
   base::test::ScopedFeatureList feature_list_;
-#if !BUILDFLAG(IS_CHROMEOS)
   policy::FakeBrowserDMTokenStorage fake_dm_token_storage_;
-#endif
 };
 
 #endif  // CHROME_BROWSER_UI_WEBUI_WEB_UI_ALL_URLS_BROWSER_TEST_H_

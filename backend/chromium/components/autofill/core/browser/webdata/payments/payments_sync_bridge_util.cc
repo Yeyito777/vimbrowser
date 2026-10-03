@@ -1243,11 +1243,7 @@ bool IsAutofillWalletCredentialDataSpecificsValid(
 }
 
 bool AreMaskedBankAccountSupported() {
-#if BUILDFLAG(IS_ANDROID)
-  return true;
-#else
   return false;
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 bool IsBnplIssuerSupported() {
@@ -1262,11 +1258,7 @@ bool IsBnplIssuerSupported() {
 }
 
 bool IsEwalletAccountSupported() {
-#if BUILDFLAG(IS_ANDROID)
-  return base::FeatureList::IsEnabled(features::kAutofillSyncEwalletAccounts);
-#else
   return false;
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 bool IsGenericPaymentInstrumentSupported() {

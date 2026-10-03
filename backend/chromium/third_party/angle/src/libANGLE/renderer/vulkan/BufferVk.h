@@ -152,11 +152,6 @@ class BufferVk : public BufferImpl
     ~BufferVk() override;
     void destroy(const gl::Context *context) override;
 
-    angle::Result setExternalBufferData(const gl::Context *context,
-                                        gl::BufferBinding target,
-                                        GLeglClientBufferEXT clientBuffer,
-                                        size_t size,
-                                        VkMemoryPropertyFlags memoryPropertyFlags);
     angle::Result setDataWithUsageFlags(const gl::Context *context,
                                         gl::BufferBinding target,
                                         GLeglClientBufferEXT clientBuffer,
@@ -331,7 +326,6 @@ class BufferVk : public BufferImpl
                                       BufferUsageType usageType,
                                       BufferFeedback *feedback);
 
-    bool isExternalBuffer() const { return mClientBuffer != nullptr; }
     BufferUpdateType calculateBufferUpdateTypeOnFullUpdate(
         vk::Renderer *renderer,
         size_t size,
@@ -352,9 +346,6 @@ class BufferVk : public BufferImpl
     }
 
     vk::BufferHelper mBuffer;
-
-    // If not null, this is the external memory pointer passed from client API.
-    void *mClientBuffer;
 
     uint32_t mMemoryTypeIndex;
     // Memory/Usage property that will be used for memory allocation.

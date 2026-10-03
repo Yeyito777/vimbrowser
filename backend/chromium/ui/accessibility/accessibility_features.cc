@@ -9,19 +9,12 @@
 #include "build/build_config.h"
 #include "ui/accessibility/ax_features.mojom-features.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#endif
 
 namespace features {
 
 BASE_FEATURE(kAccessibilityPdfOcrForSelectToSpeak,
              "kAccessibilityPdfOcrForSelectToSpeak",
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif  // BUILDFLAG(IS_CHROMEOS)
 );
 bool IsAccessibilityPdfOcrForSelectToSpeakEnabled() {
   return base::FeatureList::IsEnabled(
@@ -183,150 +176,9 @@ bool IsAccessibilityOnScreenAXModeEnabled() {
   return base::FeatureList::IsEnabled(::features::kAccessibilityOnScreenMode);
 }
 
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kAccessibilityWinAXFragmentRootParent,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityWinAXFragmentRootParentEnabled() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityWinAXFragmentRootParent);
-}
 
-BASE_FEATURE(kFixNarratorWebContentContainment,
-             base::FEATURE_ENABLED_BY_DEFAULT);
 
-bool IsFixNarratorWebContentContainmentEnabled() {
-  return base::FeatureList::IsEnabled(
-      ::features::kFixNarratorWebContentContainment);
-}
 
-BASE_FEATURE(kIChromeAccessible, base::FEATURE_DISABLED_BY_DEFAULT);
-bool IsIChromeAccessibleEnabled() {
-  return base::FeatureList::IsEnabled(::features::kIChromeAccessible);
-}
-
-BASE_FEATURE(kUiaDisconnectRootProviders, base::FEATURE_DISABLED_BY_DEFAULT);
-
-BASE_FEATURE(kUiaProvider, base::FEATURE_ENABLED_BY_DEFAULT);
-
-BASE_FEATURE(kUiaEventOptimization, base::FEATURE_ENABLED_BY_DEFAULT);
-
-BASE_FEATURE(kUiaMathMlSupport, base::FEATURE_DISABLED_BY_DEFAULT);
-bool IsUiaMathMlSupportEnabled() {
-  return base::FeatureList::IsEnabled(::features::kUiaMathMlSupport);
-}
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_CHROMEOS)
-bool IsDictationOfflineAvailable() {
-  return base::FeatureList::IsEnabled(
-      ash::features::kOnDeviceSpeechRecognition);
-}
-
-BASE_FEATURE(kAccessibilityAccelerator, base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityAcceleratorEnabled() {
-  return base::FeatureList::IsEnabled(::features::kAccessibilityAccelerator);
-}
-
-BASE_FEATURE(kAccessibilityReducedAnimations, base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityReducedAnimationsEnabled() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityReducedAnimations);
-}
-
-BASE_FEATURE(kAccessibilityReducedAnimationsInKiosk,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityReducedAnimationsInKioskEnabled() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityReducedAnimationsInKiosk);
-}
-
-BASE_FEATURE(kExperimentalAccessibilityDictationContextChecking,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-bool IsExperimentalAccessibilityDictationContextCheckingEnabled() {
-  return base::FeatureList::IsEnabled(
-      ::features::kExperimentalAccessibilityDictationContextChecking);
-}
-
-BASE_FEATURE(kAccessibilityMagnifierFollowsChromeVox,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityMagnifierFollowsChromeVoxEnabled() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityMagnifierFollowsChromeVox);
-}
-
-BASE_FEATURE(kAccessibilityMouseKeys, base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityMouseKeysEnabled() {
-  return base::FeatureList::IsEnabled(::features::kAccessibilityMouseKeys);
-}
-
-BASE_FEATURE(kAccessibilityCaptionsOnBrailleDisplay,
-             "CaptionsOnBrailleDisplay",
-             base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityCaptionsOnBrailleDisplayEnabled() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityCaptionsOnBrailleDisplay);
-}
-
-BASE_FEATURE(kAccessibilityDisableTouchpad, base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityDisableTouchpadEnabled() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityDisableTouchpad);
-}
-
-BASE_FEATURE(kAccessibilityFlashScreenFeature,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityFlashScreenFeatureEnabled() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityFlashScreenFeature);
-}
-
-BASE_FEATURE(kAccessibilityShakeToLocate, base::FEATURE_DISABLED_BY_DEFAULT);
-bool IsAccessibilityShakeToLocateEnabled() {
-  return base::FeatureList::IsEnabled(::features::kAccessibilityShakeToLocate);
-}
-
-BASE_FEATURE(kAccessibilityManifestV3ChromeVox,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-bool IsAccessibilityManifestV3EnabledForChromeVox() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityManifestV3ChromeVox);
-}
-
-BASE_FEATURE(kAccessibilityManifestV3EspeakNGTts,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityManifestV3EnabledForEspeakNGTts() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityManifestV3EspeakNGTts);
-}
-
-BASE_FEATURE(kAccessibilityManifestV3GoogleTts,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityManifestV3EnabledForGoogleTts() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityManifestV3GoogleTts);
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
-#if BUILDFLAG(IS_ANDROID)
-
-BASE_FEATURE(kAccessibilityInlineLineSeparators,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-bool IsAccessibilityInlineLineSeparatorsEnabled() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityInlineLineSeparators);
-}
-
-BASE_FEATURE(kAccessibilityMagnificationFollowsFocus,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-bool IsAccessibilityMagnificationFollowsFocusEnabled() {
-  return base::FeatureList::IsEnabled(
-      ::features::kAccessibilityMagnificationFollowsFocus);
-}
-
-#endif  // BUILDFLAG(IS_ANDROID)
-
-#if !BUILDFLAG(IS_ANDROID)
 BASE_FEATURE(kAXTreeFixing, base::FEATURE_DISABLED_BY_DEFAULT);
 bool IsAXTreeFixingEnabled() {
   return base::FeatureList::IsEnabled(::features::kAXTreeFixing);
@@ -470,7 +322,6 @@ BASE_FEATURE(kScreenAIPartitionAllocAdvancedChecksEnabled,
              base::FEATURE_DISABLED_BY_DEFAULT);
 #endif
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_MAC)
 // Enables the switchover to the newer NSAccessibility property-based API.

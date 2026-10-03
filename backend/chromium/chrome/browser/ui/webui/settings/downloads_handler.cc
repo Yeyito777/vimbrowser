@@ -20,9 +20,6 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/file_manager/path_util.h"
-#endif
 
 using base::UserMetricsAction;
 
@@ -51,12 +48,6 @@ void DownloadsHandler::RegisterMessages() {
       "selectDownloadLocation",
       base::BindRepeating(&DownloadsHandler::HandleSelectDownloadLocation,
                           base::Unretained(this)));
-#if BUILDFLAG(IS_CHROMEOS)
-  web_ui()->RegisterMessageCallback(
-      "getDownloadLocationText",
-      base::BindRepeating(&DownloadsHandler::HandleGetDownloadLocationText,
-                          base::Unretained(this)));
-#endif
 }
 
 void DownloadsHandler::OnJavascriptAllowed() {
@@ -126,19 +117,5 @@ void DownloadsHandler::FileSelectionCanceled() {
   select_folder_dialog_ = nullptr;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void DownloadsHandler::HandleGetDownloadLocationText(
-    const base::ListValue& args) {
-  AllowJavascript();
-  CHECK_EQ(2U, args.size());
-  const std::string& callback_id = args[0].GetString();
-  const std::string& path = args[1].GetString();
-
-  ResolveJavascriptCallback(
-      base::Value(callback_id),
-      base::Value(
-          file_manager::util::GetPathDisplayTextForSettings(profile_, path)));
-}
-#endif
 
 }  // namespace settings

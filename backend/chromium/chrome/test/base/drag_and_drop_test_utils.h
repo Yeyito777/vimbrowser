@@ -16,9 +16,6 @@
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/point_f.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#endif
 
 class GURL;
 
@@ -80,17 +77,6 @@ class DragAndDropSimulator {
   bool SimulateDragEnter(const gfx::Point& location,
                          const std::vector<ui::FileInfo>& file_infos);
 
-#if BUILDFLAG(IS_WIN)
-  // Simulates notification that multiple virtual files were dragged from
-  // outside of the browser, into the specified `location` inside
-  // `web_contents`. `location` is relative to `web_contents`. Returns true upon
-  // success.
-  bool SimulateDragEnter(
-      const gfx::Point& location,
-      const std::vector<std::pair<base::FilePath, std::string>>&
-          filenames_and_contents,
-      DWORD tymed);
-#endif  // BUILDFLAG(IS_WIN)
 
   // Simulates notification that |url| was dragged from outside of the browser,
   // into the specified |location| inside |omnibox|.

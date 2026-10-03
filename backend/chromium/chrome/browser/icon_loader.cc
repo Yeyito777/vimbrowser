@@ -27,16 +27,13 @@ IconLoader::IconLoader(const base::FilePath& file_path,
                        float scale,
                        IconLoadedCallback callback)
     : file_path_(file_path),
-#if !BUILDFLAG(IS_ANDROID)
       icon_size_(size),
-#endif
       scale_(scale),
       callback_(std::move(callback)) {
 }
 
 IconLoader::~IconLoader() = default;
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void IconLoader::Start() {
   target_task_runner_ = base::SingleThreadTaskRunner::GetCurrentDefault();
 
@@ -45,12 +42,9 @@ void IconLoader::Start() {
       base::BindOnce(&IconLoader::ReadGroup, base::Unretained(this)));
 }
 
-#if !BUILDFLAG(IS_WIN)
 void IconLoader::ReadGroup() {
   group_ = GroupForFilepath(file_path_);
 
   GetReadIconTaskRunner()->PostTask(
       FROM_HERE, base::BindOnce(&IconLoader::ReadIcon, base::Unretained(this)));
 }
-#endif  // !BUILDFLAG(IS_WIN)
-#endif  // !BUILDFLAG(IS_CHROMEOS)

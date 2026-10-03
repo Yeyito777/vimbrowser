@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=a1045751b1eb64a35943d61635f52a821ee1d7ad$
+// $hash=8adc1e828b83a9e5267643ebde4341d774e1fc75$
 //
 
 #include "include/cef_api_hash.h"
@@ -620,55 +620,6 @@ cef_window_handle_t CEF_CALLBACK window_get_window_handle(struct _cef_window_0_t
 
   // Return type: simple
   return _retval;
-}
-
-void CEF_CALLBACK window_send_key_press(struct _cef_window_0_t* self, int key_code, uint32_t event_flags) {
-  shutdown_checker::AssertNotShutdown();
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self) {
-    return;
-  }
-
-  // Execute
-  CefWindow_0_CppToC::Get(self)->SendKeyPress(
-      key_code,
-      event_flags);
-}
-
-void CEF_CALLBACK window_send_mouse_move(struct _cef_window_0_t* self, int screen_x, int screen_y) {
-  shutdown_checker::AssertNotShutdown();
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self) {
-    return;
-  }
-
-  // Execute
-  CefWindow_0_CppToC::Get(self)->SendMouseMove(
-      screen_x,
-      screen_y);
-}
-
-void CEF_CALLBACK window_send_mouse_events(struct _cef_window_0_t* self, cef_mouse_button_type_t button, int mouse_down, int mouse_up) {
-  shutdown_checker::AssertNotShutdown();
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  DCHECK(self);
-  if (!self) {
-    return;
-  }
-
-  // Execute
-  CefWindow_0_CppToC::Get(self)->SendMouseEvents(
-      button,
-      mouse_down?true:false,
-      mouse_up?true:false);
 }
 
 void CEF_CALLBACK window_set_accelerator(struct _cef_window_0_t* self, int command_id, int key_code, int shift_pressed, int ctrl_pressed, int alt_pressed, int high_priority) {
@@ -2033,9 +1984,6 @@ CefWindow_0_CppToC::CefWindow_0_CppToC() {
   GetStruct()->get_client_area_bounds_in_screen = window_get_client_area_bounds_in_screen;
   GetStruct()->set_draggable_regions = window_set_draggable_regions;
   GetStruct()->get_window_handle = window_get_window_handle;
-  GetStruct()->send_key_press = window_send_key_press;
-  GetStruct()->send_mouse_move = window_send_mouse_move;
-  GetStruct()->send_mouse_events = window_send_mouse_events;
   GetStruct()->set_accelerator = window_set_accelerator;
   GetStruct()->remove_accelerator = window_remove_accelerator;
   GetStruct()->remove_all_accelerators = window_remove_all_accelerators;

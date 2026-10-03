@@ -11,11 +11,6 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/media_session/public/mojom/audio_focus.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-namespace media {
-class AudioDuckerWin;
-}  // namespace media
-#endif  // BUILDFLAG(IS_WIN)
 
 // The AudioDucker ducks other audio in Chrome besides what is playing through
 // its associated Page's WebContents. Additionally, on Windows only, the
@@ -65,12 +60,6 @@ class AudioDucker : public content::PageUserData<AudioDucker>,
   // |audio_focus_remote_| is already bound or has become bound.
   bool BindToAudioFocusManagerIfNecessary();
 
-#if BUILDFLAG(IS_WIN)
-  bool ShouldDuckProcess(base::ProcessId process_id) const;
-
-  // Responsible for ducking other applications on Windows.
-  std::unique_ptr<media::AudioDuckerWin> windows_ducker_;
-#endif  // BUILDFLAG(IS_WIN)
 
   AudioDuckingState ducking_state_ = AudioDuckingState::kNoDucking;
   mojo::Remote<media_session::mojom::AudioFocusManager> audio_focus_remote_;

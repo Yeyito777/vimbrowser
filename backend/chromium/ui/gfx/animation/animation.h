@@ -101,10 +101,6 @@ class ANIMATION_EXPORT Animation : public AnimationContainerElement {
   // Should only be called from the browser process, on the UI thread.
   static bool PrefersReducedMotion();
   static void UpdatePrefersReducedMotion();
-#if BUILDFLAG(IS_CHROMEOS)
-  // This should only be used by the ChromeOS Accessibility system.
-  static void SetPrefersReducedMotionForA11y(bool prefers_reduced_motion);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   static void SetPrefersReducedMotionForTesting(bool prefers_reduced_motion) {
     prefers_reduced_motion_ = prefers_reduced_motion;
   }
@@ -159,20 +155,6 @@ class ANIMATION_EXPORT Animation : public AnimationContainerElement {
   // value has not been queried from the platform yet.
   static std::optional<bool> prefers_reduced_motion_;
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, the `prefers_reduced_motion_` system setting is largely
-  // dictated by a platform call to SystemParametersInfo(), which can fail, and
-  // thus, `prefers_reduced_motion_` has a very slightly different semantic to
-  // ShouldRenderRichAnimationImpl(). This keeps track of Win32 API calls made
-  // to read the SPI parameter `SPI_GETCLIENTAREAANIMATION`, Windows'
-  // system-wide 'reduced-animation' setting, so it is known whether we have its
-  // value, since `prefers_reduced_motion_` defaults to false, allowing the use
-  // of its cached value in most cases. A value of `std::nullopt` indicates that
-  // a call to SystemParametersInfo() has not been made yet. It is updated on
-  // startup, as well as each time a WM_SETTINGCHANGE MSG is broadcasted for
-  // animations (as happens each time that setting is modified).
-  static std::optional<bool> has_reduced_motion_platform_parameter_;
-#endif
 };
 
 }  // namespace gfx

@@ -72,13 +72,8 @@ PasswordManagerExporter::PasswordManagerExporter(
       write_function_(base::BindRepeating(&DefaultWriteFunction)),
       delete_function_(base::BindRepeating(&DefaultDeleteFunction)),
       completion_callback_(std::move(completion_callback)),
-#if BUILDFLAG(IS_POSIX)
       set_permissions_function_(
           base::BindRepeating(base::SetPosixFilePermissions)),
-#else
-      set_permissions_function_(
-          base::BindRepeating([](const base::FilePath&, int) { return true; })),
-#endif
       task_runner_(g_task_runner.Get()) {
 }
 
@@ -182,11 +177,7 @@ void PasswordManagerExporter::Export() {
 
 void PasswordManagerExporter::OnPasswordsExported(bool success) {
   if (success) {
-#if !BUILDFLAG(IS_WIN)
     std::string file_path = destination_.value();
-#else
-    std::string file_path = base::WideToUTF8(destination_.value());
-#endif
     OnProgress(
         {.status = ExportProgressStatus::kSucceeded, .file_path = file_path});
 

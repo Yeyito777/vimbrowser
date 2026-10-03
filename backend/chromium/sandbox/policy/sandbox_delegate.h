@@ -29,49 +29,6 @@ class SandboxDelegate {
   // Sandbox::kNoSandbox to run without a sandbox policy.
   virtual sandbox::mojom::Sandbox GetSandboxType() = 0;
 
-#if BUILDFLAG(IS_WIN)
-  // Returns a tag for the sandbox. All targets with the same tag will share
-  // their TargetConfig configuration - the delegate can call
-  // TargetConfig::IsConfigured() to skip setting this configuration after the
-  // first such policy has been configured. Provide an empty string to force
-  // every policy to be unique.
-  virtual std::string GetSandboxTag() = 0;
-
-  // Whether to disable the default policy specified in
-  // AddPolicyForSandboxedProcess.
-  virtual bool DisableDefaultPolicy() = 0;
-
-  // Get the AppContainer ID for the sandbox. If this returns false then the
-  // AppContainer will not be enabled for the process.
-  virtual bool GetAppContainerId(std::string* appcontainer_id) = 0;
-
-  // Called to initialize the target configuration for the process.
-  virtual bool InitializeConfig(TargetConfig* config) = 0;
-
-  // Called right before spawning the process. Returns false on failure.
-  // Methods in TargetConfig only need to be called if IsConfigured() returns
-  // false.
-  virtual bool PreSpawnTarget(TargetPolicy* policy) = 0;
-
-  // Called right after the process is launched, but before its thread is run.
-  virtual void PostSpawnTarget(base::ProcessHandle process) = 0;
-
-  // Whether this process should run inside a Job if running unsandboxed.
-  virtual bool ShouldUnsandboxedRunInJob() = 0;
-
-  // Whether this process will be compatible with Control-flow Enforcement
-  // Technology (CET) / Hardware-enforced Stack Protection.
-  virtual bool CetCompatible() = 0;
-
-  // Determines if the CPU core running this process can be shared with other
-  // processes.
-  virtual bool RestrictCoreSharing() = 0;
-
-  // Obtains the name of the security attribute in the browser process token, to
-  // be used in the token of this sandboxed process, or nullopt if there is no
-  // security attribute required.
-  virtual std::optional<std::wstring> GetSecurityAttributeName() = 0;
-#endif  // BUILDFLAG(IS_WIN)
 };
 
 }  // namespace policy

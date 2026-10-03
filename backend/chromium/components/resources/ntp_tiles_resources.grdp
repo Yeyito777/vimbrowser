@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Resources for user-facing NTP features. -->
 <grit-part>
-  <if expr="is_android or is_ios">
+  <if expr="is_ios">
     <if expr="_google_chrome">
       <then>
         <include name="IDR_DEFAULT_POPULAR_SITES_JSON" file="../ntp_tiles/resources/internal/default_popular_sites.json" type="BINDATA" compress="gzip" />

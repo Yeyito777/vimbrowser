@@ -40,12 +40,6 @@ class DragContentsButton : public views::LabelButton {
  public:
   DragContentsButton(PressedCallback callback, std::u16string title)
       : LabelButton(std::move(callback), title) {
-#if BUILDFLAG(IS_WIN)
-    // For windows, label button paints icon to a layer by default, which
-    // causes the drag image to not render correctly. Disable this behavior.
-    // This is a workaround for crbug.com/394380766
-    image_container_view()->DestroyLayer();
-#endif
   }
   ~DragContentsButton() override = default;
 };

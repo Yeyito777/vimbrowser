@@ -41,23 +41,21 @@ static_library("common") {
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
-  if (!is_android) {
-    sources += [
-      "discovery/media_sink_service_base.cc",
-      "discovery/media_sink_service_base.h",
-      "discovery/media_sink_service_util.cc",
-      "discovery/media_sink_service_util.h",
-      "pref_names.cc",
-      "pref_names.h",
-      "providers/cast/cast_media_source.cc",
-      "providers/cast/cast_media_source.h",
-    ]
+  sources += [
+    "discovery/media_sink_service_base.cc",
+    "discovery/media_sink_service_base.h",
+    "discovery/media_sink_service_util.cc",
+    "discovery/media_sink_service_util.h",
+    "pref_names.cc",
+    "pref_names.h",
+    "providers/cast/cast_media_source.cc",
+    "providers/cast/cast_media_source.h",
+  ]
 
-    deps += [
-      "//components/media_router/common/providers/cast/channel",
-      "//third_party/openscreen/src/cast/common:public",
-    ]
-  }
+  deps += [
+    "//components/media_router/common/providers/cast/channel",
+    "//third_party/openscreen/src/cast/common:public",
+  ]
 }
 
 static_library("test_support") {
@@ -95,19 +93,17 @@ source_set("unit_tests") {
     "//testing/gtest",
   ]
 
-  if (!is_android) {
-    sources += [
-      "discovery/media_sink_internal_unittest.cc",
-      "discovery/media_sink_service_base_unittest.cc",
-      "mojom/media_router_mojom_traits_unittest.cc",
-      "providers/cast/cast_media_source_unittest.cc",
-    ]
+  sources += [
+    "discovery/media_sink_internal_unittest.cc",
+    "discovery/media_sink_service_base_unittest.cc",
+    "mojom/media_router_mojom_traits_unittest.cc",
+    "providers/cast/cast_media_source_unittest.cc",
+  ]
 
-    deps += [
-      "//components/media_router/common/mojom:media_router_test_interfaces",
-      "//components/media_router/common/providers/cast/certificate:unit_tests",
-      "//components/media_router/common/providers/cast/channel",
-      "//third_party/openscreen/src/cast/common:public",
-    ]
-  }
+  deps += [
+    "//components/media_router/common/mojom:media_router_test_interfaces",
+    "//components/media_router/common/providers/cast/certificate:unit_tests",
+    "//components/media_router/common/providers/cast/channel",
+    "//third_party/openscreen/src/cast/common:public",
+  ]
 }

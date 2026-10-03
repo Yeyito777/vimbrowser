@@ -73,16 +73,12 @@ class CRYPTO_EXPORT FakeKeychainV2 : public KeychainV2 {
   // Returns the true if |AddGenericPassword()| was called.
   bool called_add_generic() const { return called_add_generic_; }
 
-#if !BUILDFLAG(IS_IOS)
   base::apple::ScopedCFTypeRef<CFTypeRef> TaskCopyValueForEntitlement(
       SecTaskRef task,
       CFStringRef entitlement,
       CFErrorRef* error) override;
-#endif  // !BUILDFLAG(IS_IOS)
-#if !BUILDFLAG(IS_IOS_TVOS)
   BOOL LAContextCanEvaluatePolicy(LAPolicy policy,
                                   NSError* __autoreleasing* error) override;
-#endif  // !BUILDFLAG(IS_IOS_TVOS)
 
  private:
   bool is_secure_enclave_available_ = true;

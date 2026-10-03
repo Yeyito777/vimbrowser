@@ -51,15 +51,6 @@ class MockBluetoothGattCharacteristic
                      std::vector<BluetoothRemoteGattDescriptor*>());
   MOCK_CONST_METHOD1(GetDescriptor,
                      BluetoothRemoteGattDescriptor*(const std::string&));
-#if BUILDFLAG(IS_CHROMEOS)
-  void StartNotifySession(NotificationType t,
-                          NotifySessionCallback c,
-                          ErrorCallback ec) override {
-    StartNotifySession_(t, c, ec);
-  }
-  MOCK_METHOD3(StartNotifySession_,
-               void(NotificationType, NotifySessionCallback&, ErrorCallback&));
-#endif  // BUILDFLAG(IS_CHROMEOS)
   void StartNotifySession(NotifySessionCallback c, ErrorCallback ec) override {
     StartNotifySession_(c, ec);
   }
@@ -95,35 +86,11 @@ class MockBluetoothGattCharacteristic
                void(base::span<const uint8_t>,
                     base::OnceClosure&,
                     ErrorCallback&));
-#if BUILDFLAG(IS_CHROMEOS)
-  void PrepareWriteRemoteCharacteristic(base::span<const uint8_t> v,
-                                        base::OnceClosure c,
-                                        ErrorCallback ec) override {
-    PrepareWriteRemoteCharacteristic_(v, c, ec);
-  }
-  MOCK_METHOD3(PrepareWriteRemoteCharacteristic_,
-               void(base::span<const uint8_t>,
-                    base::OnceClosure&,
-                    ErrorCallback&));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void AddMockDescriptor(
       std::unique_ptr<MockBluetoothGattDescriptor> mock_descriptor);
 
  protected:
-#if BUILDFLAG(IS_CHROMEOS)
-  void SubscribeToNotifications(BluetoothRemoteGattDescriptor* d,
-                                NotificationType t,
-                                base::OnceClosure c,
-                                ErrorCallback ec) override {
-    SubscribeToNotifications_(d, t, c, ec);
-  }
-  MOCK_METHOD4(SubscribeToNotifications_,
-               void(BluetoothRemoteGattDescriptor*,
-                    NotificationType,
-                    base::OnceClosure&,
-                    ErrorCallback&));
-#else
   void SubscribeToNotifications(BluetoothRemoteGattDescriptor* d,
                                 base::OnceClosure c,
                                 ErrorCallback ec) override {
@@ -133,7 +100,6 @@ class MockBluetoothGattCharacteristic
                void(BluetoothRemoteGattDescriptor*,
                     base::OnceClosure&,
                     ErrorCallback&));
-#endif  // BUILDFLAG(IS_CHROMEOS)
   void UnsubscribeFromNotifications(BluetoothRemoteGattDescriptor* d,
                                     base::OnceClosure c,
                                     ErrorCallback ec) override {

@@ -37,13 +37,7 @@
 #if BLINK_HEAP_HIDE_THREAD_LOCAL_IN_LIBRARY
 #define BLINK_HEAP_THREAD_LOCAL_MODEL "local-dynamic"
 #else
-#if BUILDFLAG(IS_WIN)
-#define BLINK_HEAP_THREAD_LOCAL_MODEL "initial-exec"
-#elif BUILDFLAG(IS_ANDROID)
-#define BLINK_HEAP_THREAD_LOCAL_MODEL "local-dynamic"
-#else
 #define BLINK_HEAP_THREAD_LOCAL_MODEL "local-exec"
-#endif
 #endif
 
 #if defined(BLINK_HEAP_HIDE_THREAD_LOCAL_IN_LIBRARY)

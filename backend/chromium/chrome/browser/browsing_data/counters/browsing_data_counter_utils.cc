@@ -35,17 +35,11 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/text/bytes_formatting.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/sync/service/sync_user_settings.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
 #include "ui/strings/grit/ui_strings.h"
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/browsing_data/counters/tabs_counter.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "base/numerics/safe_conversions.h"
@@ -122,36 +116,17 @@ std::u16string GetChromeCounterTextFromResult(
     if (cache_size_bytes >= base::MiBU(1)) {
       std::u16string formatted_size = FormatBytesMBOrHigher(cache_size_bytes);
       if (!is_upper_limit) {
-#if BUILDFLAG(IS_ANDROID)
-        if (!is_basic_tab) {
-          return l10n_util::GetStringFUTF16(
-              IDS_ANDROID_DEL_CACHE_COUNTER_ADVANCED, formatted_size);
-        }
-#endif
         return is_basic_tab ? l10n_util::GetStringFUTF16(
                                   IDS_DEL_CACHE_COUNTER_BASIC, formatted_size)
                             : formatted_size;
       }
 
-#if BUILDFLAG(IS_ANDROID)
-      if (!is_basic_tab) {
-        return l10n_util::GetStringFUTF16(
-            IDS_ANDROID_DEL_CACHE_COUNTER_ADVANCED_UPPER_ESTIMATE,
-            formatted_size);
-      }
-#endif
       return l10n_util::GetStringFUTF16(
           is_basic_tab ? IDS_DEL_CACHE_COUNTER_UPPER_ESTIMATE_BASIC
                        : IDS_DEL_CACHE_COUNTER_UPPER_ESTIMATE,
           formatted_size);
     }
 
-#if BUILDFLAG(IS_ANDROID)
-    if (!is_basic_tab) {
-      return l10n_util::GetStringUTF16(
-          IDS_ANDROID_DEL_CACHE_COUNTER_ADVANCED_ALMOST_EMPTY);
-    }
-#endif
     return l10n_util::GetStringUTF16(
         is_basic_tab ? IDS_DEL_CACHE_COUNTER_ALMOST_EMPTY_BASIC
                      : IDS_DEL_CACHE_COUNTER_ALMOST_EMPTY);
@@ -166,13 +141,8 @@ std::u16string GetChromeCounterTextFromResult(
         static_cast<const BrowsingDataCounter::FinishedResult*>(result)
             ->Value();
 
-#if BUILDFLAG(IS_ANDROID)
-    return l10n_util::GetPluralStringFUTF16(
-        IDS_ANDROID_DEL_COOKIES_COUNTER_ADVANCED, origins);
-#else
     // Determines whether or not to show the count with exception message.
 
-#if !BUILDFLAG(IS_CHROMEOS)
     if (base::FeatureList::IsEnabled(
             browsing_data::features::kDbdRevampDesktop)) {
       std::u16string cookies_counter_text = l10n_util::GetPluralStringFUTF16(
@@ -188,7 +158,6 @@ std::u16string GetChromeCounterTextFromResult(
       }
       return cookies_counter_text;
     }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
     int del_cookie_counter_msg_id =
         ShouldShowCookieException(profile)
@@ -196,7 +165,6 @@ std::u16string GetChromeCounterTextFromResult(
             : IDS_DEL_COOKIES_COUNTER_ADVANCED;
 
     return l10n_util::GetPluralStringFUTF16(del_cookie_counter_msg_id, origins);
-#endif
   }
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
@@ -269,26 +237,6 @@ std::u16string GetChromeCounterTextFromResult(
     }
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (pref_name == browsing_data::prefs::kCloseTabs) {
-    const TabsCounter::TabsResult* tabs_result =
-        static_cast<const TabsCounter::TabsResult*>(result);
-    BrowsingDataCounter::ResultInt tab_count = tabs_result->Value();
-    BrowsingDataCounter::ResultInt window_count = tabs_result->window_count();
-
-    if (window_count > 1) {
-      std::u16string tabs_counter_string =
-          l10n_util::GetPluralStringFUTF16(IDS_TABS_COUNT, tab_count);
-      std::u16string windows_counter_string =
-          l10n_util::GetPluralStringFUTF16(IDS_WINDOWS_COUNT, window_count);
-      return l10n_util::GetStringFUTF16(IDS_DEL_TABS_MULTIWINDOW_COUNTER,
-                                        tabs_counter_string,
-                                        windows_counter_string);
-    } else {
-      return l10n_util::GetPluralStringFUTF16(IDS_DEL_TABS_COUNTER, tab_count);
-    }
-  }
-#endif
 
   return browsing_data::GetCounterTextFromResult(result);
 }

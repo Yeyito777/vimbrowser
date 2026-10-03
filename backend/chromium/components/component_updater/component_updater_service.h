@@ -229,13 +229,7 @@ class OnDemandUpdater {
   friend class SodaComponentInstallerPolicy;
   friend class WasmTtsEngineComponentInstallerPolicy;
   friend class SodaLanguagePackComponentInstallerPolicy;
-  friend class TranslateKitComponentInstallerPolicy;
-  friend class TranslateKitLanguagePackComponentInstallerPolicy;
   friend class ::extensions::AutotestPrivateLoadSmartDimComponentFunction;
-#if BUILDFLAG(IS_CHROMEOS)
-  friend class ash::SmartDimComponentIntegrationTest;
-  friend class CrOSComponentInstaller;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   friend class ::CefComponentUpdaterImpl;
   friend class IwaKeyDistributionComponentInstallerPolicy;
 

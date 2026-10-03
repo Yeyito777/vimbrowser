@@ -7,9 +7,6 @@
 #include "base/version_info/version_info.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "build/util/LASTCHANGE_commit_position.h"
-#endif
 
 namespace version_info {
 

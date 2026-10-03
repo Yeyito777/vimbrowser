@@ -200,58 +200,6 @@ void PrepareDragForFileContents(const DropData& drop_data,
 }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-void PrepareDragForDownload(const DropData& drop_data,
-                            ui::OSExchangeDataProvider* provider,
-                            WebContentsImpl* web_contents) {
-  const GURL& page_url = web_contents->GetLastCommittedURL();
-  const std::string& page_encoding = web_contents->GetEncoding();
-
-  // Parse the download metadata.
-  std::u16string mime_type;
-  base::FilePath file_name;
-  GURL download_url;
-  if (!ParseDownloadMetadata(drop_data.download_metadata,
-                             &mime_type,
-                             &file_name,
-                             &download_url))
-    return;
-
-  // Generate the file name based on both mime type and proposed file name.
-  std::string default_name =
-      GetContentClient()->browser()->GetDefaultDownloadName();
-  base::FilePath generated_download_file_name =
-      net::GenerateFileName(download_url, std::string(), std::string(),
-                            base::WideToUTF8(file_name.value()),
-                            base::UTF16ToUTF8(mime_type), default_name);
-
-  // http://crbug.com/332579
-  ScopedAllowBlockingForViewAura allow_file_operations;
-
-  base::FilePath temp_dir_path;
-  if (!base::CreateNewTempDirectory(FILE_PATH_LITERAL("chrome_drag"),
-                                    &temp_dir_path))
-    return;
-
-  base::FilePath download_path =
-      temp_dir_path.Append(generated_download_file_name);
-
-  // We cannot know when the target application will be done using the temporary
-  // file, so schedule it to be deleted after rebooting.
-  base::DeleteFileAfterReboot(download_path);
-  base::DeleteFileAfterReboot(temp_dir_path);
-
-  // Provide the data as file (CF_HDROP). A temporary download file with the
-  // Zone.Identifier ADS (Alternate Data Stream) attached will be created.
-  auto download_file = std::make_unique<DragDownloadFile>(
-      download_path, base::File(), download_url,
-      Referrer(page_url, drop_data.referrer_policy), page_encoding,
-      provider->GetRendererTaintedOrigin(), web_contents);
-  ui::DownloadFileInfo file_download(base::FilePath(),
-                                     std::move(download_file));
-  provider->SetDownloadFileInfo(&file_download);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 // Returns the ClipboardFormatType to store file system files.
 const ui::ClipboardFormatType& GetFileSystemFileFormatType() {
@@ -267,12 +215,6 @@ void PrepareDragData(const DropData& drop_data,
                      ui::OSExchangeDataProvider* provider,
                      WebContentsImpl* web_contents) {
   provider->MarkRendererTaintedFromOrigin(source_origin);
-#if BUILDFLAG(IS_WIN)
-  // Put download before file contents to prefer the download of a image over
-  // its thumbnail link.
-  if (!drop_data.download_metadata.empty())
-    PrepareDragForDownload(drop_data, provider, web_contents);
-#endif
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN)
   // We set the file contents before the URL because the URL also sets file
   // contents (to a .URL shortcut).  We want to prefer file content data over
@@ -308,37 +250,6 @@ void PrepareDragData(const DropData& drop_data,
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-// Function returning whether this drop target should extract virtual file data
-// from the data store.
-// (1) As with real files, only add virtual files if the drag did not originate
-// in the renderer process. Without this, if an anchor element is dragged and
-// then dropped on the same page, the browser will navigate to the URL
-// referenced by the anchor. That is because virtual ".url" file data
-// (internet shortcut) is added to the data object on drag start, and if
-// script doesn't handle the drop, the browser behaves just as if a .url file
-// were dragged in from the desktop. Filtering out virtual files if the drag
-// is renderer tainted also prevents the possibility of a compromised renderer
-// gaining access to the backing temp file paths.
-// (2) Even if the drag is not renderer tainted, also exclude virtual files
-// if the UniformResourceLocatorW clipboard format is found in the data object.
-// Drags initiated in the browser process, such as dragging a bookmark from
-// the bookmark bar, will add a virtual .url file to the data object using the
-// CFSTR_FILEDESCRIPTORW/CFSTR_FILECONTENTS formats, which represents an
-// internet shortcut intended to be  dropped on the desktop. But this causes a
-// regression in the behavior of the extensions page (see
-// https://crbug.com/963392). The primary scenario for introducing virtual file
-// support was for dragging items out of Outlook.exe for upload to a file
-// hosting service. The Outlook drag source does not add url data to the data
-// object.
-// TODO(crbug.com/41456054): DragDrop: Extend virtual filename support
-// to DropData, for parity with real filename support.
-// TODO(crbug.com/41459545): Drag and drop: Should support both virtual
-// file and url data on drop.
-bool ShouldIncludeVirtualFiles(const DropData& drop_data) {
-  return !drop_data.did_originate_from_renderer && drop_data.url_infos.empty();
-}
-#endif
 
 // Utilities to convert between blink::DragOperationsMask and
 // ui::DragDropTypes.
@@ -409,97 +320,6 @@ WebContentsViewAura::OnPerformingDropContext::OnPerformingDropContext(
 WebContentsViewAura::OnPerformingDropContext::~OnPerformingDropContext() =
     default;
 
-#if BUILDFLAG(IS_WIN)
-// A web contents observer that watches for navigations while an async drop
-// operation is in progress during virtual file data retrieval and temp file
-// creation. Navigations may cause completion of the drop to be disallowed.
-class WebContentsViewAura::AsyncDropNavigationObserver
-    : public WebContentsObserver {
- public:
-  explicit AsyncDropNavigationObserver(WebContents* watched_contents);
-
-  AsyncDropNavigationObserver(const AsyncDropNavigationObserver&) = delete;
-  AsyncDropNavigationObserver& operator=(const AsyncDropNavigationObserver&) =
-      delete;
-
-  // WebContentsObserver:
-  void DidFinishNavigation(NavigationHandle* navigation_handle) override;
-
-  // Was a navigation observed while the async drop was being processed that
-  // should disallow the drop?
-  bool drop_allowed() const { return drop_allowed_; }
-
- private:
-  bool drop_allowed_ = true;
-};
-
-WebContentsViewAura::AsyncDropNavigationObserver::AsyncDropNavigationObserver(
-    WebContents* watched_contents)
-    : WebContentsObserver(watched_contents) {}
-
-void WebContentsViewAura::AsyncDropNavigationObserver::DidFinishNavigation(
-    NavigationHandle* navigation_handle) {
-  auto* navigation_request = NavigationRequest::From(navigation_handle);
-  // This method is called every time any navigation completes in the observed
-  // web contents, including subframe navigations. In the case of a subframe
-  // navigation, we can't readily determine on the browser process side if the
-  // navigated subframe is the intended drop target. Err on the side of security
-  // and disallow the drop if any navigation commits to a different url.
-  // Note that this method is called twice for prerendering, one when the
-  // prerendering starts and the document is created and starts loading and one
-  // when the prerendered document has been activated and shown to the user.
-  // We should not disallow the drop for the former prerendering state.
-  if (navigation_request->HasCommitted() &&
-      (navigation_request->GetURL() !=
-       navigation_request->GetPreviousMainFrameURL()) &&
-      navigation_request->GetRenderFrameHost()->GetLifecycleState() !=
-          RenderFrameHost::LifecycleState::kPrerendering) {
-    drop_allowed_ = false;
-  }
-}
-
-// Deletes registered temp files asynchronously when the object goes out of
-// scope (when the WebContentsViewAura is deleted on tab closure).
-class WebContentsViewAura::AsyncDropTempFileDeleter {
- public:
-  AsyncDropTempFileDeleter() = default;
-
-  AsyncDropTempFileDeleter(const AsyncDropTempFileDeleter&) = delete;
-  AsyncDropTempFileDeleter& operator=(const AsyncDropTempFileDeleter&) = delete;
-
-  ~AsyncDropTempFileDeleter();
-  void RegisterFile(const base::FilePath& path);
-
- private:
-  void DeleteAllFilesAsync() const;
-  void DeleteFileAsync(const base::FilePath& path) const;
-
-  std::vector<base::FilePath> scoped_files_to_delete_;
-};
-
-WebContentsViewAura::AsyncDropTempFileDeleter::~AsyncDropTempFileDeleter() {
-  DeleteAllFilesAsync();
-}
-
-void WebContentsViewAura::AsyncDropTempFileDeleter::RegisterFile(
-    const base::FilePath& path) {
-  scoped_files_to_delete_.push_back(path);
-}
-
-void WebContentsViewAura::AsyncDropTempFileDeleter::DeleteAllFilesAsync()
-    const {
-  for (const auto& path : scoped_files_to_delete_)
-    DeleteFileAsync(path);
-}
-
-void WebContentsViewAura::AsyncDropTempFileDeleter::DeleteFileAsync(
-    const base::FilePath& path) const {
-  base::ThreadPool::PostTask(FROM_HERE,
-                             {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
-                              base::TaskShutdownBehavior::BLOCK_SHUTDOWN},
-                             base::GetDeleteFileCallback(std::move(path)));
-}
-#endif
 
 class WebContentsViewAura::WindowObserver
     : public aura::WindowObserver, public aura::WindowTreeHostObserver {
@@ -713,15 +533,7 @@ void WebContentsViewAura::SetDelegateForTesting(
 void WebContentsViewAura::PrepareDropData(
     DropData* drop_data,
     const ui::OSExchangeData& data) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(b/256022714): Using `IsRendererTainted()` breaks the Files app. Always
-  // setting this to false is currently believed to be safe-ish because ChromeOS
-  // separates URL and filename metadata and does not implement the DownloadURL
-  // protocol.
-  drop_data->did_originate_from_renderer = false;
-#else
   drop_data->did_originate_from_renderer = data.IsRendererTainted();
-#endif
   drop_data->is_from_privileged = data.IsFromPrivileged();
 
   if (std::optional<std::u16string> string = data.GetString();
@@ -744,18 +556,6 @@ void WebContentsViewAura::PrepareDropData(
       filenames.has_value()) {
     drop_data->filenames = filenames.value();
   }
-#if BUILDFLAG(IS_WIN)
-  // Get a list of virtual files for later retrieval when a drop is performed.
-  // Returns empty vector if there are any non-virtual files in the data store.
-  if (ShouldIncludeVirtualFiles(*drop_data)) {
-    if (std::optional<std::vector<ui::FileInfo>> virtual_filenames =
-            data.GetVirtualFilenames();
-        virtual_filenames.has_value()) {
-      std::ranges::move(virtual_filenames.value(),
-                        std::back_inserter(drop_data->filenames));
-    }
-  }
-#endif
 
   if (drop_data->filenames.empty()) {
     // Only add FileContents if Filenames is empty to avoid duplicates
@@ -1228,13 +1028,11 @@ void WebContentsViewAura::StartDragging(
     // Make sure event is within the web contents, and the web contents are
     // visible.
     if (
-#if !BUILDFLAG(IS_CHROMEOS)
         // TODO(https://crbug.com/454552204): Remove #if when either ChromeOS
         // fixes split screen mode web ui tab strip drag, or web ui tab strip is
         // fully deprecated.
         !content_native_view->GetBoundsInScreen().Contains(
             event_info.location) ||
-#endif  // !BUILDFLAG(IS_CHROMEOS)
         !content_native_view->IsVisible()) {
       web_contents_->SystemDragEnded(source_rwh);
       return;
@@ -1488,9 +1286,6 @@ void WebContentsViewAura::OnDragEntered(const ui::DropTargetEvent& event) {
     return;
   }
 
-#if BUILDFLAG(IS_WIN)
-  async_drop_navigation_observer_.reset();
-#endif
 
   std::unique_ptr<DropData> drop_data = std::make_unique<DropData>();
   // Calling this here as event.data might become invalid inside the callback.
@@ -1737,24 +1532,6 @@ void WebContentsViewAura::PerformDropCallback(
       target_rwh, std::move(current_drag_data_), drop_metadata, std::move(data),
       std::move(drop_exit_cleanup), transformed_pt, screen_pt);
 
-#if BUILDFLAG(IS_WIN)
-  if (ShouldIncludeVirtualFiles(*drop_context.drop_data) &&
-      drop_context.data->HasVirtualFilenames()) {
-    // Asynchronously retrieve the actual content of any virtual files now (this
-    // step is not needed for "real" files already on the file system, e.g.
-    // those dropped on Chromium from the desktop). When all content has been
-    // written to temporary files, the OnGotVirtualFilesAsTempFiles
-    // callback will be invoked and the drop communicated to the renderer
-    // process.
-    async_drop_navigation_observer_ =
-        std::make_unique<AsyncDropNavigationObserver>(web_contents_);
-    ui::OSExchangeData* data_ptr = drop_context.data.get();
-    data_ptr->GetVirtualFilesAsTempFiles(base::BindOnce(
-        &WebContentsViewAura::OnGotVirtualFilesAsTempFiles,
-        weak_ptr_factory_.GetWeakPtr(), std::move(drop_context)));
-    return;
-  }
-#endif
 
   MaybeLetDelegateProcessDrop(std::move(drop_context));
 }
@@ -1872,66 +1649,6 @@ void WebContentsViewAura::RegisterDropCallbackForTesting(
   drop_callback_for_testing_ = std::move(callback);
 }
 
-#if BUILDFLAG(IS_WIN)
-void WebContentsViewAura::OnGotVirtualFilesAsTempFiles(
-    OnPerformingDropContext drop_context,
-    const std::vector<std::pair<base::FilePath, base::FilePath>>&
-        filepaths_and_names) {
-  if (!async_drop_navigation_observer_) {
-    return;
-  }
-
-  if (!filepaths_and_names.empty()) {
-    std::unique_ptr<AsyncDropNavigationObserver> drop_observer(
-        std::move(async_drop_navigation_observer_));
-
-    RenderWidgetHostImpl* target_rwh = drop_context.target_rwh.get();
-
-    // Security check--don't allow the drop if a navigation occurred since the
-    // drop was initiated or the render widget host has changed or it is not a
-    // valid target.
-    if (!drop_observer->drop_allowed() ||
-        !(target_rwh && target_rwh == current_rwh_for_drag_.get() &&
-          drag_security_info_.IsValidDragTarget(target_rwh))) {
-      // Signal test code that the drop is disallowed.
-      if (!drop_callback_for_testing_.is_null()) {
-        std::move(drop_callback_for_testing_)
-            .Run(target_rwh, *drop_context.drop_data,
-                 drop_context.transformed_pt.value(), drop_context.screen_pt,
-                 drop_context.drop_metadata.flags,
-                 drop_observer->drop_allowed());
-      }
-
-      CompleteDragExit();
-      return;
-    }
-
-    // The vector of filenames will still have items added during dragenter
-    // (script is allowed to enumerate the files in the data store but not
-    // retrieve the file contents in dragenter). But the temp file path in the
-    // FileInfo structs will just be a placeholder. Clear out the vector before
-    // replacing it with FileInfo structs that have the paths to the retrieved
-    // file contents.
-    drop_context.drop_data->filenames.clear();
-
-    // Ensure we have temp file deleter.
-    if (!async_drop_temp_file_deleter_) {
-      async_drop_temp_file_deleter_ =
-          std::make_unique<AsyncDropTempFileDeleter>();
-    }
-
-    for (const auto& filepath_and_name : filepaths_and_names) {
-      drop_context.drop_data->filenames.push_back(
-          ui::FileInfo(filepath_and_name.first, filepath_and_name.second));
-
-      // Make sure the temp file eventually gets cleaned up.
-      async_drop_temp_file_deleter_->RegisterFile(filepath_and_name.first);
-    }
-  }
-
-  MaybeLetDelegateProcessDrop(std::move(drop_context));
-}
-#endif
 
 int WebContentsViewAura::GetTopControlsHeight() const {
   WebContentsDelegate* delegate = web_contents_->GetDelegate();

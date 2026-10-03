@@ -2296,28 +2296,6 @@ uint64_t BackingStore::EstimateSize(bool write_in_progress) const {
     return blob_size + level_db_size;
   }
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, `base::FileEnumerator` (and therefore
-  // `base::ComputeDirectorySize()`) will not report up-to-date sizes when a
-  // file is currently being written. When transactions are not set to
-  // "flush"/"sync" (terminology varies based on context), LevelDB will keep
-  // open its file handles. Therefore, on Windows, `ComputeDirectorySize()` may
-  // not take into account recent writes, leading to situations where
-  // `navigator.storage.estimate()` will not report updates when interleaved
-  // with relaxed durability IDB transactions. The workaround for this is to
-  // open and close new file handles for all the files in the LevelDB data
-  // directory before calculating usage, as this updates the file system
-  // directory entry's metadata. See crbug.com/1489517 and
-  // https://devblogs.microsoft.com/oldnewthing/20111226-00/?p=8813
-  if (write_in_progress) {
-    base::FileEnumerator(database_path_, /*recursive=*/false,
-                         base::FileEnumerator::FILES)
-        .ForEach([](const base::FilePath& file_path) {
-          base::File file(file_path, base::File::FLAG_OPEN |
-                                         base::File::FLAG_WIN_SHARE_DELETE);
-        });
-  }
-#endif
   return ReadSizeFromDisk(database_path_, blob_path_);
 }
 
@@ -4647,11 +4625,9 @@ bool BackingStore::Transaction::WriteNewBlobs(BlobWriteCallback callback) {
           // modification times. The timestamp is not checked during reading
           // on Android either. https://crbug.com/1045488
           std::optional<base::Time> last_modified;
-#if !BUILDFLAG(IS_ANDROID)
           last_modified = entry.last_modified().is_null()
                               ? std::nullopt
                               : std::make_optional(entry.last_modified());
-#endif
           backing_store_->bucket_context_->blob_storage_context()
               ->WriteBlobToFile(std::move(pending_blob),
                                 backing_store_->GetBlobFileName(

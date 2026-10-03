@@ -36,9 +36,6 @@
 #include "ui/views/controls/textfield/textfield_controller.h"
 #include "ui/views/view.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/base/ime/ash/input_method_manager.h"
-#endif
 
 class LocationBarView;
 class IconLabelBubbleView;
@@ -59,9 +56,6 @@ class OSExchangeData;
 class OmniboxViewViews
     : public OmniboxView,
       public views::Textfield,
-#if BUILDFLAG(IS_CHROMEOS)
-      public ash::input_method::InputMethodManager::CandidateWindowObserver,
-#endif
       public views::TextfieldController,
       public ui::CompositorObserver,
       public TemplateURLServiceObserver,
@@ -298,12 +292,6 @@ class OmniboxViewViews
   void UpdateAccessibleValue() override;
 
   // ash::input_method::InputMethodManager::CandidateWindowObserver:
-#if BUILDFLAG(IS_CHROMEOS)
-  void CandidateWindowOpened(
-      ash::input_method::InputMethodManager* manager) override;
-  void CandidateWindowClosed(
-      ash::input_method::InputMethodManager* manager) override;
-#endif
 
   // views::TextfieldController:
   void ContentsChanged(views::Textfield* sender,
@@ -405,12 +393,6 @@ class OmniboxViewViews
   // |location_bar_view_| can be NULL in tests.
   raw_ptr<LocationBarView> location_bar_view_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // True if the IME candidate window is open. When this is true, we want to
-  // avoid showing the popup. So far, the candidate window is detected only
-  // on Chrome OS.
-  bool ime_candidate_window_open_ = false;
-#endif
 
   // True if any mouse button is currently depressed.
   bool is_mouse_pressed_ = false;

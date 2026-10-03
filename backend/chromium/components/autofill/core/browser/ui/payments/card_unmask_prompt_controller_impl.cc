@@ -187,13 +187,6 @@ void CardUnmaskPromptControllerImpl::OnUnmaskPromptAccepted(
 
   // On Android, FIDO authentication is fully launched and its checkbox should
   // always be shown. Remember the last choice the user made on this device.
-#if BUILDFLAG(IS_ANDROID)
-  pending_details_.enable_fido_auth = enable_fido_auth;
-  if (was_checkbox_visible) {
-    pref_service_->SetBoolean(
-        prefs::kAutofillCreditCardFidoAuthOfferCheckboxState, enable_fido_auth);
-  }
-#endif
 
   // There is a chance the delegate has disappeared (i.e. tab closed) before the
   // unmask response came in. Avoid a crash.
@@ -205,12 +198,6 @@ void CardUnmaskPromptControllerImpl::NewCardLinkClicked() {
   new_card_link_clicked_ = true;
 }
 
-#if BUILDFLAG(IS_IOS)
-std::u16string CardUnmaskPromptControllerImpl::GetNavigationTitle() const {
-  return l10n_util::GetStringUTF16(
-      IDS_AUTOFILL_CARD_UNMASK_PROMPT_NAVIGATION_TITLE_VERIFICATION);
-}
-#endif
 
 std::u16string CardUnmaskPromptControllerImpl::GetWindowTitle() const {
   // Set title for VCN retrieval errors first.
@@ -225,36 +212,21 @@ std::u16string CardUnmaskPromptControllerImpl::GetWindowTitle() const {
 
   // For VCN unmask flow, display unique CVC title.
   if (IsChallengeOptionPresent()) {
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
-    return l10n_util::GetStringUTF16(
-        IDS_AUTOFILL_CARD_UNMASK_PROMPT_TITLE_VIRTUAL_CARD);
-#else
     return l10n_util::GetStringFUTF16(
         IDS_AUTOFILL_CARD_UNMASK_PROMPT_TITLE_SECURITY_CODE,
         card_.CardNameAndLastFourDigits());
-#endif
   }
 
   // Title for expired cards.
   if (ShouldRequestExpirationDate()) {
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
-    return l10n_util::GetStringUTF16(
-        IDS_AUTOFILL_CARD_UNMASK_PROMPT_TITLE_EXPIRED_CARD);
-#else
     return l10n_util::GetStringFUTF16(
         IDS_AUTOFILL_CARD_UNMASK_PROMPT_EXPIRED_TITLE,
         card_.CardNameAndLastFourDigits());
-#endif
   }
 
   // Default title.
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
-  return l10n_util::GetStringUTF16(
-      IDS_AUTOFILL_CARD_UNMASK_PROMPT_TITLE_DEFAULT);
-#else
   return l10n_util::GetStringFUTF16(IDS_AUTOFILL_CARD_UNMASK_PROMPT_TITLE,
                                     card_.CardNameAndLastFourDigits());
-#endif
 }
 
 std::u16string CardUnmaskPromptControllerImpl::GetInstructionsMessage() const {
@@ -302,46 +274,6 @@ bool CardUnmaskPromptControllerImpl::ShouldRequestExpirationDate() const {
          new_card_link_clicked_;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-Suggestion::Icon CardUnmaskPromptControllerImpl::GetCardIcon() const {
-  return card_.CardIconForAutofillSuggestion();
-}
-
-std::u16string CardUnmaskPromptControllerImpl::GetCardName() const {
-  return card_.CardNameForAutofillDisplay();
-}
-
-std::u16string CardUnmaskPromptControllerImpl::GetCardLastFourDigits() const {
-  return card_.ObfuscatedNumberWithVisibleLastFourDigits();
-}
-
-std::u16string CardUnmaskPromptControllerImpl::GetCardExpiration() const {
-  return card_.AbbreviatedExpirationDateForDisplay(false);
-}
-
-const GURL& CardUnmaskPromptControllerImpl::GetCardArtUrl() const {
-  return card_.card_art_url();
-}
-
-int CardUnmaskPromptControllerImpl::GetGooglePayImageRid() const {
-  return IDR_AUTOFILL_GOOGLE_PAY_WITH_DIVIDER;
-}
-
-bool CardUnmaskPromptControllerImpl::ShouldOfferWebauthn() const {
-  return delegate_ && delegate_->ShouldOfferFidoAuth();
-}
-
-bool CardUnmaskPromptControllerImpl::GetWebauthnOfferStartState() const {
-  return pref_service_->GetBoolean(
-      prefs::kAutofillCreditCardFidoAuthOfferCheckboxState);
-}
-
-std::u16string CardUnmaskPromptControllerImpl::GetCvcImageAnnouncement() const {
-  return l10n_util::GetStringUTF16(
-      IsCvcInFront() ? IDS_AUTOFILL_CARD_UNMASK_CVC_IMAGE_ANNOUNCEMENT_AMEX
-                     : IDS_AUTOFILL_CARD_UNMASK_CVC_IMAGE_ANNOUNCEMENT);
-}
-#endif
 
 bool CardUnmaskPromptControllerImpl::InputCvcIsValid(
     std::u16string_view input_text) const {
@@ -428,13 +360,11 @@ const CreditCard& CardUnmaskPromptControllerImpl::GetCreditCard() const {
   return card_;
 }
 
-#if !BUILDFLAG(IS_IOS)
 int CardUnmaskPromptControllerImpl::GetCvcTooltipResourceId() {
   return IsCvcInFront()
              ? IDS_AUTOFILL_CARD_UNMASK_CVC_IMAGE_DESCRIPTION_FOR_AMEX
              : IDS_AUTOFILL_CARD_UNMASK_CVC_IMAGE_DESCRIPTION;
 }
-#endif
 
 bool CardUnmaskPromptControllerImpl::AllowsRetry(PaymentsRpcResult result) {
   if (result == PaymentsRpcResult::kNetworkError ||
@@ -461,14 +391,7 @@ bool CardUnmaskPromptControllerImpl::IsCvcInFront() const {
 
 bool CardUnmaskPromptControllerImpl::ShouldDismissUnmaskPromptUponResult(
     PaymentsRpcResult result) {
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
-  // For virtual card errors on Mobile, we'd dismiss the unmask prompt and
-  // instead show a different error dialog.
-  return result == PaymentsRpcResult::kVcnRetrievalPermanentFailure ||
-         result == PaymentsRpcResult::kVcnRetrievalTryAgainFailure;
-#else
   return false;
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 }
 
 void CardUnmaskPromptControllerImpl::LogOnCloseEvents() {

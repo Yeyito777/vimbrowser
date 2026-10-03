@@ -15,9 +15,7 @@
 #include "build/build_config.h"
 #include "device/bluetooth/bluetooth_device_mac.h"
 
-#if !BUILDFLAG(IS_IOS)
 #import <IOBluetooth/IOBluetooth.h>
-#endif
 
 @class BluetoothLowEnergyPeripheralDelegate;
 

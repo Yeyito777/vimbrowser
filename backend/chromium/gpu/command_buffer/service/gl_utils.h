@@ -85,16 +85,6 @@ void PopulateNumericCapabilities(Capabilities* caps,
 void PopulateGLCapabilities(GLCapabilities* caps,
                             const FeatureInfo* feature_info);
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Validate the list of formats `drm_formats_and_modifiers` only contains valid
-// drm formats that are mappable for Exo on ChromeOS. Provide fallback list of
-// mappable formats with invalid modifiers, if it is empty.
-void PopulateMappableDrmFormatsForExo(
-    base::flat_map<uint32_t, std::vector<uint64_t>>& drm_formats_and_modifiers,
-    const FeatureInfo* feature_info);
-void PopulateDRMCapabilities(Capabilities* caps,
-                             const FeatureInfo* feature_info);
-#endif
 
 bool CheckUniqueAndNonNullIds(GLsizei n, const GLuint* client_ids);
 

@@ -31,12 +31,7 @@
 #include "ui/accessibility/ax_enums.mojom.h"
 #include "ui/accessibility/platform/ax_platform.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/ui/tab_contents/tab_contents_iterator.h"
-#else
-#include "base/android/jni_android.h"
-#include "chrome/browser/image_descriptions/jni_headers/ImageDescriptionsController_jni.h"
-#endif
 
 using LanguageInfo = language::UrlLanguageHistogram::LanguageInfo;
 
@@ -112,17 +107,9 @@ class ImageAnnotatorClient : public image_annotation::Annotator::Client {
 
 AccessibilityLabelsService::AccessibilityLabelsService(Profile* profile)
     : profile_(profile) {
-#if BUILDFLAG(IS_ANDROID)
-  // On Android we must add/remove a NetworkChangeObserver during construction/
-  // destruction to provide the "Only on Wi-Fi" functionality.
-  net::NetworkChangeNotifier::AddNetworkChangeObserver(this);
-#endif
 }
 
 AccessibilityLabelsService::~AccessibilityLabelsService() {
-#if BUILDFLAG(IS_ANDROID)
-  net::NetworkChangeNotifier::RemoveNetworkChangeObserver(this);
-#endif
 }
 
 // static
@@ -134,14 +121,6 @@ void AccessibilityLabelsService::RegisterProfilePrefs(
   registry->RegisterBooleanPref(
       prefs::kAccessibilityImageLabelsOptInAccepted, false,
       user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
-#if BUILDFLAG(IS_ANDROID)
-  registry->RegisterBooleanPref(
-      prefs::kAccessibilityImageLabelsEnabledAndroid, false,
-      user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
-  registry->RegisterBooleanPref(
-      prefs::kAccessibilityImageLabelsOnlyOnWifi, true,
-      user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
-#endif
 }
 
 // static
@@ -157,11 +136,7 @@ void AccessibilityLabelsService::InitOffTheRecordPrefs(
 void AccessibilityLabelsService::Init() {
   pref_change_registrar_.Init(profile_->GetPrefs());
   pref_change_registrar_.Add(
-#if !BUILDFLAG(IS_ANDROID)
       prefs::kAccessibilityImageLabelsEnabled,
-#else
-      prefs::kAccessibilityImageLabelsEnabledAndroid,
-#endif
       base::BindRepeating(
           &AccessibilityLabelsService::OnImageLabelsEnabledChanged,
           weak_factory_.GetWeakPtr()));
@@ -171,12 +146,8 @@ void AccessibilityLabelsService::Init() {
 }
 
 bool AccessibilityLabelsService::IsEnabled() {
-#if !BUILDFLAG(IS_ANDROID)
   return profile_->GetPrefs()->GetBoolean(
       prefs::kAccessibilityImageLabelsEnabled);
-#else
-  return GetAndroidEnabledStatus();
-#endif
 }
 
 void AccessibilityLabelsService::EnableLabelsServiceOnce(
@@ -189,7 +160,6 @@ void AccessibilityLabelsService::EnableLabelsServiceOnce(
   // the action.
   // For Android, we call through the JNI (see below) and send the web contents
   // directly, since Android does not support BrowserList::GetInstance.
-#if !BUILDFLAG(IS_ANDROID)
   // Fire an AXAction on the active tab to enable this feature once only.
   // We only need to fire this event for the active page.
   ui::AXActionData action_data;
@@ -200,7 +170,6 @@ void AccessibilityLabelsService::EnableLabelsServiceOnce(
           render_frame_host->AccessibilityPerformAction(action_data);
         }
       });
-#endif
 }
 
 void AccessibilityLabelsService::BindImageAnnotator(
@@ -248,73 +217,4 @@ void AccessibilityLabelsService::UpdateAccessibilityLabelsHistograms() {
                             profile_->GetPrefs()->GetBoolean(
                                 prefs::kAccessibilityImageLabelsEnabled));
 
-#if BUILDFLAG(IS_ANDROID)
-  // For Android we will track additional histograms.
-  base::UmaHistogramBoolean(
-      "Accessibility.ImageLabels.Android",
-      profile_->GetPrefs()->GetBoolean(
-          prefs::kAccessibilityImageLabelsEnabledAndroid));
-
-  base::UmaHistogramBoolean("Accessibility.ImageLabels.Android.OnlyOnWifi",
-                            profile_->GetPrefs()->GetBoolean(
-                                prefs::kAccessibilityImageLabelsOnlyOnWifi));
-#endif
 }
-
-#if BUILDFLAG(IS_ANDROID)
-void AccessibilityLabelsService::OnNetworkChanged(
-    net::NetworkChangeNotifier::ConnectionType type) {
-  // When the network status changes, we want to (potentially) update the
-  // AXMode of all web contents for the current profile.
-  OnImageLabelsEnabledChanged();
-}
-
-bool AccessibilityLabelsService::GetAndroidEnabledStatus() {
-  // On Android, user has an option to toggle "only on wifi", so also check
-  // the current connection type if necessary.
-  bool enabled = profile_->GetPrefs()->GetBoolean(
-      prefs::kAccessibilityImageLabelsEnabledAndroid);
-
-  bool only_on_wifi = profile_->GetPrefs()->GetBoolean(
-      prefs::kAccessibilityImageLabelsOnlyOnWifi);
-
-  if (enabled && only_on_wifi) {
-    net::NetworkChangeNotifier::ConnectionType current_connection_type =
-        net::NetworkChangeNotifier::GetConnectionType();
-    bool is_wifi =
-        (current_connection_type ==
-         net::NetworkChangeNotifier::ConnectionType::CONNECTION_WIFI);
-    bool is_ethernet =
-        (current_connection_type ==
-         net::NetworkChangeNotifier::ConnectionType::CONNECTION_ETHERNET);
-    enabled = (is_wifi || is_ethernet);
-  }
-
-  return enabled;
-}
-
-static void JNI_ImageDescriptionsController_GetImageDescriptionsOnce(
-    JNIEnv* env,
-    const base::android::JavaRef<jobject>& j_web_contents) {
-  content::WebContents* web_contents =
-      content::WebContents::FromJavaWebContents(j_web_contents);
-
-  if (!web_contents) {
-    return;
-  }
-
-  // We only need to fire this event for the active page.
-  ui::AXActionData action_data;
-  action_data.action = ax::mojom::Action::kAnnotatePageImages;
-  web_contents->GetPrimaryMainFrame()->ForEachRenderFrameHost(
-      [&action_data](content::RenderFrameHost* render_frame_host) {
-        if (render_frame_host->IsRenderFrameLive()) {
-          render_frame_host->AccessibilityPerformAction(action_data);
-        }
-      });
-}
-#endif
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(ImageDescriptionsController)
-#endif

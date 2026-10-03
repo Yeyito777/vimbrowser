@@ -50,68 +50,6 @@ namespace gfx {
 
 namespace {
 
-#if BUILDFLAG(IS_IOS)
-// The returned string will have at least one character besides the ellipsis
-// on either side of '@'; if that's impossible, a single ellipsis is returned.
-// If possible, only the username is elided. Otherwise, the domain is elided
-// in the middle, splitting available width equally with the elided username.
-// If the username is short enough that it doesn't need half the available
-// width, the elided domain will occupy that extra width.
-std::u16string ElideEmail(std::u16string_view email,
-                          const FontList& font_list,
-                          float available_pixel_width) {
-  if (GetStringWidthF(email, font_list) <= available_pixel_width) {
-    return std::u16string(email);
-  }
-
-  // Split the email into its local-part (username) and domain-part. The email
-  // spec allows for @ symbols in the username under some special requirements,
-  // but not in the domain part, so splitting at the last @ symbol is safe.
-  const size_t split_index = email.find_last_of('@');
-  DCHECK_NE(split_index, std::u16string::npos);
-  std::u16string username(email.substr(0, split_index));
-  std::u16string domain(email.substr(split_index + 1));
-  DCHECK(!username.empty());
-  DCHECK(!domain.empty());
-
-  // Subtract the @ symbol from the available width as it is mandatory.
-  const std::u16string_view kAtSignUTF16 = u"@";
-  available_pixel_width -= GetStringWidthF(kAtSignUTF16, font_list);
-
-  // Check whether eliding the domain is necessary: if eliding the username
-  // is sufficient, the domain will not be elided.
-  const float full_username_width = GetStringWidthF(username, font_list);
-  const float available_domain_width =
-      available_pixel_width -
-      std::min(full_username_width,
-               GetStringWidthF(username.substr(0, 1) + kEllipsisUTF16,
-                               font_list));
-  if (GetStringWidthF(domain, font_list) > available_domain_width) {
-    // Elide the domain so that it only takes half of the available width.
-    // Should the username not need all the width available in its half, the
-    // domain will occupy the leftover width.
-    // If |desired_domain_width| is greater than |available_domain_width|: the
-    // minimal username elision allowed by the specifications will not fit; thus
-    // |desired_domain_width| must be <= |available_domain_width| at all cost.
-    const float desired_domain_width =
-        std::min(available_domain_width,
-                 std::max(available_pixel_width - full_username_width,
-                          available_pixel_width / 2));
-    domain = ElideText(domain, font_list, desired_domain_width, ELIDE_MIDDLE);
-    // Failing to elide the domain such that at least one character remains
-    // (other than the ellipsis itself) remains: return a single ellipsis.
-    if (domain.length() <= 1U)
-      return std::u16string(kEllipsisUTF16);
-  }
-
-  // Fit the username in the remaining width (at this point the elided username
-  // is guaranteed to fit with at least one character remaining given all the
-  // precautions taken earlier).
-  available_pixel_width -= GetStringWidthF(domain, font_list);
-  username = ElideText(username, font_list, available_pixel_width, ELIDE_TAIL);
-  return base::StrCat({username, kAtSignUTF16, domain});
-}
-#endif
 
 bool GetDefaultWhitespaceElision(bool elide_in_middle,
                                  bool elide_at_beginning) {
@@ -174,12 +112,7 @@ std::u16string StringSlicer::CutString(size_t length,
 std::u16string ElideFilename(const base::FilePath& filename,
                              const FontList& font_list,
                              float available_pixel_width) {
-#if BUILDFLAG(IS_WIN)
-  std::u16string filename_utf16 = WideToUTF16(filename.value());
-  std::u16string extension = WideToUTF16(filename.Extension());
-  std::u16string rootname =
-      WideToUTF16(filename.BaseName().RemoveExtension().value());
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   std::u16string filename_utf16 =
       WideToUTF16(base::SysNativeMBToWide(filename.value()));
   std::u16string extension =
@@ -224,7 +157,6 @@ std::u16string ElideText(std::u16string_view text,
                          const FontList& font_list,
                          float available_pixel_width,
                          ElideBehavior behavior) {
-#if !BUILDFLAG(IS_IOS)
   DCHECK_NE(behavior, FADE_TAIL);
   std::unique_ptr<RenderText> render_text = RenderText::CreateRenderText();
   render_text->SetCursorEnabled(false);
@@ -235,51 +167,6 @@ std::u16string ElideText(std::u16string_view text,
   render_text->SetElideBehavior(behavior);
   render_text->SetText(text);
   return std::u16string(render_text->GetDisplayText());
-#else
-  DCHECK_NE(behavior, FADE_TAIL);
-  if (text.empty() || behavior == FADE_TAIL || behavior == NO_ELIDE ||
-      GetStringWidthF(text, font_list) <= available_pixel_width) {
-    return std::u16string(text);
-  }
-  if (behavior == ELIDE_EMAIL)
-    return ElideEmail(text, font_list, available_pixel_width);
-
-  const bool elide_in_middle = (behavior == ELIDE_MIDDLE);
-  const bool elide_at_beginning = (behavior == ELIDE_HEAD);
-  const bool insert_ellipsis = (behavior != TRUNCATE);
-  const std::u16string_view ellipsis = kEllipsisUTF16;
-  StringSlicer slicer(text, ellipsis, elide_in_middle, elide_at_beginning);
-
-  if (insert_ellipsis &&
-      GetStringWidthF(ellipsis, font_list) > available_pixel_width)
-    return std::u16string();
-
-  // Use binary search to compute the elided text.
-  size_t lo = 0;
-  size_t hi = text.length() - 1;
-  size_t guess;
-  std::u16string cut;
-  for (guess = std::midpoint(lo, hi); lo <= hi; guess = std::midpoint(lo, hi)) {
-    // We check the width of the whole desired string at once to ensure we
-    // handle kerning/ligatures/etc. correctly.
-    // TODO(skanuj) : Handle directionality of ellipsis based on adjacent
-    // characters.  See crbug.com/327963.
-    cut = slicer.CutString(guess, insert_ellipsis);
-    const float guess_width = GetStringWidthF(cut, font_list);
-    if (guess_width == available_pixel_width)
-      break;
-    if (guess_width > available_pixel_width) {
-      hi = guess - 1;
-      // Move back on the loop terminating condition when the guess is too wide.
-      if (hi < lo)
-        lo = hi;
-    } else {
-      lo = guess + 1;
-    }
-  }
-
-  return cut;
-#endif
 }
 
 bool ElideString(std::u16string_view input,

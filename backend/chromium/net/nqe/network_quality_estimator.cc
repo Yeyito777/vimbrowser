@@ -71,16 +71,6 @@ BASE_FEATURE_PARAM(bool,
                    "defer_until_next_step",
                    false);
 
-#if BUILDFLAG(IS_CHROMEOS)
-// SequencedTaskRunner to get the network id. A SequencedTaskRunner is used
-// rather than parallel tasks to avoid having many threads getting the network
-// id concurrently.
-base::LazyThreadPoolSequencedTaskRunner g_get_network_id_task_runner =
-    LAZY_THREAD_POOL_SEQUENCED_TASK_RUNNER_INITIALIZER(
-        base::TaskTraits(base::MayBlock(),
-                         base::TaskPriority::BEST_EFFORT,
-                         base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN));
-#endif
 
 NetworkQualityObservationSource ProtocolSourceToObservationSource(
     SocketPerformanceWatcherFactory::Protocol protocol) {
@@ -687,28 +677,6 @@ void NetworkQualityEstimator::OnConnectionTypeChanged(
 void NetworkQualityEstimator::GatherEstimatesForNextConnectionType() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (get_network_id_asynchronously_) {
-    // Doing PostTaskAndReplyWithResult by handle because it requires the result
-    // type have a default constructor and nqe::internal::NetworkID does not
-    // have that.
-    g_get_network_id_task_runner.Get()->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](scoped_refptr<base::TaskRunner> reply_task_runner,
-               base::OnceCallback<void(const nqe::internal::NetworkID&)>
-                   reply_callback) {
-              reply_task_runner->PostTask(
-                  FROM_HERE, base::BindOnce(std::move(reply_callback),
-                                            DoGetCurrentNetworkID(nullptr)));
-            },
-            base::SingleThreadTaskRunner::GetCurrentDefault(),
-            base::BindOnce(&NetworkQualityEstimator::
-                               ContinueGatherEstimatesForNextConnectionType,
-                           weak_ptr_factory_.GetWeakPtr())));
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   ContinueGatherEstimatesForNextConnectionType(GetCurrentNetworkID());
 }
@@ -1546,11 +1514,6 @@ void NetworkQualityEstimator::OnPrefsRead(
   ReadCachedNetworkQualityEstimate();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void NetworkQualityEstimator::EnableGetNetworkIdAsynchronously() {
-  get_network_id_asynchronously_ = true;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 std::optional<base::TimeDelta> NetworkQualityEstimator::GetHttpRTT() const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);

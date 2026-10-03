@@ -81,7 +81,6 @@ source_set("unit_tests") {
 }
 
 mojom("content_settings_types") {
-  generate_java = true
   sources = [ "content_settings_types.mojom" ]
 
   public_deps = [ "//mojo/public/mojom/base" ]
@@ -91,7 +90,6 @@ mojom("content_settings_types") {
 }
 
 mojom("content_settings_enums") {
-  generate_java = true
   sources = [ "content_settings_enums.mojom" ]
 
   public_deps = [ "//mojo/public/mojom/base" ]
@@ -101,7 +99,6 @@ mojom("content_settings_enums") {
 }
 
 mojom("mojo_bindings") {
-  generate_java = true
   sources = [ "content_settings.mojom" ]
 
   public_deps = [

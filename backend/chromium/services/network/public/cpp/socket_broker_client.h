@@ -39,10 +39,6 @@ class COMPONENT_EXPORT(NETWORK_CPP) SocketBrokerClient final {
  private:
   mojo::Remote<mojom::SocketBroker> socket_broker_;
 
-#if BUILDFLAG(IS_WIN)
-  // The process ID is cached for efficiency.
-  uint32_t process_id_;
-#endif
 };
 
 }  // namespace network

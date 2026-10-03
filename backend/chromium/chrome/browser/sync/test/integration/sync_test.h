@@ -35,15 +35,8 @@
 #include "net/test/embedded_test_server/embedded_test_server.h"
 #include "services/network/test/test_url_loader_factory.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/app_list/app_list_syncable_service.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/gcm_driver/instance_id/scoped_use_fake_instance_id_android.h"
-#else
 #include "extensions/browser/install_verifier.h"
-#endif
 
 // The E2E tests are designed to run against real backend servers. To identify
 // those tests we use *E2ETest* test name filter and run disabled tests.
@@ -167,13 +160,7 @@ class SyncTest : public PlatformBrowserTest,
   // owns the objects and manages its lifetime.
   std::vector<raw_ptr<Profile, VectorExperimental>> GetAllProfiles();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Enable using primary user profile for the sync test.
-  // When this is set, the number of profiles must be one.
-  void SetUsePrimaryUserProfile(bool value);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_ANDROID)
   // Returns a pointer to a particular browser. Callee owns the object
   // and manages its lifetime. The called browser must not be closed before.
   Browser* GetBrowser(int index);
@@ -185,7 +172,6 @@ class SyncTest : public PlatformBrowserTest,
   // the same index as it. Tests typically use browser indexes and profile
   // indexes interchangeably; this allows them to do so freely.
   Browser* AddBrowser(int profile_index);
-#endif
 
   // Returns a pointer to a particular sync client. Callee owns the object
   // and manages its lifetime.
@@ -340,13 +326,11 @@ class SyncTest : public PlatformBrowserTest,
   std::unique_ptr<KeyedService> CreateGCMProfileService(
       content::BrowserContext* context);
 
-#if !BUILDFLAG(IS_ANDROID)
   // Called when the |browser| was removed externally. This just marks the
   // |browser| in the |browsers_| list as nullptr to keep indexes in |browsers_|
   // and |profiles_| in sync. It is used when the |browser| is removed within a
   // test (e.g. when the last tab is closed for the |browser|).
   void OnBrowserRemoved(Browser* browser);
-#endif
 
   // Helper to block the current thread while the data models sync depends on
   // finish loading.
@@ -415,7 +399,6 @@ class SyncTest : public PlatformBrowserTest,
   // completed, used for two-client tests with external server.
   std::vector<std::unique_ptr<base::ScopedTempDir>> scoped_temp_dirs_;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Collection of pointers to the browser objects used by a test. One browser
   // instance is created for each sync profile. Browser object lifetime is
   // managed by BrowserList, so we don't use a std::vector<std::unique_ptr<>>
@@ -424,7 +407,6 @@ class SyncTest : public PlatformBrowserTest,
 
   class ClosedBrowserObserver;
   std::unique_ptr<ClosedBrowserObserver> browser_list_observer_;
-#endif
 
   // Collection of sync clients used by a test. A sync client is associated
   // with a sync profile, and implements methods that sync the contents of the
@@ -445,23 +427,10 @@ class SyncTest : public PlatformBrowserTest,
 
   syncer::DataTypeSet excluded_types_from_check_for_data_type_failures_;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Disable extension install verification.
   extensions::ScopedInstallVerifierBypassForTest ignore_install_verification_;
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // A factory-like callback to create a model updater for testing, which will
-  // take the place of the real updater in AppListSyncableService for testing.
-  std::unique_ptr<base::ScopedClosureRunner> model_updater_factory_scope_;
 
-  bool use_primary_user_profile_ = false;
-#endif
-
-#if BUILDFLAG(IS_ANDROID)
-  instance_id::ScopedUseFakeInstanceIDAndroid
-      scoped_use_fake_instance_id_android_;
-#endif
 
   std::unique_ptr<fake_server::FakeServerSyncInvalidationSender>
       fake_server_sync_invalidation_sender_;
@@ -475,9 +444,7 @@ class SyncTest : public PlatformBrowserTest,
 };
 
 inline auto GetSyncTestModes() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return testing::Values(SyncTest::SetupSyncMode::kSyncTheFeature);
-#elif BUILDFLAG(IS_LINUX) && !defined(ADDRESS_SANITIZER) && \
+#if BUILDFLAG(IS_LINUX) && !defined(ADDRESS_SANITIZER) && \
     !defined(THREAD_SANITIZER) && !defined(MEMORY_SANITIZER)
   return testing::Values(SyncTest::SetupSyncMode::kSyncTransportOnly,
                          SyncTest::SetupSyncMode::kSyncTheFeature);

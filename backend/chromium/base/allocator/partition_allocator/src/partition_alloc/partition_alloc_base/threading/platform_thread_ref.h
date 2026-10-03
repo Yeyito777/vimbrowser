@@ -15,9 +15,7 @@
 #include "partition_alloc/build_config.h"
 #include "partition_alloc/partition_alloc_base/component_export.h"
 
-#if PA_BUILDFLAG(IS_WIN)
-#include "partition_alloc/partition_alloc_base/win/windows_types.h"
-#elif PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
+#if PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
 #include <pthread.h>
 #endif
 
@@ -33,9 +31,7 @@ namespace partition_alloc::internal::base {
 // to distinguish a new thread from an old, dead thread.
 class PlatformThreadRef {
  public:
-#if PA_BUILDFLAG(IS_WIN)
-  using RefType = DWORD;
-#elif PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
+#if PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
   using RefType = pthread_t;
 #endif
 

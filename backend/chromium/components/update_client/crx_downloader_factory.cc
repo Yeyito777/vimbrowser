@@ -18,9 +18,7 @@
 #include "components/update_client/task_traits.h"
 #include "components/update_client/url_fetcher_downloader.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/update_client/background_downloader_win.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "components/update_client/background_downloader_mac.h"
 #endif
 
@@ -71,9 +69,6 @@ scoped_refptr<CrxDownloader> CrxDownloaderFactoryChromium::MakeCrxDownloader(
     return base::MakeRefCounted<BackgroundDownloader>(
         url_fetcher_downloader, background_downloader_shared_session_,
         background_sequence_);
-#elif BUILDFLAG(IS_WIN)
-    return base::MakeRefCounted<BackgroundDownloader>(url_fetcher_downloader,
-                                                      prod_id);
 #endif
   }
 

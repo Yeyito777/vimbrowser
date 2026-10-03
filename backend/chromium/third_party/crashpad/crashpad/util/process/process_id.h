@@ -20,13 +20,7 @@
 #include "base/format_macros.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include <sys/types.h>
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
-#elif BUILDFLAG(IS_FUCHSIA)
-#include <zircon/types.h>
-#endif
 
 namespace crashpad {
 
@@ -36,15 +30,6 @@ using ProcessID = pid_t;
 constexpr ProcessID kInvalidProcessID = -1;
 static_assert(std::is_same<ProcessID, int>::value, "Port.");
 #define PRI_PROCESS_ID "d"
-#elif BUILDFLAG(IS_WIN)
-using ProcessID = DWORD;
-constexpr ProcessID kInvalidProcessID = 0;
-#define PRI_PROCESS_ID "lu"
-#elif BUILDFLAG(IS_FUCHSIA)
-using ProcessID = zx_koid_t;
-constexpr ProcessID kInvalidProcessID = ZX_KOID_INVALID;
-static_assert(std::is_same<ProcessID, int64_t>::value, "Port.");
-#define PRI_PROCESS_ID PRId64
 #else
 #error Port.
 #endif

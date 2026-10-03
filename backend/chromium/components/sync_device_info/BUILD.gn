@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
-
 static_library("sync_device_info") {
   sources = [
     "device_count_metrics_provider.cc",
@@ -46,7 +41,6 @@ static_library("sync_device_info") {
     "//components/sync/protocol",
   ]
   deps = [
-    "//components/desktop_to_mobile_promos",
     "//components/keyed_service/core",
     "//components/metrics",
     "//components/prefs",
@@ -57,28 +51,8 @@ static_library("sync_device_info") {
 
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
-  if (is_android) {
-    sources += [ "local_device_info_util_android.cc" ]
-  }
-
-  if (is_chromeos) {
-    sources += [ "local_device_info_util_chromeos.cc" ]
-    deps += [
-      "//chromeos/ash/components/system",
-      "//chromeos/constants",
-    ]
-  }
-
-  if (is_ios) {
-    sources += [ "local_device_info_util_ios.mm" ]
-  }
-
   if (is_linux) {
     sources += [ "local_device_info_util_linux.cc" ]
-  }
-
-  if (is_fuchsia) {
-    sources += [ "local_device_info_util_fuchsia.cc" ]
   }
 
   if (is_mac) {
@@ -87,10 +61,6 @@ static_library("sync_device_info") {
       "CoreFoundation.framework",
       "SystemConfiguration.framework",  # For local_device_info_util_mac.mm.
     ]
-  }
-
-  if (is_win) {
-    sources += [ "local_device_info_util_win.cc" ]
   }
 }
 
@@ -135,19 +105,4 @@ source_set("unit_tests") {
     "//testing/gmock",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/system" ]
-  }
-}
-
-if (is_android) {
-  java_cpp_enum("java_enums") {
-    sources = [ "//components/sync_device_info/device_info.h" ]
-  }
-
-  android_library("sync_device_info_java") {
-    deps = [ "//third_party/androidx:androidx_annotation_annotation_java" ]
-    srcjar_deps = [ ":java_enums" ]
-  }
 }

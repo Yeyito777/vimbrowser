@@ -46,12 +46,6 @@
 #include "components/remote_cocoa/browser/scoped_cg_window_id.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/strings/string_util_win.h"
-#include "ui/views/widget/desktop_aura/desktop_window_tree_host_win.h"
-#endif
 
 using content::DesktopMediaID;
 
@@ -119,42 +113,6 @@ gfx::ImageSkia ScaleDesktopFrame(std::unique_ptr<webrtc::DesktopFrame> frame,
   return gfx::ImageSkia::CreateFrom1xBitmap(result);
 }
 
-#if BUILDFLAG(IS_WIN)
-// These Collector functions are repeatedly invoked by `::EnumWindows` and they
-// add HWNDs to the vector contained in `param`. Return TRUE to continue the
-// enumeration or FALSE to end early.
-//
-// Collects all capturable HWNDs which are owned by the current process.
-BOOL CALLBACK CapturableCurrentProcessHwndCollector(HWND hwnd, LPARAM param) {
-  DWORD process_id;
-  ::GetWindowThreadProcessId(hwnd, &process_id);
-  if (process_id != ::GetCurrentProcessId())
-    return TRUE;
-
-  // Skip windows that aren't visible or are minimized.
-  if (!::IsWindowVisible(hwnd) || ::IsIconic(hwnd))
-    return TRUE;
-
-  // Skip windows which are not presented in the taskbar, e.g. the "Restore
-  // pages?" window.
-  HWND owner = ::GetWindow(hwnd, GW_OWNER);
-  LONG exstyle = ::GetWindowLong(hwnd, GWL_EXSTYLE);
-  if (owner && !(exstyle & WS_EX_APPWINDOW))
-    return TRUE;
-
-  auto* current_process_windows = reinterpret_cast<std::vector<HWND>*>(param);
-  current_process_windows->push_back(hwnd);
-  return TRUE;
-}
-
-// Collects all HWNDs, which are enumerated in z-order, to create a reference
-// for sorting.
-BOOL CALLBACK AllHwndCollector(HWND hwnd, LPARAM param) {
-  auto* hwnds = reinterpret_cast<std::vector<HWND>*>(param);
-  hwnds->push_back(hwnd);
-  return TRUE;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 content::DesktopMediaID::Type ConvertToDesktopMediaIDType(
     DesktopMediaList::Type type) {
@@ -292,13 +250,6 @@ class NativeDesktopMediaList::Worker
       const DesktopMediaID::Type source_type,
       DesktopMediaID::Id excluded_window_id);
 
-#if BUILDFLAG(IS_WIN)
-  static std::vector<SourceDescription> GetCurrentProcessWindows();
-
-  static std::vector<SourceDescription> MergeAndSortWindowSources(
-      std::vector<SourceDescription> sources_a,
-      std::vector<SourceDescription> sources_b);
-#endif  // BUILDFLAG(IS_WIN)
 
   void RefreshNextThumbnail();
 
@@ -413,19 +364,6 @@ void NativeDesktopMediaList::Worker::Refresh(bool update_thumbnails) {
   std::vector<SourceDescription> source_descriptions =
       FormatSources(sources, source_type_, excluded_window_id_);
 
-#if BUILDFLAG(IS_WIN)
-  // If |add_current_process_windows_| is set to false, |capturer_| will have
-  // found the windows owned by the current process for us. Otherwise, we must
-  // do this.
-  if (add_current_process_windows_) {
-    DCHECK_EQ(source_type_, DesktopMediaID::Type::TYPE_WINDOW);
-    // WebRTC returns the windows in order of highest z-order to lowest, but
-    // these additional windows will be out of order if we just append them. So
-    // we sort the list according to the z-order of the windows.
-    source_descriptions = MergeAndSortWindowSources(
-        std::move(source_descriptions), GetCurrentProcessWindows());
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
@@ -519,67 +457,6 @@ NativeDesktopMediaList::Worker::FormatSources(
   return source_descriptions;
 }
 
-#if BUILDFLAG(IS_WIN)
-// static
-std::vector<DesktopMediaListBase::SourceDescription>
-NativeDesktopMediaList::Worker::GetCurrentProcessWindows() {
-  std::vector<HWND> current_process_windows;
-  if (!::EnumWindows(CapturableCurrentProcessHwndCollector,
-                     reinterpret_cast<LPARAM>(&current_process_windows))) {
-    return std::vector<SourceDescription>();
-  }
-
-  std::vector<SourceDescription> current_process_sources;
-  for (HWND hwnd : current_process_windows) {
-    // Leave these sources untitled, we must get their title from the UI thread.
-    current_process_sources.emplace_back(
-        DesktopMediaID(
-            DesktopMediaID::Type::TYPE_WINDOW,
-            reinterpret_cast<webrtc::DesktopCapturer::SourceId>(hwnd)),
-        u"");
-  }
-
-  return current_process_sources;
-}
-
-// static
-std::vector<DesktopMediaListBase::SourceDescription>
-NativeDesktopMediaList::Worker::MergeAndSortWindowSources(
-    std::vector<SourceDescription> sources_a,
-    std::vector<SourceDescription> sources_b) {
-  // |EnumWindows| enumerates top level windows in z-order, we use this as a
-  // reference for sorting.
-  std::vector<HWND> z_ordered_windows;
-  if (!::EnumWindows(AllHwndCollector,
-                     reinterpret_cast<LPARAM>(&z_ordered_windows))) {
-    // Since we can't get the z-order for the windows, we can't sort them. So,
-    // let's just concatenate.
-    sources_a.insert(sources_a.end(),
-                     std::make_move_iterator(sources_b.begin()),
-                     std::make_move_iterator(sources_b.end()));
-    return sources_a;
-  }
-
-  std::vector<const std::vector<SourceDescription>*> source_containers = {
-      &sources_a, &sources_b};
-  std::vector<SourceDescription> sorted_sources;
-  auto id_hwnd_projection = [](const SourceDescription& source) {
-    return reinterpret_cast<const HWND>(source.id.id);
-  };
-  for (HWND window : z_ordered_windows) {
-    for (const auto* source_container : source_containers) {
-      auto source_it =
-          std::ranges::find(*source_container, window, id_hwnd_projection);
-      if (source_it != source_container->end()) {
-        sorted_sources.push_back(*source_it);
-        break;
-      }
-    }
-  }
-
-  return sorted_sources;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
   DCHECK(task_runner_->BelongsToCurrentThread());
@@ -923,38 +800,6 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
       continue;
     }
 
-#if BUILDFLAG(IS_WIN)
-    // The worker thread can't safely get titles for windows owned by the
-    // current process, so we do it here, on the UI thread, where we can call
-    // |GetWindowText| without risking a deadlock.
-    const HWND hwnd = reinterpret_cast<HWND>(source_it->id.id);
-    DWORD hwnd_process;
-    ::GetWindowThreadProcessId(hwnd, &hwnd_process);
-    if (hwnd_process == ::GetCurrentProcessId()) {
-      int title_length = ::GetWindowTextLength(hwnd);
-
-      // Remove untitled windows.
-      if (title_length <= 0) {
-        source_it = sources.erase(source_it);
-        continue;
-      }
-
-      source_it->name.resize(title_length + 1);
-      // The title may have changed since the call to |GetWindowTextLength|, so
-      // we update |title_length| to be the number of characters written into
-      // our string.
-      title_length = ::GetWindowText(
-          hwnd, base::as_writable_wcstr(source_it->name), title_length + 1);
-      if (title_length <= 0) {
-        source_it = sources.erase(source_it);
-        continue;
-      }
-
-      // Resize the string (in the case the title has shortened), and remove the
-      // trailing null character.
-      source_it->name.resize(title_length);
-    }
-#endif  // BUILDFLAG(IS_WIN)
 
     source_it->id.window_id =
         GetUpdatedWindowId(source_it->id, is_source_list_delegated_);

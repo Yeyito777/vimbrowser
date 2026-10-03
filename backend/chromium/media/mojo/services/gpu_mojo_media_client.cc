@@ -94,14 +94,12 @@ GpuMojoMediaClientTraits::GpuMojoMediaClientTraits(
     const gpu::GpuFeatureInfo& gpu_feature_info,
     const gpu::GPUInfo& gpu_info,
     scoped_refptr<base::SingleThreadTaskRunner> gpu_task_runner,
-    AndroidOverlayMojoFactoryCB android_overlay_factory_cb,
     base::WeakPtr<MediaGpuChannelManager> media_gpu_channel_manager)
     : gpu_preferences(gpu_preferences),
       gpu_workarounds(gpu_workarounds),
       gpu_feature_info(gpu_feature_info),
       gpu_info(gpu_info),
       gpu_task_runner(std::move(gpu_task_runner)),
-      android_overlay_factory_cb(std::move(android_overlay_factory_cb)),
       media_gpu_channel_manager(std::move(media_gpu_channel_manager)) {}
 
 std::unique_ptr<GpuMojoMediaClient> GpuMojoMediaClient::Create(

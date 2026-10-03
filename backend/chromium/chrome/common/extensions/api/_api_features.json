@@ -105,13 +105,8 @@
     "matches": [
       "chrome://settings/*"
     ],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   }],
-  "autotestPrivate": {
-    "dependencies": ["permission:autotestPrivate"],
-    "contexts": ["privileged_extension"]
-  },
   "bookmarkManagerPrivate": {
     "channel": "stable",
     "contexts": ["webui"],
@@ -120,7 +115,6 @@
       "chrome://bookmarks-side-panel.top-chrome/*",
       "chrome://read-later.top-chrome/*"
     ],
-    // "desktop_android" is not supported.
     "platforms": ["chromeos", "linux", "mac", "win"]
   },
   "bookmarks": [{
@@ -656,28 +650,6 @@
     "dependencies": ["permission:gcm"],
     "contexts": ["privileged_extension"]
   },
-  "languageSettingsPrivate": [{
-    "dependencies": ["permission:languageSettingsPrivate"],
-    "contexts": ["privileged_extension"]
-  }, {
-    "channel": "stable",
-    "contexts": ["webui"],
-    "matches": [
-      // TODO(maybelle): Audit and remove chrome://settings or
-      // chrome://os-settings as appropriate
-      "chrome://os-settings/*",
-      "chrome://settings/*"
-    ]
-  },
-  {
-    "channel": "stable",
-    "contexts": [
-      "webui_untrusted"
-    ],
-    "matches": [
-      "chrome-untrusted://lens-overlay/*"
-    ]
-  }],
   "login": [{
     "dependencies": ["behavior:imprivata_extension", "permission:login"],
     "contexts": ["privileged_extension"],
@@ -819,16 +791,6 @@
   "pdfViewerPrivate": {
     "dependencies": ["permission:pdfViewerPrivate"],
     "contexts": ["privileged_extension"]
-  },
-  "printing": {
-    "dependencies": ["permission:printing"],
-    "contexts": ["privileged_extension"],
-    "required_buildflags": ["use_cups"]
-  },
-  "printingMetrics": {
-    "dependencies": ["permission:printingMetrics"],
-    "contexts": ["privileged_extension"],
-    "required_buildflags": ["use_cups"]
   },
   "privacy": {
     "dependencies": ["permission:privacy"],

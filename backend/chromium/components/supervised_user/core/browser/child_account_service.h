@@ -57,13 +57,6 @@ class ChildAccountService : public KeyedService,
   // KeyedService:
   void Shutdown() override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Responds whether at least one request for child status was successful.
-  // And we got answer whether the account is a child account or not.
-  bool IsChildAccountStatusKnown();
-
-  void AddChildStatusReceivedCallback(base::OnceClosure callback);
-#endif
 
   // Returns the status of the user's Google authentication credentials (see
   // `AuthState` comments for details).

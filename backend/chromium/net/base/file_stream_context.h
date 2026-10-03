@@ -53,9 +53,7 @@ namespace net {
 class IOBuffer;
 
 // Implementation for a FileStream. See file_stream.h for documentation.
-#if BUILDFLAG(IS_WIN)
-class FileStream::Context : public base::MessagePumpForIO::IOHandler {
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 class FileStream::Context {
 #endif
 
@@ -69,9 +67,7 @@ class FileStream::Context {
   Context(base::File file, scoped_refptr<base::TaskRunner> task_runner);
   Context(const Context&) = delete;
   Context& operator=(const Context&) = delete;
-#if BUILDFLAG(IS_WIN)
-  ~Context() override;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   ~Context();
 #endif
 
@@ -79,9 +75,6 @@ class FileStream::Context {
 
   int Write(IOBuffer* buf, int buf_len, CompletionOnceCallback callback);
 
-#if BUILDFLAG(IS_WIN)
-  int ConnectNamedPipe(CompletionOnceCallback callback);
-#endif
 
   bool async_in_progress() const { return async_in_progress_; }
 
@@ -169,54 +162,7 @@ class FileStream::Context {
 
   void OnFileOpened();
 
-#if BUILDFLAG(IS_WIN)
-  void IOCompletionIsPending(CompletionOnceCallback callback, IOBuffer* buf);
-
-  // Implementation of MessagePumpForIO::IOHandler.
-  void OnIOCompleted(base::MessagePumpForIO::IOContext* context,
-                     DWORD bytes_read,
-                     DWORD error) override;
-
-  // Invokes the user callback.
-  void InvokeUserCallback();
-
-  // Deletes an orphaned context.
-  void DeleteOrphanedContext();
-
-  // The ReadFile call on Windows can execute synchronously at times.
-  // http://support.microsoft.com/kb/156932. This ends up blocking the calling
-  // thread which is undesirable. To avoid this we execute the ReadFile call
-  // on a worker thread.
-  // The |context| parameter is a pointer to the current Context instance. It
-  // is safe to pass this as is to the pool as the Context instance should
-  // remain valid until the pending Read operation completes.
-  // The |file| parameter is the handle to the file being read.
-  // The |buf| parameter is the buffer where we want the ReadFile to read the
-  // data into.
-  // The |buf_len| parameter contains the number of bytes to be read.
-  // The |overlapped| parameter is a pointer to the OVERLAPPED structure being
-  // used.
-  // The |origin_thread_task_runner| is a task runner instance used to post
-  // tasks back to the originating thread.
-  static void ReadAsync(
-      FileStream::Context* context,
-      HANDLE file,
-      scoped_refptr<IOBuffer> buf,
-      int buf_len,
-      OVERLAPPED* overlapped,
-      scoped_refptr<base::SingleThreadTaskRunner> origin_thread_task_runner);
-
-  // This callback executes on the main calling thread. It informs the caller
-  // about the result of the ReadFile call.
-  // The |read_file_ret| parameter contains the return value of the ReadFile
-  // call.
-  // The |bytes_read| contains the number of bytes read from the file, if
-  // ReadFile succeeds.
-  // The |os_error| parameter contains the value of the last error returned by
-  // the ReadFile API.
-  void ReadAsyncResult(BOOL read_file_ret, DWORD bytes_read, DWORD os_error);
-
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   // ReadFileImpl() is a simple wrapper around read() that handles EINTR
   // signals and calls RecordAndMapError() to map errno to net error codes.
   IOResult ReadFileImpl(scoped_refptr<IOBuffer> buf, int buf_len);
@@ -233,23 +179,6 @@ class FileStream::Context {
   bool orphaned_ = false;
   const scoped_refptr<base::TaskRunner> task_runner_;
 
-#if BUILDFLAG(IS_WIN)
-  base::MessagePumpForIO::IOContext io_context_;
-  CompletionOnceCallback callback_;
-  scoped_refptr<IOBuffer> in_flight_buf_;
-  // This flag is set to true when we receive a Read request which is queued to
-  // the thread pool.
-  bool async_read_initiated_ = false;
-  // This flag is set to true when we receive a notification ReadAsyncResult()
-  // on the calling thread which indicates that the asynchronous Read
-  // operation is complete.
-  bool async_read_completed_ = false;
-  // This flag is set to true when we receive an IO completion notification for
-  // an asynchronously initiated Read operation. OnIOComplete().
-  bool io_complete_for_read_received_ = false;
-  // Tracks the result of the IO completion operation. Set in OnIOComplete.
-  int result_ = 0;
-#endif
 };
 
 }  // namespace net

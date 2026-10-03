@@ -194,21 +194,6 @@ void VaapiImageProcessorBackend::ProcessFrame(
   }
 
   bool use_protected = false;
-#if BUILDFLAG(IS_CHROMEOS)
-  VAProtectedSessionID va_protected_session_id = VA_INVALID_ID;
-  if (input_frame->metadata().hw_va_protected_session_id.has_value()) {
-    static_assert(
-        std::is_same<decltype(input_frame->metadata()
-                                  .hw_va_protected_session_id)::value_type,
-                     VAProtectedSessionID>::value,
-        "The optional type of VideoFrameMetadata::hw_va_protected_session_id "
-        "is "
-        "not VAProtectedSessionID");
-    va_protected_session_id =
-        input_frame->metadata().hw_va_protected_session_id.value();
-    use_protected = va_protected_session_id != VA_INVALID_ID;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (needs_context_ && !vaapi_wrapper_->CreateContext(gfx::Size())) {
     VLOGF(1) << "Failed to create context for VPP";
@@ -237,28 +222,7 @@ void VaapiImageProcessorBackend::ProcessFrame(
                                    dst_va_surface->id(), dst_va_surface->size(),
                                    input_frame->visible_rect(),
                                    output_frame->visible_rect()
-#if BUILDFLAG(IS_CHROMEOS)
-                                       ,
-                                   va_protected_session_id
-#endif
                                    )) {
-#if BUILDFLAG(IS_CHROMEOS)
-    if (use_protected &&
-        vaapi_wrapper_->IsProtectedSessionDead(va_protected_session_id)) {
-      DCHECK_NE(va_protected_session_id, VA_INVALID_ID);
-
-      // If the VPP failed because the protected session is dead, we should
-      // still output the frame. That's because we don't want to put the
-      // VideoDecoderPipeline into an unusable error state: the
-      // VaapiVideoDecoder can recover from a dead protected session later and
-      // the compositor should not try to render the frame we output here
-      // anyway.
-      output_frame->set_timestamp(input_frame->timestamp());
-      output_frame->set_color_space(input_frame->ColorSpace());
-      std::move(cb).Run(std::move(output_frame));
-      return;
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
     error_cb_.Run();
     return;
   }

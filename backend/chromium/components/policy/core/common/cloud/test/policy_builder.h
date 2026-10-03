@@ -227,9 +227,6 @@ using ComponentCloudPolicyBuilder =
     TypedPolicyBuilder<enterprise_management::ExternalPolicyData>;
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-using ComponentActiveDirectoryPolicyBuilder = StringPolicyBuilder;
-#endif
 
 }  // namespace policy
 

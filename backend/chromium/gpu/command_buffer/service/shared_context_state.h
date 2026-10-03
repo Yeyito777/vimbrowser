@@ -39,10 +39,6 @@
 #include "third_party/skia/include/gpu/ganesh/GrDirectContext.h"
 #include "ui/gl/progress_reporter.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <d3d11.h>
-#include <wrl/client.h>
-#endif
 
 namespace gl {
 class GLContext;
@@ -289,10 +285,6 @@ class GPU_GLES2_EXPORT SharedContextState
 
   int32_t GetMaxTextureSize();
 
-#if BUILDFLAG(IS_WIN)
-  // Get the D3D11 device used for the compositing.
-  Microsoft::WRL::ComPtr<ID3D11Device> GetD3D11Device() const;
-#endif
 
  private:
   friend class base::RefCounted<SharedContextState>;

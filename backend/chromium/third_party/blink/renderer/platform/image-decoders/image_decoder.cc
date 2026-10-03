@@ -492,22 +492,6 @@ bool ImageDecoder::IsSizeAvailable() {
     return false;
   }
 
-#if BUILDFLAG(IS_FUCHSIA)
-  unsigned decoded_bytes_per_pixel = 4;
-  if (ImageIsHighBitDepth() &&
-      high_bit_depth_decoding_option_ == kHighBitDepthToHalfFloat) {
-    decoded_bytes_per_pixel = 8;
-  }
-
-  const gfx::Size size = DecodedSize();
-  const wtf_size_t decoded_size_bytes =
-      size.width() * size.height() * decoded_bytes_per_pixel;
-  if (decoded_size_bytes > max_decoded_bytes_) {
-    LOG(WARNING) << "Blocked decode of oversized image: " << size.width() << "x"
-                 << size.height();
-    return SetFailed();
-  }
-#endif
 
   return true;
 }

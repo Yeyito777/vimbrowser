@@ -27,10 +27,8 @@ source_set("tests") {
 
   sources = []
 
-  if (!is_ios) {
-    # Need TestServer
-    sources += [ "cert_net_fetcher_url_loader_unittest.cc" ]
-  }
+  # Need TestServer
+  sources += [ "cert_net_fetcher_url_loader_unittest.cc" ]
 
   deps = [
     ":cert_net_url_loader",

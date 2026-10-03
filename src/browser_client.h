@@ -4,6 +4,7 @@
 #include "include/cef_dialog_handler.h"
 #include "include/cef_display_handler.h"
 #include "include/cef_focus_handler.h"
+#include "include/cef_jsdialog_handler.h"
 #include "include/cef_life_span_handler.h"
 #include "include/cef_load_handler.h"
 #include "include/cef_request.h"
@@ -15,16 +16,26 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace vimbrowser {
 
 class BrowserWindow;
 
+struct NetworkRequestMutation {
+  std::optional<std::string> url;
+  std::optional<std::string> method;
+  std::optional<std::string> body;
+  std::vector<std::pair<std::string, std::string>> header_overrides;
+  std::vector<std::string> remove_headers;
+};
+
 class BrowserClient final : public CefClient,
                             public CefDialogHandler,
                             public CefDisplayHandler,
                             public CefFocusHandler,
+                            public CefJSDialogHandler,
                             public CefLifeSpanHandler,
                             public CefLoadHandler,
                             public CefKeyboardHandler,
@@ -39,6 +50,7 @@ public:
   CefRefPtr<CefDialogHandler> GetDialogHandler() override { return this; }
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefFocusHandler> GetFocusHandler() override { return this; }
+  CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override {
@@ -68,6 +80,11 @@ public:
                        const CefString& url) override;
   void OnTitleChange(CefRefPtr<CefBrowser> browser,
                      const CefString& title) override;
+  bool OnBeforeUnloadDialog(
+      CefRefPtr<CefBrowser> browser,
+      const CefString& message_text,
+      bool is_reload,
+      CefRefPtr<CefJSDialogCallback> callback) override;
   bool OnSetFocus(CefRefPtr<CefBrowser> browser, FocusSource source) override;
 #if CEF_API_ADDED(13700)
   bool GetRootWindowScreenRect(CefRefPtr<CefBrowser> browser,
@@ -169,9 +186,16 @@ public:
   std::string NetworkDetailJson(uint64_t request_id) const;
   bool NetworkBody(uint64_t request_id, std::string *body,
                    std::string *error) const;
+  std::string SetNetworkCapture(bool enabled, std::string url_prefix);
+  std::string NetworkCaptureJson() const;
+  std::optional<std::string> NetworkMatchJson(
+      const std::string& url_prefix, uint64_t after_request_id) const;
   void ClearNetworkLog();
   CefRefPtr<CefRequest> BuildReplayRequest(uint64_t request_id,
                                            std::string *error) const;
+  CefRefPtr<CefRequest> BuildDerivedRequest(
+      uint64_t request_id, const NetworkRequestMutation& mutation,
+      std::string* error) const;
   struct NetworkRequestRecord;
 
 private:
@@ -190,6 +214,8 @@ private:
   std::vector<std::shared_ptr<NetworkRequestRecord>> network_log_;
   std::unordered_map<uint64_t, std::shared_ptr<NetworkRequestRecord>>
       active_network_by_cef_id_;
+  bool dynamic_network_capture_enabled_ = false;
+  std::string dynamic_network_capture_url_prefix_;
   IMPLEMENT_REFCOUNTING(BrowserClient);
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };

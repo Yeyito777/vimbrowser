@@ -29,10 +29,6 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "services/network/public/cpp/features.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/login/signin/merge_session_throttling_utils.h"
-#include "chrome/browser/ash/login/signin/oauth2_login_manager_factory.h"
-#endif
 
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 #include "chrome/browser/signin/bound_session_credentials/bound_session_cookie_refresh_service.h"
@@ -49,14 +45,6 @@ RendererUpdater::RendererUpdater(Profile* profile)
           BoundSessionCookieRefreshServiceFactory::GetForProfile(profile))
 #endif
 {
-#if BUILDFLAG(IS_CHROMEOS)
-  oauth2_login_manager_ =
-      ash::OAuth2LoginManagerFactory::GetForProfile(original_profile_);
-  oauth2_login_manager_->AddObserver(this);
-  merge_session_running_ =
-      ash::merge_session_throttling_utils::ShouldDelayRequestForProfile(
-          original_profile_);
-#endif
 
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
   if (bound_session_cookie_refresh_service_) {
@@ -91,9 +79,6 @@ RendererUpdater::RendererUpdater(Profile* profile)
 }
 
 RendererUpdater::~RendererUpdater() {
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK(!oauth2_login_manager_);
-#endif
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
   if (bound_session_cookie_refresh_service_) {
     bound_session_cookie_refresh_service_
@@ -105,10 +90,6 @@ RendererUpdater::~RendererUpdater() {
 
 void RendererUpdater::Shutdown() {
   pref_change_registrar_.RemoveAll();
-#if BUILDFLAG(IS_CHROMEOS)
-  oauth2_login_manager_->RemoveObserver(this);
-  oauth2_login_manager_ = nullptr;
-#endif
 }
 
 void RendererUpdater::InitializeRenderer(
@@ -119,13 +100,6 @@ void RendererUpdater::InitializeRenderer(
 
   mojo::PendingReceiver<chrome::mojom::ChromeOSListener>
       chromeos_listener_receiver;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (merge_session_running_) {
-    mojo::Remote<chrome::mojom::ChromeOSListener> chromeos_listener;
-    chromeos_listener_receiver = chromeos_listener.BindNewPipeAndPassReceiver();
-    chromeos_listeners_.push_back(std::move(chromeos_listener));
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   mojo::PendingRemote<content_settings::mojom::ContentSettingsManager>
       content_settings_manager;
   content_settings::ContentSettingsManagerImpl::Create(
@@ -183,21 +157,6 @@ RendererUpdater::GetRendererConfiguration(
   return renderer_configuration;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void RendererUpdater::OnSessionRestoreStateChanged(
-    Profile* user_profile,
-    ash::OAuth2LoginManager::SessionRestoreState state) {
-  merge_session_running_ =
-      ash::merge_session_throttling_utils::ShouldDelayRequestForProfile(
-          original_profile_);
-  if (merge_session_running_)
-    return;
-
-  for (auto& chromeos_listener : chromeos_listeners_)
-    chromeos_listener->MergeSessionComplete();
-  chromeos_listeners_.clear();
-}
-#endif
 
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 std::vector<chrome::mojom::BoundSessionThrottlerParamsPtr>

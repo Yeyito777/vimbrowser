@@ -42,9 +42,6 @@
 #include "ui/views/metadata/view_factory.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/constants/chromeos_features.h"
-#endif
 
 namespace {
 

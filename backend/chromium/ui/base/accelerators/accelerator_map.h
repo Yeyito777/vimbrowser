@@ -15,10 +15,6 @@
 #include "build/build_config.h"
 #include "ui/base/accelerators/accelerator.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/events/keycodes/dom/dom_code.h"
-#include "ui/events/keycodes/dom/keycode_converter.h"
-#endif
 
 namespace std {
 template <>
@@ -90,15 +86,6 @@ class COMPONENT_EXPORT(UI_BASE) AcceleratorMap {
   }
 
   V& GetOrInsertDefault(const Accelerator& accelerator) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // Ensure the DomCode is NONE before registering. The DomCode is only
-    // used during lookup to select the correct VKEY.
-    if (accelerator.code() != DomCode::NONE) {
-      Accelerator accelerator_copy = accelerator;
-      accelerator_copy.reset_code();
-      return map_[accelerator_copy];
-    }
-#endif
     return map_[accelerator];
   }
 
@@ -112,18 +99,6 @@ class COMPONENT_EXPORT(UI_BASE) AcceleratorMap {
   // Inserts a new accelerator and value into the map. DCHECKs if the
   // accelerator was already in the map.
   void InsertNew(const std::pair<const Accelerator, V>& value) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // Ensure the DomCode is NONE before registering. The DomCode is only
-    // used during lookup to select the correct VKEY.
-    if (value.first.code() != DomCode::NONE) {
-      Accelerator accelerator_copy = value.first;
-      accelerator_copy.reset_code();
-      auto value_copy = std::make_pair(accelerator_copy, value.second);
-      auto result = map_.insert(value_copy);
-      DCHECK(result.second);
-      return;
-    }
-#endif
     auto result = map_.insert(value);
     DCHECK(result.second);
   }
@@ -138,58 +113,12 @@ class COMPONENT_EXPORT(UI_BASE) AcceleratorMap {
   // Returns true if the map is empty.
   bool empty() const { return map_.empty(); }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // When true, lookup operators on the map will remap the |key_code| of
-  // position-based keys based on the |code|.
-  void set_use_positional_lookup(bool use_positional_lookup) {
-    use_positional_lookup_ = use_positional_lookup;
-  }
-#endif
 
  private:
   std::unordered_map<Accelerator, V> map_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  bool use_positional_lookup_ = false;
-
-  // For the shortcuts that use positional mapping, the lookup is done based
-  // on the |key_code| in the US layout. The supplied |code| (DomCode) is used
-  // to remap the layout specific |key_code| with the US layout equivalent,
-  // which effectively pins the location of these keys in place regardless of
-  // the actual key mapping. Note that this only happens for a subset of keys
-  // and has no overlap with alphanumeric characters or the language equivalent
-  // keys that map to the alphanumeric set of VKEYS.
-  //
-  // One such example is Alt ']'. In the US layout ']' is VKEY_OEM_6, in the
-  // DE layout it is VKEY_OEM_PLUS. However the key in that position is always
-  // DomCode::BRACKET_RIGHT regardless of what the key generates when pressed.
-  // This function uses the DomCode to remap the VKEY back to it's US layout
-  // equivalent.
-  //
-  // See the design doc in crbug.com/1174326 for more information.
-  Accelerator RemapAcceleratorForLookup(const Accelerator& accelerator) const {
-    KeyboardCode lookup_key_code = accelerator.key_code();
-    if (use_positional_lookup_) {
-      // If there's a valid remapping, use that |KeyboardCode| instead.
-      KeyboardCode remapped_key_code =
-          KeycodeConverter::MapPositionalDomCodeToUSShortcutKey(
-              accelerator.code(), accelerator.key_code());
-      lookup_key_code = remapped_key_code != VKEY_UNKNOWN ? remapped_key_code
-                                                          : lookup_key_code;
-    }
-
-    return Accelerator(lookup_key_code, DomCode::NONE, accelerator.modifiers(),
-                       accelerator.key_state());
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const_iterator FindImpl(const Accelerator& accelerator) const {
-#if BUILDFLAG(IS_CHROMEOS)
-    auto iter = map_.find(RemapAcceleratorForLookup(accelerator));
-    // Sanity check that a DomCode was never inserted into the map.
-    DCHECK(iter == map_.end() || iter->first.code() == DomCode::NONE);
-    return iter;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     return map_.find(accelerator);
   }

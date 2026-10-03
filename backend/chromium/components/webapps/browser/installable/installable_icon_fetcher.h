@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef COMPONENTS_WEBAPPS_BROWSER_INSTALLABLE_INSTALLABLE_ICON_FETCHER_H_
+#if !defined(COMPONENTS_WEBAPPS_BROWSER_INSTALLABLE_INSTALLABLE_ICON_FETCHER_H_)
 #define COMPONENTS_WEBAPPS_BROWSER_INSTALLABLE_INSTALLABLE_ICON_FETCHER_H_
 
 #include <vector>
 
 #include "base/functional/callback.h"
 #include "base/task/cancelable_task_tracker.h"
-#include "build/android_buildflags.h"
 #include "components/webapps/browser/installable/installable_logging.h"
 #include "components/webapps/browser/installable/installable_page_data.h"
 #include "third_party/blink/public/mojom/manifest/manifest.mojom.h"
@@ -68,9 +67,6 @@ class InstallableIconFetcher {
   // Ends the fetch with an error.
   void EndWithError(InstallableStatusCode code);
 
-#if BUILDFLAG(IS_DESKTOP_ANDROID)
-  void OnHomeScreenIconGenerated(const GURL& page_url, const SkBitmap& bitmap);
-#endif
 
   base::WeakPtr<content::WebContents> web_contents_;
 

@@ -85,11 +85,7 @@ class CPDF_RenderStatus {
   bool GetLoadMask() const { return load_mask_; }
   bool GetDropObjects() const { return drop_objects_; }
   bool IsPrint() const {
-#if BUILDFLAG(IS_WIN)
-    return print_;
-#else
     return false;
-#endif
   }
   bool IsStopped() const { return stopped_; }
   CPDF_RenderContext* GetContext() const { return context_; }
@@ -206,9 +202,6 @@ class CPDF_RenderStatus {
   UnownedPtr<const CPDF_Type3Char> type3_char_;
   CPDF_Transparency transparency_;
   bool stopped_ = false;
-#if BUILDFLAG(IS_WIN)
-  bool print_ = false;
-#endif
   bool drop_objects_ = false;
   bool std_cs_ = false;
   bool load_mask_ = false;

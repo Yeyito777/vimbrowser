@@ -100,42 +100,7 @@ bool XRFrameTransport::FrameSubmit(
   if (transport_options_->transport_method ==
       device::mojom::blink::XRPresentationTransportMethod::
           SUBMIT_AS_TEXTURE_HANDLE) {
-#if BUILDFLAG(IS_WIN)
-    TRACE_EVENT0("gpu", "XRFrameTransport::CopyImage");
-    // Update last_transfer_succeeded_ value. This should usually complete
-    // without waiting.
-    if (transport_options_->wait_for_transfer_notification) {
-      WaitForPreviousTransfer();
-    }
-    // TODO(crbug.com/359418629): This only works because we're restricted to a
-    // single layer at the moment.
-    CHECK_EQ(image_refs.size(), 1UL);
-    auto [gpu_memory_buffer_handle, sync_token] = delegate->CopyImage(
-        image_refs.begin()->get(), last_transfer_succeeded_);
-
-    // We can fail to obtain a GMB handle if we don't have GPU support, or
-    // for some out-of-memory situations.
-    // TODO(billorr): Consider whether we should just drop the frame or exit
-    // presentation.
-    if (gpu_memory_buffer_handle.is_null()) {
-      FrameSubmitMissing(vr_presentation_provider, delegate, vr_frame_id);
-      // We didn't actually submit anything, so don't set
-      // the waiting_for_previous_frame_transfer_ and related state.
-      return false;
-    }
-
-    // We decompose the cloned handle, and use it to create a
-    // mojo::PlatformHandle which will own cleanup of the handle, and will be
-    // passed over IPC.
-    vr_presentation_provider->SubmitFrameWithTextureHandle(
-        vr_frame_id,
-        mojo::PlatformHandle(std::move(gpu_memory_buffer_handle)
-                                 .dxgi_handle()
-                                 .TakeBufferHandle()),
-        sync_token);
-#else
     NOTIMPLEMENTED();
-#endif
   } else if (transport_options_->transport_method ==
              device::mojom::blink::XRPresentationTransportMethod::
                  SUBMIT_AS_TEST) {

@@ -254,35 +254,7 @@ void InterfaceFactoryImpl::CreateCastRenderer(
 }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-void InterfaceFactoryImpl::CreateFlingingRenderer(
-    const std::string& audio_device_id,
-    mojo::PendingRemote<mojom::FlingingRendererClientExtension>
-        client_extension,
-    mojo::PendingReceiver<mojom::Renderer> receiver) {
-  NOTREACHED();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_WIN)
-void InterfaceFactoryImpl::CreateMediaFoundationRenderer(
-    mojo::PendingRemote<mojom::MediaLog> media_log_remote,
-    mojo::PendingReceiver<media::mojom::Renderer> receiver,
-    mojo::PendingReceiver<media::mojom::MediaFoundationRendererExtension>
-        renderer_extension_receiver) {
-  DVLOG(2) << __func__;
-  auto renderer = mojo_media_client_->CreateMediaFoundationRenderer(
-      base::SingleThreadTaskRunner::GetCurrentDefault(),
-      frame_interfaces_.get(), std::move(media_log_remote),
-      std::move(renderer_extension_receiver));
-  if (!renderer) {
-    DLOG(ERROR) << "MediaFoundationRenderer creation failed.";
-    return;
-  }
-
-  AddRenderer(std::move(renderer), std::move(receiver));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void InterfaceFactoryImpl::CreateCdm(const CdmConfig& cdm_config,
                                      CreateCdmCallback callback) {

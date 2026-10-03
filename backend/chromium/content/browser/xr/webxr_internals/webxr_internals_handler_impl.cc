@@ -27,15 +27,10 @@ gpu::GPUInfo GetGPUInfo() {
 std::string GetOSVersion() {
   std::string os_version;
 
-#if BUILDFLAG(IS_WIN)
-  std::string win_version = base::SysInfo::OperatingSystemVersion();
-  os_version = win_version;
-#else
   // Every other OS is supported by OperatingSystemVersionNumbers
   int major, minor, build;
   base::SysInfo::OperatingSystemVersionNumbers(&major, &minor, &build);
   os_version = base::StringPrintf("%d.%d.%d", major, minor, build);
-#endif
 
   return os_version;
 }

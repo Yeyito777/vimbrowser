@@ -9,8 +9,4 @@ source_set("data_saver") {
   ]
 
   deps = [ "//base" ]
-
-  if (is_android) {
-    deps += [ "//chrome/android:chrome_jni_headers" ]
-  }
 }

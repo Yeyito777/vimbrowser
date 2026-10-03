@@ -78,9 +78,6 @@
 #include "storage/browser/quota/quota_manager_proxy.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#endif
 
 namespace content::indexed_db {
 namespace {
@@ -1099,31 +1096,6 @@ BucketContext::InitBackingStore(bool create_if_missing) {
         base::DeletePathRecursively(sqlite_database_path);
       }
 
-#if BUILDFLAG(IS_WIN)
-      int max_ldb_file_path_length =
-          // The longest file path LevelDB uses.
-          leveldb_database_path.AppendASCII("MANIFEST-000001").value().size();
-
-      // Underflow (i.e. file path length <= MAX_PATH) intentionally emits to
-      // the 0 bucket.
-      base::UmaHistogramCounts100("IndexedDB.FilePathLengthOverflow.LevelDB",
-                                  max_ldb_file_path_length - MAX_PATH);
-
-      int max_sqlite_file_path_length =
-          sqlite_database_path
-              // All database names hash to the same length file name.
-              .Append(DatabaseNameToFileName(u"any_string"))
-              // The WAL file will use the path with "-wal" appended. This
-              // appends ".wal".
-              .AddExtensionASCII("wal")
-              .value()
-              .size();
-
-      // Underflow (i.e. file path length <= MAX_PATH) intentionally emits to
-      // the 0 bucket.
-      base::UmaHistogramCounts100("IndexedDB.FilePathLengthOverflow.SQLite",
-                                  max_sqlite_file_path_length - MAX_PATH);
-#endif
     }
 
     if (IsPathTooLong(database_path)) {

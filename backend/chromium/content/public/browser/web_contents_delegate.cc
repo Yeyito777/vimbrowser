@@ -269,11 +269,6 @@ void WebContentsDelegate::RunFileChooser(
   listener->FileSelectionCanceled();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool WebContentsDelegate::UseFileChooserForFileSystemAccess() const {
-  return false;
-}
-#endif
 
 void WebContentsDelegate::EnumerateDirectory(
     WebContents* web_contents,
@@ -321,11 +316,6 @@ WebContentsDelegate::CreateAudioStreamBrokerFactory(WebContents* web_contents) {
   return nullptr;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool WebContentsDelegate::ShouldBlockMediaRequest(const GURL& url) {
-  return false;
-}
-#endif
 
 WebContentsDelegate::~WebContentsDelegate() {
   while (!attached_contents_.empty()) {
@@ -453,11 +443,9 @@ bool WebContentsDelegate::IsPrivileged() {
   return false;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 bool WebContentsDelegate::ShouldUseInstancedSystemMediaControls() const {
   return false;
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 bool WebContentsDelegate::MaybeCopyContentAreaAsBitmap(
     base::OnceCallback<void(const SkBitmap&)> callback) {
@@ -476,26 +464,6 @@ bool WebContentsDelegate::IsWaitingForPointerLockPrompt(
   return false;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-
-bool WebContentsDelegate::MaybeCopyContentAreaAsHardwareBuffer(
-    HardwareBufferResultCallback callback) {
-  return false;
-}
-SkBitmap WebContentsDelegate::MaybeCopyContentAreaAsBitmapSync() {
-  return SkBitmap();
-}
-
-SkBitmap
-WebContentsDelegate::GetBackForwardTransitionFallbackUXInternalPageIcon() {
-  return SkBitmap();
-}
-
-BackForwardTransitionAnimationManager::FallbackUXConfig
-WebContentsDelegate::GetBackForwardTransitionFallbackUXConfig() {
-  return BackForwardTransitionAnimationManager::FallbackUXConfig();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 std::vector<blink::mojom::RelatedApplicationPtr>
 WebContentsDelegate::GetSavedRelatedApplications(WebContents* web_contents) {

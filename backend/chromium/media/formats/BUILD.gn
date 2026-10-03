@@ -10,7 +10,6 @@ source_set("formats") {
   # should be using //media and not directly DEP this roll-up target.
   visibility = [
     "//media",
-    "//media/base/android/",
     "//media/base/win:media_foundation_util",
     "//media/cdm",
     "//media/ffmpeg",

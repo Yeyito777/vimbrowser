@@ -12,23 +12,13 @@
 #include "components/search_engines/search_engine_choice/search_engine_choice_utils.h"
 #include "components/variations/service/variations_service.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/components/mgs/managed_guest_session_utils.h"
-#endif
 
 namespace search_engines {
 
 SearchEngineChoiceServiceClient::SearchEngineChoiceServiceClient(
     const Profile& profile)
     : is_profile_eligible_for_dse_guest_propagation_(
-#if BUILDFLAG(IS_CHROMEOS)
-          !chromeos::IsManagedGuestSession() &&
-#endif
           profile.IsGuestSession()) {
-#if BUILDFLAG(IS_ANDROID)
-  // We don't expect Guest profiles to be supported on Android.
-  CHECK(!is_profile_eligible_for_dse_guest_propagation_);
-#endif
 }
 
 country_codes::CountryId

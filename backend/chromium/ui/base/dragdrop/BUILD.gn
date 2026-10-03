@@ -19,8 +19,4 @@ component("types") {
     sources += [ "drag_drop_types_mac.mm" ]
     frameworks = [ "AppKit.framework" ]
   }
-
-  if (is_win) {
-    sources += [ "drag_drop_types_win.cc" ]
-  }
 }

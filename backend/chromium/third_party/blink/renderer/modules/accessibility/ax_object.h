@@ -547,25 +547,6 @@ class MODULES_EXPORT AXObject : public GarbageCollected<AXObject> {
     return cached_is_on_screen_ ? cached_is_on_screen_.value() : false;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // These methods are used to compute paint order for Android XR.
-  // Paint order zero (0) is a reserved value indicating paint order
-  // could not be determined for an element (unknown).
-  // Notes:
-  // * Paint orders are computed over an entire widget, so for a particular
-  //   Document they may not start at 1.
-  // * Different widgets currently have independent and unrelated paint order
-  //   sequences. There is no global sequence. This includes the case of popup
-  //   windows, which share an AXObjectCacheImpl with their main Document, but
-  //   belong to a different widget.
-  int GetPaintOrder() const {
-    CHECK(blink::features::IsXrDevice());
-    return paint_order_;
-  }
-  void AnnotateXrHitTestOrder(const Document& document,
-                              const HashMap<DOMNodeId, int>& order_map,
-                              int inherited_paint_order);
-#endif
 
   // A node can oly flip from off-screen to on-screen if it was explicitly
   // marked as off-screen at some point. Since we keep track if a node was ever
@@ -1633,9 +1614,6 @@ class MODULES_EXPORT AXObject : public GarbageCollected<AXObject> {
   void SerializeHTMLTagAndClass(ui::AXNodeData* node_data) const;
   void SerializeHTMLId(ui::AXNodeData* node_data) const;
   void SerializeInlineTextBox(ui::AXNodeData* node_data) const;
-#if BUILDFLAG(IS_WIN)
-  void SerializeJAWSNonStandardHTMLAttributes(ui::AXNodeData* node_data) const;
-#endif
   void SerializeLangAttribute(ui::AXNodeData* node_data) const;
   void SerializeLineAttributes(ui::AXNodeData* node_data) const;
   void SerializeListAttributes(ui::AXNodeData* node_data) const;
@@ -1727,9 +1705,6 @@ class MODULES_EXPORT AXObject : public GarbageCollected<AXObject> {
 
   Member<AXObjectCacheImpl> ax_object_cache_;
 
-#if BUILDFLAG(IS_ANDROID)
-  int paint_order_ = 0;
-#endif
 
   bool IsCheckable() const;
   static bool IsNativeCheckboxInMixedState(const Node*);

@@ -50,9 +50,7 @@
 #include "third_party/metrics_proto/omnibox_scoring_signals.pb.h"
 #include "third_party/omnibox_proto/groups.pb.h"
 
-#if !BUILDFLAG(IS_IOS)
 #include "components/history_clusters/core/config.h"  // nogncheck
-#endif                                                // !BUILDFLAG(IS_IOS)
 
 constexpr bool kIsDesktop = !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS);
 
@@ -396,7 +394,6 @@ void ShortcutsProvider::DoAutocomplete(const AutocompleteInput& input,
                                    input, fixed_up_input, lower_input);
     // Guard this as `HistoryClusterProvider` doesn't exist on iOS.
     // Though this code will never run on iOS regardless.
-#if !BUILDFLAG(IS_IOS)
         // `lower_input` is only what the user typed, e.g. "new y" instead of
         // "new york". Use `match.description`, which is the whole string.
         // This is a bit hacky, but accurately reflects how
@@ -406,7 +403,6 @@ void ShortcutsProvider::DoAutocomplete(const AutocompleteInput& input,
         // because it wasn't generated via an entity match in the first place.
         HistoryClusterProvider::CompleteHistoryClustersMatch(
             matching_string, history::ClusterKeywordData(), &match);
-#endif  // !BUILDFLAG(IS_IOS)
 
         return match;
       });
@@ -555,12 +551,8 @@ AutocompleteMatch ShortcutsProvider::ShortcutMatchToACMatch(
             !input.prevent_inline_autocomplete() ||
             match.inline_autocompletion.empty();
       }
-#if !BUILDFLAG(IS_IOS)
     } else if (match.type != AutocompleteMatch::Type::HISTORY_CLUSTER) {
       // Don't default history cluster suggestions.
-#else
-    } else {
-#endif
       // Try rich autocompletion first. For document suggestions, hide the
       // URL from `additional_text` and don't try to inline the metadata (e.g.
       // 'Google Docs' or '1/1/2023').

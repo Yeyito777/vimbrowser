@@ -9,9 +9,6 @@ type ViewportChangedCallback =
 export interface PdfPlugin extends HTMLIFrameElement {
   darkModeChanged(darkMode: boolean): void;
   hideToolbar(): void;
-  loadPreviewPage(url: string, index: number): void;
-  resetPrintPreviewMode(
-      url: string, color: boolean, pages: number[], modifiable: boolean): void;
   scrollPosition(x: number, y: number): void;
   sendKeyEvent(e: KeyboardEvent): void;
   setKeyEventCallback(callback: (e: KeyboardEvent) => void): void;
@@ -74,8 +71,7 @@ export enum LoadState {
   FAILED = 'failed',
 }
 
-// Provides a scripting interface to the PDF viewer so that it can be customized
-// by things like print preview.
+// Provides a scripting interface to the PDF viewer.
 export class PdfScriptingApi {
   private loadState_: LoadState = LoadState.LOADING;
   private pendingScriptingMessages_: Array<{type: string}> = [];
@@ -96,8 +92,7 @@ export class PdfScriptingApi {
 
     window.addEventListener('message', event => {
       if (event.origin !==
-              'chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai' &&
-          event.origin !== 'chrome://print') {
+          'chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai') {
         console.error(
             'Received message that was not from the extension: ' + event);
         return;
@@ -140,8 +135,7 @@ export class PdfScriptingApi {
 
   /**
    * Send a message to the extension. If messages try to get sent before there
-   * is a plugin element set, then we queue them up and send them later (this
-   * can happen in print preview).
+   * is a plugin element set, then we queue them up and send them later.
    */
   private sendMessage_<M extends {type: string}>(message: M) {
     if (this.plugin_) {
@@ -195,38 +189,9 @@ export class PdfScriptingApi {
     this.keyEventCallback_ = callback;
   }
 
-  /**
-   * Resets the PDF viewer into print preview mode.
-   * @param url the url of the PDF to load.
-   * @param grayscale whether or not to display the PDF in grayscale.
-   * @param pageNumbers an array of the page numbers.
-   * @param modifiable whether or not the document is modifiable.
-   */
-  resetPrintPreviewMode(
-      url: string, grayscale: boolean, pageNumbers: number[],
-      modifiable: boolean) {
-    this.loadState_ = LoadState.LOADING;
-    this.sendMessage_({
-      type: 'resetPrintPreviewMode',
-      url: url,
-      grayscale: grayscale,
-      pageNumbers: pageNumbers,
-      modifiable: modifiable,
-    });
-  }
-
   /** Hide the toolbar after a delay. */
   hideToolbar() {
     this.sendMessage_({type: 'hideToolbar'});
-  }
-
-  /**
-   * Load a page into the document while in print preview mode.
-   * @param url the url of the pdf page to load.
-   * @param index the index of the page to load.
-   */
-  loadPreviewPage(url: string, index: number) {
-    this.sendMessage_({type: 'loadPreviewPage', url: url, index: index});
   }
 
   /** @param darkMode Whether the page is in dark mode. */
@@ -258,11 +223,6 @@ export class PdfScriptingApi {
     return true;
   }
 
-  /** Print the document. May only be called after document load. */
-  print() {
-    this.sendMessage_({type: 'print'});
-  }
-
   /**
    * Send a key event to the extension.
    * @param keyEvent the key event to send to the extension.
@@ -284,8 +244,7 @@ export class PdfScriptingApi {
 /**
  * Creates a PDF viewer with a scripting interface. This is basically 1) an
  * iframe which is navigated to the PDF viewer extension and 2) a scripting
- * interface which provides access to various features of the viewer for use
- * by print preview and accessibility.
+ * interface which provides access to various features of the viewer.
  * @param src the source URL of the PDF to load initially.
  * @param baseUrl the base URL of the PDF viewer
  * @return The iframe element containing the PDF viewer.
@@ -304,8 +263,6 @@ export function pdfCreateOutOfProcessPlugin(
   // Add the functions to the iframe so that they can be called directly.
   iframe.darkModeChanged = client.darkModeChanged.bind(client);
   iframe.hideToolbar = client.hideToolbar.bind(client);
-  iframe.loadPreviewPage = client.loadPreviewPage.bind(client);
-  iframe.resetPrintPreviewMode = client.resetPrintPreviewMode.bind(client);
   iframe.scrollPosition = client.scrollPosition.bind(client);
   iframe.sendKeyEvent = client.sendKeyEvent.bind(client);
   iframe.setKeyEventCallback = client.setKeyEventCallback.bind(client);

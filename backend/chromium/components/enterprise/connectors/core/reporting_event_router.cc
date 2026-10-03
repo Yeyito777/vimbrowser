@@ -914,11 +914,7 @@ void ReportingEventRouter::OnDataControlsSensitiveDataEvent(
 std::string ReportingEventRouter::GetFileName(const std::string& filename,
                                               const bool include_full_path) {
   base::FilePath::StringType os_filename;
-#if BUILDFLAG(IS_WIN)
-  os_filename = base::UTF8ToWide(filename);
-#else
   os_filename = filename;
-#endif
 
   return include_full_path
              ? filename

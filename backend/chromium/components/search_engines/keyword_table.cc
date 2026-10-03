@@ -518,53 +518,6 @@ bool KeywordTable::MigrateToVersion137AddHashColumn() {
 
   // See the comment in `GetKeywordDataFromStatement` as to why this code is
   // only enabled for Windows.
-#if BUILDFLAG(IS_WIN)
-  // If there is no platform encryption, nothing left to do, since the
-  // `url_hash` column will just be NULL.
-  if (!encryptor()->IsEncryptionAvailable()) {
-    return transaction.Commit();
-  }
-
-  // Read in all the urls and ids and create hashes for each one.
-  sql::Statement query_statement(db()->GetCachedStatement(
-      SQL_FROM_HERE, base::StrCat({"SELECT id, url FROM keywords"})));
-
-  while (query_statement.Step()) {
-    TemplateURLData data;
-    data.id = query_statement.ColumnInt64(0);
-    const auto maybe_url = query_statement.ColumnString(1);
-
-    // Due to past bugs, there might be persisted entries with empty URLs. Avoid
-    // reading these out. GetKeywords() will delete these entries when they are
-    // read after migration.
-    if (maybe_url.empty()) {
-      all_rows_migrated = false;
-      continue;
-    }
-
-    data.SetURL(maybe_url);
-    const std::vector<uint8_t> url_hash = data.GenerateHash();
-    const std::optional<std::vector<uint8_t>> encrypted_hash =
-        encryptor()->EncryptString(
-            std::string(url_hash.begin(), url_hash.end()));
-    if (!encrypted_hash) {
-      all_rows_migrated = false;
-      continue;
-    }
-
-    // Update each row in turn with the generated hash.
-    sql::Statement update_statement(db()->GetCachedStatement(
-        SQL_FROM_HERE, "UPDATE keywords SET url_hash=? WHERE id=?"));
-
-    update_statement.BindBlob(0, *std::move(encrypted_hash));
-    update_statement.BindInt64(1, data.id);
-
-    if (!update_statement.Run()) {
-      all_rows_migrated = false;
-      continue;
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
   return transaction.Commit();
 }
 
@@ -636,33 +589,7 @@ std::optional<TemplateURLData> KeywordTable::GetKeywordDataFromStatement(
 // not available, but data could still be encrypted with v10 encryption, and the
 // backend can change for various reasons including command line options or
 // desktop window manager.
-#if BUILDFLAG(IS_WIN)
-  if (!encryptor()->IsDecryptionAvailable()) {
-    status = HashValidationStatus::kNotVerifiedNoCrypto;
-  } else {
-    const auto hash = encryptor()->DecryptData(s.ColumnBlob(27));
-    if (!hash) {
-      status = HashValidationStatus::kDecryptFailed;
-      return std::nullopt;
-    }
-
-    const auto expected_hash = data.GenerateHash();
-
-    if (expected_hash.size() != hash->size()) {
-      status = HashValidationStatus::kInvalidHash;
-      return std::nullopt;
-    }
-
-    if (!std::ranges::equal(hash.value(), expected_hash, [](char c, uint8_t b) {
-          return static_cast<uint8_t>(c) == b;
-        })) {
-      status = HashValidationStatus::kIncorrectHash;
-      return std::nullopt;
-    }
-  }
-#else
   status = HashValidationStatus::kNotVerifiedFeatureDisabled;
-#endif  // BUILDFLAG(IS_WIN)
   return data;
 }
 

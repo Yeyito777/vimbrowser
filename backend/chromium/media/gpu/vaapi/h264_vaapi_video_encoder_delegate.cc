@@ -74,12 +74,7 @@ constexpr uint8_t kMaxSupportedH264TemporalLayersBySWBRC = 2;
 bool ShouldInsertPrefixNALU() {
   // Insert Prefix NALU for temporal layer encoding in ChromeOS selphie.
   // TODO(b/465812584): Enable this on all ChromeOS x86 devices.
-#if BUILDFLAG(IS_CHROMEOS)
-  static bool isSelphie = base::SysInfo::GetLsbReleaseBoard() == "selphie";
-  return isSelphie;
-#else
   return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 template <typename VAEncMiscParam>
@@ -547,11 +542,7 @@ bool H264VaapiVideoEncoderDelegate::UseSoftwareRateController(
     num_temporal_layers = config.spatial_layers[0].num_of_temporal_layers;
   }
   const bool is_sw_bitrate_controller_enabled =
-#if BUILDFLAG(IS_CHROMEOS)
-      base::FeatureList::IsEnabled(kVaapiH264SWBitrateController);
-#else
       false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   const bool is_constant_bitrate_mode =
       config.bitrate.mode() == Bitrate::Mode::kConstant;
 

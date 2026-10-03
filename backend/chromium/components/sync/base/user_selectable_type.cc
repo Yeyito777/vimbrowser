@@ -115,12 +115,7 @@ UserSelectableTypeInfo GetUserSelectableTypeInfo(
       return {
           kExtensionsTypeName, EXTENSIONS, {EXTENSIONS, EXTENSION_SETTINGS}};
     case UserSelectableType::kApps:
-#if BUILDFLAG(IS_CHROMEOS)
-      // In Chrome OS, "Apps" is a sub-item of OS settings.
-      return {kAppsTypeName, UNSPECIFIED};
-#else
       return {kAppsTypeName, APPS, {APPS, APP_SETTINGS, WEB_APPS, WEB_APKS}};
-#endif
     case UserSelectableType::kReadingList:
       return {kReadingListTypeName, READING_LIST, {READING_LIST}};
     case UserSelectableType::kTabs:
@@ -158,32 +153,6 @@ UserSelectableTypeInfo GetUserSelectableTypeInfo(
   NOTREACHED();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-constexpr char kOsAppsTypeName[] = "osApps";
-constexpr char kOsPreferencesTypeName[] = "osPreferences";
-constexpr char kOsWifiConfigurationsTypeName[] = "osWifiConfigurations";
-constexpr char kWifiConfigurationsTypeName[] = "wifiConfigurations";
-
-UserSelectableTypeInfo GetUserSelectableOsTypeInfo(UserSelectableOsType type) {
-  // UserSelectableTypeInfo::type_name is used in js code and shouldn't be
-  // changed without updating js part.
-  switch (type) {
-    case UserSelectableOsType::kOsApps:
-      return {kOsAppsTypeName,
-              APPS,
-              {APP_LIST, APPS, APP_SETTINGS, ARC_PACKAGE, WEB_APPS}};
-    case UserSelectableOsType::kOsPreferences:
-      return {kOsPreferencesTypeName,
-              OS_PREFERENCES,
-              {OS_PREFERENCES, OS_PRIORITY_PREFERENCES, PRINTERS,
-               PRINTERS_AUTHORIZATION_SERVERS}};
-    case UserSelectableOsType::kOsWifiConfigurations:
-      return {kOsWifiConfigurationsTypeName,
-              WIFI_CONFIGURATIONS,
-              {WIFI_CONFIGURATIONS}};
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -275,79 +244,6 @@ std::optional<UserSelectableType> GetUserSelectableTypeFromDataType(
   return selectable_type;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-const char* GetUserSelectableOsTypeName(UserSelectableOsType type) {
-  return GetUserSelectableOsTypeInfo(type).type_name;
-}
-
-std::string UserSelectableOsTypeSetToString(UserSelectableOsTypeSet types) {
-  std::vector<std::string> type_names;
-  type_names.reserve(types.size());
-  for (UserSelectableOsType type : types) {
-    type_names.push_back(GetUserSelectableOsTypeName(type));
-  }
-  return base::JoinString(type_names, ", ");
-}
-
-std::optional<UserSelectableOsType> GetUserSelectableOsTypeFromString(
-    const std::string& type) {
-  constexpr auto kTypeMap =
-      base::MakeFixedFlatMap<std::string_view, UserSelectableOsType>({
-          {kOsAppsTypeName, UserSelectableOsType::kOsApps},
-          {kOsPreferencesTypeName, UserSelectableOsType::kOsPreferences},
-          {kOsWifiConfigurationsTypeName,
-           UserSelectableOsType::kOsWifiConfigurations},
-          // Some pref types migrated from browser prefs to OS prefs. Map the
-          // browser type name to the OS type so that enterprise policy
-          // SyncTypesListDisabled still applies to the migrated names.
-          // TODO(crbug.com/40678410): Rename "osApps" to "apps" and
-          // "osWifiConfigurations" to "wifiConfigurations", and remove the
-          // mapping for "preferences".
-          {kAppsTypeName, UserSelectableOsType::kOsApps},
-          {kWifiConfigurationsTypeName,
-           UserSelectableOsType::kOsWifiConfigurations},
-          {kPreferencesTypeName, UserSelectableOsType::kOsPreferences},
-      });
-  if (auto it = kTypeMap.find(type); it != kTypeMap.end()) {
-    return it->second;
-  }
-  return std::nullopt;
-}
-
-DataTypeSet UserSelectableOsTypeToAllDataTypes(UserSelectableOsType type) {
-  return GetUserSelectableOsTypeInfo(type).data_type_group;
-}
-
-DataType UserSelectableOsTypeToCanonicalDataType(UserSelectableOsType type) {
-  return GetUserSelectableOsTypeInfo(type).canonical_data_type;
-}
-
-base::ListValue UserSelectableOsTypeSetToValueList(
-    syncer::UserSelectableOsTypeSet user_selected_types) {
-  base::ListValue value_list;
-  for (syncer::UserSelectableOsType type : user_selected_types) {
-    if (const char* name = syncer::GetUserSelectableOsTypeName(type)) {
-      value_list.Append(name);
-    }
-  }
-  return value_list;
-}
-
-syncer::UserSelectableOsTypeSet ValueListToUserSelectableOsTypeSet(
-    const base::ListValue& value_list) {
-  syncer::UserSelectableOsTypeSet user_selected_os_types;
-  for (const base::Value& value : value_list) {
-    if (!value.is_string()) {
-      continue;
-    }
-    if (std::optional<syncer::UserSelectableOsType> type =
-            syncer::GetUserSelectableOsTypeFromString(value.GetString())) {
-      user_selected_os_types.Put(type.value());
-    }
-  }
-  return user_selected_os_types;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 std::ostream& operator<<(std::ostream& stream, const UserSelectableType& type) {
   return stream << GetUserSelectableTypeName(type);

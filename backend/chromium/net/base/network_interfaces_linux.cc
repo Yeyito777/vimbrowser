@@ -9,9 +9,7 @@
 
 #include "build/build_config.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include <linux/ethtool.h>
-#endif  // !BUILDFLAG(IS_ANDROID)
 #include <linux/if.h>
 #include <linux/sockios.h>
 #include <linux/wireless.h>
@@ -38,13 +36,6 @@
 #include "net/base/network_interfaces_posix.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include <string_view>
-
-#include "base/android/android_info.h"
-#include "net/android/network_library.h"
-#include "net/base/network_interfaces_getifaddrs.h"
-#endif
 
 namespace net {
 
@@ -62,9 +53,7 @@ bool TryConvertNativeToNetIPAttributes(int native_attributes,
   // and shouldn't be used by the application layer until DAD process
   // is completed.
   if (native_attributes & (
-#if !BUILDFLAG(IS_ANDROID)
                               IFA_F_OPTIMISTIC | IFA_F_DADFAILED |
-#endif  // !BUILDFLAG(IS_ANDROID)
                               IFA_F_TENTATIVE)) {
     return false;
   }
@@ -101,7 +90,6 @@ NetworkChangeNotifier::ConnectionType GetInterfaceConnectionType(
   if (ioctl(s.get(), SIOCGIWNAME, &pwrq) != -1)
     return NetworkChangeNotifier::CONNECTION_WIFI;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Test ethtool for CONNECTION_ETHERNET
   struct ethtool_cmd ecmd = {};
   ecmd.cmd = ETHTOOL_GSET;
@@ -110,7 +98,6 @@ NetworkChangeNotifier::ConnectionType GetInterfaceConnectionType(
   CopyStringAndNulToSpan(ifname, base::span(ifr.ifr_name));
   if (ioctl(s.get(), SIOCETHTOOL, &ifr) != -1)
     return NetworkChangeNotifier::CONNECTION_ETHERNET;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   return NetworkChangeNotifier::CONNECTION_UNKNOWN;
 }
@@ -227,27 +214,6 @@ bool GetNetworkList(NetworkInterfaceList* networks, int policy) {
   if (networks == nullptr)
     return false;
 
-#if BUILDFLAG(IS_ANDROID)
-  // On Android 11 RTM_GETLINK (used by AddressTrackerLinux) no longer works as
-  // per https://developer.android.com/preview/privacy/mac-address so instead
-  // use getifaddrs() which is supported since Android N.
-  if (__builtin_available(android 24, *)) {
-    // Some Samsung devices with MediaTek processors are with
-    // a buggy getifaddrs() implementation,
-    // so use a Chromium's own implementation to workaround.
-    // See https://crbug.com/1240237 for more context.
-    bool use_alternative_getifaddrs =
-        std::string_view(base::android::android_info::brand()) == "samsung" &&
-        std::string_view(base::android::android_info::hardware())
-            .starts_with("mt");
-    bool ret = internal::GetNetworkListUsingGetifaddrs(
-        networks, policy, use_alternative_getifaddrs);
-    // Use GetInterfaceConnectionType() to sharpen up interface types.
-    for (NetworkInterface& network : *networks)
-      network.type = internal::GetInterfaceConnectionType(network.name);
-    return ret;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   const AddressMapOwnerLinux* map_owner = nullptr;
   std::optional<internal::AddressTrackerLinux> temp_tracker;
@@ -273,16 +239,12 @@ bool GetNetworkList(NetworkInterfaceList* networks, int policy) {
 
 std::string GetWifiSSID() {
 // On Android, obtain the SSID using the Android-specific APIs.
-#if BUILDFLAG(IS_ANDROID)
-  return android::GetWifiSSID();
-#else
   NetworkInterfaceList networks;
   if (GetNetworkList(&networks, INCLUDE_HOST_SCOPE_VIRTUAL_INTERFACES)) {
     return internal::GetWifiSSIDFromInterfaceListInternal(
         networks, internal::GetInterfaceSSID);
   }
   return std::string();
-#endif
 }
 
 }  // namespace net

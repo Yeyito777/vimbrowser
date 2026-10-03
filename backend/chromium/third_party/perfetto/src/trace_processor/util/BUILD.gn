@@ -60,7 +60,7 @@ source_set("build_id") {
   ]
   deps = [
     "../../../gn:default_deps",
-    "../../../include/perfetto/ext/base:base",
+    "../../../include/perfetto/ext/base",
   ]
 }
 
@@ -68,7 +68,7 @@ source_set("blob") {
   sources = [ "trace_blob.cc" ]
   deps = [
     "../../../gn:default_deps",
-    "../../../include/perfetto/ext/base:base",
+    "../../../include/perfetto/ext/base",
     "../../../include/perfetto/trace_processor:basic_types",
     "../../../include/perfetto/trace_processor:util",
     "../../../protos/perfetto/common:zero",
@@ -82,7 +82,7 @@ source_set("clock") {
   ]
   deps = [
     "../../../gn:default_deps",
-    "../../../include/perfetto/ext/base:base",
+    "../../../include/perfetto/ext/base",
     "../../../protos/perfetto/common:zero",
   ]
 }
@@ -94,9 +94,9 @@ source_set("profiler_util") {
   ]
   deps = [
     "../../../gn:default_deps",
-    "../../../include/perfetto/ext/base:base",
+    "../../../include/perfetto/ext/base",
     "../../../protos/perfetto/trace/profiling:zero",
-    "../storage:storage",
+    "../storage",
   ]
 }
 
@@ -357,12 +357,11 @@ source_set("profile_builder") {
   deps = [
     "../../../gn:default_deps",
     "../../../include/perfetto/ext/trace_processor:demangle",
-    "../../../include/perfetto/protozero:protozero",
+    "../../../include/perfetto/protozero",
     "../../../protos/perfetto/trace_processor:zero",
     "../../../protos/third_party/pprof:zero",
     "../../base",
     "../containers",
-    "../core/dataframe",
     "../core/dataframe",
     "../storage",
     "../tables",
@@ -393,8 +392,6 @@ source_set("trace_type") {
     "../../../protos/perfetto/trace:non_minimal_zero",
     "../../../protos/third_party/pprof:zero",
     "../../protozero",
-    "../importers/android_bugreport:android_dumpstate_event",
-    "../importers/android_bugreport:android_log_event",
     "../importers/perf_text:perf_text_sample_line_parser",
   ]
 }
@@ -408,18 +405,6 @@ source_set("tar_writer") {
     "../../../gn:default_deps",
     "../../../include/perfetto/base",
     "../../../include/perfetto/ext/base",
-  ]
-}
-
-source_set("winscope_proto_mapping") {
-  sources = [ "winscope_proto_mapping.h" ]
-  deps = [
-    "../../../gn:default_deps",
-    "../../../include/perfetto/ext/base:base",
-    "../containers",
-    "../core/dataframe",
-    "../storage:storage",
-    "../tables",
   ]
 }
 
@@ -445,9 +430,7 @@ source_set("unittests") {
     "zip_reader_unittest.cc",
   ]
 
-  if (!is_win) {
-    sources += [ "regex_unittest.cc" ]
-  }
+  sources += [ "regex_unittest.cc" ]
 
   testonly = true
   deps = [

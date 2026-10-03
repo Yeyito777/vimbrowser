@@ -176,9 +176,6 @@ ui::PlatformWindowInitProperties ConvertWidgetInitParamsToInitProperties(
   }
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-  properties.enable_keyboard = true;
-#endif
 
   return properties;
 }
@@ -270,10 +267,6 @@ void DesktopWindowTreeHostPlatform::Init(const Widget::InitParams& params) {
       ConvertWidgetInitParamsToInitProperties(params);
   AddAdditionalInitProperties(params, &properties);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Set persistable based on whether or not the content window is persistable.
-  properties.persistable = GetContentWindow()->GetProperty(wm::kPersistableKey);
-#endif
 
   // If we have a parent, record the parent/child relationship. We use this
   // data during destruction to make sure that when we try to close a parent
@@ -287,9 +280,6 @@ void DesktopWindowTreeHostPlatform::Init(const Widget::InitParams& params) {
 
   // Calculate initial bounds.
   properties.bounds = params.bounds;
-#if BUILDFLAG(IS_CHROMEOS)
-  properties.display_id = params.display_id;
-#endif
 
   // Set extensions delegate.
   DCHECK(!properties.workspace_extension_delegate);

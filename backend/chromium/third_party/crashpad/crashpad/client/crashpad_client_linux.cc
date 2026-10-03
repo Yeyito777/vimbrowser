@@ -61,75 +61,6 @@ std::string FormatArgumentAddress(const std::string& name, const void* addr) {
   return base::StringPrintf("--%s=%p", name.c_str(), addr);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-
-std::vector<std::string> BuildAppProcessArgs(
-    const std::string& class_name,
-    const base::FilePath& database,
-    const base::FilePath& metrics_dir,
-    const std::string& url,
-    const std::map<std::string, std::string>& annotations,
-    const std::vector<std::string>& arguments,
-    int socket) {
-#if defined(ARCH_CPU_64_BITS)
-  static constexpr char kAppProcess[] = "/system/bin/app_process64";
-#else
-  static constexpr char kAppProcess[] = "/system/bin/app_process32";
-#endif
-
-  std::vector<std::string> argv;
-  argv.push_back(kAppProcess);
-  argv.push_back("/system/bin");
-  argv.push_back("--application");
-  argv.push_back(class_name);
-
-  std::vector<std::string> handler_argv =
-      BuildHandlerArgvStrings(base::FilePath(kAppProcess),
-                              database,
-                              metrics_dir,
-                              url,
-                              annotations,
-                              arguments);
-
-  if (socket != kInvalidFileHandle) {
-    handler_argv.push_back(FormatArgumentInt("initial-client-fd", socket));
-  }
-
-  argv.insert(argv.end(), handler_argv.begin(), handler_argv.end());
-  return argv;
-}
-
-std::vector<std::string> BuildArgsToLaunchWithLinker(
-    const std::string& handler_trampoline,
-    const std::string& handler_library,
-    bool is_64_bit,
-    const base::FilePath& database,
-    const base::FilePath& metrics_dir,
-    const std::string& url,
-    const std::map<std::string, std::string>& annotations,
-    const std::vector<std::string>& arguments,
-    int socket) {
-  std::vector<std::string> argv;
-  if (is_64_bit) {
-    argv.push_back("/system/bin/linker64");
-  } else {
-    argv.push_back("/system/bin/linker");
-  }
-  argv.push_back(handler_trampoline);
-  argv.push_back(handler_library);
-
-  std::vector<std::string> handler_argv = BuildHandlerArgvStrings(
-      base::FilePath(), database, metrics_dir, url, annotations, arguments);
-
-  if (socket != kInvalidFileHandle) {
-    handler_argv.push_back(FormatArgumentInt("initial-client-fd", socket));
-  }
-
-  argv.insert(argv.end(), handler_argv.begin() + 1, handler_argv.end());
-  return argv;
-}
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 using LastChanceHandler = bool (*)(int, siginfo_t*, ucontext_t*);
 
@@ -405,19 +336,11 @@ class RequestCrashDumpHandler : public SignalHandler {
     ExceptionHandlerProtocol::ClientInformation info = {};
     info.exception_information_address =
         FromPointerCast<VMAddress>(&GetExceptionInfo());
-#if BUILDFLAG(IS_CHROMEOS)
-    info.crash_loop_before_time = crash_loop_before_time_;
-#endif
 
     ExceptionHandlerClient client(sock_to_handler_.get(), true);
     client.RequestCrashDump(info);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetCrashLoopBefore(uint64_t crash_loop_before_time) {
-    crash_loop_before_time_ = crash_loop_before_time;
-  }
-#endif
 
  private:
   RequestCrashDumpHandler() = default;
@@ -435,13 +358,6 @@ class RequestCrashDumpHandler : public SignalHandler {
   ScopedFileHandle sock_to_handler_;
   pid_t handler_pid_ = -1;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // An optional UNIX timestamp passed to us from Chrome.
-  // This will pass to crashpad_handler and then to Chrome OS crash_reporter.
-  // This should really be a time_t, but it's basically an opaque value (we
-  // don't anything with it except pass it along).
-  uint64_t crash_loop_before_time_ = 0;
-#endif
 };
 
 }  // namespace
@@ -595,93 +511,6 @@ bool CrashpadClient::InitializeSignalStackForThread() {
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) ||
         // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-
-bool CrashpadClient::StartJavaHandlerAtCrash(
-    const std::string& class_name,
-    const std::vector<std::string>* env,
-    const base::FilePath& database,
-    const base::FilePath& metrics_dir,
-    const std::string& url,
-    const std::map<std::string, std::string>& annotations,
-    const std::vector<std::string>& arguments) {
-  std::vector<std::string> argv = BuildAppProcessArgs(class_name,
-                                                      database,
-                                                      metrics_dir,
-                                                      url,
-                                                      annotations,
-                                                      arguments,
-                                                      kInvalidFileHandle);
-
-  auto signal_handler = LaunchAtCrashHandler::Get();
-  return signal_handler->Initialize(&argv, env, &unhandled_signals_);
-}
-
-// static
-bool CrashpadClient::StartJavaHandlerForClient(
-    const std::string& class_name,
-    const std::vector<std::string>* env,
-    const base::FilePath& database,
-    const base::FilePath& metrics_dir,
-    const std::string& url,
-    const std::map<std::string, std::string>& annotations,
-    const std::vector<std::string>& arguments,
-    int socket) {
-  std::vector<std::string> argv = BuildAppProcessArgs(
-      class_name, database, metrics_dir, url, annotations, arguments, socket);
-  return SpawnSubprocess(argv, env, socket, false, nullptr);
-}
-
-bool CrashpadClient::StartHandlerWithLinkerAtCrash(
-    const std::string& handler_trampoline,
-    const std::string& handler_library,
-    bool is_64_bit,
-    const std::vector<std::string>* env,
-    const base::FilePath& database,
-    const base::FilePath& metrics_dir,
-    const std::string& url,
-    const std::map<std::string, std::string>& annotations,
-    const std::vector<std::string>& arguments) {
-  std::vector<std::string> argv =
-      BuildArgsToLaunchWithLinker(handler_trampoline,
-                                  handler_library,
-                                  is_64_bit,
-                                  database,
-                                  metrics_dir,
-                                  url,
-                                  annotations,
-                                  arguments,
-                                  kInvalidFileHandle);
-  auto signal_handler = LaunchAtCrashHandler::Get();
-  return signal_handler->Initialize(&argv, env, &unhandled_signals_);
-}
-
-// static
-bool CrashpadClient::StartHandlerWithLinkerForClient(
-    const std::string& handler_trampoline,
-    const std::string& handler_library,
-    bool is_64_bit,
-    const std::vector<std::string>* env,
-    const base::FilePath& database,
-    const base::FilePath& metrics_dir,
-    const std::string& url,
-    const std::map<std::string, std::string>& annotations,
-    const std::vector<std::string>& arguments,
-    int socket) {
-  std::vector<std::string> argv =
-      BuildArgsToLaunchWithLinker(handler_trampoline,
-                                  handler_library,
-                                  is_64_bit,
-                                  database,
-                                  metrics_dir,
-                                  url,
-                                  annotations,
-                                  arguments,
-                                  socket);
-  return SpawnSubprocess(argv, env, socket, false, nullptr);
-}
-
-#endif
 
 bool CrashpadClient::StartHandlerAtCrash(
     const base::FilePath& handler,
@@ -762,12 +591,5 @@ void CrashpadClient::SetUnhandledSignals(const std::set<int>& signals) {
   unhandled_signals_ = signals;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// static
-void CrashpadClient::SetCrashLoopBefore(uint64_t crash_loop_before_time) {
-  auto request_crash_dump_handler = RequestCrashDumpHandler::Get();
-  request_crash_dump_handler->SetCrashLoopBefore(crash_loop_before_time);
-}
-#endif
 
 }  // namespace crashpad

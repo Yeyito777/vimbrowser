@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-assert(!is_android)
-
 source_set("indigo") {
   sources = [
     "indigo_alpha_rpc.h",
@@ -69,8 +67,4 @@ source_set("unit_tests") {
     "//testing/gtest",
     "//url",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/network:test_support" ]
-  }
 }

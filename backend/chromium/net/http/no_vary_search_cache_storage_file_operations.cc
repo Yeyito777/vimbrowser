@@ -8,9 +8,6 @@
 
 #include "net/http/no_vary_search_cache_storage.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>  // For {Get,Set}FileAttributes
-#endif                // BUILDFLAG(IS_WIN)
 
 #include <algorithm>
 #include <type_traits>
@@ -28,9 +25,6 @@
 #include "base/strings/string_util.h"
 #include "base/time/time.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/threading/platform_thread.h"  // for PlatformThread::Sleep()
-#endif                                       // BUILDFLAG(IS_WIN)
 
 namespace net {
 
@@ -243,54 +237,6 @@ void MoveOldFilesIfNeeded(const base::FilePath& legacy_path,
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-// Attempt to replace `destination` with `source`, retrying on failure. Only
-// needed on Windows, because only on Windows do virus checkers and other
-// software open files preventing you from renaming them. Based on code from
-// //base/files/important_file_writer.cc. Function signature must match
-// base::ReplaceFile().
-bool ReplaceFileWithRetries(const base::FilePath& source,
-                            const base::FilePath& destination,
-                            base::File::Error* error) {
-  // These settings are more aggressive than used by ImportantFileWriter.
-  static constexpr int kReplaceRetries = 50;
-  static constexpr base::TimeDelta kReplacePauseInterval =
-      base::Milliseconds(10);
-
-  // Unlike ImportantFileWriter, we don't try to boost priority to win the race
-  // against virus checkers and other interfering software, instead just relying
-  // on being persistent.
-  int try_count = 0;
-  bool result = false;
-  base::File::Error last_error = base::File::FILE_OK;
-  for (; !result && try_count < kReplaceRetries; ++try_count) {
-    result = base::ReplaceFile(source, destination, &last_error);
-    if (result) {
-      break;
-    }
-    if (last_error == base::File::FILE_ERROR_ACCESS_DENIED) {
-      // Attempt to fix permission problems. Avoid doing this by
-      // default because it's not actually atomic.
-      DWORD attrs = ::GetFileAttributes(destination.value().c_str());
-      if (attrs != INVALID_FILE_ATTRIBUTES) {
-        ::SetFileAttributes(destination.value().c_str(),
-                            attrs & ~FILE_ATTRIBUTE_READONLY);
-      }
-    } else if (last_error != base::File::FILE_ERROR_IN_USE) {
-      // We don't expect to recover from this error by retry, so just give up.
-      break;
-    }
-    base::PlatformThread::Sleep(kReplacePauseInterval);
-  }
-  if (result) {
-    base::UmaHistogramExactLinear("HttpCache.NoVarySearch.ReplaceFileTryCount",
-                                  try_count, kReplaceRetries);
-  } else {
-    *error = last_error;
-  }
-  return result;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 // Implementation of FileOperations that operates on real files.
 class RealFileOperations : public FileOperations {
@@ -416,9 +362,6 @@ class RealFileOperations : public FileOperations {
 
     auto replace_file_func = base::ReplaceFile;
 
-#if BUILDFLAG(IS_WIN)
-    replace_file_func = ReplaceFileWithRetries;
-#endif
 
     base::File::Error replace_error = FILE_OK;
 

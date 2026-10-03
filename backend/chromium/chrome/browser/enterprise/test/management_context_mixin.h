@@ -20,11 +20,6 @@
 #include "components/policy/proto/device_management_backend.pb.h"
 #include "testing/gmock/include/gmock/gmock.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace ash {
-class ScopedDevicePolicyUpdate;
-}  // namespace ash
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace enterprise::test {
 
@@ -62,19 +57,12 @@ class ManagementContextMixin : public InProcessBrowserTestMixin {
   void SetCloudUserPolicies(
       base::flat_map<std::string, std::optional<base::Value>> policy_entries);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Returns a scoped object which can be used to set device policies. When that
-  // object goes out of scope, the policy update will be applied.
-  virtual std::unique_ptr<ash::ScopedDevicePolicyUpdate>
-  RequestDevicePolicyUpdate() = 0;
-#else
   // Will set the given `policy_entries` for the managed Cloud browser. This
   // function will overwrite conflicting entries, but will not remove old policy
   // values whose keys don't conflict.
   virtual void SetCloudMachinePolicies(
       base::flat_map<std::string, std::optional<base::Value>>
           policy_entries) = 0;
-#endif
 
  protected:
   ManagementContextMixin(InProcessBrowserTestMixinHost* host,

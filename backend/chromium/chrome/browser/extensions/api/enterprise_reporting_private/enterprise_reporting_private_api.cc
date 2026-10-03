@@ -30,15 +30,6 @@
 #include "components/device_signals/core/common/common_types.h"
 #include "google_apis/gaia/gaia_id.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/policy/dm_token_utils.h"
-#include "chromeos/dbus/missive/missive_client.h"
-#include "components/policy/core/common/cloud/dm_token.h"
-#include "components/reporting/client/report_queue_configuration.h"
-#include "components/reporting/proto/synced/record.pb.h"
-#include "components/reporting/proto/synced/record_constants.pb.h"
-#include "components/reporting/util/statusor.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 #include <optional>
@@ -60,12 +51,10 @@
 namespace extensions {
 
 namespace {
-#if !BUILDFLAG(IS_CHROMEOS)
 const char kEndpointVerificationRetrievalFailed[] =
     "Failed to retrieve the endpoint verification data.";
 const char kEndpointVerificationStoreFailed[] =
     "Failed to store the endpoint verification data.";
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 api::enterprise_reporting_private::SettingValue ToInfoSettingValue(
     device_signals::SettingValue value) {
@@ -206,7 +195,6 @@ bool CanReturnResponse(content::BrowserContext* browser_context) {
 
 }  // namespace
 
-#if !BUILDFLAG(IS_CHROMEOS)
 namespace enterprise_reporting {
 const char kDeviceIdNotFound[] = "Failed to retrieve the device id.";
 }  // namespace enterprise_reporting
@@ -419,15 +407,6 @@ EnterpriseReportingPrivateGetDeviceInfoFunction::ToDeviceInfo(
 
 ExtensionFunction::ResponseAction
 EnterpriseReportingPrivateGetDeviceInfoFunction::Run() {
-#if BUILDFLAG(IS_WIN)
-  base::ThreadPool::CreateCOMSTATaskRunner({})->PostTaskAndReplyWithResult(
-      FROM_HERE,
-      base::BindOnce(&enterprise_signals::DeviceInfoFetcher::Fetch,
-                     enterprise_signals::DeviceInfoFetcher::CreateInstance()),
-      base::BindOnce(&EnterpriseReportingPrivateGetDeviceInfoFunction::
-                         OnDeviceInfoRetrieved,
-                     this));
-#else
   base::ThreadPool::CreateTaskRunner({base::MayBlock()})
       ->PostTaskAndReplyWithResult(
           FROM_HERE,
@@ -437,7 +416,6 @@ EnterpriseReportingPrivateGetDeviceInfoFunction::Run() {
           base::BindOnce(&EnterpriseReportingPrivateGetDeviceInfoFunction::
                              OnDeviceInfoRetrieved,
                          this));
-#endif  // BUILDFLAG(IS_WIN)
 
   return RespondLater();
 }
@@ -447,7 +425,6 @@ void EnterpriseReportingPrivateGetDeviceInfoFunction::OnDeviceInfoRetrieved(
   Respond(WithArguments(ToDeviceInfo(device_signals).ToValue()));
 }
 
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 // getContextInfo
 
@@ -548,128 +525,6 @@ void EnterpriseReportingPrivateGetCertificateFunction::OnClientCertFetched(
   Respond(WithArguments(ret.ToValue()));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-// enqueueRecord
-
-EnterpriseReportingPrivateEnqueueRecordFunction::
-    EnterpriseReportingPrivateEnqueueRecordFunction() = default;
-
-EnterpriseReportingPrivateEnqueueRecordFunction::
-    ~EnterpriseReportingPrivateEnqueueRecordFunction() = default;
-
-ExtensionFunction::ResponseAction
-EnterpriseReportingPrivateEnqueueRecordFunction::Run() {
-  auto* profile = Profile::FromBrowserContext(browser_context());
-  DCHECK(profile);
-
-  if (!IsProfileAffiliated(profile)) {
-    return RespondNow(Error(kErrorProfileNotAffiliated));
-  }
-
-  std::optional<api::enterprise_reporting_private::EnqueueRecord::Params>
-      params = api::enterprise_reporting_private::EnqueueRecord::Params::Create(
-          args());
-  EXTENSION_FUNCTION_VALIDATE(params);
-
-  // Parse params
-  const auto event_type = params->request.event_type;
-  ::reporting::Record record;
-  ::reporting::Priority priority;
-  if (!TryParseParams(std::move(params), record, priority)) {
-    return RespondNow(Error(kErrorInvalidEnqueueRecordRequest));
-  }
-
-  // Attach appropriate DM token to record
-  if (!TryAttachDMTokenToRecord(record, event_type)) {
-    return RespondNow(Error(kErrorCannotAssociateRecordWithUser));
-  }
-
-  // Initiate enqueue and subsequent upload
-  auto enqueue_completion_cb = base::BindOnce(
-      &EnterpriseReportingPrivateEnqueueRecordFunction::OnRecordEnqueued, this);
-  auto* reporting_client = ::chromeos::MissiveClient::Get();
-  DCHECK(reporting_client);
-  reporting_client->EnqueueRecord(priority, record,
-                                  std::move(enqueue_completion_cb));
-  return RespondLater();
-}
-
-bool EnterpriseReportingPrivateEnqueueRecordFunction::TryParseParams(
-    std::optional<api::enterprise_reporting_private::EnqueueRecord::Params>
-        params,
-    ::reporting::Record& record,
-    ::reporting::Priority& priority) {
-  if (params->request.record_data.empty()) {
-    return false;
-  }
-
-  const auto* record_data =
-      reinterpret_cast<const char*>(params->request.record_data.data());
-  if (!record.ParseFromArray(record_data, params->request.record_data.size())) {
-    // Invalid record payload
-    return false;
-  }
-
-  if (!record.has_timestamp_us()) {
-    // Missing record timestamp
-    return false;
-  }
-
-  if (!::reporting::Priority_IsValid(params->request.priority) ||
-      !::reporting::Priority_Parse(
-          ::reporting::Priority_Name(params->request.priority), &priority)) {
-    // Invalid priority
-    return false;
-  }
-
-  // Valid
-  return true;
-}
-
-bool EnterpriseReportingPrivateEnqueueRecordFunction::TryAttachDMTokenToRecord(
-    ::reporting::Record& record,
-    api::enterprise_reporting_private::EventType event_type) {
-  if (event_type == api::enterprise_reporting_private::EventType::kDevice) {
-    // Device DM tokens are automatically appended during uploads, so we need
-    // not specify them with the record.
-    return true;
-  }
-
-  auto* profile = Profile::FromBrowserContext(browser_context());
-
-  const policy::DMToken& dm_token = policy::GetDMToken(profile);
-  if (!dm_token.is_valid()) {
-    return false;
-  }
-
-  record.set_dm_token(dm_token.value());
-  return true;
-}
-
-void EnterpriseReportingPrivateEnqueueRecordFunction::OnRecordEnqueued(
-    ::reporting::Status result) {
-  if (!result.ok()) {
-    Respond(Error(kUnexpectedErrorEnqueueRecordRequest));
-    return;
-  }
-
-  Respond(NoArguments());
-}
-
-bool EnterpriseReportingPrivateEnqueueRecordFunction::IsProfileAffiliated(
-    Profile* profile) {
-  if (profile_is_affiliated_for_testing_) {
-    return true;
-  }
-  return enterprise_util::IsProfileAffiliated(profile);
-}
-
-void EnterpriseReportingPrivateEnqueueRecordFunction::
-    SetProfileIsAffiliatedForTesting(bool is_affiliated) {
-  profile_is_affiliated_for_testing_ = is_affiliated;
-}
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
@@ -816,102 +671,6 @@ void EnterpriseReportingPrivateGetSettingsFunction::OnSignalRetrieved(
 
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-
-// getAvInfo
-
-EnterpriseReportingPrivateGetAvInfoFunction::
-    EnterpriseReportingPrivateGetAvInfoFunction() = default;
-EnterpriseReportingPrivateGetAvInfoFunction::
-    ~EnterpriseReportingPrivateGetAvInfoFunction() = default;
-
-ExtensionFunction::ResponseAction
-EnterpriseReportingPrivateGetAvInfoFunction::Run() {
-  std::optional<api::enterprise_reporting_private::GetAvInfo::Params> params =
-      api::enterprise_reporting_private::GetAvInfo::Params::Create(args());
-  EXTENSION_FUNCTION_VALIDATE(params);
-
-  StartSignalCollection(
-      GaiaId(params->user_context.user_id),
-      CreateAggregationRequest(signal_name()), browser_context(),
-      base::BindOnce(
-          &EnterpriseReportingPrivateGetAvInfoFunction::OnSignalRetrieved, this,
-          base::TimeTicks::Now()));
-
-  return RespondLater();
-}
-
-void EnterpriseReportingPrivateGetAvInfoFunction::OnSignalRetrieved(
-    base::TimeTicks start_time,
-    device_signals::SignalsAggregationResponse response) {
-  if (!CanReturnResponse(browser_context())) {
-    // The browser is no longer accepting responses, so just bail.
-    return;
-  }
-
-  std::vector<api::enterprise_reporting_private::AntiVirusSignal> arg_list;
-  auto parsed_error = ConvertAvProductsResponse(response, &arg_list);
-
-  if (parsed_error) {
-    LogSignalCollectionFailed(signal_name(), start_time, parsed_error->error,
-                              parsed_error->is_top_level_error);
-    Respond(Error(device_signals::ErrorToString(parsed_error->error)));
-    return;
-  }
-
-  LogSignalCollectionSucceeded(signal_name(), start_time, arg_list.size());
-  Respond(ArgumentList(
-      api::enterprise_reporting_private::GetAvInfo::Results::Create(arg_list)));
-}
-
-// getHotfixes
-
-EnterpriseReportingPrivateGetHotfixesFunction::
-    EnterpriseReportingPrivateGetHotfixesFunction() = default;
-EnterpriseReportingPrivateGetHotfixesFunction::
-    ~EnterpriseReportingPrivateGetHotfixesFunction() = default;
-
-ExtensionFunction::ResponseAction
-EnterpriseReportingPrivateGetHotfixesFunction::Run() {
-  std::optional<api::enterprise_reporting_private::GetHotfixes::Params> params =
-      api::enterprise_reporting_private::GetHotfixes::Params::Create(args());
-  EXTENSION_FUNCTION_VALIDATE(params);
-
-  StartSignalCollection(
-      GaiaId(params->user_context.user_id),
-      CreateAggregationRequest(signal_name()), browser_context(),
-      base::BindOnce(
-          &EnterpriseReportingPrivateGetHotfixesFunction::OnSignalRetrieved,
-          this, base::TimeTicks::Now()));
-
-  return RespondLater();
-}
-
-void EnterpriseReportingPrivateGetHotfixesFunction::OnSignalRetrieved(
-    base::TimeTicks start_time,
-    device_signals::SignalsAggregationResponse response) {
-  if (!CanReturnResponse(browser_context())) {
-    // The browser is no longer accepting responses, so just bail.
-    return;
-  }
-
-  std::vector<api::enterprise_reporting_private::HotfixSignal> arg_list;
-  auto parsed_error = ConvertHotfixesResponse(response, &arg_list);
-
-  if (parsed_error) {
-    LogSignalCollectionFailed(signal_name(), start_time, parsed_error->error,
-                              parsed_error->is_top_level_error);
-    Respond(Error(device_signals::ErrorToString(parsed_error->error)));
-    return;
-  }
-
-  LogSignalCollectionSucceeded(signal_name(), start_time, arg_list.size());
-  Respond(ArgumentList(
-      api::enterprise_reporting_private::GetHotfixes::Results::Create(
-          arg_list)));
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 // reportDataMaskingEvent
 

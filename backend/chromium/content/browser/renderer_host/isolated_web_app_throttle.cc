@@ -24,11 +24,6 @@
 #include "url/origin.h"
 #include "url/scheme_host_port.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "content/public/browser/page_navigator.h"
-#include "content/public/common/referrer.h"
-#include "ui/base/window_open_disposition.h"
-#endif
 
 namespace content {
 

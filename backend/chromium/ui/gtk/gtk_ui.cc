@@ -72,8 +72,6 @@
 #include "ui/gtk/native_theme_gtk.h"
 #include "ui/gtk/nav_button_provider_gtk.h"
 #include "ui/gtk/os_settings_provider_gtk.h"
-#include "ui/gtk/printing/print_dialog_gtk.h"
-#include "ui/gtk/printing/printing_gtk_util.h"
 #include "ui/gtk/select_file_dialog_linux_gtk.h"
 #include "ui/gtk/settings_provider_gtk.h"
 #include "ui/gtk/window_frame_provider_gtk.h"
@@ -90,10 +88,6 @@
 #include "ui/shell_dialogs/select_file_dialog.h"
 #include "ui/shell_dialogs/select_file_policy.h"
 #include "ui/views/window/window_button_order_provider.h"
-
-#if BUILDFLAG(SUPPORTS_OZONE_WAYLAND)
-#include "ui/gtk/wayland/gtk_ui_platform_wayland.h"
-#endif  // BUILDFLAG(SUPPORTS_OZONE_WAYLAND)
 
 #if BUILDFLAG(SUPPORTS_OZONE_X11)
 #include "ui/gtk/x/gtk_ui_platform_x11.h"
@@ -166,10 +160,6 @@ std::unique_ptr<GtkUiPlatform> CreateGtkUiPlatform(ui::LinuxUiBackend backend) {
     case ui::LinuxUiBackend::kX11:
       return std::make_unique<GtkUiPlatformX11>();
 #endif  // BUILDFLAG(SUPPORTS_OZONE_X11)
-#if BUILDFLAG(SUPPORTS_OZONE_WAYLAND)
-    case ui::LinuxUiBackend::kWayland:
-      return std::make_unique<GtkUiPlatformWayland>();
-#endif  // BUILDFLAG(SUPPORTS_OZONE_WAYLAND)
     default:
       NOTREACHED();
   }
@@ -812,17 +802,6 @@ ui::TextEditCommand GtkUi::GetTextEditCommandForEvent(const ui::Event& event,
 
   return key_bindings_handler_->MatchEvent(event);
 }
-
-#if BUILDFLAG(ENABLE_PRINTING)
-std::unique_ptr<printing::PrintDialogLinuxInterface> GtkUi::CreatePrintDialog(
-    printing::PrintingContextLinux* context) {
-  return std::make_unique<PrintDialogGtk>(context, platform_.get());
-}
-
-gfx::Size GtkUi::GetPdfPaperSize(printing::PrintingContextLinux* context) {
-  return GetPdfPaperSizeDeviceUnitsGtk(context);
-}
-#endif
 
 void GtkUi::OnThemeChanged(GtkSettings* settings, GtkParamSpec* param) {
   colors_.clear();

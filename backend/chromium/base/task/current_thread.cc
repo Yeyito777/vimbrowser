@@ -136,12 +136,7 @@ bool CurrentThread::ApplicationTasksAllowedInNativeNestedLoop() const {
 CurrentUIThread CurrentUIThread::Get() {
   auto* sequence_manager = GetCurrentSequenceManagerImpl();
   DCHECK(sequence_manager);
-#if BUILDFLAG(IS_ANDROID)
-  DCHECK(sequence_manager->IsType(MessagePumpType::UI) ||
-         sequence_manager->IsType(MessagePumpType::JAVA));
-#else   // BUILDFLAG(IS_ANDROID)
   DCHECK(sequence_manager->IsType(MessagePumpType::UI));
-#endif  // BUILDFLAG(IS_ANDROID)
   return CurrentUIThread(sequence_manager);
 }
 
@@ -150,12 +145,7 @@ bool CurrentUIThread::IsSet() {
   sequence_manager::internal::SequenceManagerImpl* sequence_manager =
       GetCurrentSequenceManagerImpl();
   return sequence_manager &&
-#if BUILDFLAG(IS_ANDROID)
-         (sequence_manager->IsType(MessagePumpType::UI) ||
-          sequence_manager->IsType(MessagePumpType::JAVA));
-#else   // BUILDFLAG(IS_ANDROID)
          sequence_manager->IsType(MessagePumpType::UI);
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 MessagePumpForUI* CurrentUIThread::GetMessagePumpForUI() const {
@@ -175,29 +165,8 @@ bool CurrentUIThread::WatchFileDescriptor(
 }
 #endif
 
-#if BUILDFLAG(IS_IOS)
-void CurrentUIThread::Attach() {
-  current_->AttachToMessagePump();
-}
-#endif  // BUILDFLAG(IS_IOS)
 
-#if BUILDFLAG(IS_ANDROID)
-void CurrentUIThread::Abort() {
-  GetMessagePumpForUI()->Abort();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_WIN)
-void CurrentUIThread::AddMessagePumpObserver(
-    MessagePumpForUI::Observer* observer) {
-  GetMessagePumpForUI()->AddObserver(observer);
-}
-
-void CurrentUIThread::RemoveMessagePumpObserver(
-    MessagePumpForUI::Observer* observer) {
-  GetMessagePumpForUI()->RemoveObserver(observer);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 //------------------------------------------------------------------------------
 // CurrentIOThread
@@ -220,20 +189,7 @@ MessagePumpForIO* CurrentIOThread::GetMessagePumpForIO() const {
   return static_cast<MessagePumpForIO*>(current_->GetMessagePump());
 }
 
-#if BUILDFLAG(IS_WIN)
-bool CurrentIOThread::RegisterIOHandler(HANDLE file,
-                                        MessagePumpForIO::IOHandler* handler) {
-  DCHECK(current_->IsBoundToCurrentThread());
-  return GetMessagePumpForIO()->RegisterIOHandler(file, handler);
-}
-
-bool CurrentIOThread::RegisterJobObject(HANDLE job,
-                                        MessagePumpForIO::IOHandler* handler) {
-  DCHECK(current_->IsBoundToCurrentThread());
-  return GetMessagePumpForIO()->RegisterJobObject(job, handler);
-}
-
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 bool CurrentIOThread::WatchFileDescriptor(
     int fd,
     bool persistent,
@@ -258,18 +214,5 @@ bool CurrentIOThread::WatchMachReceivePort(
 }
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-// Additional watch API for native platform resources.
-bool CurrentIOThread::WatchZxHandle(
-    zx_handle_t handle,
-    bool persistent,
-    zx_signals_t signals,
-    MessagePumpForIO::ZxHandleWatchController* controller,
-    MessagePumpForIO::ZxHandleWatcher* delegate) {
-  DCHECK(current_->IsBoundToCurrentThread());
-  return GetMessagePumpForIO()->WatchZxHandle(handle, persistent, signals,
-                                              controller, delegate);
-}
-#endif
 
 }  // namespace base

@@ -11,12 +11,10 @@ namespace security_interstitials {
 
 // Provides utilities for security interstitials on //content-based platforms.
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Launches date and time settings as appropriate based on the platform (not
 // supported on ChromeOS, where taking this action requires embedder-level
 // machinery.
 void LaunchDateAndTimeSettings();
-#endif
 
 }  // namespace security_interstitials
 

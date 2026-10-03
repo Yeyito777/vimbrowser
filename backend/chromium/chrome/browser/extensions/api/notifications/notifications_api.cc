@@ -24,8 +24,6 @@
 #include "chrome/browser/extensions/api/notifications/extension_notification_handler.h"
 #include "chrome/browser/notifications/notification_common.h"
 #include "chrome/browser/notifications/notification_handler.h"
-#include "chrome/browser/notifications/notifier_state_tracker.h"
-#include "chrome/browser/notifications/notifier_state_tracker_factory.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/common/extensions/api/notifications/notification_style.h"
 #include "components/keyed_service/content/browser_context_keyed_service_shutdown_notifier_factory.h"
@@ -85,10 +83,8 @@ const char kExtraImageProvided[] =
 const char kNotificationIdTooLong[] =
     "The notification's ID should be %d characters or less";
 
-#if !BUILDFLAG(IS_CHROMEOS)
 const char kLowPriorityDeprecatedOnPlatform[] =
     "Low-priority notifications are deprecated on this platform.";
-#endif
 
 // Given an extension id and another id, returns an id that is unique
 // relative to other extensions.
@@ -226,13 +222,11 @@ bool NotificationsApiFunction::CreateNotification(
     return false;
   }
 
-#if !BUILDFLAG(IS_CHROMEOS)
   if (options->priority &&
       *options->priority < message_center::DEFAULT_PRIORITY) {
     *error = kLowPriorityDeprecatedOnPlatform;
     return false;
   }
-#endif
 
   NotificationBitmapSizes bitmap_sizes = GetNotificationBitmapSizes();
 
@@ -387,13 +381,11 @@ bool NotificationsApiFunction::UpdateNotification(
     api::notifications::NotificationOptions* options,
     message_center::Notification* notification,
     std::string* error) {
-#if !BUILDFLAG(IS_CHROMEOS)
   if (options->priority &&
       *options->priority < message_center::DEFAULT_PRIORITY) {
     *error = kLowPriorityDeprecatedOnPlatform;
     return false;
   }
-#endif
 
   NotificationBitmapSizes bitmap_sizes = GetNotificationBitmapSizes();
   const float image_scale = ui::GetScaleForMaxSupportedResourceScaleFactor();
@@ -530,11 +522,7 @@ bool NotificationsApiFunction::UpdateNotification(
 }
 
 bool NotificationsApiFunction::AreExtensionNotificationsAllowed() const {
-  NotifierStateTracker* notifier_state_tracker =
-      NotifierStateTrackerFactory::GetForProfile(GetProfile());
-
-  return notifier_state_tracker->IsNotifierEnabled(message_center::NotifierId(
-      message_center::NotifierType::APPLICATION, extension_->id()));
+  return false;
 }
 
 bool NotificationsApiFunction::IsNotificationsApiEnabled() const {

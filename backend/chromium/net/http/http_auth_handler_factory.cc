@@ -173,20 +173,13 @@ HttpAuthHandlerRegistryFactory::Create(
       kDigestAuthScheme, std::make_unique<HttpAuthHandlerDigest::Factory>());
 
   auto ntlm_factory = std::make_unique<HttpAuthHandlerNTLM::Factory>();
-#if BUILDFLAG(IS_WIN)
-  ntlm_factory->set_sspi_library(
-      std::make_unique<SSPILibraryDefault>(NTLMSP_NAME));
-#endif  // BUILDFLAG(IS_WIN)
   registry_factory->RegisterSchemeFactory(kNtlmAuthScheme,
                                           std::move(ntlm_factory));
 
 #if BUILDFLAG(USE_KERBEROS)
   auto negotiate_factory = std::make_unique<HttpAuthHandlerNegotiate::Factory>(
       negotiate_auth_system_factory);
-#if BUILDFLAG(IS_WIN)
-  negotiate_factory->set_library(
-      std::make_unique<SSPILibraryDefault>(NEGOSSP_NAME));
-#elif BUILDFLAG(USE_EXTERNAL_GSSAPI)
+#if BUILDFLAG(USE_EXTERNAL_GSSAPI)
   negotiate_factory->set_library(
       std::make_unique<GSSAPISharedLibrary>(gssapi_library_name));
 #endif

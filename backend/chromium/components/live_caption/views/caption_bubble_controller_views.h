@@ -27,7 +27,6 @@ class CaptionBubble;
 class CaptionBubbleModel;
 class CaptionBubbleSettings;
 class CaptionBubbleSessionObserver;
-class TranslationViewWrapperBase;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Caption Bubble Controller for Views
@@ -39,8 +38,7 @@ class CaptionBubbleControllerViews : public CaptionBubbleController,
  public:
   CaptionBubbleControllerViews(
       CaptionBubbleSettings* caption_bubble_settings,
-      const std::string& application_locale,
-      std::unique_ptr<TranslationViewWrapperBase> translation_view_wrapper);
+      const std::string& application_locale);
   ~CaptionBubbleControllerViews() override;
   CaptionBubbleControllerViews(const CaptionBubbleControllerViews&) = delete;
   CaptionBubbleControllerViews& operator=(const CaptionBubbleControllerViews&) =

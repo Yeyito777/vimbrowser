@@ -70,30 +70,28 @@ source_set("unit_tests") {
   ]
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [ "background_fetch_browsertest.cc" ]
-    deps = [
-      ":background_fetch",
-      "//chrome/browser",
-      "//chrome/browser:browser_process",
-      "//chrome/browser/content_settings:content_settings_factory",
-      "//chrome/browser/offline_items_collection",
-      "//chrome/browser/profiles",
-      "//chrome/browser/ui",
-      "//chrome/browser/ui/tabs:tab_strip",
-      "//chrome/test:test_support_ui",
-      "//components/content_settings/core/browser",
-      "//components/ukm:test_support",
-      "//content/public/browser",
-      "//content/public/common",
-      "//content/test:test_support",
-      "//net:test_support",
-      "//services/metrics/public/cpp:gen_ukm_builders",
-      "//services/metrics/public/cpp:ukm_builders",
-      "//url",
-    ]
-  }
+source_set("browser_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = [ "background_fetch_browsertest.cc" ]
+  deps = [
+    ":background_fetch",
+    "//chrome/browser",
+    "//chrome/browser:browser_process",
+    "//chrome/browser/content_settings:content_settings_factory",
+    "//chrome/browser/offline_items_collection",
+    "//chrome/browser/profiles",
+    "//chrome/browser/ui",
+    "//chrome/browser/ui/tabs:tab_strip",
+    "//chrome/test:test_support_ui",
+    "//components/content_settings/core/browser",
+    "//components/ukm:test_support",
+    "//content/public/browser",
+    "//content/public/common",
+    "//content/test:test_support",
+    "//net:test_support",
+    "//services/metrics/public/cpp:gen_ukm_builders",
+    "//services/metrics/public/cpp:ukm_builders",
+    "//url",
+  ]
 }

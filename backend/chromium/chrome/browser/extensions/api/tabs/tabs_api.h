@@ -18,9 +18,7 @@
 #include "chrome/common/extensions/api/tabs.h"
 #include "chrome/common/extensions/api/windows.h"
 #include "components/safe_browsing/buildflags.h"
-#include "components/translate/core/browser/translate_driver.h"
 #include "components/zoom/zoom_controller.h"
-#include "content/public/browser/web_contents_observer.h"
 #include "extensions/browser/api/execute_code_function.h"
 #include "extensions/browser/api/web_contents_capture_client.h"
 #include "extensions/browser/extension_function.h"
@@ -34,9 +32,7 @@
 #include "chrome/browser/safe_browsing/extension_telemetry/tabs_api_signal.h"
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/web_applications/isolated_web_apps/isolated_web_app_url_info.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -62,11 +58,9 @@ namespace user_prefs {
 class PrefRegistrySyncable;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 namespace web_app {
 class IsolatedWebAppUrlInfo;
 }
-#endif
 
 namespace extensions {
 
@@ -207,23 +201,15 @@ class WindowsCreateFunction : public ExtensionFunction {
       const api::windows::Create::Params::CreateData& create_data,
       gfx::Rect& window_bounds);
 
-#if BUILDFLAG(IS_ANDROID)
-  void OnBrowserWindowCreatedAsynchronously(BrowserWindowInterface* new_window);
-#endif
 
   // Handles post-creation window initialization. `new_window` is the newly-
   // created browser window.
   // Returns the response to pass back to the extension.
   ResponseValue OnBrowserWindowCreated(BrowserWindowInterface* new_window);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnBocaWindowCreatedAsynchronously(const SessionID& session_id);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_ANDROID)
   // The info for an isolated web app to open, if any.
   std::optional<web_app::IsolatedWebAppUrlInfo> isolated_web_app_url_info_;
-#endif
 
   // The creation data parameters supplied by the extension.
   std::optional<api::windows::Create::Params::CreateData> create_data_;
@@ -427,33 +413,10 @@ class TabsUngroupFunction : public ExtensionFunction {
   bool UngroupTab(int tab_id, std::string* error);
   DECLARE_EXTENSION_FUNCTION("tabs.ungroup", TABS_UNGROUP)
 };
-class TabsDetectLanguageFunction
-    : public ExtensionFunction,
-      public content::WebContentsObserver,
-      public translate::TranslateDriver::LanguageDetectionObserver {
+class TabsDetectLanguageFunction : public ExtensionFunction {
  private:
   ~TabsDetectLanguageFunction() override = default;
   ResponseAction Run() override;
-
-  // Starts the language detection process, which is asynchronous.
-  ResponseAction StartLanguageDetection(content::WebContents* contents);
-
-  // content::WebContentsObserver:
-  void NavigationEntryCommitted(
-      const content::LoadCommittedDetails& load_details) override;
-  void WebContentsDestroyed() override;
-
-  // translate::TranslateDriver::LanguageDetectionObserver:
-  void OnTranslateDriverDestroyed(translate::TranslateDriver* driver) override;
-  void OnLanguageDetermined(
-      const translate::LanguageDetectionDetails& details) override;
-
-  // Resolves the API call with the detected `language`.
-  void RespondWithLanguage(const std::string& language);
-
-  // Indicates if this instance is observing the tabs' WebContents and the
-  // ContentTranslateDriver, in which case the observers must be unregistered.
-  bool is_observing_ = false;
 
   DECLARE_EXTENSION_FUNCTION("tabs.detectLanguage", TABS_DETECTLANGUAGE)
 };

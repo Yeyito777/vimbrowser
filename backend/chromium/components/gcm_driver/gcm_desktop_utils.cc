@@ -22,16 +22,8 @@ namespace gcm {
 namespace {
 
 GCMClient::ChromePlatform GetPlatform() {
-#if BUILDFLAG(IS_WIN)
-  return GCMClient::PLATFORM_WIN;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   return GCMClient::PLATFORM_MAC;
-#elif BUILDFLAG(IS_IOS)
-  return GCMClient::PLATFORM_IOS;
-#elif BUILDFLAG(IS_ANDROID)
-  return GCMClient::PLATFORM_ANDROID;
-#elif BUILDFLAG(IS_CHROMEOS)
-  return GCMClient::PLATFORM_CROS;
 #elif BUILDFLAG(IS_LINUX)
   return GCMClient::PLATFORM_LINUX;
 #else

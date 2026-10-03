@@ -74,17 +74,6 @@ chromium-metrics-reviews@google.com.
 
 <!-- LINT.ThenChange(/ios/chrome/browser/data_import/public/metrics.h:DataImportCredentialConflictScreenAction) -->
 
-<enum name="DesktopIOSPromoAction">
-  <int value="0" label="Dismissed"/>
-  <int value="1" label="ExplicitlyClosed"/>
-</enum>
-
-<enum name="DesktopIOSPromoImpression">
-  <int value="0" label="FirstImpression"/>
-  <int value="1" label="SecondImpression"/>
-  <int value="2" label="ThirdImpression"/>
-</enum>
-
 <enum name="DocumentDownloadConflictResolution">
   <int value="0" label="No Conflict"/>
   <int value="1" label="Previous Download Complete"/>
@@ -395,18 +384,6 @@ chromium-metrics-reviews@google.com.
   <int value="4" label="Set Up List"/>
   <int value="5" label="Tips Notification"/>
 </enum>
-
-<!-- LINT.IfChange(IOSCrossPlatformPromoType) -->
-
-<enum name="IOSCrossPlatformPromoType">
-  <int value="1" label="Password"/>
-  <int value="2" label="Address"/>
-  <int value="3" label="Payment"/>
-  <int value="4" label="EnhancedBrowsing"/>
-  <int value="5" label="Lens"/>
-</enum>
-
-<!-- LINT.ThenChange(//components/desktop_to_mobile_promos/promos_types.h:PromoType) -->
 
 <!-- LINT.IfChange(IOSDefaultBrowserBannerPromoPromoSessionEndedReason) -->
 

@@ -28,9 +28,6 @@
 #include "net/base/network_change_notifier.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/win_util.h"
-#endif
 
 namespace component_updater {
 

@@ -48,9 +48,6 @@
 #include <sys/prctl.h>
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include <sys/ioctl.h>
-#endif
 
 #if BUILDFLAG(IS_FREEBSD)
 #include <sys/event.h>
@@ -95,15 +92,7 @@ void SetEnvironment(char** env) {
 // the previous signal mask.
 sigset_t SetSignalMask(const sigset_t& new_sigmask) {
   sigset_t old_sigmask;
-#if BUILDFLAG(IS_ANDROID)
-  // POSIX says pthread_sigmask() must be used in multi-threaded processes,
-  // but Android's pthread_sigmask() was broken until 4.1:
-  // https://code.google.com/p/android/issues/detail?id=15337
-  // http://stackoverflow.com/questions/13777109/pthread-sigmask-on-android-not-working
-  RAW_CHECK(sigprocmask(SIG_SETMASK, &new_sigmask, &old_sigmask) == 0);
-#else
   RAW_CHECK(pthread_sigmask(SIG_SETMASK, &new_sigmask, &old_sigmask) == 0);
-#endif
   return old_sigmask;
 }
 
@@ -218,8 +207,6 @@ static const char kFDDir[] = "/dev/fd";
 static const char kFDDir[] = "/dev/fd";
 #elif BUILDFLAG(IS_OPENBSD)
 static const char kFDDir[] = "/dev/fd";
-#elif BUILDFLAG(IS_ANDROID)
-static const char kFDDir[] = "/proc/self/fd";
 #endif
 
 void CloseSuperfluousFds(const base::InjectiveMultimap& saved_mapping) {
@@ -450,19 +437,6 @@ Process LaunchProcess(const std::vector<std::string>& argv,
     memset(reinterpret_cast<void*>(malloc), 0xff, 8);
 #endif  // 0
 
-#if BUILDFLAG(IS_CHROMEOS)
-    if (options.ctrl_terminal_fd >= 0) {
-      // Set process' controlling terminal.
-      if (HANDLE_EINTR(setsid()) != -1) {
-        if (HANDLE_EINTR(ioctl(options.ctrl_terminal_fd, TIOCSCTTY, nullptr)) ==
-            -1) {
-          RAW_LOG(WARNING, "ioctl(TIOCSCTTY), ctrl terminal not set");
-        }
-      } else {
-        RAW_LOG(WARNING, "setsid failed, ctrl terminal not set");
-      }
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     // Cannot use STL iterators here, since debug iterators use locks.
     // NOLINTNEXTLINE(modernize-loop-convert)

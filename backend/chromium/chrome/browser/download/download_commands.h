@@ -11,9 +11,7 @@
 #include "build/build_config.h"
 #include "url/gurl.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 class Browser;
-#endif
 
 class DownloadUIModel;
 

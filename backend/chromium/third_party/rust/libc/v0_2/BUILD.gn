@@ -349,9 +349,6 @@ cargo_crate("lib") {
     "//third_party/rust/chromium_crates_io/vendor/libc-v0_2/src/vxworks/x86_64.rs",
     "//third_party/rust/chromium_crates_io/vendor/libc-v0_2/src/wasi/mod.rs",
     "//third_party/rust/chromium_crates_io/vendor/libc-v0_2/src/wasi/p2.rs",
-    "//third_party/rust/chromium_crates_io/vendor/libc-v0_2/src/windows/gnu/mod.rs",
-    "//third_party/rust/chromium_crates_io/vendor/libc-v0_2/src/windows/mod.rs",
-    "//third_party/rust/chromium_crates_io/vendor/libc-v0_2/src/windows/msvc/mod.rs",
     "//third_party/rust/chromium_crates_io/vendor/libc-v0_2/src/xous.rs",
   ]
   inputs = []

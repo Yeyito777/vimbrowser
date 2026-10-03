@@ -188,17 +188,9 @@
 #define BUILDFLAG_INTERNAL_IS_FREEBSD() (0)
 #endif
 
-#if defined(OS_FUCHSIA)
-#define BUILDFLAG_INTERNAL_IS_FUCHSIA() (1)
-#else
 #define BUILDFLAG_INTERNAL_IS_FUCHSIA() (0)
-#endif
 
-#if defined(OS_IOS)
-#define BUILDFLAG_INTERNAL_IS_IOS() (1)
-#else
 #define BUILDFLAG_INTERNAL_IS_IOS() (0)
-#endif
 
 #if defined(OS_IOS_MACCATALYST)
 #define BUILDFLAG_INTERNAL_IS_IOS_MACCATALYST() (1)
@@ -260,11 +252,7 @@
 #define BUILDFLAG_INTERNAL_IS_WATCHOS() (0)
 #endif
 
-#if defined(OS_WIN)
-#define BUILDFLAG_INTERNAL_IS_WIN() (1)
-#else
 #define BUILDFLAG_INTERNAL_IS_WIN() (0)
-#endif
 
 #if defined(USE_OZONE)
 #define BUILDFLAG_INTERNAL_IS_OZONE() (1)
@@ -373,11 +361,7 @@
 #endif
 
 // Type detection for wchar_t.
-#if defined(OS_WIN)
-#define WCHAR_T_IS_16_BIT
-#elif defined(OS_FUCHSIA)
-#define WCHAR_T_IS_32_BIT
-#elif defined(OS_POSIX) && defined(COMPILER_GCC) && defined(__WCHAR_MAX__) && \
+#if defined(OS_POSIX) && defined(COMPILER_GCC) && defined(__WCHAR_MAX__) && \
     (__WCHAR_MAX__ == 0x7fffffff || __WCHAR_MAX__ == 0xffffffff)
 #define WCHAR_T_IS_32_BIT
 #elif defined(OS_POSIX) && defined(COMPILER_GCC) && defined(__WCHAR_MAX__) && \

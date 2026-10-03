@@ -20,12 +20,7 @@ bool ActionDestination::empty() const {
   //   `other_profile` set to true.
   // - The OS clipboard with `os_clipboard` set to true.
   // - A separate application represented by `component` (CrOS-only).
-#if BUILDFLAG(IS_CHROMEOS)
-  return url.is_empty() && !os_clipboard &&
-         component == Component::kUnknownComponent;
-#else
   return url.is_empty() && !os_clipboard;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 }  // namespace data_controls

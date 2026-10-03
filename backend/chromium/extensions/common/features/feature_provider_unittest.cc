@@ -11,7 +11,6 @@
 #include <utility>
 
 #include "base/test/bind.h"
-#include "build/android_buildflags.h"
 #include "build/build_config.h"
 #include "extensions/common/extension_builder.h"
 #include "extensions/common/extensions_client.h"

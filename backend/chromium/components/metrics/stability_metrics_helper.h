@@ -11,9 +11,6 @@
 #include "base/process/kill.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#endif
 
 class PrefRegistrySimple;
 class PrefService;
@@ -78,17 +75,6 @@ class StabilityMetricsHelper {
 
   ~StabilityMetricsHelper();
 
-#if BUILDFLAG(IS_ANDROID)
-  // A couple Local-State-pref-based stability counts are retained for Android
-  // WebView. Other platforms, including Android Chrome and WebLayer, should use
-  // Stability.Counts2 as the source of truth for these counts.
-
-  // Provides stability metrics.
-  void ProvideStabilityMetrics(SystemProfileProto* system_profile_proto);
-
-  // Clears the gathered stability metrics.
-  void ClearSavedStabilityMetrics();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Records a utility process launch with name |metrics_name|.
   void BrowserUtilityProcessLaunched(const std::string& metrics_name);
@@ -102,10 +88,6 @@ class StabilityMetricsHelper {
   // |last_error| is also supplied to help diagnose the launch failure.
   void BrowserUtilityProcessLaunchFailed(const std::string& metrics_name,
                                          int launch_error_code
-#if BUILDFLAG(IS_WIN)
-                                         ,
-                                         DWORD last_error
-#endif
   );
 
   // Records a CDM utility process launch with name |metrics_name|.
@@ -120,23 +102,15 @@ class StabilityMetricsHelper {
   // failure.
   void CdmUtilityProcessLaunchFailed(const std::string& metrics_name,
                                      int launch_error_code
-#if BUILDFLAG(IS_WIN)
-                                     ,
-                                     DWORD last_error
-#endif
   );
 
   // Logs the initiation of a page load.
   void LogLoadStarted();
 
   // Records a renderer process crash.
-#if BUILDFLAG(IS_IOS)
-  void LogRendererCrash();
-#elif !BUILDFLAG(IS_ANDROID)
   void LogRendererCrash(RendererHostedContentType hosted_content_type,
                         base::TerminationStatus status,
                         int exit_code);
-#endif
 
   // Records that a new renderer process was successfully launched.
   void LogRendererLaunched(bool was_extension_process);

@@ -24,9 +24,6 @@
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/mojom/context_type.mojom.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ui/ash/media_client/media_client_impl.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -140,10 +137,6 @@ void ExtensionKeybindingRegistry::RemoveExtensionKeybinding(
 
       media_keys_listener_manager->EnableInternalMediaKeyHandling();
     } else {
-#if BUILDFLAG(IS_CHROMEOS)
-      MediaClientImpl::Get()->DisableCustomMediaKeyHandler(browser_context_,
-                                                           this);
-#endif
     }
   }
 }
@@ -252,10 +245,6 @@ void ExtensionKeybindingRegistry::AddEventTarget(
 
       media_keys_listener_manager->DisableInternalMediaKeyHandling();
     } else {
-#if BUILDFLAG(IS_CHROMEOS)
-      MediaClientImpl::Get()->EnableCustomMediaKeyHandler(browser_context_,
-                                                          this);
-#endif
     }
   }
 }

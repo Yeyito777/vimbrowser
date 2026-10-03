@@ -77,56 +77,7 @@ if (rtc_include_tests) {
         "window_finder_unittest.cc",
       ]
 
-      if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-        configs += [ "../portal:gio" ]
-      }
-
       public_configs = [ ":x11_config" ]
-
-      if (is_win) {
-        deps += [ "../../rtc_base/win:windows_version" ]
-      }
-    }
-  }
-
-  if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-    rtc_test("shared_screencast_stream_test") {
-      testonly = true
-
-      sources = [
-        "linux/wayland/shared_screencast_stream_unittest.cc",
-        "linux/wayland/test/test_egl_dmabuf.cc",
-        "linux/wayland/test/test_egl_dmabuf.h",
-        "linux/wayland/test/test_screencast_stream_provider.cc",
-        "linux/wayland/test/test_screencast_stream_provider.h",
-      ]
-
-      configs += [ "../portal:pipewire_all" ]
-
-      deps = [
-        ":desktop_capture",
-        ":desktop_capture_mock",
-        ":primitives",
-        "../../api:scoped_refptr",
-        "../../rtc_base:checks",
-        "../../rtc_base:logging",
-        "../../rtc_base:random",
-        "../../rtc_base:stringutils",
-        "../../rtc_base:timeutils",
-        "../portal",
-
-        # TODO(bugs.webrtc.org/9987): Remove this dep on rtc_base:rtc_base once
-        # rtc_base:threading is fully defined.
-        "../../rtc_base:task_queue_for_test",
-        "../../rtc_base:threading",
-        "../../system_wrappers",
-        "../../test:test_support",
-        "//api/units:time_delta",
-        "//rtc_base:rtc_event",
-      ]
-
-      data = [ "../../third_party/pipewire" ]
-      public_configs = [ "../portal:pipewire_config" ]
     }
   }
 
@@ -151,10 +102,6 @@ if (rtc_include_tests) {
       "test_utils_unittest.cc",
     ]
 
-    if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-      configs += [ "../portal:gio" ]
-    }
-
     deps = [
       ":desktop_capture",
       ":desktop_capture_mock",
@@ -171,24 +118,6 @@ if (rtc_include_tests) {
       "../../system_wrappers",
       "../../test:test_support",
     ]
-
-    if (is_win) {
-      sources += [
-        "win/cursor_unittest.cc",
-        "win/cursor_unittest_resources.h",
-        "win/cursor_unittest_resources.rc",
-        "win/full_screen_win_application_handler_unittest.cc",
-        "win/screen_capture_utils_unittest.cc",
-        "win/screen_capturer_win_directx_unittest.cc",
-        "win/test_support/test_window.cc",
-        "win/test_support/test_window.h",
-        "win/window_capture_utils_unittest.cc",
-      ]
-      deps += [
-        "../../rtc_base/win:scoped_com_initializer",
-        "../../rtc_base/win:windows_version",
-      ]
-    }
 
     if (rtc_desktop_capture_supported) {
       sources += [
@@ -231,10 +160,6 @@ if (rtc_include_tests) {
       sources += [ "screen_drawer_mac.cc" ]
     }
 
-    if (is_win) {
-      sources += [ "screen_drawer_win.cc" ]
-    }
-
     deps = [
       ":desktop_capture",
       ":primitives",
@@ -261,22 +186,11 @@ if (rtc_include_tests) {
       "mock_desktop_capturer_callback.h",
     ]
 
-    if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-      configs += [ "../portal:gio" ]
-    }
-
     deps = [
       ":desktop_capture",
       ":primitives",
       "../../test:test_support",
     ]
-  }
-}
-
-# TODO(bugs.webrtc.org/14187): remove when all users are gone
-if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-  config("pipewire_config") {
-    configs = [ "../portal:pipewire_config" ]
   }
 }
 
@@ -360,15 +274,8 @@ rtc_library("desktop_capture") {
       "desktop_device_info.cc",
       "desktop_device_info.h",
     ]
-    if (is_win) {
-      sources += [
-        "app_capturer_win.cc",
-        "win/desktop_device_info_win.cc",
-        "win/win_shared.cc",
-      ]
-    }
   }
-  if (rtc_use_x11_extensions || rtc_use_pipewire) {
+  if (rtc_use_x11_extensions) {
     sources += [
       "mouse_cursor_monitor_linux.cc",
       "screen_capturer_linux.cc",
@@ -425,8 +332,7 @@ rtc_library("desktop_capture") {
     ]
   }
 
-  if (!is_win && !is_mac && !rtc_use_x11_extensions && !rtc_use_pipewire &&
-      !is_fuchsia) {
+  if (!is_win && !is_mac && !rtc_use_x11_extensions && !is_fuchsia) {
     sources += [
       "mouse_cursor_monitor_null.cc",
       "screen_capturer_null.cc",
@@ -456,93 +362,6 @@ rtc_library("desktop_capture") {
     "../../system_wrappers:metrics",
   ]
 
-  if (is_fuchsia) {
-    sources += [
-      "mouse_cursor_monitor_null.cc",
-      "screen_capturer_fuchsia.cc",
-      "screen_capturer_fuchsia.h",
-      "window_capturer_null.cc",
-    ]
-    deps += [
-      "../../rtc_base:divide_round",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.sysmem",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.composition",
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.ui.display.singleton",
-      "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp",
-    ]
-  }
-
-  if (is_win) {
-    sources += [
-      "cropping_window_capturer_win.cc",
-      "desktop_frame_win.cc",
-      "desktop_frame_win.h",
-      "mouse_cursor_monitor_win.cc",
-      "screen_capturer_win.cc",
-      "win/cursor.cc",
-      "win/cursor.h",
-      "win/d3d_device.cc",
-      "win/d3d_device.h",
-      "win/desktop.cc",
-      "win/desktop.h",
-      "win/desktop_capture_utils.cc",
-      "win/desktop_capture_utils.h",
-      "win/display_configuration_monitor.cc",
-      "win/display_configuration_monitor.h",
-      "win/dxgi_adapter_duplicator.cc",
-      "win/dxgi_adapter_duplicator.h",
-      "win/dxgi_context.cc",
-      "win/dxgi_context.h",
-      "win/dxgi_duplicator_controller.cc",
-      "win/dxgi_duplicator_controller.h",
-      "win/dxgi_frame.cc",
-      "win/dxgi_frame.h",
-      "win/dxgi_output_duplicator.cc",
-      "win/dxgi_output_duplicator.h",
-      "win/dxgi_texture.cc",
-      "win/dxgi_texture.h",
-      "win/dxgi_texture_mapping.cc",
-      "win/dxgi_texture_mapping.h",
-      "win/dxgi_texture_staging.cc",
-      "win/dxgi_texture_staging.h",
-      "win/full_screen_win_application_handler.cc",
-      "win/full_screen_win_application_handler.h",
-      "win/scoped_gdi_object.h",
-      "win/scoped_thread_desktop.cc",
-      "win/scoped_thread_desktop.h",
-      "win/screen_capture_utils.cc",
-      "win/screen_capture_utils.h",
-      "win/screen_capturer_win_directx.cc",
-      "win/screen_capturer_win_directx.h",
-      "win/screen_capturer_win_gdi.cc",
-      "win/screen_capturer_win_gdi.h",
-      "win/screen_capturer_win_magnifier.cc",
-      "win/screen_capturer_win_magnifier.h",
-      "win/selected_window_context.cc",
-      "win/selected_window_context.h",
-      "win/window_capture_utils.cc",
-      "win/window_capture_utils.h",
-      "win/window_capturer_win_gdi.cc",
-      "win/window_capturer_win_gdi.h",
-      "window_capturer_win.cc",
-      "window_finder_win.cc",
-      "window_finder_win.h",
-    ]
-    libs = [
-      "d3d11.lib",
-      "dxgi.lib",
-      "shcore.lib",
-    ]
-    deps += [
-      "../../rtc_base:threading",
-      "../../rtc_base:win32",
-      "../../rtc_base/containers:flat_map",
-      "../../rtc_base/win:create_direct3d_device",
-      "../../rtc_base/win:get_activation_factory",
-      "../../rtc_base/win:windows_version",
-    ]
-  }
-
   if (rtc_use_x11_extensions) {
     deps += [ "../../rtc_base:sanitizer" ]
   }
@@ -553,40 +372,6 @@ rtc_library("desktop_capture") {
 
   if (use_desktop_capture_differ_sse2) {
     deps += [ ":desktop_capture_differ_sse2" ]
-  }
-
-  if (rtc_use_pipewire) {
-    sources += [
-      "linux/wayland/base_capturer_pipewire.cc",
-      "linux/wayland/base_capturer_pipewire.h",
-      "linux/wayland/egl_dmabuf.cc",
-      "linux/wayland/egl_dmabuf.h",
-      "linux/wayland/mouse_cursor_monitor_pipewire.cc",
-      "linux/wayland/mouse_cursor_monitor_pipewire.h",
-      "linux/wayland/portal_request_response.h",
-      "linux/wayland/restore_token_manager.cc",
-      "linux/wayland/restore_token_manager.h",
-      "linux/wayland/scoped_glib.h",
-      "linux/wayland/screen_capture_portal_interface.cc",
-      "linux/wayland/screen_capture_portal_interface.h",
-      "linux/wayland/screencast_portal.cc",
-      "linux/wayland/screencast_portal.h",
-      "linux/wayland/screencast_stream_utils.cc",
-      "linux/wayland/screencast_stream_utils.h",
-      "linux/wayland/shared_screencast_stream.cc",
-      "linux/wayland/shared_screencast_stream.h",
-      "linux/wayland/xdg_desktop_portal_utils.h",
-      "linux/wayland/xdg_session_details.h",
-    ]
-
-    configs += [ "../portal:pipewire_all" ]
-
-    public_configs += [ "../portal:pipewire_config" ]
-
-    deps += [
-      "../../rtc_base:sanitizer",
-      "../portal",
-    ]
   }
 
   if (rtc_enable_win_wgc) {

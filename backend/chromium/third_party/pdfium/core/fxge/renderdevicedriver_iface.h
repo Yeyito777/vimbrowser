@@ -32,9 +32,6 @@ struct FX_RECT;
 
 enum class DeviceType : bool {
   kDisplay,
-#if BUILDFLAG(IS_WIN)
-  kPrinter,
-#endif
 };
 
 class RenderDeviceDriverIface {
@@ -42,9 +39,6 @@ class RenderDeviceDriverIface {
   enum class Result {
     kFailure,
     kSuccess,
-#if BUILDFLAG(IS_WIN)
-    kNotSupported
-#endif
   };
 
   // Context for continuation when not rendering in a single shot.

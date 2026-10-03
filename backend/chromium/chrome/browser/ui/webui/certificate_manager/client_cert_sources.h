@@ -24,10 +24,6 @@ std::unique_ptr<CertificateManagerPageHandler::CertSource>
 CreateProvisionedClientCertSource(Profile* profile);
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::unique_ptr<CertificateManagerPageHandler::CertSource>
-CreateExtensionsClientCertSource(Profile* profile);
-#endif
 
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
 class ClientCertManagementAccessControls {
@@ -59,10 +55,6 @@ class ClientCertManagementAccessControls {
                        CertLocation cert_location) const;
 
  private:
-#if BUILDFLAG(IS_CHROMEOS)
-  const bool is_guest_;
-  const ClientCertificateManagementPermission client_cert_policy_;
-#endif
 };
 #endif  // BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
 

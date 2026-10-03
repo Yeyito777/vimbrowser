@@ -23,9 +23,6 @@
 #include "third_party/skia/include/core/SkRefCnt.h"
 #include "ui/gfx/gpu_fence_handle.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/viz/service/display/dc_layer_overlay.h"
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 #include "components/viz/service/display/ca_layer_overlay.h"

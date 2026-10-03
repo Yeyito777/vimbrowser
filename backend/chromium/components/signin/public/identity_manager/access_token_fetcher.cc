@@ -159,10 +159,6 @@ bool AccessTokenFetcher::IsRefreshTokenAvailable() const {
   switch (token_source_) {
     case Source::kProfile:
       return token_service_->RefreshTokenIsAvailable(account_id_);
-#if BUILDFLAG(IS_IOS)
-    case Source::kDevice:
-      return token_service_->RefreshTokenIsAvailableOnDevice(account_id_);
-#endif
   }
 }
 
@@ -193,14 +189,6 @@ void AccessTokenFetcher::StartAccessTokenRequest() {
       access_token_request_ =
           token_service_->StartRequest(account_id_, scopes_, this);
       return;
-#if BUILDFLAG(IS_IOS)
-    case Source::kDevice:
-      token_service_->GetRefreshTokenFromDevice(
-          account_id_, scopes_,
-          base::BindOnce(&AccessTokenFetcher::RunCallbackAndMaybeDie,
-                         base::Unretained(this)));
-      return;
-#endif
   }
 }
 

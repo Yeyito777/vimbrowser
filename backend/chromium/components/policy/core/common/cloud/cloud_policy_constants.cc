@@ -9,9 +9,6 @@
 #include "base/command_line.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/device_info.h"
-#endif
 #include "components/policy/core/common/policy_switches.h"
 
 namespace policy {
@@ -96,13 +93,7 @@ const char kChromeSigninExtensionPolicyType[] =
     "google/chromeos/signinextension";
 
 const char kChromeMachineLevelUserCloudPolicyType[] =
-#if BUILDFLAG(IS_ANDROID)
-    "google/chrome/machine-level-user-android";
-#elif BUILDFLAG(IS_IOS)
-    "google/chrome/machine-level-user-ios";
-#else
     "google/chrome/machine-level-user";
-#endif
 const char kChromeMachineLevelExtensionCloudPolicyType[] =
     "google/chrome/machine-level-extension";
 const char kChromeRemoteCommandPolicyType[] = "google/chromeos/remotecommand";
@@ -126,11 +117,7 @@ const char kChromeBrowserRemoteCommandType[] =
 const char kChromeUserRemoteCommandType[] = "google/chrome/user/remotecommand";
 
 const char kChromeExtensionInstallUserCloudPolicyType[] =
-#if BUILDFLAG(IS_CHROMEOS)
-    "google/extension-install-cloud-policy/chromeos/user";
-#else
     "google/extension-install-cloud-policy/chrome/user";
-#endif
 
 const char kChromeExtensionInstallMachineLevelCloudPolicyType[] =
     "google/extension-install-cloud-policy/chrome/machine";
@@ -139,19 +126,7 @@ const char kChromeMachineLevelUserCloudPolicyTypeBase64[] =
     "Z29vZ2xlL2Nocm9tZS9tYWNoaW5lLWxldmVsLXVzZXI=";
 
 const char* GetChromeUserPolicyType() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return "google/chromeos/user";
-#elif BUILDFLAG(IS_ANDROID)
-  if (base::android::device_info::is_desktop()) {
-    return "google/chrome/user";
-  } else {
-    return "google/android/user";
-  }
-#elif BUILDFLAG(IS_IOS)
-  return "google/ios/user";
-#else
   return "google/chrome/user";
-#endif
 }
 
 }  // namespace dm_protocol

@@ -178,15 +178,7 @@ void SimpleFontData::PlatformInit(bool subpixel_ascent_descent,
 // In WebKit/WebCore/platform/graphics/SimpleFontData.cpp, m_spaceWidth is
 // calculated for us, but we need to calculate m_maxCharWidth and
 // m_avgCharWidth in order for text entry widgets to be sized correctly.
-#if BUILDFLAG(IS_WIN)
-  max_char_width_ = SkScalarRoundToInt(metrics.fMaxCharWidth);
-
-  // Older version of the DirectWrite API doesn't implement support for max
-  // char width. Fall back on a multiple of the ascent. This is entirely
-  // arbitrary but comes pretty close to the expected value in most cases.
-  if (max_char_width_ < 1)
-    max_char_width_ = ascent * 2;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   // FIXME: The current avg/max character width calculation is not ideal,
   // it should check either the OS2 table or, better yet, query FontMetrics.
   // Sadly FontMetrics provides incorrect data on Mac at the moment.

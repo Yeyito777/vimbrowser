@@ -138,10 +138,6 @@ BASE_FEATURE(kClientSideDetectionNewObservers,
 constexpr base::FeatureParam<double> kCsdClassificationDelay{
     &kClientSideDetectionNewObservers, "ClassificationDelay", 0.0};
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kClientSideDetectionOnDeviceModelLazyDownloadAndroid,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kClientSideDetectionRedirectChainKillswitch,
              base::FEATURE_DISABLED_BY_DEFAULT);
@@ -153,30 +149,14 @@ constexpr base::FeatureParam<int> kClientSideDetectionRetryLimitTime{
 
 BASE_FEATURE(kClientSideDetectionSamplePing, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kClientSideDetectionSendIntelligentScanInfoAndroid,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kClientSideDetectionSendLlamaForcedTriggerInfo,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kClientSideDetectionServerModelForScamDetectionAndroid,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-constexpr base::FeatureParam<int> kClientSideDetectionServerModelMaxScansPerDay{
-    &kClientSideDetectionServerModelForScamDetectionAndroid,
-    "MaxIntelligentScansPerDay",
-    /*default_value=*/5};
-#endif
 
 BASE_FEATURE(kClientSideDetectionShowLlamaScamVerdictWarning,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kClientSideDetectionShowScamVerdictWarningAndroid,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kClientSideDetectionSkipErrorPage,
              base::FEATURE_DISABLED_BY_DEFAULT);
@@ -216,11 +196,7 @@ BASE_FEATURE(kEnhancedFieldsForSecOps,
 #endif
 
 BASE_FEATURE(kEnhancedSafeBrowsingPromo,
-#if BUILDFLAG(IS_IOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 BASE_FEATURE(kEnterpriseFileSystemAccessDeepScan,
@@ -305,23 +281,6 @@ BASE_FEATURE(kLocalListsUseSBv5,
              "SafeBrowsingLocalListsUseSBv5",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kMaliciousApkDownloadCheck, base::FEATURE_DISABLED_BY_DEFAULT);
-BASE_FEATURE_PARAM(bool,
-                   kMaliciousApkDownloadCheckTelemetryOnly,
-                   &kMaliciousApkDownloadCheck,
-                   "telemetry_only",
-                   /*default_value=*/false);
-BASE_FEATURE_PARAM(int,
-                   kMaliciousApkDownloadCheckSamplePercentage,
-                   &kMaliciousApkDownloadCheck,
-                   "sample_percentage",
-                   /*default_value=*/100);
-constexpr base::FeatureParam<std::string>
-    kMaliciousApkDownloadCheckServiceUrlOverride{&kMaliciousApkDownloadCheck,
-                                                 "service_url_override",
-                                                 /*default_value=*/""};
-#endif
 
 BASE_FEATURE(kMigrateEnhancedSbUserToEnhancedBundle,
              base::FEATURE_DISABLED_BY_DEFAULT);
@@ -377,10 +336,6 @@ constexpr base::FeatureParam<int> kSafeBrowsingDailyPhishingReportsLimitESB{
     &kSafeBrowsingDailyPhishingReportsLimit,
     /*name=*/"kMaxReportsPerIntervalESB", /*default_value=*/10};
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kSafeBrowsingSyncCheckerCheckAllowlist,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kSavePasswordHashFromProfilePicker,
              base::FEATURE_ENABLED_BY_DEFAULT);
@@ -389,11 +344,7 @@ BASE_FEATURE(kShowManualNotificationRevocationsSafetyHub,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
 BASE_FEATURE(kShowWarningsForSuspiciousNotifications,
-#if BUILDFLAG(IS_ANDROID)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 constexpr base::FeatureParam<int>
     kShowWarningsForSuspiciousNotificationsScoreThreshold{

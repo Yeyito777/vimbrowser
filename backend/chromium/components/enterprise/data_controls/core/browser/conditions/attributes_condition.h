@@ -11,11 +11,6 @@
 #include "components/enterprise/data_controls/core/browser/conditions/condition.h"
 #include "components/url_matcher/url_matcher.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include <set>
-
-#include "components/enterprise/data_controls/core/browser/component.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace data_controls {
 
@@ -39,9 +34,6 @@ class AttributesCondition {
   static constexpr char kKeyIncognito[] = "incognito";
   static constexpr char kKeyOsClipboard[] = "os_clipboard";
   static constexpr char kKeyOtherProfile[] = "other_profile";
-#if BUILDFLAG(IS_CHROMEOS)
-  static constexpr char kKeyComponents[] = "components";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   explicit AttributesCondition(const base::DictValue& value);
   AttributesCondition(AttributesCondition&& other);
@@ -57,10 +49,6 @@ class AttributesCondition {
   // Returns true if `url` should be considered to trigger the condition.
   bool URLMatches(GURL url) const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Return true if `component` should be considered to trigger the condition.
-  bool ComponentMatches(Component component) const;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Helpers that compare a given value from a destination/source context to its
   // corresponding conditions.
@@ -89,11 +77,6 @@ class AttributesCondition {
   // a separate Chrome profile. It is always null for non-clipboard conditions.
   std::optional<bool> other_profile_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // A destination/source must be in this set to pass the condition, unless the
-  // set is empty.
-  std::set<Component> components_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 // Source-only AttributeCondition that also implement the `Condition` interface.

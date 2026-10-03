@@ -34,7 +34,6 @@ mojom("common_mojom") {
 
 # Contains only the data (enum) types needed by Java.
 mojom("enum_mojom") {
-  generate_java = true
   sources = [ "enum.mojom" ]
 }
 

@@ -45,11 +45,6 @@ bool GetUintFromSwitch(const base::CommandLine* command_line,
 // the native implementation.
 VulkanImplementationName ParseVulkanImplementationName(
     const base::CommandLine* command_line) {
-#if BUILDFLAG(IS_ANDROID)
-  if (command_line->HasSwitch(switches::kWebViewDrawFunctorUsesVulkan)) {
-    return VulkanImplementationName::kForcedNative;
-  }
-#endif
 
   if (command_line->HasSwitch(switches::kUseVulkan)) {
     auto value = command_line->GetSwitchValueASCII(switches::kUseVulkan);
@@ -284,13 +279,8 @@ GpuPreferences ParseGpuPreferences(const base::CommandLine* command_line) {
           ? ParseVulkanImplementationName(command_line)
           : VulkanImplementationName::kNone;
 
-#if BUILDFLAG(IS_FUCHSIA)
-  // Vulkan Surface is not used on Fuchsia.
-  gpu_preferences.disable_vulkan_surface = true;
-#else
   gpu_preferences.disable_vulkan_surface =
       command_line->HasSwitch(switches::kDisableVulkanSurface);
-#endif
 
   gpu_preferences.enable_gpu_blocked_time_metric =
       command_line->HasSwitch(switches::kEnableGpuBlockedTime);
@@ -370,13 +360,7 @@ size_t UpdateShaderCacheSizeOnMemoryPressure(
     case base::MEMORY_PRESSURE_LEVEL_CRITICAL:
       if (base::FeatureList::IsEnabled(
               ::features::kAggressiveShaderCacheLimits)) {
-#if BUILDFLAG(IS_ANDROID)
-        // On Android, critical memory pressure notifications are very common,
-        // and not necessarily tied to actual critical memory pressure. Ignore.
-        break;
-#else
         max_cache_size /= 4;
-#endif
       } else {
         max_cache_size = 0;
       }

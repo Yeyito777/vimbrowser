@@ -155,30 +155,6 @@ void MediaPermissionDispatcher::OnPermissionStatus(
       .Run(status == blink::mojom::PermissionStatus::GRANTED);
 }
 
-#if BUILDFLAG(IS_WIN)
-void MediaPermissionDispatcher::IsHardwareSecureDecryptionAllowed(
-    IsHardwareSecureDecryptionAllowedCB cb) {
-  GetMediaFoundationPreferences()->IsHardwareSecureDecryptionAllowed(
-      std::move(cb));
-}
-
-media::mojom::MediaFoundationPreferences*
-MediaPermissionDispatcher::GetMediaFoundationPreferences() {
-  if (!mf_preferences_) {
-    render_frame_->GetBrowserInterfaceBroker().GetInterface(
-        mf_preferences_.BindNewPipeAndPassReceiver());
-    mf_preferences_.set_disconnect_handler(base::BindOnce(
-        &MediaPermissionDispatcher::OnMediaFoundationPreferencesConnectionError,
-        base::Unretained(this)));
-  }
-
-  return mf_preferences_.get();
-}
-
-void MediaPermissionDispatcher::OnMediaFoundationPreferencesConnectionError() {
-  mf_preferences_.reset();
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void MediaPermissionDispatcher::OnPermissionServiceConnectionError() {
   permission_service_.reset();

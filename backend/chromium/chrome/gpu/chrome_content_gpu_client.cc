@@ -28,13 +28,6 @@
 #include "media/media_buildflags.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/experiences/arc/video_accelerator/protected_buffer_manager.h"
-#include "chromeos/components/cdm_factory_daemon/chromeos_cdm_factory.h"
-#include "chromeos/components/cdm_factory_daemon/mojom/browser_cdm_factory.mojom.h"
-#include "ui/ozone/public/ozone_platform.h"         // nogncheck
-#include "ui/ozone/public/surface_factory_ozone.h"  // nogncheck
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 ChromeContentGpuClient::ChromeContentGpuClient() {
   base::ThreadGroupProfiler::SetClient(
@@ -45,27 +38,13 @@ ChromeContentGpuClient::ChromeContentGpuClient() {
   // The profiler can't start before the sandbox is initialized on
   // ChromeOS due to ChromeOS's sandbox initialization code's use of
   // AssertSingleThreaded().
-#if !BUILDFLAG(IS_CHROMEOS)
   main_thread_profiler_ =
       sampling_profiler::ThreadProfiler::CreateAndStartOnMainThread();
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-  protected_buffer_manager_ = new arc::ProtectedBufferManager();
-#endif
 }
 
 ChromeContentGpuClient::~ChromeContentGpuClient() = default;
 
 void ChromeContentGpuClient::GpuServiceInitialized() {
-#if BUILDFLAG(IS_CHROMEOS)
-  ui::OzonePlatform::GetInstance()
-      ->GetSurfaceFactoryOzone()
-      ->SetGetProtectedNativePixmapDelegate(base::BindRepeating(
-          &arc::ProtectedBufferManager::GetProtectedNativePixmapFor,
-          base::Unretained(protected_buffer_manager_.get())));
-  content::ChildThread::Get()->BindHostReceiver(
-      chromeos::ChromeOsCdmFactory::GetBrowserCdmFactoryReceiver());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // This doesn't work in single-process mode.
   if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
@@ -105,11 +84,6 @@ void ChromeContentGpuClient::ExposeInterfacesToBrowser(
 }
 
 void ChromeContentGpuClient::PostSandboxInitialized() {
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK(!main_thread_profiler_);
-  main_thread_profiler_ =
-      sampling_profiler::ThreadProfiler::CreateAndStartOnMainThread();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void ChromeContentGpuClient::PostIOThreadCreated(
@@ -135,10 +109,3 @@ void ChromeContentGpuClient::PostCompositorThreadCreated(
                                 base::BindRepeating(
                                     &CreateCoreUnwindersFactory)));
 }
-
-#if BUILDFLAG(IS_CHROMEOS)
-scoped_refptr<arc::ProtectedBufferManager>
-ChromeContentGpuClient::GetProtectedBufferManager() {
-  return protected_buffer_manager_;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)

@@ -1430,31 +1430,10 @@ std::string TemplateURLRef::HandleReplacements(
       case GOOGLE_SUGGEST_CLIENT:
         switch (search_terms_args.request_source) {
           case RequestSource::NTP_MODULE:
-#if BUILDFLAG(IS_ANDROID)
-            HandleReplacement(std::string(),
-                              "chrome-android-search-resumption-module",
-                              replacement, &url);
-            break;
-#elif BUILDFLAG(IS_IOS)
-            HandleReplacement(std::string(), "chrome-ios-ntp", replacement,
-                              &url);
-            break;
-#else
             NOTREACHED();
-#endif
           case RequestSource::SEARCHBOX:
           case RequestSource::CROS_APP_LIST:
-#if BUILDFLAG(IS_ANDROID)
-            if (ui::GetDeviceFormFactor() == ui::DEVICE_FORM_FACTOR_PHONE) {
-              HandleReplacement(std::string(), "chrome", replacement, &url);
-              break;
-            }
             HandleReplacement(std::string(), "chrome-omni", replacement, &url);
-#elif BUILDFLAG(IS_IOS)
-            HandleReplacement(std::string(), "chrome", replacement, &url);
-#else
-            HandleReplacement(std::string(), "chrome-omni", replacement, &url);
-#endif
             break;
           case RequestSource::NTP_COMPOSEBOX: {
             // Co-browsing composebox uses a different client since its zps
@@ -1498,13 +1477,6 @@ std::string TemplateURLRef::HandleReplacements(
         switch (search_terms_args.request_source) {
           case RequestSource::SEARCHBOX:
           case RequestSource::CROS_APP_LIST:
-#if BUILDFLAG(IS_ANDROID)
-            if (ui::GetDeviceFormFactor() == ui::DEVICE_FORM_FACTOR_PHONE) {
-              HandleReplacement(std::string(), "chrome-mobile-ext-ansg",
-                                replacement, &url);
-              break;
-            }
-#endif
             if (search_terms_args.page_classification ==
                     metrics::OmniboxEventProto::NTP_REALBOX &&
                 search_terms_args.lens_overlay_suggest_inputs.has_value()) {
@@ -1615,13 +1587,6 @@ std::string TemplateURLRef::HandleReplacements(
         break;
 
       case GOOGLE_LANGUAGE:
-#if BUILDFLAG(IS_IOS)
-        if (base::FeatureList::IsEnabled(
-                omnibox::kReportApplicationLanguageInSearchRequest)) {
-          HandleReplacement("hl", search_terms_data.GetApplicationLocale(),
-                            replacement, &url);
-        }
-#endif
         break;
 
       case YANDEX_REFERRAL_ID: {
@@ -1963,12 +1928,10 @@ std::optional<std::u16string> TemplateURL::GetBuiltinMarketingSnippet() const {
   return std::nullopt;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 std::u16string TemplateURL::GetMarketingSnippet() const {
   return GetBuiltinMarketingSnippet().value_or(l10n_util::GetStringFUTF16(
       IDS_SEARCH_ENGINE_FALLBACK_MARKETING_SNIPPET, short_name()));
 }
-#endif
 
 SearchEngineType TemplateURL::GetEngineType(
     const SearchTermsData& search_terms_data) const {

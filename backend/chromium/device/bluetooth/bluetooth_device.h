@@ -333,10 +333,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDevice {
   // Indicates whether the device is paired with the adapter.
   virtual bool IsPaired() const = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Indicates whether the device is bonded with the adapter.
-  virtual bool IsBonded() const = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Indicates whether the device is currently connected to the adapter.
   // Note that if IsConnected() is true, does not imply that the device is
@@ -377,11 +373,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDevice {
   // its UUID.
   virtual UUIDSet GetUUIDs() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Sets if this device is blocked by admin policy.
-  void SetIsBlockedByPolicy(bool);
-  bool IsBlockedByPolicy() const;
-#endif
 
   // Returns the last advertised Service Data. Returns an empty map if the
   // adapter is not discovering.
@@ -506,23 +497,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDevice {
   virtual void Connect(PairingDelegate* pairing_delegate,
                        ConnectCallback callback) = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Initiates a classic connection to the device, pairing first if necessary.
-  //
-  // Method calls will be made on the supplied object |pairing_delegate|
-  // to indicate what display, and in response should make method calls
-  // back to the device object. Not all devices require user responses
-  // during pairing, so it is normal for |pairing_delegate| to receive no
-  // calls. To explicitly force a low-security connection without bonding,
-  // pass nullptr, though this is ignored if the device is already paired.
-  //
-  // |callback| will be called with the status of the connection attempt.  After
-  // calling ConnectClassic, CancelPairing should be called to cancel the
-  // pairing process and release the pairing delegate if user cancels the
-  // pairing and closes the pairing UI.
-  virtual void ConnectClassic(PairingDelegate* pairing_delegate,
-                              ConnectCallback callback) = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Pairs the device. This method triggers pairing unconditially, i.e. it
   // ignores the |IsPaired()| value.
@@ -687,18 +661,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDevice {
   std::vector<BluetoothRemoteGattService*> GetPrimaryServicesByUUID(
       const BluetoothUUID& service_uuid);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  using ExecuteWriteErrorCallback =
-      base::OnceCallback<void(device::BluetoothGattService::GattErrorCode)>;
-  using AbortWriteErrorCallback =
-      base::OnceCallback<void(device::BluetoothGattService::GattErrorCode)>;
-  // Executes all the previous prepare writes in a reliable write session.
-  virtual void ExecuteWrite(base::OnceClosure callback,
-                            ExecuteWriteErrorCallback error_callback) = 0;
-  // Aborts all the previous prepare writes in a reliable write session.
-  virtual void AbortWrite(base::OnceClosure callback,
-                          AbortWriteErrorCallback error_callback) = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
   // Set the battery information for the battery type |info.type|. Overrides
@@ -870,12 +832,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDevice {
   base::flat_map<BatteryType, BatteryInfo> battery_info_map_;
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Indicate whether or not this device is blocked by admin policy. This would
-  // be true if any of its auto-connect service does not exist in the
-  // ServiceAllowList under org.bluez.AdminPolicyStatus1.
-  bool is_blocked_by_policy_ = false;
-#endif
 };
 
 }  // namespace device

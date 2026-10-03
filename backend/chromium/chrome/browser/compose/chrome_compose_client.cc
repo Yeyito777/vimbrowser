@@ -26,7 +26,6 @@
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/segmentation_platform/segmentation_platform_service_factory.h"
 #include "chrome/browser/signin/identity_manager_factory.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_element_identifiers.h"
 #include "chrome/browser/ui/browser_finder.h"
@@ -648,9 +647,7 @@ ComposeSession* ChromeComposeClient::GetSessionForActiveComposeField() {
 }
 
 bool ChromeComposeClient::IsPageLanguageSupported() {
-  translate::TranslateManager* translate_manager =
-      ChromeTranslateClient::GetManagerFromWebContents(&GetWebContents());
-  return compose_enabling_->IsPageLanguageSupported(translate_manager);
+  return true;
 }
 
 bool ChromeComposeClient::GetMSBBStateFromPrefs() {
@@ -700,7 +697,6 @@ bool ChromeComposeClient::ShouldTriggerPopup(
   auto proactive_nudge_status = compose_enabling_->ShouldTriggerNoStatePopup(
       form_field_data.autocomplete_attribute(),
       form_field_data.allows_writing_suggestions(), profile_, pref_service_,
-      ChromeTranslateClient::GetManagerFromWebContents(&GetWebContents()),
       GetWebContents().GetPrimaryMainFrame()->GetLastCommittedOrigin(),
       form_field_data.origin(),
       GetWebContents().GetPrimaryMainFrame()->GetLastCommittedURL(),
@@ -833,10 +829,8 @@ void ChromeComposeClient::AddSiteToNeverPromptList(const url::Origin& origin) {
 bool ChromeComposeClient::ShouldTriggerContextMenu(
     content::RenderFrameHost* rfh,
     content::ContextMenuParams& params) {
-  translate::TranslateManager* translate_manager =
-      ChromeTranslateClient::GetManagerFromWebContents(&GetWebContents());
   bool allow_context_menu = compose_enabling_->ShouldTriggerContextMenu(
-      profile_, translate_manager, rfh, params);
+      profile_, rfh, params);
   if (allow_context_menu) {
     page_ukm_tracker_->MenuItemShown();
   }

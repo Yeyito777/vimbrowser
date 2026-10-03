@@ -12,16 +12,10 @@ assert(enable_library_cdms)
 
 # OS name for components is close to "target_os" but has some differences.
 # Explicitly define what we use to avoid confusion.
-if (is_chromeos) {
-  component_os = "cros"
-} else if (is_linux) {
+if (is_linux) {
   component_os = "linux"
-} else if (is_win) {
-  component_os = "win"
 } else if (is_mac) {
   component_os = "mac"
-} else if (is_fuchsia) {
-  component_os = "fuchsia"
 } else {
   assert(false, "unsupported_platform")
 }
@@ -38,10 +32,5 @@ cdm_platform_specific_path =
 # Path of Clear Key and Widevine CDMs relative to the output dir.
 clearkey_cdm_path = "ClearKeyCdm/$cdm_platform_specific_path"
 widevine_cdm_path = "WidevineCdm/$cdm_platform_specific_path"
-
 # Shared libraries must be within lib/ on Fuchsia.
 # TODO(fxbug.dev/105910): Remove when the GN SDK drops this limitation.
-if (is_fuchsia) {
-  clearkey_cdm_path = "lib/" + clearkey_cdm_path
-  widevine_cdm_path = "lib/" + clearkey_cdm_path
-}

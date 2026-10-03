@@ -59,13 +59,6 @@ SystemMetrics SystemMetrics::Sample() {
   GetVmStatInfo(&system_metrics.vmstat_info_);
   GetSystemDiskInfo(&system_metrics.disk_info_);
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-  GetSwapInfo(&system_metrics.swap_info_);
-  GetGraphicsMemoryInfo(&system_metrics.gpu_memory_info_);
-#endif
-#if BUILDFLAG(IS_WIN)
-  GetSystemPerformanceInfo(&system_metrics.performance_);
-#endif
   return system_metrics;
 }
 

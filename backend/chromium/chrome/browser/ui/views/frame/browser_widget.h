@@ -14,9 +14,6 @@
 #include "ui/views/context_menu_controller.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include <optional>
-#endif
 
 class BrowserFrameView;
 class BrowserRootView;

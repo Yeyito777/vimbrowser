@@ -29,9 +29,6 @@
 #include "sql/database.h"
 #include "sql/meta_table.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "base/gtest_prod_util.h"
-#endif
 
 namespace affiliations {
 class SQLTableBuilder;
@@ -399,27 +396,6 @@ class LoginDatabase : public EncryptDecryptInterface {
   std::string id_and_password_statement_;
 };
 
-#if BUILDFLAG(IS_IOS)
-// Adds |plain_text| to keychain and provides lookup in
-// |keychain_identifier|. Returns true or false to indicate success/failure.
-bool CreateKeychainIdentifier(const std::u16string& plain_text,
-                              std::string* keychain_identifier);
-
-// Retrieves |plain_text| from keychain using |keychain_identifier|. Returns
-// the status of the operation.
-OSStatus GetTextFromKeychainIdentifier(const std::string& keychain_identifier,
-                                       std::u16string* plain_text);
-
-// Removes the keychain item corresponding to the look-up key
-// |keychain_identifier|. It's stored as the encrypted password value.
-void DeleteEncryptedPasswordFromKeychain(
-    const std::string& keychain_identifier);
-
-// Retrieves everything from the keychain. |key_password_pairs| contains
-// pairs of UUID and plaintext password.
-OSStatus GetAllPasswordsFromKeychain(
-    std::unordered_map<std::string, std::u16string>* key_password_pairs);
-#endif
 
 }  // namespace password_manager
 

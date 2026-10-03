@@ -66,13 +66,6 @@ class ProfilePrefStoreManager {
   // was built by ProfilePrefStoreManager.
   static void ClearResetTime(PrefService* pref_service);
 
-#if BUILDFLAG(IS_WIN)
-  // Call before startup tasks kick in to use a different registry path for
-  // storing and validating tracked preference MACs. Callers are responsible
-  // for ensuring that the key is deleted on shutdown. For testing only.
-  static void SetPreferenceValidationRegistryPathForTesting(
-      const std::wstring* path);
-#endif
 
   // Creates a PersistentPrefStore providing access to the user preferences of
   // the managed profile. If |reset_on_load_observer| is provided, it will be

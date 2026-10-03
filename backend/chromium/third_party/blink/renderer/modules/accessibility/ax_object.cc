@@ -1282,12 +1282,6 @@ void AXObject::SerializeBoundingBoxAttributes(ui::AXNodeData& dst) const {
   AXObjectCache().SetCachedBoundingBox(AXObjectID(), dst.relative_bounds,
                                        scroll_offset.x(), scroll_offset.y());
 
-#if BUILDFLAG(IS_ANDROID)
-  if (blink::features::IsXrDevice() && GetPaintOrder() > 0) {
-    dst.AddIntAttribute(ax::mojom::blink::IntAttribute::kPaintOrder,
-                        GetPaintOrder());
-  }
-#endif
 }
 
 static bool AXShouldIncludePageScaleFactorInRoot() {
@@ -1519,48 +1513,6 @@ void AXObject::SerializeHTMLAttributesForSnapshot(
 // do not require support.
 void AXObject::SerializeHTMLNonStandardAttributesForJAWS(
     ui::AXNodeData* node_data) const {
-#if BUILDFLAG(IS_WIN)
-  DEFINE_STATIC_LOCAL(
-      HashSet<AtomicString>, attributes_for_jaws,
-      ({// brailleonlyregion: a nonstandard attribute used by national testing
-        // orgs to allow testing of reading ability by rendering only to Braille
-        // display, and not to TTS.
-        // TODO(https://github.com/w3c/aria/issues/2352): replace with ARIA
-        // feature.
-        AtomicString("brailleonlyregion"),
-        // data-at-shortcutkeys: a nonstandard attribute used by Twitter and
-        // Facebook to provide keyboard shortcuts for an entire web page, in the
-        // form of a parseable JSON map, which AT can use to help avoid keyboard
-        // conflicts.
-        // TODO(https://github.com/w3c/aria/issues/2351): Replace with ARIA
-        // feature.
-        AtomicString("data-at-shortcutkeys"),
-        // formcontrolname: a nonstandard attribute used by Angular and consumed
-        // by some password managers (see https://crbug.com/378908266).
-        AtomicString("formcontrolname"),
-        // The rest of these are used by proprietary JAWS scripts needed by
-        // customers of JAWS/Vispero.
-        AtomicString("headers"),
-        AtomicString("_segmentid"),  // Nonstandard.
-        AtomicString("aria-activedescendant"), AtomicString("aria-checked"),
-        AtomicString("aria-describedby"), AtomicString("aria-expanded"),
-        AtomicString("aria-labelledby"), AtomicString("aria-pressed"),
-        AtomicString("aria-selected"),
-        AtomicString("display"),  // Nonstandard.
-        AtomicString("size"), AtomicString("tabindex"),
-        AtomicString("title")}));
-
-  for (const Attribute& attr : GetElement()->AttributesWithoutUpdate()) {
-    // Add attribute if in the allow list.
-    const QualifiedName& attr_qname = attr.GetName();
-    const AtomicString& attr_name = attr_qname.LocalName();
-    if (attributes_for_jaws.Contains(attr_name)) {
-      std::string value = attr.Value().Utf8();
-      node_data->html_attributes.push_back(
-          std::make_pair(attr_name.Utf8(), value));
-    }
-  }
-#endif
 }
 
 void AXObject::SerializeInlineTextBox(ui::AXNodeData* node_data) const {
@@ -2199,15 +2151,7 @@ void AXObject::SerializeUnignoredAttributes(ui::AXNodeData* node_data,
 
   if (accessibility_mode.has_mode(ui::AXMode::kExtendedProperties)) {
     SerializeMarkerAttributes(node_data);
-#if BUILDFLAG(IS_ANDROID)
-    // On Android, style attributes are only serialized for snapshots, or, when
-    // the experimental feature flag for text formatting data is enabled.
-    if (is_snapshot || ::features::IsAccessibilityTextFormattingEnabled()) {
-      SerializeStyleAttributes(node_data);
-    }
-#else
     SerializeStyleAttributes(node_data);
-#endif
   } else if (accessibility_mode.has_mode(ui::AXMode::kPDFPrinting)) {
     // For PDF printing, we need to serialize the list style to distinguish
     // ordered vs unordered lists in the PDF structure tree.
@@ -4200,34 +4144,6 @@ bool AXObject::IsExcludedByFormControlsFilter() const {
   return true;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void AXObject::AnnotateXrHitTestOrder(const Document& document,
-                                      const HashMap<DOMNodeId, int>& order_map,
-                                      int inherited_paint_order) {
-  CHECK(blink::features::IsXrDevice());
-  if (IsDetached() || GetDocument() != &document) {
-    return;
-  }
-
-  // If we don't find a paint order for this node, use the paint order
-  // inherited from its nearest ancestor.
-  paint_order_ = inherited_paint_order;
-  Node* node = GetNode();
-  if (node) {
-    DOMNodeId dom_node_id = node->GetDomNodeId();
-    if (dom_node_id != kInvalidDOMNodeId) {
-      auto it = order_map.find(dom_node_id);
-      if (it != order_map.end()) {
-        paint_order_ = it->value;
-      }
-    }
-  }
-
-  for (auto& child : CachedChildrenIncludingIgnored()) {
-    child->AnnotateXrHitTestOrder(document, order_map, paint_order_);
-  }
-}
-#endif
 
 bool AXObject::ComputeIsIgnoredButIncludedInTree() {
   CHECK(!IsDetached());

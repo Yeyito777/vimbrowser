@@ -23,7 +23,6 @@ libangle_common_headers = [
   "src/common/SynchronizedValue.h",
   "src/common/WorkerThread.h",
   "src/common/aligned_memory.h",
-  "src/common/android_util.h",
   "src/common/angleutils.h",
   "src/common/apple_platform_utils.h",
   "src/common/backtrace_utils.h",
@@ -80,7 +79,6 @@ libangle_common_sources = libangle_common_headers + [
                             "src/common/SimpleMutex.cpp",
                             "src/common/WorkerThread.cpp",
                             "src/common/aligned_memory.cpp",
-                            "src/common/android_util.cpp",
                             "src/common/angleutils.cpp",
                             "src/common/base/anglebase/sha1.cc",
                             "src/common/debug.cpp",
@@ -110,13 +108,9 @@ xxhash_sources = [
   "src/common/third_party/xxhash/xxhash.h",
 ]
 
-if (is_android && angle_enable_unwind_backtrace_support) {
-  libangle_common_sources += [ "src/common/backtrace_utils_android.cpp" ]
-} else {
-  libangle_common_sources += [ "src/common/backtrace_utils_noop.cpp" ]
-}
+libangle_common_sources += [ "src/common/backtrace_utils_noop.cpp" ]
 
-if (is_linux || is_chromeos || is_android || is_fuchsia) {
+if (is_linux || is_chromeos || is_fuchsia) {
   libangle_common_sources += [
     "src/common/system_utils_linux.cpp",
     "src/common/system_utils_posix.cpp",
@@ -138,18 +132,6 @@ if (is_apple) {
       "src/common/gl/cgl/FunctionsCGL.h",
       "src/common/system_utils_mac.cpp",
     ]
-  }
-  if (is_ios) {
-    libangle_common_sources += [ "src/common/system_utils_ios.cpp" ]
-  }
-}
-
-if (is_win) {
-  libangle_common_sources += [ "src/common/system_utils_win.cpp" ]
-  if (angle_is_winuwp) {
-    libangle_common_sources += [ "src/common/system_utils_winuwp.cpp" ]
-  } else {
-    libangle_common_sources += [ "src/common/system_utils_win32.cpp" ]
   }
 }
 
@@ -187,9 +169,6 @@ libangle_gpu_info_util_sources = [
 ]
 
 libangle_gpu_info_util_win_sources = [ "src/gpu_info_util/SystemInfo_win.cpp" ]
-
-libangle_gpu_info_util_android_sources =
-    [ "src/gpu_info_util/SystemInfo_android.cpp" ]
 
 libangle_gpu_info_util_linux_sources =
     [ "src/gpu_info_util/SystemInfo_linux.cpp" ]
@@ -681,10 +660,6 @@ libglesv1_cm_sources = [
   "src/libGLESv1_CM/libGLESv1_CM.cpp",
   "src/libGLESv1_CM/resource.h",
 ]
-
-if (is_win) {
-  libglesv1_cm_sources += [ "src/libGLESv1_CM/libGLESv1_CM.rc" ]
-}
 
 libegl_sources = [
   "src/libEGL/egl_loader_autogen.h",

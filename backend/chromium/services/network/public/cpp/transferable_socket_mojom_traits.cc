@@ -13,18 +13,6 @@
 
 namespace mojo {
 
-#if BUILDFLAG(IS_WIN)
-// static
-const std::vector<uint8_t>&
-StructTraits<network::mojom::TransferableSocketDataView,
-             network::TransferableSocket>::
-    protocol_info(const network::TransferableSocket& value) {
-#if DCHECK_IS_ON()
-  DCHECK(!value.has_been_transferred_) << "Can only transfer once.";
-#endif
-  return value.wsa_info_buffer_;
-}
-#else
 mojo::PlatformHandle StructTraits<
     network::mojom::TransferableSocketDataView,
     network::TransferableSocket>::socket(network::TransferableSocket& value) {
@@ -35,19 +23,13 @@ mojo::PlatformHandle StructTraits<
   std::swap(value.socket_, output);
   return output;
 }
-#endif  // BUILDFLAG(IS_WIN)
 
 // static
 bool StructTraits<network::mojom::TransferableSocketDataView,
                   network::TransferableSocket>::
     Read(network::mojom::TransferableSocketDataView in,
          network::TransferableSocket* out) {
-#if BUILDFLAG(IS_WIN)
-  if (!in.ReadProtocolInfo(&out->wsa_info_buffer_))
-    return false;
-#else
   *out = network::TransferableSocket(in.TakeSocket());
-#endif
 #if DCHECK_IS_ON()
   out->has_been_transferred_ = true;
 #endif

@@ -17,9 +17,6 @@ class DevicePinnedNotificationRenderer : public DeviceSystemTrayIconRenderer {
   explicit DevicePinnedNotificationRenderer(
       DeviceSystemTrayIcon* device_system_tray_icon,
       const std::string& notification_id_prefix,
-#if BUILDFLAG(IS_CHROMEOS)
-      const ash::NotificationCatalogName notification_catalog_name,
-#endif
       const int message_id);
   DevicePinnedNotificationRenderer(const DevicePinnedNotificationRenderer&) =
       delete;
@@ -47,9 +44,6 @@ class DevicePinnedNotificationRenderer : public DeviceSystemTrayIconRenderer {
 
   std::string notification_id_prefix_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  ash::NotificationCatalogName notification_catalog_name_;
-#endif
 
   int message_id_;
 };

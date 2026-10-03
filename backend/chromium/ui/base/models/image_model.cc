@@ -16,9 +16,7 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/vector_icon_utils.h"
 
-#if !BUILDFLAG(IS_IOS)
 #include "ui/base/themed_vector_icon.h"
-#endif
 
 namespace ui {
 
@@ -139,12 +137,8 @@ gfx::ImageSkia ImageModel::Rasterize(
     return GetImage().AsImageSkia();
 
   if (IsVectorIcon()) {
-#if BUILDFLAG(IS_IOS)
-    NOTREACHED();
-#else
     DCHECK(color_provider);
     return ThemedVectorIcon(GetVectorIcon()).GetImageSkia(color_provider);
-#endif
   }
 
   if (IsImageGenerator())

@@ -50,16 +50,6 @@ ExtensionFunction::ResponseAction PowerReleaseKeepAwakeFunction::Run() {
   return RespondNow(NoArguments());
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-ExtensionFunction::ResponseAction PowerReportActivityFunction::Run() {
-  std::optional<std::string> error =
-      extensions::ActivityReporterDelegate::GetDelegate()->ReportActivity();
-  if (error.has_value()) {
-    return RespondNow(Error(error.value()));
-  }
-  return RespondNow(NoArguments());
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // static
 PowerAPI* PowerAPI::Get(content::BrowserContext* context) {

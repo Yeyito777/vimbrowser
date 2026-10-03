@@ -29,62 +29,6 @@
 #include "build/build_config.h"
 #include "components/privacy_sandbox/privacy_sandbox_attestations/privacy_sandbox_attestations_histograms.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#include <winternl.h>
-
-#include "base/win/windows_handle_util.h"
-
-namespace {
-
-// These values are taken from the
-// Startup.BrowserMessageLoopStartHardFaultCount histogram. The latest
-// revision landed on <5 and >3500 for a good split of warm/cold. In between
-// being considered "lukewarm". Full analysis @
-// https://docs.google.com/document/d/1haXFN1cQ6XE-NfhKgww-rOP-Wi-gK6AczP3gT4M5_kI
-// These values should be reconsidered if either .WarmStartup or .ColdStartup
-// distributions of a suffixed histogram becomes unexplainably bimodal.
-//
-// Maximum number of hard faults tolerated for a startup to be classified as a
-// warm start.
-constexpr uint32_t kWarmStartHardFaultCountThreshold = 5;
-
-// Minimum number of hard faults (of 4KB pages) expected for a startup to be
-// classified as a cold start. The right value for this seems to be between
-// 10% and 15% of chrome.dll's size (from anecdata of the two times we did
-// this analysis... it was 1200 in M47 back when chrome.dll was 35MB (32-bit
-// and split from chrome_child.dll) and was made 3500 in M81 when chrome.dll
-// was 126MB).
-constexpr uint32_t kColdStartHardFaultCountThreshold = 3500;
-
-// The struct used to return system process information via the NT internal
-// QuerySystemInformation call. This is partially documented at
-// http://goo.gl/Ja9MrH and fully documented at http://goo.gl/QJ70rn
-// This structure is laid out in the same format on both 32-bit and 64-bit
-// systems, but has a different size due to the various pointer-sized fields.
-struct SYSTEM_PROCESS_INFORMATION_EX {
-  ULONG NextEntryOffset;
-  ULONG NumberOfThreads;
-  LARGE_INTEGER WorkingSetPrivateSize;
-  ULONG HardFaultCount;
-  BYTE Reserved1[36];
-  PVOID Reserved2[3];
-  // This is labeled a handle so that it expands to the correct size for
-  // 32-bit and 64-bit operating systems. However, under the hood it's a
-  // 32-bit DWORD containing the process ID.
-  HANDLE UniqueProcessId;
-  PVOID Reserved3;
-  ULONG HandleCount;
-  BYTE Reserved4[4];
-  PVOID Reserved5[11];
-  SIZE_T PeakPagefileUsage;
-  SIZE_T PrivatePageCount;
-  LARGE_INTEGER Reserved6[6];
-  // Array of SYSTEM_THREAD_INFORMATION structs follows.
-};
-
-}  // namespace
-#endif
 
 namespace {
 const char kProcessType[] = "type";
@@ -186,80 +130,6 @@ BrowserStartupMetricRecorder& GetBrowser() {
   return instance;
 }
 
-#if BUILDFLAG(IS_WIN)
-// Returns the hard fault count of the current process, or nullopt if it can't
-// be determined.
-std::optional<uint32_t>
-BrowserStartupMetricRecorder::GetHardFaultCountForCurrentProcess() {
-  // The output of this system call depends on the number of threads and
-  // processes on the entire system, and this can change between calls. Retry
-  // a small handful of times growing the buffer along the way.
-  // NOTE: The actual required size depends entirely on the number of
-  // processes
-  //       and threads running on the system. The initial guess suffices for
-  //       ~100s of processes and ~1000s of threads.
-  std::vector<uint8_t> buffer(32 * 1024);
-  constexpr int kMaxNumBufferResize = 2;
-  int num_buffer_resize = 0;
-  for (;;) {
-    ULONG return_length = 0;
-    const NTSTATUS status = ::NtQuerySystemInformation(
-        SystemProcessInformation, buffer.data(),
-        static_cast<ULONG>(buffer.size()), &return_length);
-
-    // NtQuerySystemInformation succeeded.
-    if (NT_SUCCESS(status)) {
-      DCHECK_LE(return_length, buffer.size());
-      break;
-    }
-
-    // NtQuerySystemInformation failed due to insufficient buffer length.
-    if (return_length > buffer.size()) {
-      // Abort if a large size is required for the buffer. It is undesirable
-      // to fill a large buffer just to record histograms.
-      constexpr ULONG kMaxLength = 512 * 1024;
-      if (return_length >= kMaxLength) {
-        return std::nullopt;
-      }
-
-      // Resize the buffer and retry, if the buffer hasn't already been
-      // resized too many times.
-      if (num_buffer_resize < kMaxNumBufferResize) {
-        ++num_buffer_resize;
-        buffer.resize(return_length);
-        continue;
-      }
-    }
-
-    // Abort if NtQuerySystemInformation failed for another reason than
-    // insufficient buffer length, or if the buffer was resized too many
-    // times.
-    DCHECK(return_length <= buffer.size() ||
-           num_buffer_resize >= kMaxNumBufferResize);
-    return std::nullopt;
-  }
-
-  // Look for the struct housing information for the current process.
-  const DWORD proc_id = ::GetCurrentProcessId();
-  size_t index = 0;
-  while (index < buffer.size()) {
-    DCHECK_LE(index + sizeof(SYSTEM_PROCESS_INFORMATION_EX), buffer.size());
-    SYSTEM_PROCESS_INFORMATION_EX* proc_info =
-        reinterpret_cast<SYSTEM_PROCESS_INFORMATION_EX*>(buffer.data() + index);
-    if (base::win::HandleToUint32(proc_info->UniqueProcessId) == proc_id) {
-      return proc_info->HardFaultCount;
-    }
-    // The list ends when NextEntryOffset is zero. This also prevents busy
-    // looping if the data is in fact invalid.
-    if (proc_info->NextEntryOffset <= 0) {
-      return std::nullopt;
-    }
-    index += proc_info->NextEntryOffset;
-  }
-
-  return std::nullopt;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void BrowserStartupMetricRecorder::ResetSessionForTesting() {
   GetCommon().ResetSessionForTesting();
@@ -484,42 +354,6 @@ void BrowserStartupMetricRecorder::RecordFirstRunSentinelCreation(
 }
 
 void BrowserStartupMetricRecorder::RecordHardFaultHistogram() {
-#if BUILDFLAG(IS_WIN)
-  DCHECK_EQ(UNDETERMINED_STARTUP_TEMPERATURE, g_startup_temperature);
-
-  const std::optional<uint32_t> hard_fault_count =
-      GetHardFaultCountForCurrentProcess();
-
-  if (hard_fault_count.has_value()) {
-    // Hard fault counts are expected to be in the thousands range,
-    // corresponding to faulting in ~10s of MBs of code ~10s of KBs at a time.
-    // (Observed to vary from 1000 to 10000 on various test machines and
-    // platforms.)
-    base::UmaHistogramCustomCounts(
-        "Startup.BrowserMessageLoopStartHardFaultCount",
-        hard_fault_count.value(), 1, 40000, 50);
-
-    // Determine the startup type based on the number of observed hard faults.
-    if (hard_fault_count < kWarmStartHardFaultCountThreshold) {
-      g_startup_temperature = WARM_STARTUP_TEMPERATURE;
-      GetCommon().EmitInstantEvent("Startup.Temperature.Warm");
-    } else if (hard_fault_count >= kColdStartHardFaultCountThreshold) {
-      g_startup_temperature = COLD_STARTUP_TEMPERATURE;
-      GetCommon().EmitInstantEvent("Startup.Temperature.Cold");
-    } else {
-      g_startup_temperature = LUKEWARM_STARTUP_TEMPERATURE;
-      GetCommon().EmitInstantEvent("Startup.Temperature.Lukewarm");
-    }
-  } else {
-    // |g_startup_temperature| remains
-    // UNDETERMINED_STARTUP_TEMPERATURE if the number of hard faults could not
-    // be determined.
-  }
-
-  // Record the startup 'temperature'.
-  base::UmaHistogramEnumeration("Startup.Temperature", g_startup_temperature,
-                                STARTUP_TEMPERATURE_COUNT);
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 bool BrowserStartupMetricRecorder::ShouldLogStartupHistogram() const {
@@ -536,36 +370,9 @@ bool BrowserStartupMetricRecorder::IsFirstRun() const {
 
 base::TimeTicks
 BrowserStartupMetricRecorder::GetApplicationStartTicksForStartup() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  // `application_start_ticks_` is inappropriate since the device often boots
-  // to a login screen, and an indefinite amount of time can elapse before a
-  // browser window is opened. Even when restoring a session after a crash
-  // (which has no login screen), the session is not restored automatically.
-  // The user must click a notification first before browser windows are
-  // created and restored, so using `application_start_ticks_` would have the
-  // same issue.
-  //
-  // If `web_contents_start_ticks_` is not set here, that could be intentional
-  // as this metric should not be recorded in certain cases (ex: a manually
-  // opened browser window).
-  if (web_contents_start_ticks_.is_null()) {
-    return base::TimeTicks();
-  }
-  return web_contents_start_ticks_;
-#else
   return GetCommon().application_start_ticks_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void BrowserStartupMetricRecorder::RecordWebContentsStartTime(
-    base::TimeTicks ticks) {
-  if (web_contents_start_ticks_.is_null()) {
-    web_contents_start_ticks_ = ticks;
-    DCHECK(!web_contents_start_ticks_.is_null());
-  }
-}
-#endif
 
 void BrowserStartupMetricRecorder::RecordExternalStartupMetric(
     const char* histogram_name,

@@ -18,9 +18,6 @@
 #include "net/base/network_change_notifier_apple_buildflags.h"
 #endif  // BUILDFLAG(IS_APPLE)
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 namespace net::features {
 
@@ -232,23 +229,6 @@ BASE_FEATURE(kShouldKillSessionOnAcceptChMalformed,
 
 BASE_FEATURE(kEnableWebsocketsOverHttp3, base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-// Disabled because of https://crbug.com/1489696.
-BASE_FEATURE(kEnableGetNetworkConnectivityHintAPI,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-BASE_FEATURE(kTcpPortRandomizationWin, base::FEATURE_ENABLED_BY_DEFAULT);
-
-BASE_FEATURE_PARAM(int,
-                   kTcpPortRandomizationWinVersionMinimum,
-                   &kTcpPortRandomizationWin,
-                   "TcpPortRandomizationWinVersionMinimum",
-                   static_cast<int>(base::win::Version::WIN11_22H2));
-
-BASE_FEATURE(kTcpPortReuseMetricsWin, base::FEATURE_ENABLED_BY_DEFAULT);
-
-BASE_FEATURE(kTcpSocketIoCompletionPortWin, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 #if BUILDFLAG(IS_MAC)
 BASE_FEATURE(kTcpPortRandomizationMac, base::FEATURE_DISABLED_BY_DEFAULT);
@@ -263,11 +243,7 @@ const base::FeatureParam<int> kAvoidEntryCreationForNoStoreCacheSize{
 
 // A flag to use asynchronous session creation for new QUIC sessions.
 BASE_FEATURE(kAsyncQuicSession,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#else
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 // A flag to make multiport context creation asynchronous.
 BASE_FEATURE(kAsyncMultiPortPath,
@@ -292,13 +268,8 @@ BASE_FEATURE(kRelatedWebsitePartitionAPI, base::FEATURE_DISABLED_BY_DEFAULT);
 // Network-change migration requires NetworkHandle support, which are currently
 // only supported on Android (see
 // NetworkChangeNotifier::AreNetworkHandlesSupported).
-#if BUILDFLAG(IS_ANDROID)
-inline constexpr auto kMigrateSessionsOnNetworkChangeV2Default =
-    base::FEATURE_ENABLED_BY_DEFAULT;
-#else   // !BUILDFLAG(IS_ANDROID)
 inline constexpr auto kMigrateSessionsOnNetworkChangeV2Default =
     base::FEATURE_DISABLED_BY_DEFAULT;
-#endif  // BUILDFLAG(IS_ANDROID)
 BASE_FEATURE(kMigrateSessionsOnNetworkChangeV2,
              kMigrateSessionsOnNetworkChangeV2Default);
 
@@ -356,11 +327,7 @@ BASE_FEATURE(kUseNetworkPathMonitorForNetworkChangeNotifier,
 );
 #endif  // BUILDFLAG(IS_APPLE)
 
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kDeviceBoundSessions, base::FEATURE_ENABLED_BY_DEFAULT);
-#else
 BASE_FEATURE(kDeviceBoundSessions, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 BASE_FEATURE(kPersistDeviceBoundSessions, base::FEATURE_ENABLED_BY_DEFAULT);
 BASE_FEATURE_PARAM(bool,
                    kDeviceBoundSessionsRequireOriginTrialTokens,
@@ -550,9 +517,6 @@ const base::FeatureParam<base::TimeDelta>
 
 BASE_FEATURE(kHstsTopLevelNavigationsOnly, base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kHttpCacheMappedFileFlushWin, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 // This feature flag is overridden by WebView. This cannot be removed until the
 // feature is launched on WebView (https://crbug.com/382394774).
@@ -583,10 +547,6 @@ BASE_FEATURE(kHttpCacheSkipUnusableEntry, base::FEATURE_ENABLED_BY_DEFAULT);
 
 BASE_FEATURE(kReportingApiCorsOriginHeader, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kUseCertTransparencyAwareApiForOsCertVerify,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 BASE_FEATURE(kSelfSignedLocalNetworkInterstitial,
              base::FEATURE_DISABLED_BY_DEFAULT);

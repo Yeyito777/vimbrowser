@@ -48,17 +48,7 @@ inline constexpr char kChromeUINetworkErrorURL[] = "chrome://network-error/";
 inline constexpr char kChromeUIProcessInternalsURL[] =
     "chrome://process-internals/";
 
-#if BUILDFLAG(IS_ANDROID)
-inline constexpr char kChromeUIGpuJavaCrashURL[] = "chrome://gpu-java-crash/";
-#endif
 inline constexpr char kChromeUICrashRustURL[] = "chrome://crash/rust";
-#if BUILDFLAG(IS_WIN)
-inline constexpr char kChromeUIBrowserHeapCorruptionURL[] =
-    "chrome://inducebrowserheapcorruption/";
-inline constexpr char kChromeUICfgViolationCrashURL[] = "chrome://crash/cfg";
-inline constexpr char kChromeUIHeapCorruptionCrashURL[] =
-    "chrome://heapcorruptioncrash/";
-#endif
 
 #if defined(ADDRESS_SANITIZER)
 inline constexpr char kChromeUICrashHeapOverflowURL[] =
@@ -67,12 +57,6 @@ inline constexpr char kChromeUICrashHeapUnderflowURL[] =
     "chrome://crash/heap-underflow";
 inline constexpr char kChromeUICrashUseAfterFreeURL[] =
     "chrome://crash/use-after-free";
-#if BUILDFLAG(IS_WIN)
-inline constexpr char kChromeUICrashCorruptHeapBlockURL[] =
-    "chrome://crash/corrupt-heap-block";
-inline constexpr char kChromeUICrashCorruptHeapURL[] =
-    "chrome://crash/corrupt-heap";
-#endif  // BUILDFLAG(IS_WIN)
 inline constexpr char kChromeUICrashRustOverflowURL[] =
     "chrome://crash/rust-overflow";
 #endif  // ADDRESS_SANITIZER

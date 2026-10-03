@@ -52,13 +52,6 @@ if (ozone_platform_cast) {
   ozone_platform_deps += [ "platform/cast" ]
 }
 
-if (ozone_platform_wayland) {
-  ozone_platforms += [ "wayland" ]
-  ozone_platform_deps += [ "platform/wayland" ]
-  ozone_platform_test_deps += [ "platform/wayland:wayland_unittests" ]
-  ozone_platform_ui_test_support_deps += [ "platform/wayland:ui_test_support" ]
-}
-
 if (ozone_platform_x11) {
   ozone_platforms += [ "x11" ]
   ozone_platform_deps += [ "platform/x11" ]
@@ -152,12 +145,6 @@ component("ozone_base") {
 
   if (enable_vulkan) {
     public_deps += [ "//gpu/vulkan" ]
-  }
-
-  if (is_fuchsia) {
-    public_deps += [
-      "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.images:fuchsia.images_hlcpp",
-    ]
   }
 
   if (is_linux) {
@@ -356,8 +343,6 @@ static_library("test_support") {
   visibility = [
     ":*",
     "platform/flatland:flatland_unittests",
-    "platform/wayland:test_support",
-    "platform/wayland:wayland_unittests",
     "platform/x11:x11_unittests",
   ]
 
@@ -452,11 +437,6 @@ test("ozone_unittests") {
   assert_no_deps = [ "//ui/ozone" ]
 
   data_deps = [ "//testing/buildbot/filters:ozone_unittests_filters" ]
-
-  if (is_fuchsia) {
-    additional_manifest_fragments =
-        [ "//build/config/fuchsia/test/test_ui_stack.shard.test-cml" ]
-  }
 }
 
 # X11 backend has its own test suite only built when we are using the x11

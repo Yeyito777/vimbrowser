@@ -72,12 +72,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/apk_info.h"
-#include "base/strings/string_util.h"
-#include "chrome/browser/ui/android/tab_model/tab_model.h"
-#include "chrome/browser/ui/android/tab_model/tab_model_list.h"
-#else
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_window.h"
 #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"  // nogncheck crbug.com/40147906
@@ -93,7 +87,6 @@
 #include "extensions/browser/extension_registry.h"  // nogncheck
 #include "extensions/common/extension.h"
 #endif  // BUILDFLAG(ENABLE_PLATFORM_APPS)
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
 #include "chrome/browser/safe_browsing/download_protection/download_protection_service.h"
@@ -218,74 +211,6 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
 }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-bool ContainsInvalidDNSCharacter(base::FilePath::StringType hostname) {
-  for (base::FilePath::CharType c : hostname) {
-    if (!((c >= L'A' && c <= L'Z') || (c >= L'a' && c <= L'z') ||
-          (c >= L'0' && c <= L'9') || (c == L'.') || (c == L'-') ||
-          (c == L'_'))) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool MaybeIsLocalUNCPath(const base::FilePath& path) {
-  if (!path.IsNetwork()) {
-    return false;
-  }
-
-  const std::vector<base::FilePath::StringType> components =
-      path.GetComponents();
-
-  // Check for server name that could represent a local system. We only
-  // check for a very short list, as it is impossible to cover all different
-  // variants on Windows.
-  if (components.size() >= 2 &&
-      (base::FilePath::CompareEqualIgnoreCase(components[1],
-                                              FILE_PATH_LITERAL("localhost")) ||
-       components[1] == FILE_PATH_LITERAL("127.0.0.1") ||
-       components[1] == FILE_PATH_LITERAL(".") ||
-       components[1] == FILE_PATH_LITERAL("?") ||
-       ContainsInvalidDNSCharacter(components[1]))) {
-    return true;
-  }
-
-  // Check *admin* shares only (drive admin like "C$" and named admin).
-  // Note: the share component is typically components[2], but we scan all
-  // components defensively in case the structure changes.
-  for (size_t i = 2; i < components.size(); ++i) {
-    const auto& component = components[i];
-
-    // component ends with "$"
-    if (!component.empty() && component.back() == L'$') {
-
-      // Drive admin share: "C$".."Z$" (case-insensitive on the letter).
-      if (component.size() == 2 &&
-          ((component[0] >= L'A' && component[0] <= L'Z') ||
-           (component[0] >= L'a' && component[0] <= L'z'))) {
-        return true;
-      }
-
-      // Named admin shares: "ADMIN$", "IPC$", "PRINT$", and "FAX$"
-      if (base::FilePath::CompareEqualIgnoreCase(
-              component, FILE_PATH_LITERAL("ADMIN$")) ||
-          base::FilePath::CompareEqualIgnoreCase(
-              component, FILE_PATH_LITERAL("IPC$")) ||
-          base::FilePath::CompareEqualIgnoreCase(
-              component, FILE_PATH_LITERAL("PRINT$")) ||
-          base::FilePath::CompareEqualIgnoreCase(
-              component, FILE_PATH_LITERAL("FAX$"))) {
-        return true;
-      }
-
-      // Otherwise, it is just a hidden share (e.g. "Share$")—do not block.
-    }
-  }
-
-  return false;
-}
-#endif
 
 // Sentinel used to indicate that no PathService key is specified for a path in
 // the struct below.
@@ -348,24 +273,6 @@ GenerateBlockPaths(bool should_normalize_file_path) {
           // And limit access to ~/.gnupg as well.
           {base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"),
            BlockType::kBlockAllChildren},
-#if BUILDFLAG(IS_WIN)
-          // Some Windows specific directories to block, basically all apps, the
-          // operating system itself, as well as configuration data for apps.
-          {base::DIR_PROGRAM_FILES, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_PROGRAM_FILESX86, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_PROGRAM_FILES6432, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_WINDOWS, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_ROAMING_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_LOCAL_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_COMMON_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-          // Opening a file from an MTP device, such as a smartphone or a
-          // camera, is
-          // implemented by Windows as opening a file in the temporary internet
-          // files directory. To support that, allow opening files in that
-          // directory, but not whole directories.
-          {base::DIR_IE_INTERNET_CACHE, nullptr,
-           BlockType::kBlockNestedDirectories},
-#endif
 #if BUILDFLAG(IS_MAC)
           // Similar Mac specific blocks.
           {base::DIR_APP_DATA, nullptr, BlockType::kBlockAllChildren},
@@ -399,7 +306,7 @@ GenerateBlockPaths(bool should_normalize_file_path) {
            FILE_PATH_LITERAL("Library/Mobile Documents/com~apple~CloudDocs"),
            BlockType::kDontBlockChildren},
 #endif
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
           // On Linux also block access to devices via /dev.
           {kNoBasePathKey, FILE_PATH_LITERAL("/dev"),
            BlockType::kBlockAllChildren},
@@ -423,10 +330,6 @@ GenerateBlockPaths(bool should_normalize_file_path) {
           // a website can do with access to that directory and its contents.
           {base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
            BlockType::kBlockAllChildren},
-#endif
-#if BUILDFLAG(IS_ANDROID)
-          {base::DIR_ANDROID_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-          {base::DIR_CACHE, nullptr, BlockType::kBlockAllChildren},
 #endif
           // TODO(crbug.com/40095723): Refine this list, for example add
           // XDG_CONFIG_HOME when it is not set ~/.config?
@@ -498,13 +401,6 @@ bool ShouldBlockAccessToPath(
     }
   }
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, local UNC paths are rejected, as UNC path can be written in a
-  // way that can bypass the blocklist.
-  if (MaybeIsLocalUNCPath(path)) {
-    return true;
-  }
-#endif
 
   base::FilePath nearest_ancestor;
   BlockType nearest_ancestor_block_type = BlockType::kDontBlockChildren;
@@ -1430,10 +1326,6 @@ ChromeFileSystemAccessPermissionContext::
   content_settings_ = base::WrapRefCounted(
       HostContentSettingsMapFactory::GetForProfile(profile_));
 
-#if BUILDFLAG(IS_ANDROID)
-  one_time_permissions_tracker_.Observe(
-      OneTimePermissionsTrackerFactory::GetForBrowserContext(context));
-#else
   auto* provider = web_app::WebAppProvider::GetForWebApps(
       Profile::FromBrowserContext(profile_));
   if (provider) {
@@ -1458,7 +1350,6 @@ ChromeFileSystemAccessPermissionContext::
       }
     }
   }
-#endif
 }
 
 ChromeFileSystemAccessPermissionContext::
@@ -2092,18 +1983,6 @@ void ChromeFileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
     return;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // The only check for content-URIs is that they are not from an internal
-  // FileProvider.
-  if (path_info.path.IsContentUri()) {
-    std::move(callback).Run(base::StartsWith(
-        path_info.path.value(),
-        base::StrCat(
-            {"content://", base::android::apk_info::package_name(), "."}),
-        base::CompareCase::INSENSITIVE_ASCII));
-    return;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Unlike the DIR_USER_DATA check, this handles the --user-data-dir override.
   // We check for the user data dir in two different ways: directly, via the
@@ -2788,10 +2667,8 @@ void ChromeFileSystemAccessPermissionContext::OnAllTabsInBackgroundTimerExpired(
     const OneTimePermissionsTrackerObserver::BackgroundExpiryType&
         expiry_type) {
   if (
-#if !BUILDFLAG(IS_ANDROID)
       !base::FeatureList::IsEnabled(
           features::kFileSystemAccessPersistentPermissions) ||
-#endif
       expiry_type != BackgroundExpiryType::kLongTimeout) {
     return;
   }
@@ -2813,7 +2690,6 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
   one_time_permissions_tracker_.Reset();
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
     const webapps::AppId& app_id) {
   if (!base::FeatureList::IsEnabled(
@@ -2913,7 +2789,6 @@ void ChromeFileSystemAccessPermissionContext::
     OnWebAppInstallManagerDestroyed() {
   install_manager_observation_.Reset();
 }
-#endif
 
 void ChromeFileSystemAccessPermissionContext::NavigatedAwayFromOrigin(
     const url::Origin& origin) {
@@ -2954,27 +2829,6 @@ void ChromeFileSystemAccessPermissionContext::MaybeCleanupPermissions(
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // Iterate over all top-level frames by iterating over all tabs in all browser
   // windows. This also counts PWAs in windows without tab strips.
-#if BUILDFLAG(IS_ANDROID)
-  for (TabModel* tabs : TabModelList::models()) {
-    if (tabs->GetProfile() != profile()) {
-      continue;
-    }
-    int tab_count = tabs->GetTabCount();
-    for (int i = 0; i < tab_count; ++i) {
-      content::WebContents* web_contents = tabs->GetWebContentsAt(i);
-      if (!web_contents) {
-        continue;
-      }
-      url::Origin tab_origin = url::Origin::Create(
-          permissions::PermissionUtil::GetLastCommittedOriginAsURL(
-              web_contents->GetPrimaryMainFrame()));
-      // Found a tab for this origin, so early exit and don't revoke grants.
-      if (tab_origin == origin) {
-        return;
-      }
-    }
-  }
-#else
   bool found_origin = false;
   ForEachCurrentBrowserWindowInterfaceOrderedByActivation(
       [this, &origin,
@@ -3003,7 +2857,6 @@ void ChromeFileSystemAccessPermissionContext::MaybeCleanupPermissions(
   if (found_origin) {
     return;
   }
-#endif
 
   CleanupPermissions(origin);
 }
@@ -3171,11 +3024,6 @@ bool ChromeFileSystemAccessPermissionContext::
         HandleType handle_type,
         UserAction user_action,
         GrantType grant_type) {
-#if BUILDFLAG(IS_ANDROID)
-  // TODO(crbug.com/40101963): Enable when android persisted permissions are
-  // implemented.
-  return false;
-#else
   if (!base::FeatureList::IsEnabled(
           features::kFileSystemAccessPersistentPermissions)) {
     return false;
@@ -3225,7 +3073,6 @@ bool ChromeFileSystemAccessPermissionContext::
   }
 
   return false;
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
@@ -3393,11 +3240,6 @@ bool ChromeFileSystemAccessPermissionContext::OriginHasExtendedPermission(
     const url::Origin& origin) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-#if BUILDFLAG(IS_ANDROID)
-  // TODO(crbug.com/40101963): Enable when android persisted permissions are
-  // implemented.
-  return false;
-#else
   if (!base::FeatureList::IsEnabled(
           features::kFileSystemAccessPersistentPermissions)) {
     return false;
@@ -3440,7 +3282,6 @@ bool ChromeFileSystemAccessPermissionContext::OriginHasExtendedPermission(
                                             ? WebAppInstallStatus::kInstalled
                                             : WebAppInstallStatus::kUninstalled;
   return app_has_os_integration;
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void ChromeFileSystemAccessPermissionContext::SetOriginExtendedPermissionByUser(
@@ -3602,7 +3443,6 @@ void ChromeFileSystemAccessPermissionContext::ScheduleUsageIconUpdate() {
 void ChromeFileSystemAccessPermissionContext::DoUsageIconUpdate() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   usage_icon_update_scheduled_ = false;
-#if !BUILDFLAG(IS_ANDROID)
   ForEachCurrentBrowserWindowInterfaceOrderedByActivation(
       [this](BrowserWindowInterface* browser_window_interface) {
         if (browser_window_interface->GetProfile() != profile()) {
@@ -3628,7 +3468,6 @@ void ChromeFileSystemAccessPermissionContext::DoUsageIconUpdate() {
         }
         return true;
       });
-#endif
 }
 
 base::WeakPtr<ChromeFileSystemAccessPermissionContext>
@@ -3636,7 +3475,6 @@ ChromeFileSystemAccessPermissionContext::GetWeakPtr() {
   return weak_factory_.GetWeakPtr();
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void ChromeFileSystemAccessPermissionContext::UpdatePageAction(
     FileSystemAccessPageActionController* controller) {
   CHECK(controller);
@@ -3652,4 +3490,3 @@ bool ChromeFileSystemAccessPermissionContext::
   }
   return it->second.downgraded_read_paths.count(path) > 0;
 }
-#endif

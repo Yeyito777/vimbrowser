@@ -37,9 +37,6 @@
 #include "media/base/timestamp_constants.h"
 #include "media/base/video_decoder_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "media/base/win/mf_feature_checks.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 static const double kDefaultPlaybackRate = 0.0;
 static const float kDefaultVolume = 1.0f;
@@ -718,19 +715,6 @@ void PipelineImpl::RendererWrapper::CreateRendererInternal(
 
   std::optional<RendererType> renderer_type;
 
-#if BUILDFLAG(IS_WIN)
-  if (cdm_context_) {
-    if (cdm_context_->RequiresMediaFoundationRenderer()) {
-      renderer_type = RendererType::kMediaFoundation;
-    } else if (media::SupportMediaFoundationClearPlayback()) {
-      // When MediaFoundation for Clear is enabled, the base renderer
-      // type is set to MediaFoundation. In order to ensure DRM systems
-      // built on non-Media Foundation pipelines continue to work we
-      // explicitly set renderer_type to Default.
-      renderer_type = RendererType::kRendererImpl;
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   // During Resume(), the |default_renderer_| might already match the
   // |renderer_type|, in which case we shouldn't need to create a new one.

@@ -20,12 +20,6 @@ inline constexpr char kClearKeyKeySystemNameForUMA[] = "ClearKey";
 // UUID from http://dashif.org/identifiers/content_protection/. UUIDs are used
 // in Android for creating MediaDRM objects that support the DRM scheme required
 // by content.
-#if BUILDFLAG(IS_ANDROID)
-inline const uint8_t kClearKeyUuid[16] = {
-    0xE2, 0x71, 0x9D, 0x58, 0xA9, 0x85, 0xB3, 0xC9,  //
-    0x78, 0x1A, 0xB0, 0X30, 0xAF, 0x78, 0xD3, 0x0E   //
-};
-#endif
 
 // External Clear Key key system ("org.chromium.externalclearkey" and variants)
 // only for testing.
@@ -38,14 +32,6 @@ inline constexpr char kExternalClearKeyKeySystem[] =
 // - media/test/data/eme_player_js/player_utils.js
 // - CreateCdmInstance() in clear_key_cdm.cc
 
-#if BUILDFLAG(IS_WIN)
-// MediaFoundation Clear Key key system only for testing.
-inline constexpr char kMediaFoundationClearKeyKeySystem[] =
-    "org.chromium.externalclearkey.mediafoundation";
-
-inline constexpr wchar_t kMediaFoundationClearKeyKeySystemWideString[] =
-    L"org.chromium.externalclearkey.mediafoundation";
-#endif  // BUILDFLAG(IS_WIN)
 
 // A sub key system that is invalid for testing purpose.
 inline constexpr char kExternalClearKeyInvalidKeySystem[] =
@@ -92,24 +78,12 @@ inline constexpr char kExternalClearKeyDifferentCdmTypeTestKeySystem[] =
 inline constexpr char kClearKeyCdmLibraryName[] = "clearkeycdm";
 
 inline constexpr char kClearKeyCdmBaseDirectory[] =
-#if BUILDFLAG(IS_FUCHSIA)
-    "lib/"
-#endif
     "ClearKeyCdm";
 
 // Display name for Clear Key CDM.
 inline constexpr char kClearKeyCdmDisplayName[] = "Clear Key CDM";
 #endif  // BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
-#if BUILDFLAG(IS_WIN)
-// Name of the MediaFoundation ClearKey CDM library.
-inline constexpr char kMediaFoundationClearKeyCdmLibraryName[] =
-    "MediaFoundation.ClearKey.CDM";
-
-// Display name for MediaFoundation Clear Key CDM.
-inline constexpr char kMediaFoundationClearKeyCdmDisplayName[] =
-    "Media Foundation Clear Key CDM";
-#endif  // BUILDFLAG(IS_WIN)
 
 // The default GUID for Clear Key Cdm.
 const CdmType kClearKeyCdmType{0x3a2e0fadde4bd1b7ull, 0xcb90df3e240d1694ull};
@@ -119,11 +93,6 @@ const CdmType kClearKeyCdmType{0x3a2e0fadde4bd1b7ull, 0xcb90df3e240d1694ull};
 const CdmType kClearKeyCdmDifferentCdmType{0xc3914773474bdb02ull,
                                            0x8e8de4d84d3ca030ull};
 
-#if BUILDFLAG(IS_WIN)
-// The default GUID for MediaFoundation Clear Key Cdm.
-const CdmType kMediaFoundationClearKeyCdmType{0xbec8776b734d80faull,
-                                              0xdff8375bb3cb3df8ull};
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace media
 

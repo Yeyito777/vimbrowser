@@ -13,10 +13,6 @@
 #include "chrome/browser/extensions/api/braille_display_private/braille_controller.h"
 #include "chrome/browser/profiles/profile.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/accessibility/accessibility_manager.h"
-#include "extensions/browser/extensions_browser_client.h"
-#endif
 
 namespace OnDisplayStateChanged =
     extensions::api::braille_display_private::OnDisplayStateChanged;
@@ -84,11 +80,7 @@ void BrailleDisplayPrivateAPI::OnBrailleKeyEvent(const KeyEvent& key_event) {
 }
 
 bool BrailleDisplayPrivateAPI::IsProfileActive() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return extensions::ExtensionsBrowserClient::Get()->IsActiveContext(profile_);
-#else  // !BUILDFLAG(IS_CHROMEOS)
   return true;
-#endif
 }
 
 void BrailleDisplayPrivateAPI::SetEventDelegateForTest(
@@ -186,16 +178,7 @@ void BrailleDisplayPrivateWriteDotsFunction::WriteDotsOnIO() {
 
 ExtensionFunction::ResponseAction
 BrailleDisplayPrivateUpdateBluetoothBrailleDisplayAddressFunction::Run() {
-#if BUILDFLAG(IS_CHROMEOS)
-  EXTENSION_FUNCTION_VALIDATE(args().size() >= 1);
-  EXTENSION_FUNCTION_VALIDATE(args()[0].is_string());
-  const std::string& address = args()[0].GetString();
-  ash::AccessibilityManager::Get()->UpdateBluetoothBrailleDisplayAddress(
-      address);
-  return RespondNow(NoArguments());
-#else
   NOTREACHED();
-#endif
 }
 
 }  // namespace api

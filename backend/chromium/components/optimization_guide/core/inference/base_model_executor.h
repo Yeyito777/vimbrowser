@@ -64,14 +64,9 @@ class BaseModelExecutor : public TFLiteModelExecutor<OutputType, InputType>,
     std::unique_ptr<tflite::task::core::TfLiteEngine> tflite_engine =
         std::make_unique<tflite::task::core::TfLiteEngine>(
             std::make_unique<TFLiteOpResolver>());
-#if BUILDFLAG(IS_WIN)
-    absl::Status model_load_status =
-        tflite_engine->BuildModelFromFileHandle(model_file.GetPlatformFile());
-#else
     absl::Status model_load_status =
         tflite_engine->BuildModelFromFileDescriptor(
             model_file.GetPlatformFile());
-#endif
     if (!model_load_status.ok()) {
       DLOG(ERROR) << "Failed to load model: " << model_load_status.ToString();
       return base::unexpected(ExecutionStatus::kErrorModelFileNotValid);

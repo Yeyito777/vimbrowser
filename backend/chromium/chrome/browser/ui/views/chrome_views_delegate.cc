@@ -26,14 +26,6 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/experiences/arc/touch_selection_menu/touch_selection_menu_runner_chromeos.h"
-#include "chromeos/ui/base/app_types.h"
-#include "chromeos/ui/base/window_properties.h"
-#include "chromeos/ui/frame/frame_utils.h"
-#include "ui/aura/client/aura_constants.h"
-#include "ui/views/widget/widget_delegate.h"
-#endif
 
 // Helpers --------------------------------------------------------------------
 
@@ -67,15 +59,6 @@ PrefService* GetPrefsForWindow(const views::Widget* window) {
 // ChromeViewsDelegate --------------------------------------------------------
 
 ChromeViewsDelegate::ChromeViewsDelegate() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // ViewsDelegate's constructor may have created a menu runner already, and
-  // since TouchSelectionMenuRunner is a singleton with checks to not
-  // initialize it if there is already an existing runner we need to first
-  // destroy runner before we can create the ChromeOS specific instance.
-  SetTouchSelectionMenuRunner(nullptr);
-  SetTouchSelectionMenuRunner(
-      std::make_unique<TouchSelectionMenuRunnerChromeOS>());
-#endif
 }
 
 ChromeViewsDelegate::~ChromeViewsDelegate() {
@@ -138,9 +121,6 @@ bool ChromeViewsDelegate::GetSavedWindowPlacement(
   *show_state = maximized ? ui::mojom::WindowShowState::kMaximized
                           : ui::mojom::WindowShowState::kNormal;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  AdjustSavedWindowPlacementChromeOS(widget, bounds);
-#endif
   return true;
 }
 
@@ -184,26 +164,10 @@ void ChromeViewsDelegate::ReleaseRef() {
 void ChromeViewsDelegate::OnBeforeWidgetInit(
     views::Widget::InitParams* params,
     views::internal::NativeWidgetDelegate* delegate) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Only for dialog widgets, if this is not going to be a transient child,
-  // then we mark it as an OS system app, otherwise its transient root's app
-  // type should be used.
-  // `delegate->IsDialogBox()` does not work because the underlying Widget
-  // does not have its widget delegate set before `OnBeforeWidgetInit`.
-  if (params->delegate && params->delegate->AsDialogDelegate() &&
-      !params->parent) {
-    params->init_properties_container.SetProperty(
-        chromeos::kAppTypeKey, chromeos::AppType::SYSTEM_APP);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // We need to determine opacity if it's not already specified.
   if (params->opacity == views::Widget::InitParams::WindowOpacity::kInferred) {
-#if BUILDFLAG(IS_CHROMEOS)
-    chromeos::ResolveInferredOpacity(params);
-#else
     params->opacity = views::Widget::InitParams::WindowOpacity::kOpaque;
-#endif
   }
 
   // If we already have a native_widget, we don't have to try to come

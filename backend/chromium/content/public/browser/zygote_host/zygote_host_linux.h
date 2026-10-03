@@ -10,9 +10,6 @@
 #include "base/process/process.h"
 #include "content/common/content_export.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/files/platform_file.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace content {
 
@@ -40,12 +37,6 @@ class ZygoteHost {
   virtual void AdjustRendererOOMScore(base::ProcessHandle process_handle,
                                       int score) = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Reinitialize logging for the Zygote processes. Needed on ChromeOS, which
-  // switches to a log file in the user's home directory once they log in.
-  virtual void ReinitializeLogging(uint32_t logging_dest,
-                                   base::PlatformFile log_file_fd) = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace content

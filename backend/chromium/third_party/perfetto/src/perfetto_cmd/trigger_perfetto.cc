@@ -21,7 +21,6 @@
 #include "perfetto/ext/base/getopt.h"
 #include "perfetto/ext/base/lock_free_task_runner.h"
 #include "perfetto/ext/traced/traced.h"
-#include "src/android_stats/statsd_logging_helper.h"
 #include "src/perfetto_cmd/trigger_producer.h"
 
 namespace perfetto {

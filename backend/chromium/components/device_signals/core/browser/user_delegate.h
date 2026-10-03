@@ -38,11 +38,6 @@ class UserDelegate {
 
   virtual ~UserDelegate() = default;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Returns true if the browser is currently executing in the context of the
-  // ChromeOS sign-in screen.
-  virtual bool IsSigninContext() const = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Returns true if the current browser user is managed by an organization that
   // is affiliated with the organization managing the device.

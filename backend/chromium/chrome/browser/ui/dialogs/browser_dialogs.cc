@@ -14,11 +14,6 @@
 #include "ui/shell_dialogs/selected_file_info.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/public/browser/web_contents.h"
-#include "ui/android/modal_dialog_wrapper.h"
-#include "ui/android/window_android.h"
-#endif
 
 namespace chrome {
 
@@ -37,12 +32,6 @@ void ShowWindowNamePromptForTesting(Browser* browser,
 void ShowTabModal(std::unique_ptr<ui::DialogModel> dialog_model,
                   content::WebContents* web_contents) {
   constrained_window::ShowWebModal(std::move(dialog_model), web_contents);
-}
-#elif BUILDFLAG(IS_ANDROID)
-void ShowTabModal(std::unique_ptr<ui::DialogModel> dialog_model,
-                  content::WebContents* web_contents) {
-  ui::WindowAndroid* window = web_contents->GetTopLevelNativeWindow();
-  ui::ModalDialogWrapper::ShowTabModal(std::move(dialog_model), window);
 }
 #endif
 

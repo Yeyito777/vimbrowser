@@ -13,11 +13,6 @@
 #include <unistd.h>
 #endif  // BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/win/security_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace mojo {
 namespace {
@@ -28,18 +23,7 @@ namespace {
 // On platforms where we cannot test the handle, always returns true.
 bool IsReadOnlyFile(base::File& file) {
   bool is_readonly = true;
-#if BUILDFLAG(IS_WIN)
-  std::optional<ACCESS_MASK> flags =
-      base::win::GetGrantedAccess(file.GetPlatformFile());
-  if (!flags.has_value()) {
-    return false;
-  }
-  // Cannot use GENERIC_WRITE as that includes SYNCHRONIZE.
-  // This is ~(all the writable permissions).
-  is_readonly = !(flags.value() &
-                  (FILE_APPEND_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_DATA |
-                   FILE_WRITE_EA | WRITE_DAC | WRITE_OWNER | DELETE));
-#elif BUILDFLAG(IS_FUCHSIA) || (BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_AIX))
+#if BUILDFLAG(IS_FUCHSIA) || (BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_AIX))
   is_readonly =
       (fcntl(file.GetPlatformFile(), F_GETFL) & O_ACCMODE) == O_RDONLY;
 #endif
@@ -47,11 +31,6 @@ bool IsReadOnlyFile(base::File& file) {
 }
 
 bool IsPhysicalFile(base::File& file) {
-#if BUILDFLAG(IS_WIN)
-  // Verify if this is a real file (not a socket/pipe etc.).
-  DWORD type = GetFileType(file.GetPlatformFile());
-  return type == FILE_TYPE_DISK;
-#else
   // This may block but in practice this is unlikely for already opened
   // physical files.
   struct stat st;
@@ -59,7 +38,6 @@ bool IsPhysicalFile(base::File& file) {
     return false;
   }
   return S_ISREG(st.st_mode);
-#endif
 }
 
 }  // namespace

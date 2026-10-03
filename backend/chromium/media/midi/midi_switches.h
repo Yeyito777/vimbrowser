@@ -14,9 +14,6 @@
 namespace midi {
 namespace features {
 
-#if BUILDFLAG(IS_WIN)
-MIDI_EXPORT BASE_DECLARE_FEATURE(kMidiManagerWinrt);
-#endif
 
 }  // namespace features
 }  // namespace midi

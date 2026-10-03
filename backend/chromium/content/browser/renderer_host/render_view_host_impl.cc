@@ -107,15 +107,8 @@
 #include "ui/native_theme/features/native_theme_features.h"
 #include "url/url_constants.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#include "ui/gfx/geometry/dip_util.h"
-#include "ui/gfx/system_fonts_win.h"
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "content/browser/host_zoom_map_impl.h"
-#endif
 
 using blink::WebInputEvent;
 
@@ -133,16 +126,6 @@ RoutingIDViewMap& GetRoutingIDViewMap() {
   return *routing_id_view_map;
 }
 
-#if BUILDFLAG(IS_WIN)
-// Fetches the name and font size of a particular Windows system font.
-void GetFontInfo(gfx::win::SystemFont system_font,
-                 std::u16string* name,
-                 int32_t* size) {
-  const gfx::Font& font = gfx::win::GetSystemFont(system_font);
-  *name = base::UTF8ToUTF16(font.GetFontName());
-  *size = font.GetFontSize();
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 // Set of RenderViewHostImpl* that can be attached as UserData to a
 // RenderProcessHost. Used to keep track of whether any RenderViewHostImpl
@@ -251,31 +234,7 @@ RenderViewHostImpl* RenderViewHostImpl::From(RenderWidgetHost* rwh) {
 // static
 void RenderViewHostImpl::GetPlatformSpecificPrefs(
     blink::RendererPreferences* prefs) {
-#if BUILDFLAG(IS_WIN)
-  // Note that what is called "height" in this struct is actually the font size;
-  // font "height" typically includes ascender, descender, and padding and is
-  // often a third or so larger than the given font size.
-  GetFontInfo(gfx::win::SystemFont::kCaption, &prefs->caption_font_family_name,
-              &prefs->caption_font_height);
-  GetFontInfo(gfx::win::SystemFont::kSmallCaption,
-              &prefs->small_caption_font_family_name,
-              &prefs->small_caption_font_height);
-  GetFontInfo(gfx::win::SystemFont::kMenu, &prefs->menu_font_family_name,
-              &prefs->menu_font_height);
-  GetFontInfo(gfx::win::SystemFont::kMessage, &prefs->message_font_family_name,
-              &prefs->message_font_height);
-  GetFontInfo(gfx::win::SystemFont::kStatus, &prefs->status_font_family_name,
-              &prefs->status_font_height);
-
-  prefs->vertical_scroll_bar_width_in_dips =
-      display::win::GetScreenWin()->GetSystemMetricsInDIP(SM_CXVSCROLL);
-  prefs->horizontal_scroll_bar_height_in_dips =
-      display::win::GetScreenWin()->GetSystemMetricsInDIP(SM_CYHSCROLL);
-  prefs->arrow_bitmap_height_vertical_scroll_bar_in_dips =
-      display::win::GetScreenWin()->GetSystemMetricsInDIP(SM_CYVSCROLL);
-  prefs->arrow_bitmap_width_horizontal_scroll_bar_in_dips =
-      display::win::GetScreenWin()->GetSystemMetricsInDIP(SM_CXHSCROLL);
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kSystemFontFamily)) {
     prefs->system_font_family_name =
@@ -283,11 +242,6 @@ void RenderViewHostImpl::GetPlatformSpecificPrefs(
   } else {
     prefs->system_font_family_name = gfx::Font().GetFontName();
   }
-#elif BUILDFLAG(IS_FUCHSIA)
-  // Make Blink's "focus ring" invisible. The focus ring is a hairline border
-  // that's rendered around clickable targets.
-  // TODO(crbug.com/40124608): Consider exposing this as a FIDL parameter.
-  prefs->focus_ring_color = SK_AlphaTRANSPARENT;
 #endif
 #if BUILDFLAG(IS_OZONE)
   prefs->selection_clipboard_buffer_available =

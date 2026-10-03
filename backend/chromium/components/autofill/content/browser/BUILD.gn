@@ -79,9 +79,7 @@ static_library("browser") {
   ]
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
-  if (!is_android) {
-    deps += [ "//components/webauthn/content/browser" ]
-  }
+  deps += [ "//components/webauthn/content/browser" ]
 }
 
 proto_library("risk_proto") {
@@ -107,12 +105,10 @@ source_set("test_support") {
   ]
 
   # iOS port provides its own versions of test_autofill_manager_injector.h/mm.
-  if (!is_ios) {
-    sources += [
-      "test_autofill_manager_injector.cc",
-      "test_autofill_manager_injector.h",
-    ]
-  }
+  sources += [
+    "test_autofill_manager_injector.cc",
+    "test_autofill_manager_injector.h",
+  ]
 
   public_deps = [
     ":browser",

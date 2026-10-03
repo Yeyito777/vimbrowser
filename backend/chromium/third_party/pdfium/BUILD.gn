@@ -51,11 +51,6 @@ config("pdfium_common_config") {
     defines += [ "PDF_USE_PARTITION_ALLOC" ]
   }
 
-  if (is_win) {
-    # Assume UTF-8 by default to avoid code page dependencies.
-    cflags += [ "/utf-8" ]
-  }
-
   if (is_clang) {
     # Override -Wno-c++11-narrowing.
     cflags += [ "-Wc++11-narrowing" ]
@@ -258,14 +253,6 @@ component("pdfium") {
     ]
   }
 
-  if (is_win) {
-    libs += [
-      "advapi32.lib",
-      "gdi32.lib",
-      "user32.lib",
-    ]
-  }
-
   if (is_mac) {
     frameworks = [
       "AppKit.framework",
@@ -324,9 +311,7 @@ test("pdfium_unittests") {
     "//testing/gtest",
   ]
   configs += [ ":pdfium_core_config" ]
-  if (is_android) {
-    use_raw_android_executable = true
-  }
+
   if (pdf_enable_v8) {
     configs += [ "//v8:external_startup_data" ]
     deps += [
@@ -386,11 +371,6 @@ test("pdfium_embeddertests") {
   ]
   include_dirs = [ "testing/gmock/include" ]
   configs += [ ":pdfium_core_config" ]
-
-  if (is_android) {
-    ignore_all_data_deps = true
-    use_raw_android_executable = true
-  }
 
   if (build_with_chromium && pdf_use_skia) {
     deps += [ "testing:discardable_memory_allocator" ]
@@ -452,7 +432,7 @@ group("gn_check") {
 
   # TODO(crbug.com/pdfium/1832): Remove !is_android when //third_party/expat is
   # available.
-  if (defined(checkout_skia) && checkout_skia && !is_android) {
+  if (defined(checkout_skia) && checkout_skia) {
     deps += [ "//skia" ]
   }
 }

@@ -43,29 +43,6 @@ class COMPONENT_EXPORT(PRINTING) PrintedDocument
   PrintedDocument(const PrintedDocument&) = delete;
   PrintedDocument& operator=(const PrintedDocument&) = delete;
 
-#if BUILDFLAG(IS_WIN)
-  // Indicates that the PDF has been generated and the document is waiting for
-  // conversion for printing. This is needed on Windows so that the print job
-  // is not cancelled if the web contents dies before PDF conversion finishes.
-  // This is applicable when using the GDI print API.
-  void SetConvertingPdf();
-
-  // Sets a page's data. 0-based. Note: locks for a short amount of time.
-  void SetPage(uint32_t page_number,
-               std::unique_ptr<MetafilePlayer> metafile,
-               float shrink,
-               const gfx::Size& page_size,
-               const gfx::Rect& page_content_rect);
-
-  // Retrieves a page. If the page is not available right now, it
-  // requests to have this page be rendered and returns NULL.
-  // Note: locks for a short amount of time.
-  scoped_refptr<PrintedPage> GetPage(uint32_t page_number);
-
-  // Removes reference to a particular `page` based on its page number.
-  // Note: locks for a short amount of time.
-  void RemovePage(const PrintedPage* page);
-#endif  // BUILDFLAG(IS_WIN)
 
   // Sets the document data. Note: locks for a short amount of time.
   void SetDocument(std::unique_ptr<MetafilePlayer> metafile);
@@ -76,17 +53,6 @@ class COMPONENT_EXPORT(PRINTING) PrintedDocument
 
 // Draws the page in the context.
 // Note: locks for a short amount of time in debug only.
-#if BUILDFLAG(IS_WIN)
-  // This is applicable when using the Windows GDI print API.
-  mojom::ResultCode RenderPrintedPage(const PrintedPage& page,
-                                      PrintingContext* context) const;
-
-#if !defined(NDEBUG)
-  // Verifies that the page is intended to be printed for the document.
-  // Note: locks for a short amount of time.
-  bool IsPageInList(const PrintedPage& page) const;
-#endif  // !defined(NDEBUG)
-#endif  // BUILDFLAG(IS_WIN)
 
   // Draws the document in the context.  Fails if context->NewPage() or
   // context->PageDone() fails.
@@ -159,17 +125,6 @@ class COMPONENT_EXPORT(PRINTING) PrintedDocument
 
     std::unique_ptr<MetafilePlayer> metafile_;
 
-#if BUILDFLAG(IS_WIN)
-    // Contains the pages' representation. This is a collection of PrintedPage.
-    // Warning: Lock must be held when accessing this member.
-    // This is applicable when using the Windows GDI print API which has the
-    // extra conversion step from PDF to EMF prior to sending to device.
-    // The metafile_ field is not used in this scenario.
-    PrintedPages pages_;
-
-    // Whether the PDF is being converted for printing.
-    bool converting_pdf_ = false;
-#endif
   };
 
   // Contains all the immutable stuff. All this stuff can be accessed without

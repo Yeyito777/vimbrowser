@@ -13,9 +13,6 @@
 #include "build/build_config.h"
 #include "components/policy/policy_export.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace base {
 class Value;
@@ -78,17 +75,6 @@ class POLICY_EXPORT RegistryDict {
   // Swap with |other|.
   void Swap(RegistryDict* other);
 
-#if BUILDFLAG(IS_WIN)
-  // Read a Windows registry subtree into this registry dictionary object.
-  void ReadRegistry(HKEY hive, const std::wstring& root);
-
-  // Converts the dictionary to base::Value representation. For key/value name
-  // collisions, the key wins. |schema| is used to determine the expected type
-  // for each policy.
-  // The underlying data of the returned object is either a base::DictValue or
-  // a base::ListValue.
-  std::optional<base::Value> ConvertToJSON(const class Schema& schema) const;
-#endif
 
   const KeyMap& keys() const { return keys_; }
   const ValueMap& values() const { return values_; }

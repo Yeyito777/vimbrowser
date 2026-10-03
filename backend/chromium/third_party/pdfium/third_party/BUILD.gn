@@ -465,10 +465,6 @@ if (pdf_enable_xfa_tiff) {
         "//build/config/compiler:no_chromium_code",
         ":pdfium_third_party_config",
       ]
-      if (is_win) {
-        # Need to undefine the macro since it is redefined in tif_jpeg.c.
-        configs -= [ "//build/config/win:lean_and_mean" ]
-      }
       deps = [
         ":zlib",
         "../core/fxcrt",

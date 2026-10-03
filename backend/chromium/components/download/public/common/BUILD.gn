@@ -4,12 +4,6 @@
 
 import("//mojo/public/tools/bindings/mojom.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 config("components_download_implementation") {
   defines = [ "COMPONENTS_DOWNLOAD_IMPLEMENTATION" ]
 }
@@ -112,36 +106,10 @@ component("public") {
     ldflags = [ "/IGNORE:4217" ]
   }
 
-  if (is_android) {
-    sources += [
-      "android/auto_resumption_handler.cc",
-      "android/auto_resumption_handler.h",
-    ]
-  }
-
   if (is_win || is_mac) {
     sources += [
       "desktop/desktop_auto_resumption_handler.cc",
       "desktop/desktop_auto_resumption_handler.h",
-    ]
-  }
-}
-
-if (is_android) {
-  android_library("public_java") {
-    srcjar_deps = [ ":jni_enums" ]
-
-    deps = [
-      "//components/download/internal/common:internal_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-    ]
-  }
-
-  java_cpp_enum("jni_enums") {
-    sources = [
-      "download_danger_type.h",
-      "download_item.h",
-      "resume_mode.h",
     ]
   }
 }
@@ -185,10 +153,6 @@ source_set("unit_tests") {
   testonly = true
 
   sources = []
-
-  if (is_android) {
-    sources += [ "android/auto_resumption_handler_unittest.cc" ]
-  }
 
   if (is_win || is_mac) {
     sources += [ "desktop/desktop_auto_resumption_handler_unittest.cc" ]

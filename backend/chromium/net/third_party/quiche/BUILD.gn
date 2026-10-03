@@ -349,112 +349,110 @@ static_library("quiche_tool_support") {
 }
 
 # QUICHE-provided CLI tools that don't use epoll.
-if (!is_ios) {
-  # The two libraries below, quic_client_core and quic_server_core, define
-  # mutually exclusive command-line flags, and thus any target depending
-  # directly on both will fail to build.  Only executable targets should depend
-  # on those.
-  source_set("quic_client_core") {
-    testonly = true
+# The two libraries below, quic_client_core and quic_server_core, define
+# mutually exclusive command-line flags, and thus any target depending
+# directly on both will fail to build.  Only executable targets should depend
+# on those.
+source_set("quic_client_core") {
+  testonly = true
 
-    sources = [
-      "src/quiche/quic/tools/quic_toy_client.cc",
-      "src/quiche/quic/tools/quic_toy_client.h",
-    ]
+  sources = [
+    "src/quiche/quic/tools/quic_toy_client.cc",
+    "src/quiche/quic/tools/quic_toy_client.h",
+  ]
 
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
+  configs += [ ":quiche_internal_config" ]
+  public_configs = [ ":quiche_config" ]
 
-    deps = [
-      "//net",
-      "//net:quic_test_tools",
-      "//net:simple_quic_tools",
-    ]
-  }
-  source_set("quic_server_core") {
-    testonly = true
-    sources = [
-      "src/quiche/quic/tools/quic_toy_server.cc",
-      "src/quiche/quic/tools/quic_toy_server.h",
-    ]
+  deps = [
+    "//net",
+    "//net:quic_test_tools",
+    "//net:simple_quic_tools",
+  ]
+}
+source_set("quic_server_core") {
+  testonly = true
+  sources = [
+    "src/quiche/quic/tools/quic_toy_server.cc",
+    "src/quiche/quic/tools/quic_toy_server.h",
+  ]
 
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
+  configs += [ ":quiche_internal_config" ]
+  public_configs = [ ":quiche_config" ]
 
-    deps = [
-      "//net",
-      "//net:simple_quic_tools",
-    ]
-  }
+  deps = [
+    "//net",
+    "//net:simple_quic_tools",
+  ]
+}
 
-  executable("quic_packet_printer") {
-    testonly = true
+executable("quic_packet_printer") {
+  testonly = true
 
-    sources = [ "src/quiche/quic/tools/quic_packet_printer_bin.cc" ]
+  sources = [ "src/quiche/quic/tools/quic_packet_printer_bin.cc" ]
 
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
+  configs += [ ":quiche_internal_config" ]
+  public_configs = [ ":quiche_config" ]
 
-    deps = [
-      "//base",
-      "//build/win:default_exe_manifest",
-      "//net",
-      "//net:simple_quic_tools",
-      "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
-    ]
-  }
+  deps = [
+    "//base",
+    "//build/win:default_exe_manifest",
+    "//net",
+    "//net:simple_quic_tools",
+    "//third_party/boringssl",
+    "//third_party/protobuf:protobuf_lite",
+  ]
+}
 
-  executable("quic_crypto_message_printer") {
-    testonly = true
+executable("quic_crypto_message_printer") {
+  testonly = true
 
-    sources = [ "src/quiche/quic/tools/crypto_message_printer_bin.cc" ]
+  sources = [ "src/quiche/quic/tools/crypto_message_printer_bin.cc" ]
 
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
+  configs += [ ":quiche_internal_config" ]
+  public_configs = [ ":quiche_config" ]
 
-    deps = [
-      "//base",
-      "//build/win:default_exe_manifest",
-      "//net",
-      "//net:simple_quic_tools",
-      "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
-    ]
-  }
+  deps = [
+    "//base",
+    "//build/win:default_exe_manifest",
+    "//net",
+    "//net:simple_quic_tools",
+    "//third_party/boringssl",
+    "//third_party/protobuf:protobuf_lite",
+  ]
+}
 
-  executable("quic_reject_reason_decoder") {
-    testonly = true
-    sources = [ "src/quiche/quic/tools/quic_reject_reason_decoder_bin.cc" ]
+executable("quic_reject_reason_decoder") {
+  testonly = true
+  sources = [ "src/quiche/quic/tools/quic_reject_reason_decoder_bin.cc" ]
 
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
+  configs += [ ":quiche_internal_config" ]
+  public_configs = [ ":quiche_config" ]
 
-    deps = [
-      "//base",
-      "//build/win:default_exe_manifest",
-      "//net",
-      "//net:simple_quic_tools",
-      "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
-    ]
-  }
+  deps = [
+    "//base",
+    "//build/win:default_exe_manifest",
+    "//net",
+    "//net:simple_quic_tools",
+    "//third_party/boringssl",
+    "//third_party/protobuf:protobuf_lite",
+  ]
+}
 
-  executable("qpack_offline_decoder") {
-    testonly = true
+executable("qpack_offline_decoder") {
+  testonly = true
 
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
+  configs += [ ":quiche_internal_config" ]
+  public_configs = [ ":quiche_config" ]
 
-    sources = [ "src/quiche/quic/tools/qpack_offline_decoder_bin.cc" ]
-    deps = [
-      "//base",
-      "//net",
-      "//net:quic_test_tools",
-      "//net:simple_quic_tools",
-      "//testing/gmock",
-    ]
-  }
+  sources = [ "src/quiche/quic/tools/qpack_offline_decoder_bin.cc" ]
+  deps = [
+    "//base",
+    "//net",
+    "//net:quic_test_tools",
+    "//net:simple_quic_tools",
+    "//testing/gmock",
+  ]
 }
 
 bundle_data("test_data") {
@@ -764,9 +762,6 @@ source_set("quiche_tests") {
     "//testing/gtest",
     "//third_party/fuzztest",
   ]
-  if (is_ios) {
-    deps += [ ":test_data" ]
-  }
   public_deps = []
 
   if (build_epoll_based_tools) {

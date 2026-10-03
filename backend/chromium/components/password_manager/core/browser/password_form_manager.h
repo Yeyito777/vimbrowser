@@ -244,30 +244,6 @@ class PasswordFormManager : public PasswordFormManagerForUI,
   // `GetFrameId()` in PasswordManagerDriver for more details.
   int GetFrameId();
 
-#if BUILDFLAG(IS_IOS)
-  // Sets a value of the field with |field_identifier| of |observed_form()|
-  // to |field_value|. In case if there is a presaved credential this function
-  // updates the presaved credential.
-  void UpdateStateOnUserInput(autofill::FormRendererId form_id,
-                              autofill::FieldRendererId field_id,
-                              const std::u16string& field_value);
-
-  void SetDriver(const base::WeakPtr<PasswordManagerDriver>& driver);
-
-  // Copies all known field data from FieldDataManager to |observed_form()|
-  // and provisionally saves the manager if the relevant data is found.
-  void ProvisionallySaveFieldDataManagerInfo(
-      const autofill::FieldDataManager& field_data_manager,
-      const PasswordManagerDriver* driver,
-      const base::LRUCache<PossibleUsernameFieldIdentifier,
-                           PossibleUsernameData>& possible_usernames);
-
-  // Checks if `this` can be inspected for submission detection after unowned
-  // form fields were removed. Only to be used on formless form managers.
-  bool AreRemovedUnownedFieldsValidForSubmissionDetection(
-      const std::set<autofill::FieldRendererId>& removed_fields,
-      const autofill::FieldDataManager& field_data_manager) const;
-#endif  // BUILDFLAG(IS_IOS)
 
   // Create a copy of |*this| which can be passed to the code handling
   // save-password related UI. This omits some parts of the internal data, so

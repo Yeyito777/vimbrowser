@@ -32,27 +32,6 @@ PoisonMetadataRecorder::PoisonMetadataRecorder(LightweightDetectorMode mode,
       std::make_unique<LightweightDetectorState::SlotMetadata[]>(num_metadata);
   state_.metadata_addr = reinterpret_cast<uintptr_t>(metadata_.get());
 
-#if BUILDFLAG(IS_ANDROID)
-  // Explicitly allow memory ranges the crash_handler needs to read. This is
-  // required for WebView because it has a stricter set of privacy constraints
-  // on what it reads from the crashing process.
-  for (auto& memory_region : GetInternalMemoryRegions()) {
-    crash_reporter::AllowMemoryRange(memory_region.first, memory_region.second);
-  }
-#elif BUILDFLAG(IS_IOS)
-  // Explicitly add internal memory regions to Crashpad's iOS intermediate dump
-  // handler.
-  crashpad::SimpleAddressRangeBag* ios_extra_ranges =
-      crash_reporter::IntermediateDumpExtraMemoryRanges();
-  if (ios_extra_ranges) {
-    for (auto& memory_region : GetInternalMemoryRegions()) {
-      if (!ios_extra_ranges->Insert(memory_region.first,
-                                    memory_region.second)) {
-        DLOG(ERROR) << "Failed to add InternalMemoryRegions to Crashpad.";
-      }
-    }
-  }
-#endif
 }
 
 PoisonMetadataRecorder::~PoisonMetadataRecorder() = default;

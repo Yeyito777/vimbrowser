@@ -49,7 +49,6 @@
 #include "pdf/test/mouse_event_builder.h"
 #include "pdf/test/test_helpers.h"
 #include "pdf/test/test_pdfium_engine.h"
-#include "printing/metafile_skia.h"
 #include "printing/units.h"
 #include "services/network/public/mojom/referrer_policy.mojom-shared.h"
 #include "services/screen_ai/buildflags/buildflags.h"
@@ -74,7 +73,6 @@
 #include "third_party/blink/public/web/web_associated_url_loader_client.h"
 #include "third_party/blink/public/web/web_plugin_container.h"
 #include "third_party/blink/public/web/web_plugin_params.h"
-#include "third_party/blink/public/web/web_print_params.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/skia/include/core/SkColor.h"
@@ -662,16 +660,6 @@ TEST_F(PdfViewWebPluginWithoutInitializeTest, InitializeWithEmptyUrl) {
   EXPECT_FALSE(plugin_->InitializeForTesting());
 }
 
-TEST_F(PdfViewWebPluginWithoutInitializeTest, InitializeForPrintPreview) {
-  SetUpPluginWithUrl("about:blank");
-
-  EXPECT_CALL(*client_ptr_, GetEmbedderOriginString)
-      .WillRepeatedly(Return("chrome://print/"));
-  EXPECT_CALL(*client_ptr_, CreateAssociatedURLLoader).Times(0);
-
-  EXPECT_TRUE(plugin_->InitializeForTesting());
-}
-
 TEST_F(PdfViewWebPluginWithoutInitializeTest,
        RecordSchemeIsFileMetricForHttps) {
   base::HistogramTester histograms;
@@ -703,8 +691,7 @@ TEST_F(PdfViewWebPluginTest, CreateUrlLoader) {
 
 TEST_F(PdfViewWebPluginFullFrameTest, CreateUrlLoader) {
   EXPECT_CALL(*client_ptr_, DidStartLoading);
-  EXPECT_CALL(pdf_host_, UpdateContentRestrictions(kContentRestrictionSave |
-                                                   kContentRestrictionPrint));
+  EXPECT_CALL(pdf_host_, UpdateContentRestrictions(kContentRestrictionSave));
   plugin_->CreateUrlLoader();
 
   EXPECT_EQ(PdfViewWebPlugin::DocumentLoadState::kLoading,
@@ -737,10 +724,6 @@ TEST_F(PdfViewWebPluginTest, DocumentLoadComplete) {
     "focused": "none",
   })")));
   ExpectUpdateTextInputState(blink::WebTextInputType::kWebTextInputTypeNone);
-  EXPECT_CALL(*client_ptr_, PostMessage(base::test::IsJson(R"({
-    "type": "printPreviewLoaded",
-  })")))
-      .Times(0);
   EXPECT_CALL(*accessibility_data_handler_ptr_, SetAccessibilityDocInfo)
       .Times(0);
   EXPECT_CALL(*client_ptr_, DidStopLoading).Times(0);
@@ -766,15 +749,10 @@ TEST_F(PdfViewWebPluginFullFrameTest, DocumentLoadComplete) {
     "focused": "none",
   })")));
   ExpectUpdateTextInputState(blink::WebTextInputType::kWebTextInputTypeNone);
-  EXPECT_CALL(*client_ptr_, PostMessage(base::test::IsJson(R"({
-    "type": "printPreviewLoaded",
-  })")))
-      .Times(0);
   EXPECT_CALL(*accessibility_data_handler_ptr_, SetAccessibilityDocInfo)
       .Times(0);
   EXPECT_CALL(*client_ptr_, DidStopLoading);
-  EXPECT_CALL(pdf_host_, UpdateContentRestrictions(kContentRestrictionPrint |
-                                                   kContentRestrictionPaste |
+  EXPECT_CALL(pdf_host_, UpdateContentRestrictions(kContentRestrictionPaste |
                                                    kContentRestrictionCut |
                                                    kContentRestrictionCopy));
   EXPECT_CALL(pdf_host_, OnDocumentLoadComplete);
@@ -981,7 +959,7 @@ TEST_F(PdfViewWebPluginTest,
 
 TEST_F(PdfViewWebPluginTest, GetContentRestrictionsWithNoPermissions) {
   EXPECT_EQ(kContentRestrictionCopy | kContentRestrictionCut |
-                kContentRestrictionPaste | kContentRestrictionPrint,
+                kContentRestrictionPaste,
             plugin_->GetContentRestrictionsForTesting());
   EXPECT_FALSE(plugin_->CanCopy());
 }
@@ -991,59 +969,9 @@ TEST_F(PdfViewWebPluginTest, GetContentRestrictionsWithCopyAllowed) {
   EXPECT_CALL(*engine_ptr_, HasPermission(DocumentPermission::kCopy))
       .WillRepeatedly(Return(true));
 
-  EXPECT_EQ(kContentRestrictionCut | kContentRestrictionPaste |
-                kContentRestrictionPrint,
+  EXPECT_EQ(kContentRestrictionCut | kContentRestrictionPaste,
             plugin_->GetContentRestrictionsForTesting());
   EXPECT_TRUE(plugin_->CanCopy());
-}
-
-TEST_F(PdfViewWebPluginTest, GetContentRestrictionsWithPrintLowQualityAllowed) {
-  EXPECT_CALL(*engine_ptr_, HasPermission).WillRepeatedly(Return(false));
-  EXPECT_CALL(*engine_ptr_, HasPermission(DocumentPermission::kPrintLowQuality))
-      .WillRepeatedly(Return(true));
-
-  EXPECT_EQ(kContentRestrictionCopy | kContentRestrictionCut |
-                kContentRestrictionPaste,
-            plugin_->GetContentRestrictionsForTesting());
-}
-
-TEST_F(PdfViewWebPluginTest,
-       GetContentRestrictionsWithCopyAndPrintLowQualityAllowed) {
-  EXPECT_CALL(*engine_ptr_, HasPermission).WillRepeatedly(Return(false));
-  EXPECT_CALL(*engine_ptr_, HasPermission(DocumentPermission::kCopy))
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(*engine_ptr_, HasPermission(DocumentPermission::kPrintLowQuality))
-      .WillRepeatedly(Return(true));
-
-  EXPECT_EQ(kContentRestrictionCut | kContentRestrictionPaste,
-            plugin_->GetContentRestrictionsForTesting());
-}
-
-TEST_F(PdfViewWebPluginTest, GetContentRestrictionsWithPrintAllowed) {
-  EXPECT_CALL(*engine_ptr_, HasPermission).WillRepeatedly(Return(false));
-  EXPECT_CALL(*engine_ptr_,
-              HasPermission(DocumentPermission::kPrintHighQuality))
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(*engine_ptr_, HasPermission(DocumentPermission::kPrintLowQuality))
-      .WillRepeatedly(Return(true));
-
-  EXPECT_EQ(kContentRestrictionCopy | kContentRestrictionCut |
-                kContentRestrictionPaste,
-            plugin_->GetContentRestrictionsForTesting());
-}
-
-TEST_F(PdfViewWebPluginTest, GetContentRestrictionsWithCopyAndPrintAllowed) {
-  EXPECT_CALL(*engine_ptr_, HasPermission).WillRepeatedly(Return(false));
-  EXPECT_CALL(*engine_ptr_, HasPermission(DocumentPermission::kCopy))
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(*engine_ptr_,
-              HasPermission(DocumentPermission::kPrintHighQuality))
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(*engine_ptr_, HasPermission(DocumentPermission::kPrintLowQuality))
-      .WillRepeatedly(Return(true));
-
-  EXPECT_EQ(kContentRestrictionCut | kContentRestrictionPaste,
-            plugin_->GetContentRestrictionsForTesting());
 }
 
 TEST_F(PdfViewWebPluginTest, GetAccessibilityDocInfoWithNoPermissions) {
@@ -2694,272 +2622,6 @@ TEST_F(PdfViewWebPluginSubmitFormTest, AbsoluteUrlInvalidDocumentUrl) {
   SubmitFailingForm("https://wwww.example.com");
 }
 
-class PdfViewWebPluginPrintTest : public PdfViewWebPluginTest {
- protected:
-  void SetUp() override {
-    PdfViewWebPluginTest::SetUp();
-
-    // Size must be at least 1 for conversion to `SkMemoryStream`.
-    ON_CALL(*engine_ptr_, PrintPages)
-        .WillByDefault(Return(std::vector<uint8_t>(1)));
-
-    canvas_.sk_canvas()->SetPrintingMetafile(&metafile_);
-  }
-
-  printing::MetafileSkia metafile_;
-};
-
-TEST_F(PdfViewWebPluginPrintTest, HighQuality) {
-  EXPECT_CALL(*engine_ptr_,
-              HasPermission(DocumentPermission::kPrintHighQuality))
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(*engine_ptr_, HasPermission(DocumentPermission::kPrintLowQuality))
-      .WillRepeatedly(Return(true));
-  ASSERT_EQ(static_cast<int>(TestPDFiumEngine::kPageNumber),
-            plugin_->PrintBegin(blink::WebPrintParams()));
-
-  EXPECT_CALL(
-      *engine_ptr_,
-      PrintPages(ElementsAre(0),
-                 Field(&blink::WebPrintParams::rasterize_pdf, IsFalse())));
-  plugin_->PrintPage(0, canvas_.sk_canvas());
-  plugin_->PrintEnd();
-}
-
-TEST_F(PdfViewWebPluginPrintTest, HighQualityRasterized) {
-  EXPECT_CALL(*engine_ptr_,
-              HasPermission(DocumentPermission::kPrintHighQuality))
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(*engine_ptr_, HasPermission(DocumentPermission::kPrintLowQuality))
-      .WillRepeatedly(Return(true));
-
-  blink::WebPrintParams params;
-  params.rasterize_pdf = true;
-  ASSERT_EQ(static_cast<int>(TestPDFiumEngine::kPageNumber),
-            plugin_->PrintBegin(params));
-
-  EXPECT_CALL(
-      *engine_ptr_,
-      PrintPages(ElementsAre(0),
-                 Field(&blink::WebPrintParams::rasterize_pdf, IsTrue())));
-  plugin_->PrintPage(0, canvas_.sk_canvas());
-  plugin_->PrintEnd();
-}
-
-// Regression test for crbug.com/1307219.
-TEST_F(PdfViewWebPluginPrintTest, LowQuality) {
-  EXPECT_CALL(*engine_ptr_,
-              HasPermission(DocumentPermission::kPrintHighQuality))
-      .WillRepeatedly(Return(false));
-  EXPECT_CALL(*engine_ptr_, HasPermission(DocumentPermission::kPrintLowQuality))
-      .WillRepeatedly(Return(true));
-  ASSERT_EQ(static_cast<int>(TestPDFiumEngine::kPageNumber),
-            plugin_->PrintBegin(blink::WebPrintParams()));
-
-  EXPECT_CALL(
-      *engine_ptr_,
-      PrintPages(ElementsAre(0),
-                 Field(&blink::WebPrintParams::rasterize_pdf, IsTrue())));
-  plugin_->PrintPage(0, canvas_.sk_canvas());
-  plugin_->PrintEnd();
-}
-
-// Regression test for crbug.com/1307219.
-TEST_F(PdfViewWebPluginPrintTest, LowQualityRasterized) {
-  EXPECT_CALL(*engine_ptr_,
-              HasPermission(DocumentPermission::kPrintHighQuality))
-      .WillRepeatedly(Return(false));
-  EXPECT_CALL(*engine_ptr_, HasPermission(DocumentPermission::kPrintLowQuality))
-      .WillRepeatedly(Return(true));
-
-  blink::WebPrintParams params;
-  params.rasterize_pdf = true;
-  ASSERT_EQ(static_cast<int>(TestPDFiumEngine::kPageNumber),
-            plugin_->PrintBegin(params));
-
-  EXPECT_CALL(
-      *engine_ptr_,
-      PrintPages(ElementsAre(0),
-                 Field(&blink::WebPrintParams::rasterize_pdf, IsTrue())));
-  plugin_->PrintPage(0, canvas_.sk_canvas());
-  plugin_->PrintEnd();
-}
-
-TEST_F(PdfViewWebPluginPrintTest, Disabled) {
-  EXPECT_EQ(0, plugin_->PrintBegin(blink::WebPrintParams()));
-}
-
-TEST_F(PdfViewWebPluginPrintTest, DisabledRasterized) {
-  blink::WebPrintParams params;
-  params.rasterize_pdf = true;
-  EXPECT_EQ(0, plugin_->PrintBegin(params));
-}
-
-class PdfViewWebPluginPrintPreviewTest : public PdfViewWebPluginTest {
- protected:
-  void SetUpClient() override {
-    EXPECT_CALL(*client_ptr_, GetEmbedderOriginString)
-        .WillRepeatedly(Return("chrome://print/"));
-  }
-};
-
-TEST_F(PdfViewWebPluginPrintPreviewTest, HandleResetPrintPreviewModeMessage) {
-  EXPECT_CALL(*client_ptr_, CreateEngine)
-      .WillOnce([](PDFiumEngineClient* client,
-                   PDFiumFormFiller::ScriptOption script_option) {
-        EXPECT_EQ(PDFiumFormFiller::ScriptOption::kNoJavaScript, script_option);
-
-        auto engine = std::make_unique<NiceMock<TestPDFiumEngine>>(client);
-        EXPECT_CALL(*engine, ZoomUpdated);
-        EXPECT_CALL(*engine, PageOffsetUpdated);
-        EXPECT_CALL(*engine, PluginSizeUpdated);
-        EXPECT_CALL(*engine, SetGrayscale(false));
-        return engine;
-      });
-
-  OnMessageWithEngineUpdate(ParseMessage(R"({
-    "type": "resetPrintPreviewMode",
-    "url": "chrome-untrusted://print/0/0/print.pdf",
-    "grayscale": false,
-    "pageCount": 1,
-  })"));
-}
-
-TEST_F(PdfViewWebPluginPrintPreviewTest,
-       HandleResetPrintPreviewModeMessageForPdf) {
-  EXPECT_CALL(*client_ptr_, CreateEngine)
-      .WillOnce([](PDFiumEngineClient* client,
-                   PDFiumFormFiller::ScriptOption script_option) {
-        EXPECT_EQ(PDFiumFormFiller::ScriptOption::kNoJavaScript, script_option);
-
-        return std::make_unique<NiceMock<TestPDFiumEngine>>(client);
-      });
-
-  // The UI ID of 1 in the URL is arbitrary.
-  // The page index value of -1, AKA `kCompletePDFIndex`, is required for PDFs.
-  OnMessageWithEngineUpdate(ParseMessage(R"({
-    "type": "resetPrintPreviewMode",
-    "url": "chrome-untrusted://print/1/-1/print.pdf",
-    "grayscale": false,
-    "pageCount": 0,
-  })"));
-
-  EXPECT_CALL(*client_ptr_, PostMessage).Times(AnyNumber());
-  EXPECT_CALL(*client_ptr_, PostMessage(base::test::IsJson(R"({
-    "type": "printPreviewLoaded",
-  })")));
-  plugin_->DocumentLoadComplete();
-  pdf_receiver_.FlushForTesting();
-}
-
-TEST_F(PdfViewWebPluginPrintPreviewTest,
-       HandleResetPrintPreviewModeMessageSetGrayscale) {
-  EXPECT_CALL(*client_ptr_, CreateEngine)
-      .WillOnce([](PDFiumEngineClient* client,
-                   PDFiumFormFiller::ScriptOption /*script_option*/) {
-        auto engine = std::make_unique<NiceMock<TestPDFiumEngine>>(client);
-        EXPECT_CALL(*engine, SetGrayscale(true));
-        return engine;
-      });
-
-  OnMessageWithEngineUpdate(ParseMessage(R"({
-    "type": "resetPrintPreviewMode",
-    "url": "chrome-untrusted://print/0/0/print.pdf",
-    "grayscale": true,
-    "pageCount": 1,
-  })"));
-}
-
-TEST_F(PdfViewWebPluginPrintPreviewTest, DocumentLoadComplete) {
-  OnMessageWithEngineUpdate(ParseMessage(R"({
-    "type": "resetPrintPreviewMode",
-    "url": "chrome-untrusted://print/0/0/print.pdf",
-    "grayscale": false,
-    "pageCount": 1,
-  })"));
-
-  EXPECT_CALL(*client_ptr_, RecordComputedAction("PDF.LoadSuccess"));
-  EXPECT_CALL(*client_ptr_, PostMessage);
-  EXPECT_CALL(*client_ptr_, PostMessage(base::test::IsJson(R"({
-    "type": "formFocusChange",
-    "focused": "none",
-  })")));
-  ExpectUpdateTextInputState(blink::WebTextInputType::kWebTextInputTypeNone);
-  EXPECT_CALL(*client_ptr_, PostMessage(base::test::IsJson(R"({
-    "type": "printPreviewLoaded",
-  })")));
-  EXPECT_CALL(*accessibility_data_handler_ptr_, SetAccessibilityDocInfo)
-      .Times(0);
-  EXPECT_CALL(*client_ptr_, DidStopLoading).Times(0);
-  EXPECT_CALL(pdf_host_, UpdateContentRestrictions).Times(0);
-  plugin_->DocumentLoadComplete();
-
-  EXPECT_EQ(PdfViewWebPlugin::DocumentLoadState::kComplete,
-            plugin_->document_load_state_for_testing());
-  pdf_receiver_.FlushForTesting();
-}
-
-TEST_F(PdfViewWebPluginPrintPreviewTest,
-       DocumentLoadProgressResetByResetPrintPreviewModeMessage) {
-  plugin_->DocumentLoadProgress(2, 100);
-
-  OnMessageWithEngineUpdate(ParseMessage(R"({
-    "type": "resetPrintPreviewMode",
-    "url": "chrome-untrusted://print/123/0/print.pdf",
-    "grayscale": false,
-    "pageCount": 2,
-  })"));
-
-  EXPECT_CALL(*client_ptr_, PostMessage(base::test::IsJson(R"({
-    "type": "loadProgress",
-    "progress": 3.0,
-  })")));
-  plugin_->DocumentLoadProgress(3, 100);
-}
-
-TEST_F(PdfViewWebPluginPrintPreviewTest,
-       DocumentLoadProgressNotResetByLoadPreviewPageMessage) {
-  OnMessageWithEngineUpdate(ParseMessage(R"({
-    "type": "resetPrintPreviewMode",
-    "url": "chrome-untrusted://print/123/0/print.pdf",
-    "grayscale": false,
-    "pageCount": 2,
-  })"));
-
-  plugin_->DocumentLoadProgress(2, 100);
-
-  plugin_->OnMessage(ParseMessage(R"({
-    "type": "loadPreviewPage",
-    "url": "chrome-untrusted://print/123/1/print.pdf",
-    "index": 1,
-  })"));
-
-  EXPECT_CALL(*client_ptr_, PostMessage).Times(0);
-  plugin_->DocumentLoadProgress(3, 100);
-}
-
-TEST_F(PdfViewWebPluginPrintPreviewTest,
-       HandleViewportMessageScrollRightToLeft) {
-  EXPECT_CALL(*engine_ptr_, ApplyDocumentLayout)
-      .WillRepeatedly(Return(gfx::Size(16, 9)));
-  EXPECT_CALL(*engine_ptr_, ScrolledToXPosition(14));
-  EXPECT_CALL(*engine_ptr_, ScrolledToYPosition(3));
-
-  plugin_->OnMessage(ParseMessage(R"({
-    "type": "viewport",
-    "userInitiated": false,
-    "zoom": 1,
-    "layoutOptions": {
-      "direction": 1,
-      "defaultPageOrientation": 0,
-      "twoUpViewEnabled": false,
-    },
-    "xOffset": -2,
-    "yOffset": 3,
-    "pinchPhase": 0,
-  })"));
-}
-
 #if BUILDFLAG(ENABLE_PDF_INK2)
 class PdfViewWebPluginInkTest
     : public PdfViewWebPluginTest,
@@ -3763,31 +3425,6 @@ TEST_P(PdfViewWebPluginInkMetricTest, LoadedWithV2InkAnnotationsTimeout) {
 
   histograms.ExpectUniqueSample(kPdfLoadedWithV2InkAnnotationsMetric,
                                 PDFLoadedWithV2InkAnnotations::kUnknown, 1);
-}
-
-class PdfViewWebPluginPrintPreviewInkMetricTest
-    : public PdfViewWebPluginPrintPreviewTest {
- private:
-  base::test::ScopedFeatureList feature_list_{features::kPdfInk2};
-};
-
-TEST_F(PdfViewWebPluginPrintPreviewInkMetricTest,
-       LoadedWithV2InkAnnotationsDoesNotCountPrintPreview) {
-  base::HistogramTester histograms;
-
-  OnMessageWithEngineUpdate(ParseMessage(R"({
-    "type": "resetPrintPreviewMode",
-    "url": "chrome-untrusted://print/0/0/print.pdf",
-    "grayscale": false,
-    "pageCount": 1,
-  })"));
-
-  EXPECT_CALL(*engine_ptr_, ContainsV2InkPath(_)).Times(0);
-  plugin_->DocumentLoadComplete();
-
-  // The V2 ink annotations PDF load metric should not increment for Print
-  // Preview.
-  histograms.ExpectTotalCount(kPdfLoadedWithV2InkAnnotationsMetric, 0);
 }
 
 INSTANTIATE_TEST_SUITE_P(All,

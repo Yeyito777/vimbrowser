@@ -32,11 +32,6 @@ BASE_FEATURE(kAndroidDownloadableFontsMatching,
 // Adds OOPIF support for android drag and drop.
 BASE_FEATURE(kAndroidDragDropOopif, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-// Flag guard for Windows Arabic Indic digit input solution.
-// crbug.com/440381284
-BASE_FEATURE(kArabicIndicDigitInput, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_WIN)
 
 // Synchronously continuing with navigation can lead to trying to start another
 // navigation synchronously while the first navigation is still being processed
@@ -92,17 +87,9 @@ BASE_FEATURE(kBackForwardCacheTimeToLiveControl,
 // TODO(b/281094330): Run experiment on ChromeOS. Experiment was not run on
 // ChromeOS due to try bot issue.
 BASE_FEATURE(kBeforeUnloadBrowserResponseQueue,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_DISABLED_BY_DEFAULT
-#else
              base::FEATURE_ENABLED_BY_DEFAULT
-#endif
 );
 
-#if BUILDFLAG(IS_ANDROID)
-// Whether to hide paste popup on GestureScrollBegin or GestureScrollUpdate.
-BASE_FEATURE(kHidePastePopupOnGSB, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 // Holdback the removal of debug reason strings in crrev.com/c/6312375
 // to measure the impact.
@@ -178,12 +165,6 @@ BASE_FEATURE(kServiceWorkerDevToolsWorkerReadyCheck,
 BASE_FEATURE(kSharedWorkerDevToolsWorkerReadyCheck,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// Disables the auto_resize_output_surface feature in the Viz process.
-// This prevents visual artifacts (blue gutters) during window resizing on
-// large form factor devices.
-BASE_FEATURE(kDisableAutoResizeOutputSurface, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 // Enable DocumentIsolationPolicy even if the platform does not support full
 // SiteIsolation.
@@ -238,12 +219,6 @@ BASE_FEATURE(kFedCmPreservePortsForTesting, base::FEATURE_DISABLED_BY_DEFAULT);
 // Enables installed web app matching for getInstalledRelatedApps API.
 BASE_FEATURE(kFilterInstalledAppsWebAppMatching,
              base::FEATURE_ENABLED_BY_DEFAULT);
-#if BUILDFLAG(IS_WIN)
-// Enables installed windows app matching for getInstalledRelatedApps API.
-// Note: This is enabled by default as a kill switch, since the functionality
-// was already implemented but without a related feature flag.
-BASE_FEATURE(kFilterInstalledAppsWinMatching, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_WIN)
 
 // If enabled, limits the number of FLEDGE auctions that can be run between page
 // load and unload -- any attempt to run more than this number of auctions will
@@ -270,11 +245,6 @@ const base::FeatureParam<int> kFledgeSellerWorkletThreadPoolSize{
 // Enables multi-threaded bidder worklet.
 BASE_FEATURE(kFledgeBidderWorkletThreadPool, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// Makes FLEDGE worklets on Android not use the main thread for their mojo.
-BASE_FEATURE(kFledgeAndroidWorkletOffMainThread,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 // The scaling factor for calculating the number of bidder worklet threads based
 // on the number of Interest Groups.
@@ -288,20 +258,6 @@ const base::FeatureParam<double>
 // fetch fonts from the Browser's FontDataService. It is currently scoped to
 // Windows and Linux (via separate features and experiments). See
 // crbug.com/335680565.
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kFontDataServiceAllWebContents, base::FEATURE_ENABLED_BY_DEFAULT);
-const base::FeatureParam<FontDataServiceTypefaceType>::Option
-    font_data_service_typeface[] = {
-        {FontDataServiceTypefaceType::kDwrite, "DWrite"},
-        {FontDataServiceTypefaceType::kFreetype, "Freetype"},
-        {FontDataServiceTypefaceType::kFontations, "Fontations"}};
-BASE_FEATURE_ENUM_PARAM(FontDataServiceTypefaceType,
-                        kFontDataServiceTypefaceType,
-                        &kFontDataServiceAllWebContents,
-                        "typeface",
-                        FontDataServiceTypefaceType::kDwrite,
-                        &font_data_service_typeface);
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 const base::FeatureParam<FontDataServiceTypefaceType>::Option
     font_data_service_typeface[] = {
@@ -328,12 +284,8 @@ BASE_FEATURE_ENUM_PARAM(FontDataServiceTypefaceType,
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 bool IsFontDataServiceEnabled() {
-#if BUILDFLAG(IS_WIN)
-  return base::FeatureList::IsEnabled(features::kFontDataServiceAllWebContents);
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   return base::FeatureList::IsEnabled(features::kFontDataServiceLinux);
-#elif BUILDFLAG(IS_CHROMEOS)
-  return base::FeatureList::IsEnabled(features::kFontDataServiceChromeOS);
 #else
   return false;
 #endif
@@ -527,11 +479,9 @@ BASE_FEATURE(kNavigationThrottleRunner2, base::FEATURE_DISABLED_BY_DEFAULT);
 // This feature enables Permissions Policy verification in the Browser process
 // in content/. Additionally only for //chrome Permissions Policy verification
 // is enabled in components/permissions/permission_context_base.cc
-#if !BUILDFLAG(IS_ANDROID)
 BASE_FEATURE(kPermissionsPolicyVerificationInContent,
              "kPermissionsPolicyVerificationInContent",
              base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // If enabled, responses with an operative Cookie-Indices will not be used
 // if the relevant cookie values have changed.
@@ -563,12 +513,6 @@ BASE_FEATURE(kPriorityOverridePendingViews, base::FEATURE_ENABLED_BY_DEFAULT);
 BASE_FEATURE(kPrivacySandboxAdsAPIsM1Override,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// When disabled("legacy behavior") it resets ongoing gestures when window loses
-// focus. In split screen scenario this means we can't continue scroll on a
-// chrome window, when we start interacting with another window.
-BASE_FEATURE(kContinueGestureOnLosingFocus, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 // Make sendBeacon throw for a Blob with a non simple type.
 BASE_FEATURE(kSendBeaconThrowForBlobWithNonSimpleType,
@@ -578,11 +522,7 @@ BASE_FEATURE(kSendBeaconThrowForBlobWithNonSimpleType,
 // happening on prerender initial navigation. Please see crbug.com/41492112 for
 // more details.
 BASE_FEATURE(kProcessReuseOnPrerenderCOOPSwap,
-#if BUILDFLAG(IS_ANDROID)
-             base::FEATURE_DISABLED_BY_DEFAULT
-#else
              base::FEATURE_ENABLED_BY_DEFAULT
-#endif
 );
 
 // Causes the browser to progressively disable accessibility for WebContents
@@ -595,11 +535,7 @@ BASE_FEATURE(kProgressiveAccessibilityPhase2,
 // reloaded.  This will hide crashed subframes from the user at the cost of
 // extra reloads.
 BASE_FEATURE(kReloadHiddenTabsWithCrashedSubframes,
-#if BUILDFLAG(IS_ANDROID)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 BASE_FEATURE(kRendererCancellationThrottleImprovements,
@@ -616,27 +552,9 @@ BASE_FEATURE(kResumeNavigationWithSpeculativeRFHProcessGone,
 BASE_FEATURE(kReusePrerenderingProcessForMainFrames,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// If enabled, then orientation lock won't claim to work on anything but phone
-// form factors.  Tablets already do unpredictable things, such as letterboxing
-// vs rotating and/or (successfully) ignoring the request entirely.  Setting
-// this flag turns off those use-cases which nobody should be relying on right
-// now anyway; they don't work.
-BASE_FEATURE(kRestrictOrientationLockToPhones,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-// When enabled, inactive renderers (e.g. in back-forward cache) are removed
-// from the binding manager to lower their priority.
-BASE_FEATURE(kRemoveCachedProcessFromBindingManager,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 // Fix for scrolling to focused editable input fields after tapping to show the
 // on-screen keyboard (crbug.com/462636368).
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kScrollAfterOSKViewportShrinkFix,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kServiceWorkerAvoidMainThreadForInitialization,
              base::FEATURE_ENABLED_BY_DEFAULT);
@@ -704,12 +622,6 @@ BASE_FEATURE(kSkipEarlyCommitPendingForCrashedFrame,
 BASE_FEATURE(kSkipRendererCancellationThrottle,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// When enabled, ensure high-rank processes are on the LRU list while app is in
-// background or the effective binding state is in conflict with low rank
-// processes.
-BASE_FEATURE(kStrictHighRankProcessLRU, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 #if BUILDFLAG(IS_MAC)
 BASE_FEATURE(kTextInputClient, base::FEATURE_ENABLED_BY_DEFAULT);
@@ -744,10 +656,6 @@ BASE_FEATURE(kTrustedTypesFromLiteral, base::FEATURE_DISABLED_BY_DEFAULT);
 // window parent changes instead of tearing down and recreating the whole
 // helper. This is a temporary flag to test the performance impact of the
 // optimization.
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kUpdateDirectManipulationHelperOnParentChange,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 // Validate the code signing identity of the network process before establishing
 // a Mojo connection with it.
@@ -757,20 +665,13 @@ BASE_FEATURE(kValidateNetworkServiceProcessIdentity,
 #endif  // BUILDFLAG(IS_MAC)
 
 // Pre-warm up the network process on browser startup.
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kWarmUpNetworkProcess, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 // Enable WebAssembly dynamic tiering (only tier up hot functions).
 BASE_FEATURE(kWebAssemblyDynamicTiering, base::FEATURE_ENABLED_BY_DEFAULT);
 
 // Enables in-process resource loading for WebUI renderer processes.
 BASE_FEATURE(kWebUIInProcessResourceLoading,
-#if BUILDFLAG(IS_ANDROID)
-             base::FEATURE_DISABLED_BY_DEFAULT
-#else
              base::FEATURE_ENABLED_BY_DEFAULT
-#endif
 );
 
 // Enables WebOTP calls in cross-origin iframes if allowed by Permissions

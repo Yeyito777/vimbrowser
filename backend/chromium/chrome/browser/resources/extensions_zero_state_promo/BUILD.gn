@@ -5,8 +5,7 @@
 import("//ui/webui/resources/tools/build_webui.gni")
 
 assert(enable_extensions, "enable extensions check failed")
-assert(!is_android,
-       "extensions zero state promo should not be enabled for android")
+
 assert(!is_ios, "extensions zero state promo should not be enabled for ios")
 
 build_webui("build") {

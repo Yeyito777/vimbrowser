@@ -30,8 +30,6 @@ import {SettingsViewMixin} from '../settings_page/settings_view_mixin.js';
 import {getTemplate} from './edit_dictionary_page.html.js';
 import {LanguagesBrowserProxyImpl} from './languages_browser_proxy.js';
 
-// Max valid word size defined in
-// https://cs.chromium.org/chromium/src/components/spellcheck/common/spellcheck_common.h?l=28
 const MAX_CUSTOM_DICTIONARY_WORD_BYTES = 99;
 
 export interface SettingsEditDictionaryPageElement {

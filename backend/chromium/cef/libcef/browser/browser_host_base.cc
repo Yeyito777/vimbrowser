@@ -16,18 +16,14 @@
 #include "cef/libcef/browser/hang_monitor.h"
 #include "cef/libcef/browser/image_impl.h"
 #include "cef/libcef/browser/navigation_entry_impl.h"
-#include "cef/libcef/browser/printing/print_util.h"
 #include "cef/libcef/browser/thread_util.h"
 #include "cef/libcef/common/frame_util.h"
 #include "cef/libcef/common/net/url_util.h"
 #include "chrome/browser/platform_util.h"
-#include "chrome/browser/spellchecker/spellcheck_factory.h"
-#include "chrome/browser/spellchecker/spellcheck_service.h"
 #include "chrome/browser/ui/browser_commands.h"
 #include "components/favicon/core/favicon_url.h"
 #include "components/find_in_page/find_tab_helper.h"
 #include "components/find_in_page/find_types.h"
-#include "components/spellcheck/common/spellcheck_features.h"
 #include "components/zoom/page_zoom.h"
 #include "components/zoom/zoom_controller.h"
 #include "content/browser/renderer_host/render_frame_host_impl.h"
@@ -42,9 +38,6 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/shell_dialogs/select_file_policy.h"
 
-#if BUILDFLAG(IS_MAC)
-#include "components/spellcheck/browser/spellcheck_platform.h"
-#endif
 
 namespace {
 
@@ -664,19 +657,6 @@ void CefBrowserHostBase::DownloadImage(
 }
 
 void CefBrowserHostBase::Print() {
-  if (!CEF_CURRENTLY_ON_UIT()) {
-    CEF_POST_TASK(CEF_UIT, base::BindOnce(&CefBrowserHostBase::Print, this));
-    return;
-  }
-
-  auto web_contents = GetWebContents();
-  if (!web_contents) {
-    return;
-  }
-
-  const bool print_preview_disabled =
-      !platform_delegate_ || !platform_delegate_->IsPrintPreviewSupported();
-  print_util::Print(web_contents, print_preview_disabled);
 }
 
 void CefBrowserHostBase::PrintToPDF(const CefString& path,
@@ -688,12 +668,9 @@ void CefBrowserHostBase::PrintToPDF(const CefString& path,
     return;
   }
 
-  auto web_contents = GetWebContents();
-  if (!web_contents) {
-    return;
+  if (callback) {
+    callback->OnPdfPrintFinished(CefString(), false);
   }
-
-  print_util::PrintToPDF(web_contents, path, settings, callback);
 }
 
 void CefBrowserHostBase::Find(const CefString& searchText,
@@ -1050,47 +1027,9 @@ void CefBrowserHostBase::SetAxViewportCollapse(bool enabled) {
   }
 }
 
-void CefBrowserHostBase::ReplaceMisspelling(const CefString& word) {
-  if (!CEF_CURRENTLY_ON_UIT()) {
-    CEF_POST_TASK(
-        CEF_UIT,
-        base::BindOnce(&CefBrowserHostBase::ReplaceMisspelling, this, word));
-    return;
-  }
+void CefBrowserHostBase::ReplaceMisspelling(const CefString& /*word*/) {}
 
-  auto web_contents = GetWebContents();
-  if (web_contents) {
-    web_contents->ReplaceMisspelling(word);
-  }
-}
-
-void CefBrowserHostBase::AddWordToDictionary(const CefString& word) {
-  if (!CEF_CURRENTLY_ON_UIT()) {
-    CEF_POST_TASK(
-        CEF_UIT,
-        base::BindOnce(&CefBrowserHostBase::AddWordToDictionary, this, word));
-    return;
-  }
-
-  auto web_contents = GetWebContents();
-  if (!web_contents) {
-    return;
-  }
-
-  SpellcheckService* spellcheck = nullptr;
-  content::BrowserContext* browser_context = web_contents->GetBrowserContext();
-  if (browser_context) {
-    spellcheck = SpellcheckServiceFactory::GetForContext(browser_context);
-    if (spellcheck) {
-      spellcheck->GetCustomDictionary()->AddWord(word);
-    }
-  }
-#if BUILDFLAG(IS_MAC)
-  if (spellcheck && spellcheck::UseBrowserSpellChecker()) {
-    spellcheck_platform::AddWord(spellcheck->platform_spell_checker(), word);
-  }
-#endif
-}
+void CefBrowserHostBase::AddWordToDictionary(const CefString& /*word*/) {}
 
 void CefBrowserHostBase::SendKeyEvent(const CefKeyEvent& event) {
   if (!CEF_CURRENTLY_ON_UIT()) {

@@ -44,9 +44,6 @@ enum {
 #if BUILDFLAG(IS_MAC)
 inline constexpr int kInstallIconSize = icon_size::k96;
 inline constexpr int kLauncherIconSize = icon_size::k256;
-#elif BUILDFLAG(IS_CHROMEOS)
-inline constexpr int kInstallIconSize = icon_size::k96;
-inline constexpr int kLauncherIconSize = icon_size::k128;
 #else
 inline constexpr int kInstallIconSize = icon_size::k48;
 inline constexpr int kLauncherIconSize = icon_size::k128;

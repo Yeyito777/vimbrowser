@@ -15,9 +15,6 @@ namespace user_data_importer {
 // across IPC.
 enum ImporterType {
   TYPE_UNKNOWN = -1,
-#if BUILDFLAG(IS_WIN)
-  TYPE_IE = 0,
-#endif
   // Value 1 was the (now deleted) Firefox 2 profile importer.
   TYPE_FIREFOX = 2,
 #if BUILDFLAG(IS_MAC)
@@ -25,9 +22,6 @@ enum ImporterType {
 #endif
   // Value 4 was the (now deleted) Google Toolbar importer.
   TYPE_BOOKMARKS_FILE = 5,  // Identifies a 'bookmarks.html' file.
-#if BUILDFLAG(IS_WIN)
-  TYPE_EDGE = 6,
-#endif
 };
 
 }  // namespace user_data_importer

@@ -12,17 +12,9 @@
 #include "build/build_config.h"
 #include "ui/gfx/gpu_fence_handle.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include "base/files/scoped_file.h"
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/event.h>
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#endif
 
 namespace gpu {
 
@@ -32,13 +24,7 @@ namespace gpu {
 // used other handles types.
 class COMPONENT_EXPORT(VULKAN) SemaphoreHandle {
  public:
-#if BUILDFLAG(IS_POSIX)
   using PlatformHandle = base::ScopedFD;
-#elif BUILDFLAG(IS_WIN)
-  using PlatformHandle = base::win::ScopedHandle;
-#elif BUILDFLAG(IS_FUCHSIA)
-  using PlatformHandle = zx::event;
-#endif
 
   SemaphoreHandle();
   SemaphoreHandle(VkExternalSemaphoreHandleTypeFlagBits type,

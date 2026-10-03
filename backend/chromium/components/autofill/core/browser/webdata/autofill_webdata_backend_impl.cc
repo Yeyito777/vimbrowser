@@ -1054,18 +1054,6 @@ WebDatabase::State AutofillWebDataBackendImpl::ClearLocalCvcsUpToMay2025(
   return WebDatabase::COMMIT_NOT_NEEDED;
 }
 
-#if BUILDFLAG(IS_IOS)
-WebDatabase::State AutofillWebDataBackendImpl::CleanupForCrbug445879524(
-    WebDatabase* db) {
-  DCHECK(owning_task_runner()->RunsTasksInCurrentSequence());
-  if (PaymentsAutofillTable::FromWebDatabase(db)->CleanupForCrbug445879524()) {
-    ReportResult(Result::kCleanupForCrbug445879524_Success);
-    return WebDatabase::COMMIT_NEEDED;
-  }
-  ReportResult(Result::kCleanupForCrbug445879524_Failure);
-  return WebDatabase::COMMIT_NOT_NEEDED;
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 std::unique_ptr<WDTypedResult>
 AutofillWebDataBackendImpl::GetPaymentsCustomerData(WebDatabase* db) {

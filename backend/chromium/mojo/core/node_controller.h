@@ -253,15 +253,6 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
                    const uint64_t remote_capailities) override;
   void OnBroadcast(const ports::NodeName& from_node,
                    Channel::MessagePtr message) override;
-#if BUILDFLAG(IS_WIN)
-  void OnRelayEventMessage(const ports::NodeName& from_node,
-                           base::ProcessHandle from_process,
-                           const ports::NodeName& destination,
-                           Channel::MessagePtr message) override;
-  void OnEventMessageFromRelay(const ports::NodeName& from_node,
-                               const ports::NodeName& source_node,
-                               Channel::MessagePtr message) override;
-#endif
   void OnAcceptPeer(const ports::NodeName& from_node,
                     const ports::NodeName& token,
                     const ports::NodeName& peer_name,

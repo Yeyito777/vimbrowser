@@ -30,9 +30,6 @@ cargo_crate("lib") {
   allow_unsafe = false
 
   deps = []
-  if (is_win) {
-    deps += [ "//third_party/rust/winapi_util/v0_1:lib" ]
-  }
 
   # Only for usage from third-party crates. Add the crate to
   # //third_party/rust/chromium_crates_io/Cargo.toml to use

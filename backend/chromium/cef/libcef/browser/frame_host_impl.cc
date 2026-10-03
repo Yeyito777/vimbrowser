@@ -7,7 +7,6 @@
 #include "cef/include/cef_request.h"
 #include "cef/include/cef_stream.h"
 #include "cef/include/cef_v8.h"
-#include "cef/include/test/cef_test_helpers.h"
 #include "cef/libcef/browser/browser_host_base.h"
 #include "cef/libcef/browser/net_service/browser_urlrequest_impl.h"
 #include "cef/libcef/common/frame_util.h"
@@ -463,24 +462,6 @@ void CefFrameHostImpl::MaybeSendDidStopLoading() {
                     }));
 }
 
-void CefFrameHostImpl::ExecuteJavaScriptWithUserGestureForTests(
-    const CefString& javascript) {
-  if (!CEF_CURRENTLY_ON_UIT()) {
-    CEF_POST_TASK(
-        CEF_UIT,
-        base::BindOnce(
-            &CefFrameHostImpl::ExecuteJavaScriptWithUserGestureForTests, this,
-            javascript));
-    return;
-  }
-
-  content::RenderFrameHost* rfh = GetRenderFrameHost();
-  if (rfh) {
-    rfh->ExecuteJavaScriptWithUserGestureForTests(
-        javascript, base::NullCallback(), content::ISOLATED_WORLD_ID_GLOBAL);
-  }
-}
-
 content::RenderFrameHost* CefFrameHostImpl::GetRenderFrameHost() const {
   CEF_REQUIRE_UIT();
   return render_frame_host_;
@@ -758,12 +739,4 @@ std::string CefFrameHostImpl::GetDebugString() const {
          (frame_token_ ? frame_util::GetFrameDebugString(*frame_token_)
                        : "(null)") +
          (is_main_frame_ ? " (main)" : " (sub)");
-}
-
-void CefExecuteJavaScriptWithUserGestureForTests(CefRefPtr<CefFrame> frame,
-                                                 const CefString& javascript) {
-  CefFrameHostImpl* impl = static_cast<CefFrameHostImpl*>(frame.get());
-  if (impl) {
-    impl->ExecuteJavaScriptWithUserGestureForTests(javascript);
-  }
 }

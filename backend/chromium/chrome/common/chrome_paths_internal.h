@@ -35,11 +35,6 @@ std::optional<bool> IsUsingDefaultDataDirectory();
 // value for testing. Set to `std::nullopt` to restore the default behavior.
 void SetUsingDefaultUserDataDirectoryForTesting(std::optional<bool> is_default);
 
-#if BUILDFLAG(IS_WIN)
-// Get the path to the roaming user's data directory, regardless of whether
-// DIR_ROAMING_USER_DATA has been overridden by a command-line option.
-bool GetDefaultRoamingUserDataDirectory(base::FilePath* result);
-#endif
 
 // Get the path to the user's cache directory.  This is normally the
 // same as the profile directory, but on Linux it can also be

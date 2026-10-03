@@ -26,11 +26,6 @@ class FakeShellDelegate : public DefaultBrowserManager::ShellDelegate {
   void StartCheckIsDefault(
       shell_integration::DefaultWebClientWorkerCallback callback) override;
 
-#if BUILDFLAG(IS_WIN)
-  void StartCheckDefaultClientProgId(
-      const GURL& scheme,
-      base::OnceCallback<void(const std::u16string&)> callback) override;
-#endif  // BUILDFLAG(IS_WIN)
 
   void set_default_state(DefaultBrowserState state) { default_state_ = state; }
   void set_http_assoc_prog_id(const std::u16string& prog_id) {

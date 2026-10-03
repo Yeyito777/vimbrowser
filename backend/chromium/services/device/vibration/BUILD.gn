@@ -4,11 +4,6 @@
 
 import("//mojo/public/tools/bindings/mojom.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 source_set("vibration") {
   visibility = [
     "//services/device:lib",
@@ -27,13 +22,4 @@ source_set("vibration") {
     "//base",
     "//mojo/public/cpp/bindings",
   ]
-
-  if (is_android) {
-    sources += [
-      "vibration_manager_android.cc",
-      "vibration_manager_android.h",
-    ]
-
-    deps += [ "//services/device/vibration/android:vibration_jni_headers" ]
-  }
 }

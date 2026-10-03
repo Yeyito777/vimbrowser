@@ -107,12 +107,6 @@ ExtensionsAPIClient::CreateWebViewPermissionHelperDelegate(
 }
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::unique_ptr<ConsentProvider> ExtensionsAPIClient::CreateConsentProvider(
-    content::BrowserContext* browser_context) const {
-  return nullptr;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 scoped_refptr<ContentRulesRegistry>
 ExtensionsAPIClient::CreateContentRulesRegistry(
@@ -127,11 +121,6 @@ ExtensionsAPIClient::CreateUsbDevicePermissionsPrompt(
   return nullptr;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool ExtensionsAPIClient::ShouldAllowDetachingUsb(int vid, int pid) const {
-  return false;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 std::unique_ptr<VirtualKeyboardDelegate>
 ExtensionsAPIClient::CreateVirtualKeyboardDelegate(
@@ -163,7 +152,6 @@ MessagingDelegate* ExtensionsAPIClient::GetMessagingDelegate() {
   return nullptr;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 FileSystemDelegate* ExtensionsAPIClient::GetFileSystemDelegate() {
   return nullptr;
 }
@@ -176,26 +164,7 @@ AutomationInternalApiDelegate*
 ExtensionsAPIClient::GetAutomationInternalApiDelegate() {
   return nullptr;
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-NonNativeFileSystemDelegate*
-ExtensionsAPIClient::GetNonNativeFileSystemDelegate() {
-  return nullptr;
-}
-
-MediaPerceptionAPIDelegate*
-ExtensionsAPIClient::GetMediaPerceptionAPIDelegate() {
-  return nullptr;
-}
-
-void ExtensionsAPIClient::SaveImageDataToClipboard(
-    std::vector<uint8_t> image_data,
-    api::clipboard::ImageType type,
-    AdditionalDataItemList additional_items,
-    base::OnceClosure success_callback,
-    base::OnceCallback<void(const std::string&)> error_callback) {}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 std::unique_ptr<NativeMessagePortDispatcher>
 ExtensionsAPIClient::CreateNativeMessagePortDispatcher(

@@ -68,23 +68,12 @@
 #include "ui/base/window_open_disposition.h"
 #include "url/url_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "ash/constants/webui_url_constants.h"
-#include "ash/webui/settings/public/constants/routes.mojom.h"
-#include "ash/webui/settings/public/constants/routes_util.h"
-#include "chrome/browser/ui/ash/system_web_apps/system_web_app_ui_utils.h"
-#include "chrome/browser/ui/settings_window_manager_chromeos.h"
-#else
 #include "chrome/browser/ui/signin/signin_view_controller.h"
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "base/metrics/histogram_functions.h"
 #include "chrome/browser/signin/identity_manager_factory.h"
 #include "components/signin/public/base/signin_pref_names.h"
 #include "components/signin/public/identity_manager/identity_manager.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 #include "chrome/browser/web_applications/web_app_utils.h"
@@ -180,18 +169,9 @@ void ShowHelpImpl(Browser* browser, Profile* profile, HelpSource source) {
     case HelpSource::kWebHID:
       url = GURL(kChooserHidOverviewUrl);
       break;
-#if BUILDFLAG(IS_CHROMEOS)
     case HelpSource::kWebUI:
       url = GURL(kChromeHelpViaWebUIURL);
       break;
-    case HelpSource::kWebUIChromeOS:
-      url = GURL(kChromeOsHelpViaWebUIURL);
-      break;
-#else
-    case HelpSource::kWebUI:
-      url = GURL(kChromeHelpViaWebUIURL);
-      break;
-#endif  // BUILDFLAG(IS_CHROMEOS)
     case HelpSource::kWebUSD:
       url = GURL(kChooserUsbOverviewURL);
       break;
@@ -228,9 +208,6 @@ std::string GenerateContentSettingsExceptionsSubPage(ContentSettingsType type) {
           {ContentSettingsType::ADS, "ads"},
           {ContentSettingsType::HID_CHOOSER_DATA, "hidDevices"},
           {ContentSettingsType::PROTECTED_MEDIA_IDENTIFIER, "protectedContent"},
-#if BUILDFLAG(IS_CHROMEOS)
-          {ContentSettingsType::SMART_CARD_GUARD, "smartCardReaders"},
-#endif
           {ContentSettingsType::STORAGE_ACCESS, "storageAccess"},
           {ContentSettingsType::USB_CHOOSER_DATA, "usbDevices"},
           {ContentSettingsType::WEB_PRINTING, "webPrinting"},
@@ -355,7 +332,6 @@ void ShowHistorySubPage(Browser* browser, std::string_view sub_page) {
 
 void ShowDownloads(Browser* browser) {
   base::RecordAction(UserMetricsAction("ShowDownloads"));
-#if !BUILDFLAG(IS_CHROMEOS)
   // Hide the download bubble if it is showing, to avoid redundancy with the
   // chrome://downloads page we are about to open.
   if (browser->window() && browser->window()->GetDownloadBubbleUIController() &&
@@ -367,7 +343,6 @@ void ShowDownloads(Browser* browser) {
         ->GetDownloadDisplayController()
         ->HideBubble();
   }
-#endif
   ShowSingletonTabOverwritingNTP(browser, GURL(kChromeUIDownloadsURL));
 }
 
@@ -417,9 +392,6 @@ void ShowBetaForum(Browser* browser) {
 }
 
 void ShowSlow(Browser* browser) {
-#if BUILDFLAG(IS_CHROMEOS)
-  ShowSingletonTab(browser, GURL(ash::kChromeUISlowURL));
-#endif
 }
 
 GURL GetSettingsUrl(std::string_view sub_page) {
@@ -452,20 +424,11 @@ void ShowSettings(Browser* browser) {
 }
 
 void ShowSettingsSubPage(Browser* browser, std::string_view sub_page) {
-#if BUILDFLAG(IS_CHROMEOS)
-  ShowSettingsSubPageForProfile(browser->profile(), sub_page);
-#else
   ShowSettingsSubPageInTabbedBrowser(browser, sub_page);
-#endif
 }
 
 void ShowSettingsSubPageForProfile(Profile* profile,
                                    std::string_view sub_page) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // OS settings sub-pages are handled else where and should never be
-  // encountered here.
-  DCHECK(!chromeos::settings::IsOSSettingsSubPage(sub_page)) << sub_page;
-#endif
   Browser* browser = GetOrCreateBrowserForProfile(profile);
   ShowSettingsSubPageInTabbedBrowser(browser, sub_page);
 }
@@ -682,23 +645,6 @@ void ShowSharedTabGroupActivity(Profile* profile) {
                    GURL(data_sharing::features::kActivityLogsURL.Get()));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void ShowAppManagementPage(Profile* profile,
-                           const std::string& app_id,
-                           ash::settings::AppManagementEntryPoint entry_point) {
-  // This histogram is also declared and used at chrome/browser/resources/
-  // settings/chrome_os/os_apps_page/app_management_page/constants.js.
-  constexpr char kAppManagementEntryPointsHistogramName[] =
-      "AppManagement.EntryPoints";
-
-  base::UmaHistogramEnumeration(kAppManagementEntryPointsHistogramName,
-                                entry_point);
-  std::string sub_page = base::StrCat(
-      {chromeos::settings::mojom::kAppDetailsSubpagePath, "?id=", app_id});
-  chrome::SettingsWindowManager::GetInstance()->ShowOSSettings(profile,
-                                                               sub_page);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 void ShowWebAppSettingsImpl(Browser* browser,

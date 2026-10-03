@@ -75,9 +75,6 @@ class COMPONENT_EXPORT(UI_WM) CursorManager
   bool ShouldHideCursorOnKeyEvent(const ui::KeyEvent& event) const override;
   bool ShouldHideCursorOnTouchEvent(const ui::TouchEvent& event) const override;
   gfx::Size GetSystemCursorSize() const override;
-#if BUILDFLAG(IS_WIN)
-  void UpdateSystemCursorVisibilityForTest(bool visible) override;
-#endif
 
  private:
   // Overridden from NativeCursorManagerDelegate:

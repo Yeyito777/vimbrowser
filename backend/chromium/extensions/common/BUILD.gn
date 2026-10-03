@@ -8,10 +8,6 @@ import("//extensions/buildflags/buildflags.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 import("//testing/libfuzzer/fuzzer_test.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 assert(enable_extensions_core)
 
 # If enable_extensions is true then enable_guest_view must also be true.
@@ -294,10 +290,6 @@ static_library("common") {
     "api/messaging/port_context.h",
     "api/messaging/port_id.cc",
     "api/messaging/port_id.h",
-    "api/printer_provider/usb_printer_manifest_data.cc",
-    "api/printer_provider/usb_printer_manifest_data.h",
-    "api/printer_provider/usb_printer_manifest_handler.cc",
-    "api/printer_provider/usb_printer_manifest_handler.h",
     "api/scripts_internal/script_serialization.cc",
     "api/scripts_internal/script_serialization.h",
     "api/sockets/sockets_manifest_data.cc",
@@ -563,7 +555,6 @@ static_library("common") {
 
   deps = [
     "//base",
-    "//build:android_buildflags",
     "//build:branding_buildflags",
     "//build:chromeos_buildflags",
     "//components/crash/core/common",
@@ -597,13 +588,6 @@ static_library("common") {
     "//ui/gfx/ipc/geometry",
     "//url",
   ]
-
-  if (is_chromeos) {
-    sources += [
-      "manifest_handlers/input_components_handler.cc",
-      "manifest_handlers/input_components_handler.h",
-    ]
-  }
 }
 
 # NOTE: This is separate from ":common" because it depends on
@@ -622,13 +606,6 @@ source_set("core_api_provider") {
     "//extensions/common/api",
     "//extensions/common/api:extensions_features",
   ]
-}
-
-if (is_android) {
-  java_cpp_features("java_features_srcjar") {
-    sources = [ "extension_features.cc" ]
-    class_name = "org.chromium.extensions.common.ExtensionFeatures"
-  }
 }
 
 source_set("test_support") {
@@ -661,7 +638,6 @@ source_set("unit_tests") {
     "api/declarative/declarative_manifest_unittest.cc",
     "api/declarative_net_request/dnr_manifest_unittest.cc",
     "api/messaging/messaging_endpoint_unittest.cc",
-    "api/printer_provider/usb_printer_manifest_unittest.cc",
     "api/scripts_internal/script_serialization_unittest.cc",
     "api/sockets/sockets_manifest_permission_unittest.cc",
     "api/speech/tts_engine_manifest_unittest.cc",
@@ -743,7 +719,6 @@ source_set("unit_tests") {
     "//base",
     "//base:i18n",
     "//base/test:test_support",
-    "//build:android_buildflags",
     "//components/crx_file",
     "//components/version_info",
     "//content/test:test_support",
@@ -766,10 +741,6 @@ source_set("unit_tests") {
     "//ui/gfx",
     "//url",
   ]
-
-  if (is_chromeos) {
-    sources += [ "manifest_handlers/file_handler_manifest_unittest.cc" ]
-  }
 
   data = [
     "//extensions/common/mojom/api_permission_id.mojom",

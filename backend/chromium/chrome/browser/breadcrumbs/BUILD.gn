@@ -44,18 +44,16 @@ source_set("unit_tests") {
   ]
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    testonly = true
-    deps = [
-      ":breadcrumbs",
-      "//chrome/browser/preloading:test_support",
-      "//chrome/test:test_support",
-      "//components/breadcrumbs/core",
-      "//components/breadcrumbs/core:status",
-    ]
+source_set("browser_tests") {
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  testonly = true
+  deps = [
+    ":breadcrumbs",
+    "//chrome/browser/preloading:test_support",
+    "//chrome/test:test_support",
+    "//components/breadcrumbs/core",
+    "//components/breadcrumbs/core:status",
+  ]
 
-    sources = [ "breadcrumb_manager_tab_helper_desktop_browsertest.cc" ]
-  }
+  sources = [ "breadcrumb_manager_tab_helper_desktop_browsertest.cc" ]
 }

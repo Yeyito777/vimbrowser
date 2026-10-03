@@ -24,9 +24,6 @@
 #include "ui/gfx/gpu_fence.h"
 #include "ui/gfx/presentation_feedback.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/viz/service/display/dc_layer_overlay.h"
-#endif
 
 namespace viz {
 namespace {

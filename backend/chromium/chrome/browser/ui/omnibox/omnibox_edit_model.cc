@@ -1198,11 +1198,6 @@ void OmniboxEditModel::OnKillFocus() {
   last_omnibox_focus_ = base::TimeTicks();
   paste_state_ = PasteState::kNone;
   control_key_state_ = ControlKeyState::kUp;
-#if BUILDFLAG(IS_WIN)
-  if (view_) {
-    view_->HideImeIfNeeded();
-  }
-#endif
 }
 
 bool OmniboxEditModel::OnEscapeKeyPressed() {

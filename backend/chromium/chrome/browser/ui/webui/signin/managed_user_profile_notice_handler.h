@@ -144,9 +144,7 @@ class ManagedUserProfileNoticeHandler
   base::CallbackListSubscription browser_did_close_subscription_;
   const ManagedUserProfileNoticeUI::ScreenType type_;
   const bool profile_creation_required_by_policy_;
-#if !BUILDFLAG(IS_CHROMEOS)
   const bool show_link_data_option_;
-#endif
   const std::u16string email_;
   const std::string domain_name_;
   const CoreAccountId account_id_;

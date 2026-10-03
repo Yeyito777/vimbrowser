@@ -30,8 +30,7 @@ GpuServiceFactory::GpuServiceFactory(
     const gpu::GpuDriverBugWorkarounds& gpu_workarounds,
     const gpu::GpuFeatureInfo& gpu_feature_info,
     const gpu::GPUInfo& gpu_info,
-    base::WeakPtr<media::MediaGpuChannelManager> media_gpu_channel_manager,
-    media::AndroidOverlayMojoFactoryCB android_overlay_factory_cb) {
+    base::WeakPtr<media::MediaGpuChannelManager> media_gpu_channel_manager) {
 #if BUILDFLAG(ENABLE_MOJO_MEDIA_IN_GPU_PROCESS)
   gpu_preferences_ = gpu_preferences;
   gpu_workarounds_ = gpu_workarounds;
@@ -39,7 +38,6 @@ GpuServiceFactory::GpuServiceFactory(
   gpu_info_ = gpu_info;
   task_runner_ = base::SingleThreadTaskRunner::GetCurrentDefault();
   media_gpu_channel_manager_ = std::move(media_gpu_channel_manager);
-  android_overlay_factory_cb_ = std::move(android_overlay_factory_cb);
 #endif
 }
 
@@ -50,22 +48,6 @@ void GpuServiceFactory::RunMediaService(
 #if BUILDFLAG(ENABLE_MOJO_MEDIA_IN_GPU_PROCESS)
   scoped_refptr<base::SequencedTaskRunner> task_runner = task_runner_;
   const bool use_dedicated_media_service_thread = [&]() {
-#if BUILDFLAG(IS_WIN)
-    bool is_dawn_d3d_enabled = false;
-    // On Windows, check if we are using the Graphite D3D backend. There
-    // is rendering performance impact caused by lock contention on the
-    // D3D11 API lock, and Dawn mitigate this by batching API calls under
-    // the lock.
-    if (media_gpu_channel_manager_) {
-      if (auto shared_context_state =
-              media_gpu_channel_manager_->GetSharedContextState()) {
-        is_dawn_d3d_enabled = shared_context_state->IsGraphiteDawnD3D();
-      }
-    }
-    if (!is_dawn_d3d_enabled) {
-      return false;
-    }
-#endif
 
     return media::IsDedicatedMediaServiceThreadEnabled(
         gpu_info_.gl_implementation_parts.angle);
@@ -87,7 +69,7 @@ void GpuServiceFactory::RunMediaService(
 
   media::GpuMojoMediaClientTraits traits(
       gpu_preferences_, gpu_workarounds_, gpu_feature_info_, gpu_info_,
-      /*gpu_task_runner=*/task_runner_, android_overlay_factory_cb_,
+      /*gpu_task_runner=*/task_runner_,
       media_gpu_channel_manager_);
   auto gpu_client = media::GpuMojoMediaClient::Create(traits);
 

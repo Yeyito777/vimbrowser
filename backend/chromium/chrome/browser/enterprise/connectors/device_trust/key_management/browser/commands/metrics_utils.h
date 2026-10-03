@@ -7,9 +7,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace enterprise_connectors {
 
@@ -35,11 +32,6 @@ void LogKeyRotationCommandError(KeyRotationCommandError error);
 // positive and negative values.
 void LogKeyRotationExitCode(int exit_code);
 
-#if BUILDFLAG(IS_WIN)
-// Logs the unexpected `result` code from trying to communicate with the
-// installer.
-void LogUnexpectedHresult(HRESULT result);
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace enterprise_connectors
 

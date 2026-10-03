@@ -107,9 +107,6 @@ class RenderThreadObserver;
 class RendererBlinkPlatformImpl;
 class VariationsRenderThreadObserver;
 
-#if BUILDFLAG(IS_WIN)
-class DCOMPTextureFactory;
-#endif
 
 // The RenderThreadImpl class represents the main thread, where `blink::WebView`
 // instances live.  Most of the communication occurs in the form of mojo IPC
@@ -239,9 +236,6 @@ class CONTENT_EXPORT RenderThreadImpl
     return url_loader_throttle_provider_.get();
   }
 
-#if BUILDFLAG(IS_WIN)
-  scoped_refptr<DCOMPTextureFactory> GetDCOMPTextureFactory();
-#endif
 
   blink::WebVideoCaptureImplManager* video_capture_impl_manager() const {
     return vc_manager_.get();
@@ -347,10 +341,6 @@ class CONTENT_EXPORT RenderThreadImpl
     run_loop_start_time_ = run_loop_start_time;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // Provide private memory footprint for browser process.
-  void SetPrivateMemoryFootprint(uint64_t private_memory_footprint_bytes);
-#endif
 
  private:
   FRIEND_TEST_ALL_PREFIXES(RenderThreadImplBrowserTest,
@@ -366,11 +356,6 @@ class CONTENT_EXPORT RenderThreadImpl
   void RecordAction(const base::UserMetricsAction& action) override;
   void RecordComputedAction(const std::string& action) override;
 
-#if BUILDFLAG(IS_ANDROID)
-  // ChildThreadImpl
-  void OnMemoryPressureFromBrowserReceived(
-      base::MemoryPressureLevel level) override;
-#endif
   void SetBatterySaverMode(bool battery_saver_mode_enabled) override;
 
   bool IsMainThread();
@@ -394,9 +379,6 @@ class CONTENT_EXPORT RenderThreadImpl
                                base::TimeDelta http_rtt,
                                base::TimeDelta transport_rtt,
                                double bandwidth_kbps) override;
-#if BUILDFLAG(IS_ANDROID)
-  void SetWebKitSharedTimersSuspended(bool suspend) override;
-#endif
   void InitializeRenderer(
       const std::string& user_agent,
       const blink::UserAgentMetadata& user_agent_metadata,
@@ -505,9 +487,6 @@ class CONTENT_EXPORT RenderThreadImpl
   // Thread to run the VideoFrameCompositor on.
   std::unique_ptr<base::Thread> video_frame_compositor_thread_;
 
-#if BUILDFLAG(IS_WIN)
-  scoped_refptr<DCOMPTextureFactory> dcomp_texture_factory_;
-#endif
 
   scoped_refptr<viz::ContextProviderCommandBuffer> shared_main_thread_contexts_;
 

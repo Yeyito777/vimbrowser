@@ -53,13 +53,7 @@
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "gpu/command_buffer/client/internal/mappable_buffer_dxgi.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "gpu/command_buffer/client/internal/mappable_buffer_ahb.h"
-#endif
 
 namespace gpu {
 
@@ -98,16 +92,6 @@ class MappableBufferTest : public testing::Test {
         return MappableBufferNativePixmap::CreateFromHandleForTesting(
             client_native_pixmap_factory_.get(), std::move(handle), size,
             format, usage);
-#endif
-#if BUILDFLAG(IS_WIN)
-      case gfx::DXGI_SHARED_HANDLE:
-        return MappableBufferDXGI::CreateFromHandleForTesting(std::move(handle),
-                                                              size, format);
-#endif
-#if BUILDFLAG(IS_ANDROID)
-      case gfx::ANDROID_HARDWARE_BUFFER:
-        return MappableBufferAHB::CreateFromHandleForTesting(std::move(handle),
-                                                             size, format);
 #endif
       default:
         NOTREACHED();
@@ -191,26 +175,7 @@ class MappableBufferTest : public testing::Test {
 
   // The BufferUsages and SharedImageFormats that are valid to pass when
   // creating a MappableBuffer vary by platform.
-#if BUILDFLAG(IS_ANDROID)
-  std::array<gfx::BufferUsage, 2> usages_ = {
-      gfx::BufferUsage::GPU_READ,
-      gfx::BufferUsage::SCANOUT,
-  };
-  std::array<viz::SharedImageFormat, 1> formats_ = {
-      viz::MultiPlaneFormat::kNV12,
-  };
-#elif BUILDFLAG(IS_WIN)
-  std::array<gfx::BufferUsage, 2> usages_ = {
-      gfx::BufferUsage::GPU_READ,
-      gfx::BufferUsage::SCANOUT,
-  };
-  std::array<viz::SharedImageFormat, 4> formats_ = {
-      viz::SinglePlaneFormat::kRGBA_8888,
-      viz::SinglePlaneFormat::kRGBX_8888,
-      viz::SinglePlaneFormat::kBGRA_8888,
-      viz::SinglePlaneFormat::kBGRX_8888,
-  };
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   std::array<gfx::BufferUsage, 6> usages_ = {
       gfx::BufferUsage::GPU_READ,
       gfx::BufferUsage::SCANOUT,
@@ -280,7 +245,6 @@ TYPED_TEST_P(MappableBufferTest, CreateFromHandle) {
   }
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 TYPED_TEST_P(MappableBufferTest, CreateFromHandleSmallBuffer) {
   const gfx::Size kBufferSize(8, 8);
 
@@ -472,7 +436,6 @@ TYPED_TEST_P(MappableBufferTest, PersistentMap) {
     buffer->Unmap();
   }
 }
-#endif
 
 TYPED_TEST_P(MappableBufferTest, SerializeAndDeserialize) {
   const gfx::Size kBufferSize(8, 8);
@@ -511,11 +474,9 @@ TYPED_TEST_P(MappableBufferTest, SerializeAndDeserialize) {
 // from a GpuMemoryBuffer implementation in order to be conformant.
 REGISTER_TYPED_TEST_SUITE_P(MappableBufferTest,
                             CreateFromHandle,
-#if !BUILDFLAG(IS_ANDROID)
                             CreateFromHandleSmallBuffer,
                             Map,
                             PersistentMap,
-#endif
                             SerializeAndDeserialize);
 }  // namespace gpu
 

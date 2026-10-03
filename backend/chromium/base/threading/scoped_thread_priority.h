@@ -18,9 +18,6 @@
 #include "base/threading/thread_checker.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#endif
 
 namespace base {
 
@@ -124,9 +121,6 @@ class BASE_EXPORT ScopedBoostablePriority
 
  private:
   PlatformThreadHandle thread_handle_;
-#if BUILDFLAG(IS_WIN)
-  win::ScopedHandle scoped_handle_;
-#endif
 };
 
 namespace internal {
@@ -147,11 +141,6 @@ class BASE_EXPORT ScopedMayLoadLibraryAtBackgroundPriority {
   ~ScopedMayLoadLibraryAtBackgroundPriority();
 
  private:
-#if BUILDFLAG(IS_WIN)
-  // The original priority when invoking entering the scope().
-  std::optional<ScopedBoostPriority> boost_priority_;
-  const raw_ptr<std::atomic_bool> already_loaded_;
-#endif
 };
 
 }  // namespace internal

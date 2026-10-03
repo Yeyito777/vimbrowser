@@ -61,12 +61,6 @@ SodaClientImpl::SodaClientImpl(base::FilePath library_path)
   base::UmaHistogramEnumeration("Accessibility.LiveCaption.LoadSodaResult",
                                 load_soda_result_);
 
-#if BUILDFLAG(IS_WIN)
-  if (load_soda_result_ == LoadSodaResultValue::kBinaryInvalid) {
-    base::UmaHistogramSparse("Accessibility.LiveCaption.LoadSodaErrorCode",
-                             lib_.GetError()->code);
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 NO_SANITIZE("cfi-icall")

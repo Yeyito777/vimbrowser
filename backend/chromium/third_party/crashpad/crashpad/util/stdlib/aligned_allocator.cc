@@ -20,9 +20,6 @@
 
 #if BUILDFLAG(IS_POSIX) || defined(_LIBCPP_STD_VER)
 #include <stdlib.h>
-#elif BUILDFLAG(IS_WIN)
-#include <malloc.h>
-#include <xutility>
 #endif  // BUILDFLAG(IS_POSIX)
 
 namespace {
@@ -34,8 +31,6 @@ void ThrowBadAlloc() {
 #if BUILDFLAG(IS_POSIX) || defined(_LIBCPP_STD_VER)
   // This works with both libc++ and libstdc++.
   std::__throw_bad_alloc();
-#elif BUILDFLAG(IS_WIN)
-  std::_Xbad_alloc();
 #endif  // BUILDFLAG(IS_POSIX)
 }
 
@@ -44,7 +39,6 @@ void ThrowBadAlloc() {
 namespace crashpad {
 
 void* AlignedAllocate(size_t alignment, size_t size) {
-#if BUILDFLAG(IS_POSIX)
   // posix_memalign() requires that alignment be at least sizeof(void*), so the
   // power-of-2 check needs to happen before potentially changing the alignment.
   if (alignment == 0 || alignment & (alignment - 1)) {
@@ -55,22 +49,12 @@ void* AlignedAllocate(size_t alignment, size_t size) {
   if (posix_memalign(&pointer, std::max(alignment, sizeof(void*)), size) != 0) {
     ThrowBadAlloc();
   }
-#elif BUILDFLAG(IS_WIN)
-  void* pointer = _aligned_malloc(size, alignment);
-  if (pointer == nullptr) {
-    ThrowBadAlloc();
-  }
-#endif  // BUILDFLAG(IS_POSIX)
 
   return pointer;
 }
 
 void AlignedFree(void* pointer) {
-#if BUILDFLAG(IS_POSIX)
   free(pointer);
-#elif BUILDFLAG(IS_WIN)
-  _aligned_free(pointer);
-#endif  // BUILDFLAG(IS_POSIX)
 }
 
 }  // namespace crashpad

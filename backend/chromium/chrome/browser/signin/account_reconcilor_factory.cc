@@ -22,16 +22,6 @@
 #include "components/signin/public/base/signin_buildflags.h"
 #include "components/signin/public/base/signin_client.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/metrics/histogram_macros.h"
-#include "base/time/time.h"
-#include "chrome/browser/ash/account_manager/account_manager_util.h"
-#include "chrome/browser/lifetime/application_lifetime.h"
-#include "chromeos/ash/components/account_manager/account_manager_factory.h"
-#include "chromeos/ash/components/install_attributes/install_attributes.h"
-#include "components/user_manager/user_manager.h"
-#include "google_apis/gaia/google_service_auth_error.h"
-#endif
 
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
 #include "components/signin/core/browser/dice_account_reconcilor_delegate.h"
@@ -39,50 +29,6 @@
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-class ChromeOSChildAccountReconcilorDelegate
-    : public signin::MirrorAccountReconcilorDelegate {
- public:
-  ChromeOSChildAccountReconcilorDelegate(
-      signin::IdentityManager* identity_manager)
-      : signin::MirrorAccountReconcilorDelegate(identity_manager) {}
-
-  ChromeOSChildAccountReconcilorDelegate(
-      const ChromeOSChildAccountReconcilorDelegate&) = delete;
-  ChromeOSChildAccountReconcilorDelegate& operator=(
-      const ChromeOSChildAccountReconcilorDelegate&) = delete;
-
-  base::TimeDelta GetReconcileTimeout() const override {
-    return base::Seconds(10);
-  }
-
-  void OnReconcileError(const GoogleServiceAuthError& error) override {
-    // If |error| is |GoogleServiceAuthError::State::NONE| or a transient error.
-    if (!error.IsPersistentError()) {
-      return;
-    }
-
-    if (!GetIdentityManager()->HasAccountWithRefreshTokenInPersistentErrorState(
-            GetIdentityManager()->GetPrimaryAccountId(
-                signin::ConsentLevel::kSignin))) {
-      return;
-    }
-
-    // Mark the account to require an online sign in.
-    const user_manager::User* primary_user =
-        user_manager::UserManager::Get()->GetPrimaryUser();
-    DCHECK(primary_user);
-    user_manager::UserManager::Get()->SaveForceOnlineSignin(
-        primary_user->GetAccountId(), true /* force_online_signin */);
-
-    UMA_HISTOGRAM_BOOLEAN(
-        "ChildAccountReconcilor.ForcedUserExitOnReconcileError", true);
-
-    // Force a logout.
-    chrome::AttemptUserExit();
-  }
-};
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -119,19 +65,10 @@ AccountReconcilorFactory::BuildServiceInstanceForBrowserContext(
       IdentityManagerFactory::GetForProfile(profile);
   SigninClient* signin_client =
       ChromeSigninClientFactory::GetForProfile(profile);
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<AccountReconcilor> reconcilor =
-      std::make_unique<AccountReconcilor>(
-          identity_manager, signin_client,
-          ash::AccountManagerFactory::Get()->GetAccountManagerFacade(
-              profile->GetPath().value()),
-          CreateAccountReconcilorDelegate(profile));
-#else
   std::unique_ptr<AccountReconcilor> reconcilor =
       std::make_unique<AccountReconcilor>(
           identity_manager, signin_client,
           CreateAccountReconcilorDelegate(profile));
-#endif  // BUILDFLAG(IS_CHROMEOS)
   reconcilor->Initialize(true /* start_reconcile_if_tokens_available */);
   return reconcilor;
 }
@@ -143,14 +80,6 @@ AccountReconcilorFactory::CreateAccountReconcilorDelegate(Profile* profile) {
       AccountConsistencyModeManager::GetMethodForProfile(profile);
   switch (account_consistency) {
     case signin::AccountConsistencyMethod::kMirror:
-#if BUILDFLAG(IS_CHROMEOS)
-      // Only for child accounts on Chrome OS, use the specialized Mirror
-      // delegate.
-      if (profile->IsChild()) {
-        return std::make_unique<ChromeOSChildAccountReconcilorDelegate>(
-            IdentityManagerFactory::GetForProfile(profile));
-      }
-#endif
       return std::make_unique<signin::MirrorAccountReconcilorDelegate>(
           IdentityManagerFactory::GetForProfile(profile));
 

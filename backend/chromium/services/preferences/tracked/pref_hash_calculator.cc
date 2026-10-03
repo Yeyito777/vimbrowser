@@ -143,15 +143,6 @@ PrefHashCalculator::ValidationResult PrefHashCalculator::Validate(
     const std::string& path,
     const std::string& value_as_string,
     const std::string& digest_string) const {
-#if BUILDFLAG(IS_WIN)
-  // On enterprise-managed devices, bypass legacy HMAC validation. This is to
-  // support roaming user profiles, where the device-specific HMAC would fail
-  // upon roaming. Preference integrity on these devices is maintained by the
-  // encrypted hash.
-  if (base::IsEnterpriseDevice()) {
-    return VALID;
-  }
-#endif
   return HmacVerify(path, value_as_string, digest_string) ? VALID : INVALID;
 }
 
@@ -206,20 +197,6 @@ PrefHashCalculator::ValidationResult PrefHashCalculator::ValidateEncrypted(
   if (!decrypted_hash) {
     return INVALID_ENCRYPTED;
   }
-#if BUILDFLAG(IS_WIN)
-  if (base::FeatureList::IsEnabled(tracked::kRejectWeakCiphertext) &&
-      flags.should_reencrypt) {
-    // This must be true, since if decryption succeeded the data must contain
-    // header + nonce which is at least 15 bytes.
-    CHECK_GE(encrypted_hash->size(), 2u);
-    // Check for v10 encrypted data - if encrypted with v10 but a better cipher
-    // is available, it's considered invalid. This should never happen as v20
-    // has always been available since before this encryption was added.
-    if (encrypted_hash->at(1) == '1') {
-      return WEAK_HASH_ENCRYPTED;
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
   std::string expected_hash = Hash(path, ValueAsString(value));
   return crypto::SecureMemEqual(base::as_byte_span(*decrypted_hash),
                                 base::as_byte_span(expected_hash))

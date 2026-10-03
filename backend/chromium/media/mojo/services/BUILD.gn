@@ -8,8 +8,7 @@ import("//media/media_options.gni")
 import("//mojo/public/tools/fuzzers/mojolpm.gni")
 import("//testing/test.gni")
 
-enable_playback_events_recorder =
-    enable_cast_receiver && (is_fuchsia || is_android)
+enable_playback_events_recorder = enable_cast_receiver && is_fuchsia
 
 component("services") {
   output_name = "media_mojo_services"
@@ -109,12 +108,8 @@ component("services") {
     "//services/service_manager/public/mojom",
   ]
 
-  if (is_android) {
-    sources += [ "gpu_mojo_media_client_android.cc" ]
-  } else if (is_apple) {
+  if (is_apple) {
     sources += [ "gpu_mojo_media_client_mac.cc" ]
-  } else if (is_win) {
-    sources += [ "gpu_mojo_media_client_win.cc" ]
   } else if (use_linux_video_acceleration) {
     if (is_linux) {
       sources += [ "gpu_mojo_media_client_linux.cc" ]
@@ -125,26 +120,10 @@ component("services") {
     sources += [ "gpu_mojo_media_client_stubs.cc" ]
   }
 
-  if (is_chromeos) {
-    deps +=
-        [ "//chromeos/components/cdm_factory_daemon:cdm_factory_daemon_gpu" ]
-  }
-
   if (use_linux_video_acceleration) {
     sources += [
       "mojo_video_encode_accelerator_provider_factory.cc",
       "mojo_video_encode_accelerator_provider_factory.h",
-    ]
-  }
-
-  if (is_android) {
-    sources += [
-      "android_mojo_media_client.cc",
-      "android_mojo_media_client.h",
-      "android_mojo_util.cc",
-      "android_mojo_util.h",
-      "mediadrm_support_service.cc",
-      "mediadrm_support_service.h",
     ]
   }
 
@@ -182,24 +161,6 @@ component("services") {
     deps += [ "//media/cdm:cdm_api" ]
   }
 
-  if (is_win) {
-    sources += [
-      "media_foundation_gpu_info_monitor.cc",
-      "media_foundation_gpu_info_monitor.h",
-      "media_foundation_mojo_media_client.cc",
-      "media_foundation_mojo_media_client.h",
-      "media_foundation_preferences.cc",
-      "media_foundation_preferences.h",
-      "media_foundation_renderer_wrapper.cc",
-      "media_foundation_renderer_wrapper.h",
-      "media_foundation_service.cc",
-      "media_foundation_service.h",
-      "media_foundation_service_broker.cc",
-      "media_foundation_service_broker.h",
-    ]
-    deps += [ "//ui/gfx/mojom:dxgi_info" ]
-  }
-
   if (allow_hosting_oop_video_decoder) {
     sources += [
       "oop_video_decoder_factory_process_service.cc",
@@ -218,18 +179,6 @@ component("services") {
       "//media/mojo/common",
       "//services/viz/public/cpp/gpu",
     ]
-  }
-
-  if (is_fuchsia) {
-    sources += [
-      "fuchsia_cdm_manager.cc",
-      "fuchsia_cdm_manager.h",
-      "fuchsia_cdm_provisioning_fetcher_impl.cc",
-      "fuchsia_cdm_provisioning_fetcher_impl.h",
-    ]
-
-    public_deps += [ "//third_party/fuchsia-sdk/sdk/fidl/fuchsia.media.drm:fuchsia.media.drm_hlcpp" ]
-    deps += [ "//third_party/fuchsia-sdk/sdk/pkg/fit-promise" ]
   }
 }
 
@@ -312,29 +261,9 @@ source_set("unit_tests") {
     ]
   }
 
-  if (is_android) {
-    sources += [ "mediadrm_support_service_unittest.cc" ]
-    deps += [ "//third_party/widevine/cdm:headers" ]
-  }
-
-  if (is_chromeos) {
-    deps += [
-      "//components/chromeos_camera:mjpeg_decode_accelerator_service_unittest",
-    ]
-  }
-
   if (allow_hosting_oop_video_decoder) {
     sources += [ "oop_video_decoder_service_unittest.cc" ]
     deps += [ "//gpu:test_support" ]
-  }
-
-  if (is_fuchsia) {
-    sources += [
-      "fuchsia_cdm_manager_unittest.cc",
-      "fuchsia_cdm_provisioning_fetcher_impl_unittest.cc",
-    ]
-
-    deps += [ "//third_party/fuchsia-sdk/sdk/pkg/fit-promise" ]
   }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and

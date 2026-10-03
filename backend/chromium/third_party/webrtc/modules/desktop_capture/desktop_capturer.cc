@@ -10,8 +10,6 @@
 
 #include "modules/desktop_capture/desktop_capturer.h"
 
-#include <cstdlib>
-#include <cstring>
 #include <memory>
 #include <utility>
 
@@ -32,10 +30,6 @@
 #include "modules/desktop_capture/win/wgc_capturer_win.h"
 #include "rtc_base/win/windows_version.h"
 #endif  // defined(RTC_ENABLE_WIN_WGC)
-
-#if defined(WEBRTC_USE_PIPEWIRE)
-#include "modules/desktop_capture/linux/wayland/base_capturer_pipewire.h"
-#endif  // defined(WEBRTC_USE_PIPEWIRE)
 
 #if defined(WEBRTC_MAC) && !defined(WEBRTC_IOS)
 #include "modules/desktop_capture/mac/screen_capturer_sck.h"
@@ -137,12 +131,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
     [[maybe_unused]] const DesktopCaptureOptions& options) {
   std::unique_ptr<DesktopCapturer> capturer;
 
-#if defined(WEBRTC_USE_PIPEWIRE)
-  if (options.allow_pipewire() && DesktopCapturer::IsRunningUnderWayland()) {
-    capturer = std::make_unique<BaseCapturerPipeWire>(
-        options, CaptureType::kAnyScreenContent);
-  }
-#elif defined(WEBRTC_MAC) && !defined(WEBRTC_IOS)
+#if defined(WEBRTC_MAC) && !defined(WEBRTC_IOS)
   capturer = CreateGenericCapturerSck(options);
 #endif
 
@@ -152,18 +141,5 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
 
   return capturer;
 }
-
-#if defined(WEBRTC_USE_PIPEWIRE) || defined(WEBRTC_USE_X11)
-bool DesktopCapturer::IsRunningUnderWayland() {
-  const char* xdg_session_type = getenv("XDG_SESSION_TYPE");
-  if (!xdg_session_type || strncmp(xdg_session_type, "wayland", 7) != 0)
-    return false;
-
-  if (!(getenv("WAYLAND_DISPLAY")))
-    return false;
-
-  return true;
-}
-#endif  // defined(WEBRTC_USE_PIPEWIRE) || defined(WEBRTC_USE_X11)
 
 }  // namespace webrtc

@@ -16,21 +16,11 @@
 #include "components/page_content_annotations/content/page_content_extraction_service.h"
 #include "components/page_content_annotations/core/page_content_annotations_features.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/page_content_annotations/android/page_content_extraction_tab_model_observer_android.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#endif
 
 namespace page_content_annotations {
 
 namespace {
-#if BUILDFLAG(IS_ANDROID)
-const char kPageContentExtractionTabModelObserverAndroidKey[] =
-    "page_content_extraction_tab_model_observer_android";
-#endif
 }  // namespace
 
 // static
@@ -76,15 +66,6 @@ PageContentExtractionServiceFactory::BuildServiceInstanceForBrowserContext(
   auto service = std::make_unique<PageContentExtractionService>(
       g_browser_process->os_crypt_async(), profile->GetPath(), tracker);
 
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(features::kPageContentCache)) {
-    auto observer =
-        std::make_unique<PageContentExtractionTabModelObserverAndroid>(
-            profile, service.get());
-    service->SetUserData(kPageContentExtractionTabModelObserverAndroidKey,
-                         std::move(observer));
-  }
-#endif
   return service;
 }
 

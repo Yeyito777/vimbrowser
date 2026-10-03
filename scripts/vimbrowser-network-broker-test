@@ -1,0 +1,341 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import base64
+import http.server
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+import threading
+import time
+from urllib.parse import urlparse
+
+NAME = f"vb-network-broker-{os.getpid()}"
+REPO = Path(__file__).resolve().parents[1]
+cli_path = os.environ.get("VIMBROWSER_CLI") or shutil.which("vimbrowser-cli")
+if not cli_path:
+    raise SystemExit("vimbrowser-network-broker-test: vimbrowser-cli is not in PATH")
+CLI = Path(cli_path)
+PROFILE = Path(tempfile.mkdtemp(prefix="vimbrowser-network-broker-"))
+BINARY = Path(os.environ.get(
+    "VIMBROWSER_TEST_BINARY", REPO / "build-source/Release/vimbrowser"
+)).resolve()
+BINARY_DIR = BINARY.parent
+BINARY_BODY = b"\xff\x00\xfeBIN"
+
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def log_message(self, *_args):
+        pass
+
+    def _read_body(self) -> bytes:
+        length = int(self.headers.get("Content-Length", "0") or "0")
+        return self.rfile.read(length)
+
+    def _send(self, status: int, body: bytes, content_type: str,
+              extra_headers: list[tuple[str, str]] | None = None) -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        for name, value in extra_headers or []:
+            self.send_header(name, value)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        path = urlparse(self.path).path
+        if path == "/binary":
+            self._send(200, BINARY_BODY, "application/octet-stream")
+            return
+        page = b"<!doctype html><meta charset=utf-8><title>broker-test</title>ready"
+        self._send(200, page, "text/html; charset=utf-8")
+
+    def do_POST(self):
+        path = urlparse(self.path).path
+        body = self._read_body()
+        if path == "/template":
+            self._send(200, b"template-ok", "text/plain; charset=utf-8")
+            return
+        if path == "/derived":
+            cookie = self.headers.get("Cookie", "")
+            cookies = {}
+            for part in cookie.split(";"):
+                if "=" in part:
+                    name, value = part.strip().split("=", 1)
+                    cookies[name] = value
+            result = {
+                "body": body.decode("utf-8"),
+                "session_cookie": cookies.get("session"),
+                "host": self.headers.get("Host"),
+                "content_length": self.headers.get("Content-Length"),
+                "template_header": self.headers.get("X-Template-Runtime"),
+                "override_header": self.headers.get("X-Override"),
+                "removed_header": self.headers.get("X-Remove-Me"),
+            }
+            encoded = json.dumps(result, separators=(",", ":")).encode()
+            self._send(
+                200, encoded, "application/json",
+                [("Set-Cookie", "broker_persisted=yes; Path=/; SameSite=Lax")],
+            )
+            return
+        self._send(404, b"not found", "text/plain")
+
+
+server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+thread = threading.Thread(target=server.serve_forever, daemon=True)
+thread.start()
+port = server.server_address[1]
+origin = f"http://127.0.0.1:{port}"
+env = os.environ | {"VIMBROWSER_PROFILE_DIR": str(PROFILE)}
+
+
+def run(*args: str, stdin: str | None = None, check: bool = True,
+        timeout: float = 45) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(
+        [str(CLI), *args], input=stdin, text=True, capture_output=True,
+        env=env, timeout=timeout, check=False,
+    )
+    if check and result.returncode:
+        raise AssertionError(
+            f"command failed ({result.returncode}): {args}\n"
+            f"stderr={result.stderr}\nstdout={result.stdout}"
+        )
+    return result
+
+
+def json_run(*args: str, stdin: str | None = None, timeout: float = 45):
+    return json.loads(run(*args, stdin=stdin, timeout=timeout).stdout)
+
+
+def wait_tab(tab_id: int, timeout: float = 15) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        tabs = json_run("tabs", "--profile-dir", str(PROFILE), "--json")
+        for tab in tabs["tabs"]:
+            if tab["id"] == tab_id and not tab["loading"]:
+                return
+        time.sleep(0.05)
+    raise AssertionError(f"tab {tab_id} did not become ready")
+
+
+def new_context(name: str) -> int:
+    before = {row["id"] for row in json_run(
+        "tabs", "--profile-dir", str(PROFILE), "--json")["tabs"]}
+    opened = json_run(
+        "open-context", "--profile-dir", str(PROFILE), "--timeout", "15",
+        name, origin + "/page",
+    )
+    added = {row["id"] for row in opened["tabs"]} - before
+    if len(added) != 1:
+        raise AssertionError(f"expected one {name} tab, got {added}")
+    tab_id = added.pop()
+    wait_tab(tab_id)
+    return tab_id
+
+
+def network(tab: int, *parts: str, timeout: float = 45):
+    return json_run(
+        "network", "--profile-dir", str(PROFILE), "--timeout", "35",
+        str(tab), *parts, timeout=timeout,
+    )
+
+
+summary = {}
+browser_process = None
+try:
+    shutil.rmtree(PROFILE, ignore_errors=True)
+    subprocess.run(["xenv", "stop", NAME], stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL, check=False)
+    subprocess.run(["xenv", "start", NAME], check=True, capture_output=True,
+                   text=True, timeout=30)
+    browser_process = subprocess.Popen(
+        ["xenv", "exec", "-e", NAME, "bash", "-lc",
+         'cd "$1"; shift; exec ./vimbrowser "$@"', "bash", str(BINARY_DIR),
+         f"--profile-dir={PROFILE}", origin + "/page"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True,
+    )
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        if PROFILE.joinpath("ipc.sock").exists():
+            try:
+                json_run("status", "--profile-dir", str(PROFILE))
+                break
+            except Exception:
+                pass
+        time.sleep(0.05)
+    else:
+        raise AssertionError("isolated vimbrowser IPC did not become ready")
+
+    tab_a = new_context("broker-a")
+    tab_b = new_context("broker-b")
+    run("cookie-set", "--profile-dir", str(PROFILE), str(tab_a),
+        "session", "old")
+
+    prefix = origin + "/template"
+    capture = network(tab_a, "capture", "on", prefix)
+    assert capture["enabled"] is True and capture["global_enabled"] is False
+    cursor = capture["latest_request_id"]
+
+    # A non-matching request in A and a matching URL in B must not enter A's ring.
+    js_nonmatch = "fetch('/not-captured').catch(() => {}); 'started';"
+    run("js", "--profile-dir", str(PROFILE), str(tab_a), stdin=js_nonmatch)
+    js_other_tab = "fetch('/template', {method:'POST', body:'other'}).catch(() => {}); 'started';"
+    run("js", "--profile-dir", str(PROFILE), str(tab_b), stdin=js_other_tab)
+
+    js_template = """
+fetch('/template', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {
+    'Content-Type': 'text/plain',
+    'X-Template-Runtime': 'captured-dynamic',
+    'X-Remove-Me': 'remove-this'
+  },
+  body: 'template-body'
+}).catch(() => {});
+'started';
+"""
+    run("js", "--profile-dir", str(PROFILE), str(tab_a), stdin=js_template)
+    waited = network(tab_a, "wait", prefix, "5000", str(cursor))
+    assert waited["matched"] is True and waited["timed_out"] is False
+    request_id = waited["request"]["id"]
+    detail = network(tab_a, "detail", str(request_id))
+    request_headers = {
+        row["name"].lower(): row["value"] for row in detail["request_headers"]
+    }
+    assert request_headers["x-template-runtime"] == "captured-dynamic"
+    assert detail["request_body"] == "template-body"
+    assert len(network(tab_a, "list")["requests"]) == 1
+    assert len(network(tab_b, "list")["requests"]) == 0
+
+    # The browser-side wait remains pending while the renderer creates a later
+    # request; no ring-buffer polling is performed by the caller.
+    delayed_js = "setTimeout(() => fetch('/template', {method:'POST', body:'later'}), 300); 'scheduled';"
+    run("js", "--profile-dir", str(PROFILE), str(tab_a), stdin=delayed_js)
+    future = network(tab_a, "wait", prefix, "5000", str(request_id))
+    assert future["matched"] is True
+    future_request_id = future["request"]["id"]
+    assert future_request_id > request_id
+    assert len(network(tab_a, "list")["requests"]) == 2
+
+    timeout_result = network(
+        tab_a, "wait", origin + "/never", "100", str(future_request_id)
+    )
+    assert timeout_result == {
+        "matched": False, "timed_out": True,
+        "after_request_id": future_request_id,
+    }
+
+    # Change the cookie after capture. The broker must use this fresh value and
+    # must not replay any stale Cookie or Content-Length header from the template.
+    run("cookie-set", "--profile-dir", str(PROFILE), str(tab_a),
+        "session", "fresh")
+    payload = {
+        "version": 1,
+        "templateRequestId": request_id,
+        "url": origin + "/derived",
+        "method": "POST",
+        "bodyUtf8": "derived-body",
+        "headerOverrides": {"X-Override": "override-value"},
+        "removeHeaders": ["X-Remove-Me"],
+        "timeoutMs": 5000,
+    }
+    executed = json_run(
+        "network-execute", "--profile-dir", str(PROFILE), "--timeout", "35",
+        str(tab_a), stdin=json.dumps(payload),
+    )
+    assert executed["ok"] is True and executed["status"] == 200
+    echoed = json.loads(executed["body_utf8"])
+    assert echoed == {
+        "body": "derived-body",
+        "session_cookie": "fresh",
+        "host": f"127.0.0.1:{port}",
+        "content_length": str(len("derived-body")),
+        "template_header": "captured-dynamic",
+        "override_header": "override-value",
+        "removed_header": None,
+    }
+    assert base64.b64decode(executed["body_base64"]) == executed["body_utf8"].encode()
+
+    cookies_a = json_run("cookies", "--profile-dir", str(PROFILE), str(tab_a))
+    cookies_b = json_run("cookies", "--profile-dir", str(PROFILE), str(tab_b))
+    values_a = {row["name"]: row["value"] for row in cookies_a["cookies"]}
+    values_b = {row["name"]: row["value"] for row in cookies_b["cookies"]}
+    assert values_a["session"] == "fresh"
+    assert values_a["broker_persisted"] == "yes"
+    assert "session" not in values_b and "broker_persisted" not in values_b
+
+    binary_payload = {
+        "version": 1,
+        "templateRequestId": request_id,
+        "url": origin + "/binary",
+        "method": "GET",
+        "bodyUtf8": "",
+        "timeoutMs": 5000,
+    }
+    binary_result = json_run(
+        "network-execute", "--profile-dir", str(PROFILE), "--timeout", "35",
+        str(tab_a), stdin=json.dumps(binary_payload),
+    )
+    assert binary_result["body_utf8"] is None
+    assert base64.b64decode(binary_result["body_base64"]) == BINARY_BODY
+    assert binary_result["body_size"] == len(BINARY_BODY)
+
+    for reserved_header in ("Cookie", "Host", "Content-Length"):
+        forbidden = payload | {
+            "headerOverrides": {reserved_header: "must-not-send"}
+        }
+        forbidden_result = run(
+            "network-execute", "--profile-dir", str(PROFILE),
+            "--timeout", "35", str(tab_a), stdin=json.dumps(forbidden),
+            check=False,
+        )
+        assert forbidden_result.returncode != 0
+        assert "context-managed" in forbidden_result.stderr
+
+    cross_origin = payload | {"url": f"http://localhost:{port}/derived"}
+    cross_result = run(
+        "network-execute", "--profile-dir", str(PROFILE), "--timeout", "35",
+        str(tab_a), stdin=json.dumps(cross_origin), check=False,
+    )
+    assert cross_result.returncode != 0
+    assert "template HTTP(S) origin" in cross_result.stderr
+
+    off = network(tab_a, "capture", "off")
+    assert off["enabled"] is False
+    run("js", "--profile-dir", str(PROFILE), str(tab_a), stdin=js_template)
+    time.sleep(0.5)
+    assert len(network(tab_a, "list")["requests"]) == 2
+
+    summary = {
+        "ok": True,
+        "capture_selected_tab_and_prefix": True,
+        "wait_match_and_timeout": True,
+        "captured_dynamic_header_preserved": True,
+        "body_and_header_mutation": True,
+        "fresh_context_cookie_attachment": True,
+        "set_cookie_persistence": True,
+        "named_context_isolation": True,
+        "reserved_header_rejection": True,
+        "same_origin_enforcement": True,
+        "binary_response_base64": True,
+        "capture_off": True,
+    }
+    print(json.dumps(summary, indent=2))
+finally:
+    server.shutdown()
+    server.server_close()
+    subprocess.run(["xenv", "stop", NAME], stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL, check=False)
+    if browser_process is not None and browser_process.poll() is None:
+        browser_process.terminate()
+        try:
+            browser_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            browser_process.kill()
+    shutil.rmtree(PROFILE, ignore_errors=True)

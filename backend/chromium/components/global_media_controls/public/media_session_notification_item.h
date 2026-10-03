@@ -156,10 +156,8 @@ class COMPONENT_EXPORT(GLOBAL_MEDIA_CONTROLS) MediaSessionNotificationItem
  private:
   FRIEND_TEST_ALL_PREFIXES(MediaSessionNotificationItemTest,
                            GetSessionMetadata);
-#if !BUILDFLAG(IS_CHROMEOS)
   FRIEND_TEST_ALL_PREFIXES(MediaSessionNotificationItemTest,
                            GetSessionMetadataForUpdatedUI);
-#endif
   FRIEND_TEST_ALL_PREFIXES(MediaSessionNotificationItemTest,
                            GetMediaSessionActions);
   FRIEND_TEST_ALL_PREFIXES(MediaSessionNotificationItemTest,

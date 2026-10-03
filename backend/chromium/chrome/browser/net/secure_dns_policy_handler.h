@@ -44,12 +44,6 @@ class SecureDnsPolicyHandler : public ConfigurationPolicyHandler {
   // `CheckPolicySettings`.
   bool is_templates_policy_valid_ = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Indicates whether the DnsOverHttpsTemplatesWithIdentifiers policy is valid
-  // and can be applied. If not, the corresponding pref is not set. Set in
-  // `CheckPolicySettings`.
-  bool is_templates_with_identifiers_policy_valid_ = false;
-#endif
 };
 
 }  // namespace policy

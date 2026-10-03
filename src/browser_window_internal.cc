@@ -75,11 +75,10 @@ void StyleCommandField(CefRefPtr<CefTextfield> field) {
   if (!field) {
     return;
   }
-  // The command line is a real focused native textfield. We intercept editing
-  // keys in BrowserWindow and drive vim::LineEditState ourselves, but the
-  // textfield owns all text/caret/selection painting. This keeps normal-mode
-  // block cursors and insert-mode bar cursors in Chromium's renderer instead of
-  // using overlay views that can drift, move text, or fail to erase glyphs.
+  // The command line is a real focused native textfield. We intercept modeled
+  // input in BrowserWindow, while the textfield owns native editing and all
+  // text/caret/selection painting. This keeps the insertion caret in Chromium's
+  // renderer instead of using an overlay that can drift or fail to erase.
   field->SetReadOnly(false);
   field->SetFocusable(true);
   field->SetFontList("monospace, 13px");
@@ -1151,6 +1150,11 @@ const std::vector<IpcCommandInfo> &IpcCommandList() {
        "open-background-context-tab <context-name> <url-or-query>",
        "open a background tab in a named persistent isolated request context",
        "json"},
+      {"open-background-context-tab-brief",
+       "open-background-context-tab-brief <context-name> <url-or-query>",
+       "open an isolated background tab and return only that exact created tab", "json"},
+      {"diagnose-tab", "diagnose-tab <tabid>",
+       "metadata-only target/build diagnostic; does not wake/focus or prove renderer readiness", "json"},
       {"open", "open <tabid> <url-or-query>",
        "load url/query in an existing tab", "json"},
       {"reload", "reload [tabid]", "reload a tab", "json"},
@@ -1165,11 +1169,13 @@ const std::vector<IpcCommandInfo> &IpcCommandList() {
       {"scroll-tab", "scroll-tab <tabid> <dy> [count]", "scroll a tab by stable id", "json"},
       {"frame-tree", "frame-tree <tabid>", "list the current main/child frame tree with opaque frame ids", "json"},
       {"inspect-controls", "inspect-controls <tabid> <base64-v1-json-query>", "inspect controls in one exact frame and mint short-lived exact-node handles", "json"},
+      {"activate-control", "activate-control <tabid> <exact-node-handle>", "trusted-activate one inspected visible control with transient user activation", "json"},
       {"key", "key <[ctrl+][shift+][alt+][cmd+]key>", "send a synthetic key through the active browser", "json"},
       {"html", "html <tabid>", "return current document HTML via native CEF frame source", "text/html"},
       {"text", "text <tabid>", "return current document text via native CEF frame text", "text/plain"},
       {"frame-html", "frame-html <tabid> <frameid>", "return HTML for one exact current child frame", "text/html"},
       {"frame-text", "frame-text <tabid> <frameid>", "return text for one exact current child frame", "text/plain"},
+      {"tab-activity", "tab-activity <tabid> <0..300000 milliseconds>", "lease page visibility/rendering without native focus; 0 releases; page IPC renews 60s", "text"},
       {"screenshot", "screenshot <tabid>", "capture a tab as a PNG without changing focus", "image/png;base64"},
       {"js", "js <tabid> <javascript>", "evaluate JavaScript in the tab renderer", "json"},
       {"frame-js", "frame-js <tabid> <frameid> <javascript>", "evaluate JavaScript in one exact current child frame", "json"},
@@ -1183,7 +1189,18 @@ const std::vector<IpcCommandInfo> &IpcCommandList() {
       {"cookies-url", "cookies-url <url>", "list cookies visible to an explicit URL using the global backend cookie manager", "json"},
       {"cookie-delete", "cookie-delete <tabid> <name>", "delete a cookie visible to the tab URL", "json"},
       {"cookie-set", "cookie-set <tabid> <name> <value> [domain] [path]", "set a cookie for the tab URL", "json"},
-      {"network", "network <tabid> list|detail|body|replay|clear [requestid]", "inspect, replay, or clear native captured network requests", "json/body"},
+      {"network",
+       "network <tabid> capture status|on [url-prefix]|off | wait <url-prefix> "
+       "[timeout-ms] [after-request-id] | list|clear | detail|body|replay "
+       "<requestid>",
+       "control exact-tab capture, wait for, inspect, replay, or clear native "
+       "requests",
+       "json/body"},
+      {"network-execute-base64",
+       "network-execute-base64 <tabid> <base64-json-payload>",
+       "execute a same-origin request derived from a captured template in the "
+       "exact tab request context",
+       "json"},
       {"fps", "fps", "active tab fps sample", "text/plain"},
       {"refresh", "refresh", "active tab compositor refresh rate",
        "text/plain"},

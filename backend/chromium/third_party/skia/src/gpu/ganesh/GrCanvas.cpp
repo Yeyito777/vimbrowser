@@ -6,13 +6,9 @@
  */
 #include "src/gpu/ganesh/GrCanvas.h"
 
-#include "include/android/SkCanvasAndroid.h"
-#include "include/core/SkRect.h"
-#include "include/gpu/ganesh/GrBackendSurface.h"
 #include "src/core/SkCanvasPriv.h"
 #include "src/core/SkDevice.h"
 #include "src/gpu/ganesh/Device.h"
-#include "src/gpu/ganesh/GrRenderTarget.h"
 #include "src/gpu/ganesh/GrRenderTargetProxy.h"
 
 namespace skgpu::ganesh {
@@ -36,19 +32,6 @@ GrRenderTargetProxy* TopDeviceTargetProxy(const SkCanvas* canvas) {
         return gpuDevice->targetProxy();
     }
     return nullptr;
-}
-
-SkIRect TopLayerBounds(const SkCanvas* canvas) {
-    return SkCanvasPriv::TopDevice(canvas)->getGlobalBounds();
-}
-
-GrBackendRenderTarget TopLayerBackendRenderTarget(const SkCanvas* canvas) {
-    auto proxy = TopDeviceTargetProxy(canvas);
-    if (!proxy) {
-        return {};
-    }
-    const GrRenderTarget* renderTarget = proxy->peekRenderTarget();
-    return renderTarget ? renderTarget->getBackendRenderTarget() : GrBackendRenderTarget();
 }
 
 }  // namespace skgpu::ganesh

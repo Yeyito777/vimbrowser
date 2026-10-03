@@ -44,18 +44,6 @@ namespace base {
 
 // Windows-specific ------------------------------------------------------------
 
-#if BUILDFLAG(IS_WIN)
-
-// Converts between 8-bit and wide strings, using the given code page. The
-// code page identifier is one accepted by the Windows function
-// MultiByteToWideChar().
-[[nodiscard]] BASE_EXPORT std::wstring SysMultiByteToWide(std::string_view mb,
-                                                          uint32_t code_page);
-[[nodiscard]] BASE_EXPORT std::string SysWideToMultiByte(
-    const std::wstring& wide,
-    uint32_t code_page);
-
-#endif  // BUILDFLAG(IS_WIN)
 
 // Mac-specific ----------------------------------------------------------------
 

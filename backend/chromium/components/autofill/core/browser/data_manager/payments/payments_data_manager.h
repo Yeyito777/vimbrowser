@@ -15,6 +15,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
+#include "base/scoped_observation.h"
 #include "components/autofill/core/browser/autofill_shared_storage_handler.h"
 #include "components/autofill/core/browser/country_type.h"
 #include "components/autofill/core/browser/data_model/payments/autofill_offer_data.h"
@@ -316,10 +317,6 @@ class PaymentsDataManager : public AutofillWebDataServiceObserverOnUISequence,
   // information, see crbug.com/411681430.
   virtual void ClearLocalCvcsUpToMay2025();
 
-#if BUILDFLAG(IS_IOS)
-  // Method to clean up for crbug.com/445879524.
-  virtual void CleanupForCrbug445879524();
-#endif  // BUILDFLAG(IS_IOS)
 
   // Deletes all server cards (both masked and unmasked).
   void ClearAllServerDataForTesting();

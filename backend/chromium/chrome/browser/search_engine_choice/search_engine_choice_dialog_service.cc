@@ -377,12 +377,10 @@ SearchEngineChoiceDialogService::ComputeDialogConditions(
   // currently displayed or is about to be displayed.
   bool signin_dialog_displayed_or_pending =
       browser_features.signin_view_controller()->ShowsModalDialog();
-#if !BUILDFLAG(IS_CHROMEOS)
   signin_dialog_displayed_or_pending =
       signin_dialog_displayed_or_pending ||
       browser_features.profile_customization_bubble_sync_controller()
           ->IsWaitingForTheme();
-#endif  // BUILDFLAG(IS_CHROMEOS)
   if (signin_dialog_displayed_or_pending) {
     return SearchEngineChoiceScreenConditions::kSuppressedByOtherDialog;
   }

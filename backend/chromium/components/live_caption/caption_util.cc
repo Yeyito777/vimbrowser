@@ -19,9 +19,6 @@
 #include "ui/base/ui_base_switches.h"
 #include "ui/native_theme/caption_style.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 #if !BUILDFLAG(IS_FUCHSIA) && !BUILDFLAG(IS_ANDROID)
 #include "components/soda/soda_util.h"
@@ -137,14 +134,8 @@ bool IsHeadlessCaptionFeatureSupported() {
 }
 
 std::string GetCaptionSettingsUrl() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return "chrome://os-settings/audioAndCaptions";
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   return "chrome://settings/captions";
-#elif BUILDFLAG(IS_WIN)
-  return base::win::GetVersion() >= base::win::Version::WIN10
-             ? "chrome://settings/accessibility"
-             : "chrome://settings/captions";
 #elif BUILDFLAG(IS_MAC)
   return "chrome://settings/accessibility";
 #else

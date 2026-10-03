@@ -27,14 +27,7 @@
 #include "content/public/child/child_thread.h"
 #include "content/public/common/content_switches.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/mojo_service_manager/connection.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-#include "sandbox/policy/mojom/sandbox.mojom.h"
-#include "sandbox/policy/sandbox_type.h"
-#endif
 
 ChromeContentUtilityClient::ChromeContentUtilityClient() {
   base::ThreadGroupProfiler::SetClient(
@@ -47,12 +40,6 @@ ChromeContentUtilityClient::~ChromeContentUtilityClient() = default;
 
 void ChromeContentUtilityClient::ExposeInterfacesToBrowser(
     mojo::BinderMap* binders) {
-#if BUILDFLAG(IS_WIN)
-  auto& cmd_line = *base::CommandLine::ForCurrentProcess();
-  auto sandbox_type = sandbox::policy::SandboxTypeFromCommandLine(cmd_line);
-  utility_process_running_elevated_ =
-      sandbox_type == sandbox::mojom::Sandbox::kNoSandboxAndElevatedPrivileges;
-#endif
 }
 
 void ChromeContentUtilityClient::UtilityThreadStarted() {
@@ -101,10 +88,3 @@ void ChromeContentUtilityClient::RegisterIOThreadServices(
     mojo::ServiceFactory& services) {
   return ::RegisterIOThreadServices(services);
 }
-
-#if BUILDFLAG(IS_CHROMEOS)
-mojo::GenericPendingReceiver
-ChromeContentUtilityClient::InitMojoServiceManager() {
-  return ash::mojo_service_manager::BootstrapServiceManagerInUtilityProcess();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)

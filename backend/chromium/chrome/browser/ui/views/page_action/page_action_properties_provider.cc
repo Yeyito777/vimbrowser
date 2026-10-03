@@ -50,13 +50,6 @@ constexpr auto kPageActionProperties =
             },
         },
         {
-            kActionShowTranslate,
-            {
-                .histogram_name = "Translate",
-                .type = PageActionIconType::kTranslate,
-            },
-        },
-        {
             kActionShowMemorySaverChip,
             {
                 .histogram_name = "MemorySaver",

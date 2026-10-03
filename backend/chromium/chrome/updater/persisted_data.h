@@ -19,9 +19,6 @@
 #include "chrome/updater/updater_scope.h"
 #include "components/update_client/persisted_data.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 class PrefService;
 class PrefRegistrySimple;
@@ -146,13 +143,6 @@ class PersistedData : public base::RefCountedThreadSafe<PersistedData>,
   base::Time GetLastStarted() const;
   void SetLastStarted(base::Time time);
 
-#if BUILDFLAG(IS_WIN)
-  // Retrieves the previously stored OS version.
-  std::optional<OSVERSIONINFOEX> GetLastOSVersion() const;
-
-  // Stores the current os version.
-  void SetLastOSVersion();
-#endif
 
   // update_client::PersistedData overrides:
   base::Version GetProductVersion(const std::string& id) const override;

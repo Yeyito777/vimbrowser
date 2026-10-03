@@ -55,7 +55,6 @@ source_set("perfetto_cmd") {
     "../../protos/perfetto/config:cpp",
     "../../protos/perfetto/config/ftrace:cpp",
     "../../protos/perfetto/config/sys_stats:cpp",
-    "../android_stats",
     "../base",
     "../base:version",
     "../proto_utils:txt_to_pb",
@@ -71,11 +70,6 @@ source_set("perfetto_cmd") {
     "perfetto_cmd.h",
   ]
   assert_no_deps = [ "../trace_processor/*" ]
-
-  if (is_android) {
-    deps += [ "../android_internal:lazy_library_loader" ]
-    sources += [ "perfetto_cmd_android.cc" ]
-  }
 
   # Abseil is only used in Perfetto via the gRPC/libprotobuf.
   if (perfetto_build_standalone || is_perfetto_build_generator) {
@@ -100,7 +94,6 @@ source_set("trigger_perfetto_cmd") {
   deps = [
     ":trigger_producer",
     "../../gn:default_deps",
-    "../android_stats",
     "../base",
     "../tracing/ipc/producer",
   ]

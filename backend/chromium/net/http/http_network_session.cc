@@ -227,16 +227,10 @@ HttpNetworkSession::HttpNetworkSession(const HttpNetworkSessionParams& params,
   http_stream_pool_ = std::make_unique<HttpStreamPool>(
       this,
       /*cleanup_on_ip_address_change=*/!params.ignore_ip_address_changes);
-#if BUILDFLAG(IS_WIN)
-  base::PowerMonitor::GetInstance()->AddPowerSuspendObserver(this);
-#endif
 }
 
 HttpNetworkSession::~HttpNetworkSession() {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
-#if BUILDFLAG(IS_WIN)
-  base::PowerMonitor::GetInstance()->RemovePowerSuspendObserver(this);
-#endif
   if (http_stream_pool_) {
     http_stream_pool_->OnShuttingDown();
   }

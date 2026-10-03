@@ -26,11 +26,7 @@ constexpr int kShadowElevationPopup = 4;
 // of the shadow style created by gfx::ShadowValue::MakeMdShadowValues() or
 // gfx::ShadowValue::MakeChromeOSSystemUIShadowValues().
 constexpr int kShadowElevationMenuOrTooltip = 6;
-#if BUILDFLAG(IS_CHROMEOS)
-constexpr int kShadowElevationInactiveWindow = 12;
-#else
 constexpr int kShadowElevationInactiveWindow = 8;
-#endif
 constexpr int kShadowElevationActiveWindow = 24;
 
 COMPONENT_EXPORT(UI_WM)

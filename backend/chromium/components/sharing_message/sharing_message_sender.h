@@ -30,10 +30,6 @@ namespace syncer {
 class LocalDeviceInfoProvider;
 }  // namespace syncer
 
-namespace sync_pb {
-class UnencryptedSharingMessage;
-}  // namespace sync_pb
-
 enum class SharingChannelType;
 class SharingFCMSender;
 enum class SharingDevicePlatform;
@@ -60,16 +56,11 @@ class SharingMessageSender {
         components_sharing_message::SharingMessage message,
         SendMessageCallback callback) = 0;
 
-    virtual void DoSendUnencryptedMessageToDevice(
-        const SharingTargetDeviceInfo& device,
-        sync_pb::UnencryptedSharingMessage message,
-        SendMessageCallback callback) = 0;
-
     virtual void ClearPendingMessages() = 0;
   };
 
   // Delegate type used to send a message.
-  enum class DelegateType { kFCM, kWebRtc, kIOSPush };
+  enum class DelegateType { kFCM, kWebRtc };
 
   SharingMessageSender(
       syncer::LocalDeviceInfoProvider* local_device_info_provider,
@@ -82,12 +73,6 @@ class SharingMessageSender {
       const SharingTargetDeviceInfo& device,
       base::TimeDelta response_timeout,
       components_sharing_message::SharingMessage message,
-      DelegateType delegate_type,
-      ResponseCallback callback);
-
-  virtual base::OnceClosure SendUnencryptedMessageToDevice(
-      const SharingTargetDeviceInfo& device,
-      sync_pb::UnencryptedSharingMessage message,
       DelegateType delegate_type,
       ResponseCallback callback);
 

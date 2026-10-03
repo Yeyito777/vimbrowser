@@ -95,20 +95,12 @@ size_t CefFileReader::Read(void* ptr, size_t size, size_t n) {
 
 int CefFileReader::Seek(int64_t offset, int whence) {
   base::AutoLock lock_scope(lock_);
-#if BUILDFLAG(IS_WIN)
-  return _fseeki64(file_, offset, whence);
-#else
   return fseek(file_, offset, whence);
-#endif
 }
 
 int64_t CefFileReader::Tell() {
   base::AutoLock lock_scope(lock_);
-#if BUILDFLAG(IS_WIN)
-  return _ftelli64(file_);
-#else
   return ftell(file_);
-#endif
 }
 
 int CefFileReader::Eof() {

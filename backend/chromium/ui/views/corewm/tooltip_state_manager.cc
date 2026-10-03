@@ -21,12 +21,7 @@
 namespace views::corewm {
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-// Drawing a long word in tooltip is very slow on Windows. crbug.com/513693
-constexpr size_t kMaxTooltipLength = 1024;
-#else
 constexpr size_t kMaxTooltipLength = 2048;
-#endif
 
 }  // namespace
 

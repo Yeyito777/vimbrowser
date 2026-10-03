@@ -264,10 +264,6 @@ void OverlayProcessorUsingStrategy::ProcessForOverlays(
     CandidateList* candidates,
     gfx::Rect* damage_rect,
     std::vector<gfx::Rect>* content_bounds) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(b/181974042):  Remove when color space is plumbed.
-  primary_plane_color_space_ = primary_plane_params.color_space;
-#endif
   TRACE_EVENT0("viz", "OverlayProcessorUsingStrategy::ProcessForOverlays");
   DCHECK(candidates->empty());
   auto* render_pass = render_passes->back().get();
@@ -332,11 +328,6 @@ void OverlayProcessorUsingStrategy::ProcessForOverlays(
 void OverlayProcessorUsingStrategy::CheckOverlaySupport(
     const std::optional<OverlayCandidate>& primary_plane,
     OverlayCandidateList* candidate_list) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(b/181974042):  Remove when color space is plumbed.
-  if (primary_plane)
-    primary_plane_color_space_ = primary_plane->color_space;
-#endif
 
   CheckOverlaySupportImpl(primary_plane, candidate_list);
 }

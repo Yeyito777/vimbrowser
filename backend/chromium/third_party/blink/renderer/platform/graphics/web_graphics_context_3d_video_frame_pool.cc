@@ -217,11 +217,7 @@ void CopyToGpuMemoryBuffer(
 }  // namespace
 
 BASE_FEATURE(kUseCopyToGpuMemoryBufferAsync,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 std::optional<gpu::SyncToken>
@@ -242,15 +238,6 @@ WebGraphicsContext3DVideoFramePool::CopyRGBATextureToVideoFrame(
   if (!raster_context_provider)
     return std::nullopt;
 
-#if BUILDFLAG(IS_WIN)
-  // CopyToGpuMemoryBuffer is only supported for D3D shared images on Windows.
-  if (!context_provider.SharedImageInterface()
-           ->GetCapabilities()
-           .shared_image_d3d) {
-    DVLOG(1) << "CopyToGpuMemoryBuffer not supported.";
-    return std::nullopt;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   auto dst_frame = pool_->MaybeCreateVideoFrame(src_size, dst_color_space);
   if (!dst_frame) {

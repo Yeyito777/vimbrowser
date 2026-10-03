@@ -48,13 +48,6 @@ class ChromeVariationsConfiguration : public Configuration {
                    const FeatureVector& features,
                    const GroupVector& groups);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void UpdateConfig(const base::Feature& feature,
-                    const ConfigurationProvider* provider) override;
-
-  const Configuration::EventPrefixSet& GetRegisteredAllowedEventPrefixes()
-      const override;
-#endif
 
  private:
   void LoadFeatureConfig(
@@ -65,11 +58,6 @@ class ChromeVariationsConfiguration : public Configuration {
   void LoadGroupConfig(
       const base::Feature& group,
       const ConfigurationProviderList& configuration_providers);
-#if BUILDFLAG(IS_CHROMEOS)
-  void LoadAllowedEventPrefixes(
-      const base::Feature& feature,
-      const ConfigurationProviderList& configuration_providers);
-#endif
 
   // Expands any group names in the existing FeatureConfig fields into the
   // feature names that are in the group.
@@ -81,10 +69,6 @@ class ChromeVariationsConfiguration : public Configuration {
   // The current group configurations.
   GroupConfigMap group_configs_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // The allowed set of prefixes.
-  EventPrefixSet event_prefixes_;
-#endif
 };
 
 }  // namespace feature_engagement

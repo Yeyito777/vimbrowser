@@ -305,13 +305,6 @@ if (!build_with_chromium) {
       "../../../resources/pc_quality_smoke_test_alice_source.wav",
       "../../../resources/pc_quality_smoke_test_bob_source.wav",
     ]
-    if (is_ios) {
-      bundle_data("peer_connection_e2e_smoke_test_resources_bundle_data") {
-        testonly = true
-        sources = peer_connection_e2e_smoke_test_resources
-        outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-      }
-    }
 
     rtc_library("peer_connection_e2e_smoke_test") {
       testonly = true
@@ -359,9 +352,6 @@ if (!build_with_chromium) {
       data = peer_connection_e2e_smoke_test_resources
       if (is_mac || is_ios) {
         deps += [ "../../../modules/video_coding:objc_codec_factory_helper" ]
-      }
-      if (is_ios) {
-        deps += [ ":peer_connection_e2e_smoke_test_resources_bundle_data" ]
       }
     }
 

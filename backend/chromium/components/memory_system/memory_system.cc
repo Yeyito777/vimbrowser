@@ -16,9 +16,6 @@
 
 #if BUILDFLAG(ENABLE_GWP_ASAN)
 #include "components/gwp_asan/client/gwp_asan.h"  // nogncheck
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/crash/core/app/crashpad.h"  // nogncheck
-#endif
 #endif
 
 #if BUILDFLAG(IS_IOS) && PA_BUILDFLAG(USE_ALLOCATOR_SHIM)

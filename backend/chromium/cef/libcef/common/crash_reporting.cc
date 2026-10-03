@@ -25,64 +25,17 @@
 #include "content/public/common/content_paths.h"
 #endif
 
-#if BUILDFLAG(IS_POSIX)
 #include "base/lazy_instance.h"
 #include "cef/libcef/common/crash_reporter_client.h"
 #include "components/crash/core/app/crashpad.h"
-#endif
 
 namespace crash_reporting {
 
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-
-const base::FilePath::CharType kChromeElfDllName[] =
-    FILE_PATH_LITERAL("chrome_elf.dll");
-
-// exported in crash_reporter_client.cc:
-//    int __declspec(dllexport) __cdecl SetCrashKeyValueImpl.
-typedef int(__cdecl* SetCrashKeyValue)(const char*,
-                                       size_t,
-                                       const char*,
-                                       size_t);
-
-//    int __declspec(dllexport) __cdecl IsCrashReportingEnabledImpl.
-typedef int(__cdecl* IsCrashReportingEnabled)();
-
-bool SetCrashKeyValueTrampoline(const std::string_view& key,
-                                const std::string_view& value) {
-  static SetCrashKeyValue set_crash_key = []() {
-    HMODULE elf_module = GetModuleHandle(kChromeElfDllName);
-    return reinterpret_cast<SetCrashKeyValue>(
-        elf_module ? GetProcAddress(elf_module, "SetCrashKeyValueImpl")
-                   : nullptr);
-  }();
-  if (set_crash_key) {
-    return !!(set_crash_key)(key.data(), key.size(), value.data(),
-                             value.size());
-  }
-  return false;
-}
-
-bool IsCrashReportingEnabledTrampoline() {
-  static IsCrashReportingEnabled is_crash_reporting_enabled = []() {
-    HMODULE elf_module = GetModuleHandle(kChromeElfDllName);
-    return reinterpret_cast<IsCrashReportingEnabled>(
-        elf_module ? GetProcAddress(elf_module, "IsCrashReportingEnabledImpl")
-                   : nullptr);
-  }();
-  if (is_crash_reporting_enabled) {
-    return !!(is_crash_reporting_enabled)();
-  }
-  return false;
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 bool g_crash_reporting_enabled = false;
 
-#if BUILDFLAG(IS_POSIX)
 base::LazyInstance<CefCrashReporterClient>::Leaky g_crash_reporter_client =
     LAZY_INSTANCE_INITIALIZER;
 
@@ -135,7 +88,6 @@ void InitCrashReporter(const base::CommandLine& command_line,
   }
 #endif  // !BUILDFLAG(IS_MAC)
 }
-#endif  // BUILDFLAG(IS_POSIX)
 
 // Used to exclude command-line flags from crash reporting.
 bool IsBoringCEFSwitch(const std::string& flag) {
@@ -181,29 +133,19 @@ bool SetCrashKeyValue(const std::string_view& key,
     return false;
   }
 
-#if BUILDFLAG(IS_WIN)
-  return SetCrashKeyValueTrampoline(key, value);
-#else
   return g_crash_reporter_client.Pointer()->SetCrashKeyValue(key, value);
-#endif
 }
 
-#if BUILDFLAG(IS_POSIX)
 // Be aware that logging is not initialized at the time this method is called.
 void BasicStartupComplete(base::CommandLine* command_line) {
   g_crash_reporter_client.Pointer()->ReadCrashConfigFile();
 }
-#endif
 
 void PreSandboxStartup(const base::CommandLine& command_line,
                        const std::string& process_type) {
-#if BUILDFLAG(IS_POSIX)
   // Initialize crash reporting here on macOS and Linux. Crash reporting on
   // Windows is initialized from context.cc.
   InitCrashReporter(command_line, process_type);
-#elif BUILDFLAG(IS_WIN)
-  g_crash_reporting_enabled = IsCrashReportingEnabledTrampoline();
-#endif
 
   if (g_crash_reporting_enabled) {
     LOG(INFO) << "Crash reporting enabled for process: "

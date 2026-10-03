@@ -174,7 +174,6 @@ ConnectorsServiceBase::GetCommonAnalysisSettings(
   return settings;
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 std::optional<std::string> ConnectorsServiceBase::GetProfileDmToken() const {
   policy::CloudPolicyManager* policy_manager =
       GetManagedUserCloudPolicyManager();
@@ -187,7 +186,6 @@ std::optional<std::string> ConnectorsServiceBase::GetProfileDmToken() const {
 
   return std::nullopt;
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 policy::PolicyScope ConnectorsServiceBase::GetPolicyScope(
     const char* scope_pref) const {

@@ -16,10 +16,6 @@
 #include "third_party/libaddressinput/chromium/chrome_storage_impl.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#include "chrome/browser/autofill/android/jni_headers/SubKeyRequesterFactory_jni.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace autofill {
 
@@ -41,15 +37,5 @@ SubKeyRequesterFactory::SubKeyRequesterFactory()
 
 SubKeyRequesterFactory::~SubKeyRequesterFactory() = default;
 
-#if BUILDFLAG(IS_ANDROID)
-static base::android::ScopedJavaLocalRef<jobject>
-JNI_SubKeyRequesterFactory_GetInstance(JNIEnv* env) {
-  return SubKeyRequesterFactory::GetInstance()->GetJavaObject();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace autofill
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(SubKeyRequesterFactory)
-#endif

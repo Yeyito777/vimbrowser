@@ -91,11 +91,6 @@ class ConfirmInfoBarDelegate : public infobars::InfoBarDelegate {
   // on the infobar.
   virtual int GetLinkSpacingWhenPositionedBeforeButton() const;
 
-#if BUILDFLAG(IS_IOS)
-  // Returns whether or not a tint should be applied to the icon background.
-  // Defaults to true.
-  virtual bool UseIconBackgroundTint() const;
-#endif
 
   // Called when the OK button is pressed. If this function returns true, the
   // infobar is then immediately closed. Subclasses MUST NOT return true if in

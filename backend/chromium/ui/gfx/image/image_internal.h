@@ -46,10 +46,7 @@ class ImageRep {
   const ImageRepSkia* AsImageRepSkia() const;
   ImageRepSkia* AsImageRepSkia();
 
-#if BUILDFLAG(IS_IOS)
-  const ImageRepCocoaTouch* AsImageRepCocoaTouch() const;
-  ImageRepCocoaTouch* AsImageRepCocoaTouch();
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   const ImageRepCocoa* AsImageRepCocoa() const;
   ImageRepCocoa* AsImageRepCocoa();
 #endif

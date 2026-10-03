@@ -43,10 +43,6 @@ constexpr char kRegularTabbedWindow[] = "REGULAR_TABBED";
 constexpr char kWebAppWindow[] = "WEB_APP";
 constexpr char kSystemWebAppWindow[] = "SYSTEM_WEB_APP";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Give up if crash_reporter hasn't finished in this long.
-constexpr base::TimeDelta kMaximumWaitForCrashReporter = base::Minutes(1);
-#endif
 
 // Sometimes, the stack trace will contain an error message as the first line,
 // which confuses the Crash server. This function deletes it if it is present.
@@ -121,9 +117,6 @@ std::string MapWindowTypeToString(
 
 ChromeJsErrorReportProcessor::ChromeJsErrorReportProcessor()
     :
-#if BUILDFLAG(IS_CHROMEOS)
-      maximium_wait_for_crash_reporter_(kMaximumWaitForCrashReporter),
-#endif
       clock_(base::DefaultClock::GetInstance()) {
 }
 ChromeJsErrorReportProcessor::~ChromeJsErrorReportProcessor() = default;
@@ -136,11 +129,9 @@ ChromeJsErrorReportProcessor::CheckConsentAndRedact(
     JavaScriptErrorReport error_report) {
   // Consent is handled at the OS level by crash_reporter so we don't need to
   // check it here for Chrome OS.
-#if !BUILDFLAG(IS_CHROMEOS)
   if (!crash_reporter::GetClientCollectStatsConsent()) {
     return std::nullopt;
   }
-#endif
 
   // Remove error message from stack trace before redaction, since redaction
   // might change the error message enough that we don't find it.
@@ -205,13 +196,8 @@ void ChromeJsErrorReportProcessor::OnConsentCheckCompleted(
   params["browser"] = "Chrome";
   params["browser_version"] = product_info.version;
   params["channel"] = product_info.channel;
-#if BUILDFLAG(IS_CHROMEOS)
-  // base::SysInfo::OperatingSystemName() returns "Linux" on ChromeOS devices.
-  params["os"] = "ChromeOS";
-#else
   params["os"] = base::SysInfo::OperatingSystemName();
   params["os_version"] = GetOsVersion();
-#endif
   constexpr char kSourceSystemParamName[] = "source_system";
   switch (error_report->source_system) {
     case JavaScriptErrorReport::SourceSystem::kUnknown:
@@ -365,12 +351,10 @@ void ChromeJsErrorReportProcessor::SendErrorReport(
   base::ScopedClosureRunner callback_runner(std::move(completion_callback));
 
   scoped_refptr<network::SharedURLLoaderFactory> loader_factory;
-#if !BUILDFLAG(IS_CHROMEOS)
   // loader_factory must be created on UI thread. Get it now while we still
   // know the browser_context pointer is valid.
   loader_factory = browser_context->GetDefaultStoragePartition()
                        ->GetURLLoaderFactoryForBrowserProcess();
-#endif
 
   // Get browser uptime before swapping threads to reduce lag time between the
   // error report occurring and sending it off.

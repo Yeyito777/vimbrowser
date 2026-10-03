@@ -14,13 +14,6 @@
 #include <atk/atk.h>
 #endif  // BUILDFLAG(USE_ATK)
 
-#if BUILDFLAG(IS_WIN)
-#include <oleacc.h>
-
-#include "third_party/iaccessible2/ia2_api_all.h"
-
-#include <uiautomation.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace ui {
 
@@ -36,15 +29,6 @@ ax::mojom::TextBoundary FromAtkTextGranularity(AtkTextGranularity granularity);
 #endif  // ATK_CHECK_VERSION(2, 10, 0)
 #endif  // BUILDFLAG(USE_ATK)
 
-#if BUILDFLAG(IS_WIN)
-// Converts from an IAccessible2 text boundary to an ax::mojom::TextBoundary.
-COMPONENT_EXPORT(AX_PLATFORM)
-ax::mojom::TextBoundary FromIA2TextBoundary(IA2TextBoundaryType boundary);
-
-// Converts from a UI Automation text unit to an ax::mojom::TextBoundary.
-COMPONENT_EXPORT(AX_PLATFORM)
-ax::mojom::TextBoundary FromUIATextUnit(TextUnit unit);
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace ui
 

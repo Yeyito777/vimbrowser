@@ -5,7 +5,6 @@
 import("//mojo/public/tools/bindings/mojom.gni")
 
 mojom("mojom") {
-  generate_java = true
   sources = [
     "themes.mojom",
     "ui_base_types.mojom",
@@ -62,7 +61,6 @@ mojom("mojom") {
 # TODO(crbug.com/361008605): Move back `WindowShowState` enum to ui_base_types.mojom.
 # TODO(crbug.com/370252254): Move back `MenuSourceType` enum to ui_base_types.mojom.
 mojom("ui_base_types") {
-  generate_java = true
   sources = [
     "dialog_button.mojom",
     "menu_source_type.mojom",

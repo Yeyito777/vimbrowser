@@ -18,11 +18,7 @@ namespace shared_highlighting {
 namespace {
 
 bool IsAmpGenerationEnabled() {
-#if BUILDFLAG(IS_IOS)
-  return false;
-#else
   return true;
-#endif
 }
 
 }  // namespace

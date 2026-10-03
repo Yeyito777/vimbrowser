@@ -8,8 +8,6 @@ mojom_component("mojom") {
   output_prefix = "gl_mojom"
   macro_prefix = "GL_MOJOM"
 
-  generate_java = true
-
   sources = [
     "gl_implementation.mojom",
     "gpu_preference.mojom",

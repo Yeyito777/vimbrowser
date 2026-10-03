@@ -52,9 +52,6 @@
 #include "ui/gfx/gpu_extra_info.h"
 #include "ui/gfx/native_ui_types.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gl/direct_composition_support.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace gpu {
 class DawnContextProvider;
@@ -87,9 +84,6 @@ class VulkanContextProvider;
 // the connection to clients, allocating/free'ing gpu memory etc.
 class VIZ_SERVICE_EXPORT GpuServiceImpl
     : public gpu::GpuChannelManagerDelegate,
-#if BUILDFLAG(IS_WIN)
-      public gl::DirectCompositionOverlayCapsObserver,
-#endif
       public mojom::GpuService,
       public BeginFrameObserverBase {
  public:
@@ -124,26 +118,12 @@ class VIZ_SERVICE_EXPORT GpuServiceImpl
   void UpdateGPUInfo();
   void UpdateGPUInfoGL();
 
-#if BUILDFLAG(IS_ANDROID)
-  void InitializeWithHost(
-      mojo::PendingRemote<mojom::GpuHost> gpu_host,
-      gpu::GpuProcessShmCount use_shader_cache_shm_count,
-      scoped_refptr<gl::GLSurface> default_offscreen_surface,
-      mojom::GpuServiceCreationParamsPtr creation_params,
-      gpu::SyncPointManager* sync_point_manager = nullptr,
-      gpu::SharedImageManager* shared_image_manager = nullptr,
-      gpu::Scheduler* scheduler = nullptr,
-      base::WaitableEvent* shutdown_event = nullptr,
-      const gpu::SharedContextState::GrContextOptionsProvider*
-          gr_context_options_provider = nullptr);
-#else
   void InitializeWithHost(
       mojo::PendingRemote<mojom::GpuHost> gpu_host,
       gpu::GpuProcessShmCount use_shader_cache_shm_count,
       scoped_refptr<gl::GLSurface> default_offscreen_surface,
       mojom::GpuServiceCreationParamsPtr creation_params,
       base::WaitableEvent* shutdown_event = nullptr);
-#endif
 
   void Bind(mojo::PendingReceiver<mojom::GpuService> pending_receiver);
 
@@ -176,22 +156,7 @@ class VIZ_SERVICE_EXPORT GpuServiceImpl
   void OnDiskCacheHandleDestoyed(
       const gpu::GpuDiskCacheHandle& handle) override;
   void CloseChannel(int32_t client_id) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void CreateJpegDecodeAccelerator(
-      mojo::PendingReceiver<chromeos_camera::mojom::MjpegDecodeAccelerator>
-          jda_receiver) override;
-  void CreateJpegEncodeAccelerator(
-      mojo::PendingReceiver<chromeos_camera::mojom::JpegEncodeAccelerator>
-          jea_receiver) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-  void RegisterDCOMPSurfaceHandle(
-      mojo::PlatformHandle surface_handle,
-      RegisterDCOMPSurfaceHandleCallback callback) override;
-  void UnregisterDCOMPSurfaceHandle(
-      const base::UnguessableToken& token) override;
-#endif  // BUILDFLAG(IS_WIN)
 
   void CreateVideoEncodeAcceleratorProvider(
       mojo::PendingReceiver<media::mojom::VideoEncodeAcceleratorProvider>
@@ -212,9 +177,6 @@ class VIZ_SERVICE_EXPORT GpuServiceImpl
   void StartPeakMemoryMonitor(uint32_t sequence_num) override;
   void GetPeakMemoryUsage(uint32_t sequence_num,
                           GetPeakMemoryUsageCallback callback) override;
-#if BUILDFLAG(IS_WIN)
-  void RequestDXGIInfo(RequestDXGIInfoCallback callback) override;
-#endif
   void LoadedBlob(const gpu::GpuDiskCacheHandle& handle,
                   const std::string& key,
                   const std::string& data) override;
@@ -275,12 +237,6 @@ class VIZ_SERVICE_EXPORT GpuServiceImpl
   void SetMjpegDecodeAcceleratorBeginFrameCB(
       std::optional<base::RepeatingClosure> cb);
 
-#if BUILDFLAG(IS_WIN)
-  // DirectCompositionOverlayCapsObserver implementation.
-  // Update overlay info and HDR status on the GPU process and send the updated
-  // info back to the browser process if there is a change.
-  void OnOverlayCapsChanged() override;
-#endif
 
   bool is_initialized() const { return !!gpu_host_; }
 
@@ -360,9 +316,6 @@ class VIZ_SERVICE_EXPORT GpuServiceImpl
 
   base::ProcessId host_process_id() const { return host_process_id_; }
 
-#if BUILDFLAG(IS_ANDROID)
-  void SetHostProcessId(base::ProcessId pid);
-#endif
 
   using PriorityChangedCallback =
       base::RepeatingCallback<void(base::Process::Priority /*priority*/)>;
@@ -391,9 +344,6 @@ class VIZ_SERVICE_EXPORT GpuServiceImpl
   gpu::Scheduler* CreateScheduler(gpu::SyncPointManager* sync_point_manager);
   base::WaitableEvent* CreateShutdownEvent();
 
-#if BUILDFLAG(IS_WIN)
-  void RequestDXGIInfoOnMainThread(RequestDXGIInfoCallback callback);
-#endif
 
   void OnBackgroundedOnMainThread();
   void OnForegroundedOnMainThread();
@@ -413,9 +363,6 @@ class VIZ_SERVICE_EXPORT GpuServiceImpl
 
   // Update overlay info and HDR status on the GPU process and send the updated
   // info back to the browser process if there is a change.
-#if BUILDFLAG(IS_WIN)
-  void UpdateOverlayAndDXGIInfo();
-#endif
 
   void GetDawnInfoOnMain(bool collect_metrics, GetDawnInfoCallback callback);
 
@@ -438,11 +385,6 @@ class VIZ_SERVICE_EXPORT GpuServiceImpl
   scoped_refptr<base::SingleThreadTaskRunner> main_runner_;
   scoped_refptr<base::SingleThreadTaskRunner> io_runner_;
 
-#if BUILDFLAG(IS_FUCHSIA)
-  // TODO(crbug.com/40850116): Fuchsia does not support FIDL communication from
-  // ThreadPool's worker threads.
-  std::unique_ptr<base::Thread> vea_thread_;
-#endif
 
   // Do not change the class member order here. watchdog_thread_ should be the
   // last one to be destroyed before main_runner_ and io_runner_.
@@ -458,9 +400,6 @@ class VIZ_SERVICE_EXPORT GpuServiceImpl
 
   const gpu::GpuDriverBugWorkarounds gpu_driver_bug_workarounds_;
 
-#if BUILDFLAG(IS_WIN)
-  gfx::mojom::DXGIInfoPtr dxgi_info_;
-#endif
 
   // What we would have gotten if we haven't fallen back to SwiftShader or
   // pure software (in the viz case).

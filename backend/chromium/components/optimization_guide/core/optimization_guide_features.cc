@@ -369,11 +369,7 @@ bool ShouldMetadataValidationFetchHostKeyed() {
 bool ShouldDeferStartupActiveTabsHintsFetch() {
   return GetFieldTrialParamByFeatureAsBool(
       kOptimizationHints, "defer_startup_active_tabs_hints_fetch",
-#if BUILDFLAG(IS_ANDROID)
-      true
-#else
       false
-#endif
   );
 }
 

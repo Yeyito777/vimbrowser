@@ -53,9 +53,6 @@ TriggeredProfileResetterFactory::BuildServiceInstanceForBrowserContext(
 
 void TriggeredProfileResetterFactory::RegisterProfilePrefs(
     user_prefs::PrefRegistrySyncable* registry) {
-#if BUILDFLAG(IS_WIN)
-  registry->RegisterInt64Pref(prefs::kLastProfileResetTimestamp, 0L);
-#endif
 }
 
 bool TriggeredProfileResetterFactory::ServiceIsCreatedWithBrowserContext()

@@ -332,15 +332,9 @@ void FileSystemAccessSafeMoveHelper::DidFileDoQuarantine(
   // On ChromeOS on the other hand anything that isn't in the sandboxed file
   // system is also uniquely identifiable by its FileSystemURL::path(), and
   // thus we accept all other FileSystemURL types.
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK(target_url.type() != storage::kFileSystemTypeTemporary &&
-         target_url.type() != storage::kFileSystemTypePersistent)
-      << target_url.type();
-#else
   DCHECK(target_url.type() == storage::kFileSystemTypeLocal ||
          target_url.type() == storage::kFileSystemTypeTest)
       << target_url.type();
-#endif
 
   GURL authority_url =
       referrer_url.is_valid() && referrer_url.SchemeIsHTTPOrHTTPS()
@@ -363,18 +357,8 @@ void FileSystemAccessSafeMoveHelper::DidFileDoQuarantine(
                            std::move(quarantine_remote)),
             quarantine::mojom::QuarantineFileResult::ANNOTATION_FAILED));
   } else {
-#if BUILDFLAG(IS_WIN)
-    base::ThreadPool::PostTaskAndReplyWithResult(
-        FROM_HERE, {base::MayBlock()},
-        base::BindOnce(&quarantine::SetInternetZoneIdentifierDirectly,
-                       target_url.path(), authority_url, referrer_url),
-        base::BindOnce(&FileSystemAccessSafeMoveHelper::DidAnnotateFile,
-                       weak_factory_.GetWeakPtr(),
-                       std::move(quarantine_remote)));
-#else
     DidAnnotateFile(std::move(quarantine_remote),
                     quarantine::mojom::QuarantineFileResult::ANNOTATION_FAILED);
-#endif
   }
 }
 

@@ -30,24 +30,15 @@ namespace pdf_extension_util {
 // flags are enabled.
 std::string GetManifest();
 
-// Represents the context within which the PDF Viewer runs.
-enum class PdfViewerContext {
-  kPdfViewer,
-  kPrintPreview,
-  kAll,
-};
-
-// Gets all strings used by the PDF Viewer depending on the provided `context`.
-base::DictValue GetStrings(PdfViewerContext context);
+// Gets all strings used by the PDF Viewer.
+base::DictValue GetStrings();
 
 // Gets additional data used by the PDF Viewer UI. e.g. whether certain features
 // are enabled/disabled.
 base::DictValue GetAdditionalData(content::BrowserContext* context);
 
-// Returns the entries in `resources` that are relevant to `context`.
-// `context` must be `PdfViewerContext::kPdfViewer` or
-// `PdfViewerContext::kPrintPreview`.
-std::vector<webui::ResourcePath> GetResources(PdfViewerContext context);
+// Returns the PDF Viewer resource entries.
+std::vector<webui::ResourcePath> GetResources();
 
 // For OOPIF PDF viewer only. Returns true if successfully sends a save event to
 // the PDF viewer, or false otherwise. Only successful if the PDF plugin should

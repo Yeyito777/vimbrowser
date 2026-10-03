@@ -19,9 +19,6 @@
 #include "build/build_config.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace storage {
 
@@ -81,11 +78,7 @@ class FileLockImpl : public mojom::FileLock {
       return;
     }
 
-#if BUILDFLAG(IS_FUCHSIA)
-    std::move(callback).Run(base::File::FILE_OK);
-#else
     std::move(callback).Run(file_.Unlock());
-#endif
     GetLockTable().RemoveLock(path_);
     file_.Close();
   }
@@ -265,13 +258,11 @@ base::FileErrorOr<base::File> FilesystemImpl::LockFileLocal(
     return base::unexpected(base::File::FILE_ERROR_IN_USE);
   }
 
-#if !BUILDFLAG(IS_FUCHSIA)
   base::File::Error error = file.Lock(base::File::LockMode::kExclusive);
   if (error != base::File::FILE_OK) {
     UnlockFileLocal(path);
     return base::unexpected(error);
   }
-#endif
 
   return file;
 }
@@ -285,15 +276,7 @@ void FilesystemImpl::UnlockFileLocal(const base::FilePath& path) {
 mojom::PathAccessInfoPtr FilesystemImpl::GetPathAccessLocal(
     const base::FilePath& path) {
   mojom::PathAccessInfoPtr info;
-#if BUILDFLAG(IS_WIN)
-  uint32_t attributes = ::GetFileAttributes(path.value().c_str());
-  if (attributes != INVALID_FILE_ATTRIBUTES) {
-    info = mojom::PathAccessInfo::New();
-    info->can_read = true;
-    if ((attributes & FILE_ATTRIBUTE_READONLY) == 0)
-      info->can_write = true;
-  }
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   const char* const c_path = path.value().c_str();
   if (!access(c_path, F_OK)) {
     info = mojom::PathAccessInfo::New();

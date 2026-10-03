@@ -79,7 +79,7 @@ TEST_F(ChromePrefServiceWebKitPrefs, PrefsCopied) {
 
   // These values have been overridden by the profile preferences.
   EXPECT_EQ("UTF-8", webkit_prefs.default_encoding);
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+#if !BUILDFLAG(IS_ANDROID)
   EXPECT_EQ(20, webkit_prefs.default_font_size);
 #else
   // This pref is not configurable on Android without extensions so the default

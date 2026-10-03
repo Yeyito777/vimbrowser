@@ -55,13 +55,6 @@ namespace internal {
 bool ReleaseAddressSpaceReservation();
 }  // namespace internal
 
-#if BUILDFLAG(IS_WIN)
-namespace win {
-
-using partition_alloc::win::kOomExceptionCode;
-
-}  // namespace win
-#endif
 
 // Special allocator functions for callers that want to check for OOM.
 // These will not abort if the allocation fails even if
@@ -100,13 +93,6 @@ struct UncheckedFreeDeleter {
   inline void operator()(void* ptr) const { UncheckedFree(ptr); }
 };
 
-#if BUILDFLAG(IS_WIN)
-// As above, but allocates/frees an aligned region of memory.
-[[nodiscard]] BASE_EXPORT bool UncheckedAlignedAlloc(size_t size,
-                                                     size_t alignment,
-                                                     void** result);
-BASE_EXPORT void UncheckedAlignedFree(void* ptr);
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace base
 

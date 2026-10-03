@@ -25,10 +25,6 @@ ChromeAppIconService* ChromeAppIconService::Get(
 
 ChromeAppIconService::ChromeAppIconService(content::BrowserContext* context)
     : context_(context) {
-#if BUILDFLAG(IS_CHROMEOS)
-  app_updater_ = std::make_unique<ShelfExtensionAppUpdater>(
-      this, context, false /* extensions_only */);
-#endif
 
   observation_.Observe(ExtensionRegistry::Get(context_));
 }
@@ -36,9 +32,6 @@ ChromeAppIconService::ChromeAppIconService(content::BrowserContext* context)
 ChromeAppIconService::~ChromeAppIconService() = default;
 
 void ChromeAppIconService::Shutdown() {
-#if BUILDFLAG(IS_CHROMEOS)
-  app_updater_.reset();
-#endif
 }
 
 std::unique_ptr<ChromeAppIcon> ChromeAppIconService::CreateIcon(
@@ -76,17 +69,6 @@ void ChromeAppIconService::OnExtensionUnloaded(
   OnAppUpdated(extension->id());
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void ChromeAppIconService::OnAppUpdated(
-    content::BrowserContext* browser_context,
-    const std::string& app_id,
-    bool reload_icon) {
-  if (!reload_icon)
-    return;
-
-  OnAppUpdated(app_id);
-}
-#endif
 
 void ChromeAppIconService::OnAppUpdated(const std::string& app_id) {
   IconMap::const_iterator it = icon_map_.find(app_id);

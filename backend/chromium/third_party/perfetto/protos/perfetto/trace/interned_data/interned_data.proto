@@ -16,8 +16,6 @@
 
 syntax = "proto2";
 
-import "protos/perfetto/trace/android/app_wakelock_data.proto";
-import "protos/perfetto/trace/android/network_trace.proto";
 import "protos/perfetto/trace/chrome/v8.proto";
 import "protos/perfetto/trace/gpu/gpu_render_stage_event.proto";
 import "protos/perfetto/trace/track_event/chrome_histogram_sample.proto";
@@ -113,9 +111,6 @@ message InternedData {
   // Interned string values in the DebugAnnotation proto.
   repeated InternedString debug_annotation_string_values = 29;
 
-  // Interned packet context for android.network_packets.
-  repeated NetworkPacketContext packet_context = 30;
-
   // Interned name of a js function. We only intern js functions as there is a
   // lot of duplication for them, but less so for other strings in the V8 data
   // source.
@@ -131,34 +126,10 @@ message InternedData {
   // duplication.
   repeated InternedV8Isolate v8_isolate = 35;
 
-  // Interned protolog strings args.
-  repeated InternedString protolog_string_args = 36;
-  // Interned protolog stacktraces.
-  repeated InternedString protolog_stacktrace = 37;
-
-  // viewcapture
-  repeated InternedString viewcapture_package_name = 38;
-  repeated InternedString viewcapture_window_name = 39;
-  repeated InternedString viewcapture_view_id = 40;
-  repeated InternedString viewcapture_class_name = 41;
-  repeated InternedString viewcapture_content_description = 45;
-  repeated InternedString viewcapture_text = 46;
-
-  // Interned context for android.app_wakelocks.
-  repeated AppWakelockInfo app_wakelock_info = 42;
-
   // Interned correlation ids in track_event.
   repeated InternedString correlation_id_str = 43;
 
-  // Interned job names for Android Job Names. These are separate from
-  // other strings because they are under app control.
-  repeated AndroidJobName android_job_name = 44;
-
-  // removed ProfiledFrameSymbols profiled_frame_symbols
-  reserved 21;
-}
-
-message AndroidJobName {
-  optional uint64 iid = 1;
-  optional string name = 2;
+  // Removed Android platform interning fields. Their tags stay reserved so
+  // reduced desktop traces preserve protobuf forward compatibility.
+  reserved 21, 30, 36, 37, 38, 39, 40, 41, 42, 44, 45, 46;
 }

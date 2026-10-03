@@ -49,10 +49,8 @@
 #include "ui/strings/grit/ui_strings.h"
 #include "ui/webui/webui_util.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "base/feature_list.h"
 #include "chrome/browser/enterprise/profile_management/profile_management_features.h"
-#endif
 
 namespace {
 const int kAvatarSize = 100;
@@ -95,9 +93,7 @@ ManagedUserProfileNoticeHandler::ManagedUserProfileNoticeHandler(
       type_(type),
       profile_creation_required_by_policy_(
           create_param->profile_creation_required_by_policy),
-#if !BUILDFLAG(IS_CHROMEOS)
       show_link_data_option_(create_param->show_link_data_option),
-#endif
       email_(create_param->is_oidc_account
                  ? std::u16string()
                  : base::UTF8ToUTF16(create_param->account_info.email)),
@@ -261,7 +257,6 @@ void ManagedUserProfileNoticeHandler::HandleProceed(
     return;
   }
 
-#if !BUILDFLAG(IS_CHROMEOS)
   if (show_link_data_option_ && IsJavascriptAllowed()) {
     if ((is_consumer_domain &&
          state == ManagedUserProfileNoticeHandler::State::kValueProposition) ||
@@ -273,7 +268,6 @@ void ManagedUserProfileNoticeHandler::HandleProceed(
       return;
     }
   }
-#endif
   if (process_user_choice_with_confirmation_callback_ &&
       (state == ManagedUserProfileNoticeHandler::State::kDisclosure ||
        state == ManagedUserProfileNoticeHandler::State::kTimeout) &&
@@ -359,7 +353,6 @@ std::string ManagedUserProfileNoticeHandler::GetManagedAccountTitleWithEmail(
   DCHECK(entry);
   DCHECK(!email.empty());
 
-#if !BUILDFLAG(IS_CHROMEOS)
   std::optional<std::string> account_manager =
       GetAccountManagerIdentity(profile);
   std::optional<std::string> device_manager = GetDeviceManagerIdentity();
@@ -395,15 +388,6 @@ std::string ManagedUserProfileNoticeHandler::GetManagedAccountTitleWithEmail(
   }
   return l10n_util::GetStringFUTF8(
       IDS_ENTERPRISE_PROFILE_WELCOME_PROFILE_SEPARATION_DEVICE_MANAGED, email);
-#else
-  std::optional<std::string> hosted_domain = entry->GetHostedDomain();
-  if (hosted_domain == std::string()) {
-    return std::string();
-  }
-  return l10n_util::GetStringFUTF8(
-      IDS_ENTERPRISE_PROFILE_WELCOME_ACCOUNT_EMAIL_MANAGED_BY, email,
-      base::UTF8ToUTF16(hosted_domain.value_or(account_domain_name)));
-#endif  //  !BUILDFLAG(IS_CHROMEOS)
 }
 
 base::DictValue ManagedUserProfileNoticeHandler::GetProfileInfoValue() {
@@ -476,7 +460,6 @@ base::DictValue ManagedUserProfileNoticeHandler::GetProfileInfoValue() {
       dict.Set("email", base::UTF16ToUTF8(email_));
       dict.Set("accountName", account_info.GetFullName().value_or(""));
 
-#if !BUILDFLAG(IS_CHROMEOS)
       // We apply the checkLinkDataCheckboxByDefault to true value only if the
       // link data checkbox is visible and the policy
       // ProfileSeparationDataMigrationSettings is set to its OPTOUT value (2)
@@ -492,7 +475,6 @@ base::DictValue ManagedUserProfileNoticeHandler::GetProfileInfoValue() {
                show_link_data_option_ &&
                    (profile_separation_data_migration_settings_optout ||
                     check_link_Data_checkbox_by_default_from_legacy_policy));
-#endif
       break;
   }
 

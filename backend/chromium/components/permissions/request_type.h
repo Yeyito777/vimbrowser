@@ -59,9 +59,6 @@ enum class RequestType {
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
   kRegisterProtocolHandler,
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
-#if BUILDFLAG(IS_CHROMEOS)
-  kSmartCard,
-#endif
   kSensors,
   kStorageAccess,
   kVrSession,
@@ -75,13 +72,8 @@ enum class RequestType {
   kMaxValue = kWindowManagement
 };
 
-#if BUILDFLAG(IS_ANDROID)
-// On Android, icons are represented with an IDR_ identifier.
-using IconId = int;
-#else
 // On desktop, we use a vector icon.
 typedef const gfx::VectorIcon& IconId;
-#endif
 
 bool IsRequestablePermissionType(ContentSettingsType content_settings_type);
 
@@ -97,10 +89,8 @@ std::optional<ContentSettingsType> RequestTypeToContentSettingsType(
 // Returns whether confirmation chips can be displayed
 bool IsConfirmationChipSupported(RequestType for_request_type);
 
-#if !BUILDFLAG(IS_IOS)
 // Returns the icon to display.
 IconId GetIconId(RequestType type);
-#endif  // !BUILDFLAG(IS_IOS)
 
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 // Returns the blocked icon to display.

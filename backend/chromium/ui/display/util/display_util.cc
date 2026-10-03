@@ -21,9 +21,6 @@
 #include "ui/display/util/edid_parser.h"
 #include "ui/gfx/icc_profile.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/display/display_features.h"
-#endif
 
 namespace display {
 
@@ -176,16 +173,6 @@ gfx::ColorSpace GetColorSpaceFromEdid(const display::EdidParser& edid_parser) {
     if (edid_parser.supported_color_transfer_ids().contains(
             gfx::ColorSpace::TransferID::PQ)) {
       transfer_id = gfx::ColorSpace::TransferID::PQ;
-#if BUILDFLAG(IS_CHROMEOS)
-      if (base::FeatureList::IsEnabled(
-              display::features::kEnableExternalDisplayHDR10Mode) &&
-          edid_parser.is_external_display() &&
-          edid_parser.supported_color_primary_matrix_ids().contains(
-              EdidParser::PrimaryMatrixPair(gfx::ColorSpace::PrimaryID::BT2020,
-                                            gfx::ColorSpace::MatrixID::RGB))) {
-        return gfx::ColorSpace::CreateHDR10();
-      }
-#endif
     } else if (edid_parser.supported_color_transfer_ids().contains(
                    gfx::ColorSpace::TransferID::HLG)) {
       transfer_id = gfx::ColorSpace::TransferID::HLG;
@@ -307,73 +294,6 @@ bool HasForceDisplayColorProfile() {
       /*switches::kForceDisplayColorProfile=*/"force-color-profile");
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Constructs the raster DisplayColorSpaces out of |snapshot_color_space|,
-// including the HDR ones if present and |allow_high_bit_depth| is set.
-gfx::DisplayColorSpaces CreateDisplayColorSpaces(
-    const gfx::ColorSpace& snapshot_color_space,
-    bool allow_high_bit_depth,
-    const std::optional<gfx::HDRStaticMetadata>& hdr_static_metadata) {
-  if (HasForceDisplayColorProfile()) {
-    return gfx::DisplayColorSpaces(GetForcedDisplayColorProfile(),
-                                   DisplaySnapshot::PrimaryFormat());
-  }
-
-  // ChromeOS VMs (e.g. amd64-generic or betty) have INVALID Primaries; just
-  // pass the color space along.
-  if (!snapshot_color_space.IsValid()) {
-    return gfx::DisplayColorSpaces(snapshot_color_space,
-                                   DisplaySnapshot::PrimaryFormat());
-  }
-
-  // Make all displays report that they have sRGB primaries. Hardware color
-  // management will convert to the device's color primaries.
-  skcms_Matrix3x3 primary_matrix = SkNamedGamut::kSRGB;
-
-  // Reconstruct the native colorspace with an IEC61966 2.1 transfer function
-  // for SDR content (matching that of sRGB).
-  gfx::ColorSpace sdr_color_space = gfx::ColorSpace::CreateCustom(
-      primary_matrix, gfx::ColorSpace::TransferID::SRGB);
-
-  // Use that color space for all content.
-  gfx::DisplayColorSpaces display_color_spaces = gfx::DisplayColorSpaces(
-      sdr_color_space, DisplaySnapshot::PrimaryFormat());
-
-  // Claim 10% HDR headroom if HDR is available.
-  if (allow_high_bit_depth && snapshot_color_space.IsHDR()) {
-    gfx::ColorSpace hdr_color_space = gfx::ColorSpace::CreateCustom(
-        primary_matrix, gfx::ColorSpace::TransferID::SRGB_HDR);
-
-    display_color_spaces.SetOutputColorSpaceAndFormat(
-        gfx::ContentColorUsage::kHDR, false /* needs_alpha */, hdr_color_space,
-        viz::SinglePlaneFormat::kRGBA_1010102);
-    display_color_spaces.SetOutputColorSpaceAndFormat(
-        gfx::ContentColorUsage::kHDR, true /* needs_alpha */, hdr_color_space,
-        viz::SinglePlaneFormat::kRGBA_1010102);
-    display_color_spaces.SetHDRMaxLuminanceRelative(1.1f);
-  }
-
-#if BUILDFLAG(IS_CHROMEOS)
-  if (allow_high_bit_depth &&
-      snapshot_color_space == gfx::ColorSpace::CreateHDR10() &&
-      base::FeatureList::IsEnabled(
-          display::features::kEnableExternalDisplayHDR10Mode)) {
-    // This forces the main UI plane to be always HDR10 regardless of
-    // ContentColorUsage. BT2020 primaries and PQ transfer function require a
-    // 10-bit buffer.
-    display_color_spaces = gfx::DisplayColorSpaces(
-        gfx::ColorSpace::CreateHDR10(), viz::SinglePlaneFormat::kRGBA_1010102);
-    // TODO(b/165822222): Set initial luminance values based on display
-    // brightness
-    display_color_spaces.SetSDRMaxLuminanceNits(
-        hdr_static_metadata->max / kDefaultHdrMaxLuminanceRelative);
-    display_color_spaces.SetHDRMaxLuminanceRelative(
-        kDefaultHdrMaxLuminanceRelative);
-  }
-#endif
-  return display_color_spaces;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 int ConnectorIndex8(int device_index, int display_index) {
   DCHECK_LT(device_index, 16);

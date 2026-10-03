@@ -31,13 +31,7 @@
 #include "third_party/perfetto/include/perfetto/tracing/core/trace_config.h"
 #include "third_party/perfetto/include/perfetto/tracing/tracing.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/browser/android/tracing_controller_android.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_IOS)
-#include "base/apple/foundation_util.h"
-#endif  // BUILDFLAG(IS_IOS)
 
 namespace content {
 
@@ -127,12 +121,8 @@ class StartupTracingController::BackgroundTracer {
         perfetto::Tracing::NewTrace(perfetto::BackendType::kCustomBackend);
 
     if (write_mode_ == WriteMode::kStreaming) {
-#if !BUILDFLAG(IS_WIN)
       OpenFile(output_file_);
       tracing_session_->Setup(trace_config, file_.TakePlatformFile());
-#else
-      NOTREACHED() << "Streaming to file is not supported on Windows yet";
-#endif
     } else {
       tracing_session_->Setup(trace_config);
     }
@@ -332,15 +322,8 @@ StartupTracingController& StartupTracingController::GetInstance() {
 namespace {
 
 base::FilePath BasenameToPath(std::string basename) {
-#if BUILDFLAG(IS_ANDROID)
-  return TracingControllerAndroid::GenerateTracingFilePath(basename);
-#elif BUILDFLAG(IS_IOS)
-  // On iOS blink, write to the documents directory associated with the app.
-  return base::apple::GetUserDocumentPath().AppendASCII(basename);
-#else
   // Default to saving the startup trace into the current dir.
   return base::FilePath().AppendASCII(basename);
-#endif
 }
 
 }  // namespace
@@ -412,11 +395,6 @@ void StartupTracingController::StartIfNeeded() {
       tracing::TraceStartupConfig::GetInstance().GetOutputFormat();
 
   BackgroundTracer::WriteMode write_mode;
-#if BUILDFLAG(IS_WIN)
-  // TODO(crbug.com/1158482/): Perfetto does not (yet) support writing directly
-  // to a file on Windows.
-  write_mode = BackgroundTracer::WriteMode::kAfterStopping;
-#else
   // Only protos can be incrementally written to a file - legacy json needs to
   // go through an additional conversion step after, which requires the entire
   // trace to be available.
@@ -424,7 +402,6 @@ void StartupTracingController::StartIfNeeded() {
       output_format == tracing::TraceStartupConfig::OutputFormat::kProto
           ? BackgroundTracer::WriteMode::kStreaming
           : BackgroundTracer::WriteMode::kAfterStopping;
-#endif
 
   auto perfetto_config =
       tracing::TraceStartupConfig::GetInstance().GetPerfettoConfig();

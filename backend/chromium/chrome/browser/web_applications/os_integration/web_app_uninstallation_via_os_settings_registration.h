@@ -17,10 +17,6 @@ class FilePath;
 
 namespace web_app {
 
-#if BUILDFLAG(IS_WIN)
-std::wstring GetUninstallStringKeyForTesting(const base::FilePath& profile_path,
-                                             const webapps::AppId& app_id);
-#endif
 
 // True if uninstallation via os settings are managed externally by the
 // operating system. Windows is the only Os that support this feature now.

@@ -92,19 +92,12 @@ class NET_EXPORT_PRIVATE UDPClientSocket : public DatagramClientSocket {
   uint32_t get_multicast_interface_for_testing() {
     return socket_.get_multicast_interface_for_testing();
   }
-#if !BUILDFLAG(IS_WIN)
   bool get_msg_confirm_for_testing() {
     return socket_.get_msg_confirm_for_testing();
   }
   bool get_recv_optimization_for_testing() {
     return socket_.get_experimental_recv_optimization_enabled_for_testing();
   }
-#endif
-#if BUILDFLAG(IS_WIN)
-  bool get_use_non_blocking_io_for_testing() {
-    return socket_.get_use_non_blocking_io_for_testing();
-  }
-#endif
 
  private:
   NetLogWithSource net_log_;

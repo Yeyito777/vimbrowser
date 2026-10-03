@@ -21,14 +21,6 @@ inline constexpr char kSelectedLanguages[] = "intl.selected_languages";
 // List which contains the policy-forced languages.
 inline constexpr char kForcedLanguages[] = "intl.forced_languages";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// A string pref (comma-separated list) set to the preferred language IDs
-// (ex. "en-US,fr,ko").
-inline constexpr char kPreferredLanguages[] =
-    "settings.language.preferred_languages";
-inline constexpr char kPreferredLanguagesSyncable[] =
-    "settings.language.preferred_languages_syncable";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // The application locale as selected by the user, such as "en-AU". This may not
 // necessarily be a string locale (a locale that we have strings for on this
@@ -36,12 +28,6 @@ inline constexpr char kPreferredLanguagesSyncable[] =
 // locale if needed, such as "en-GB".
 inline constexpr char kApplicationLocale[] = "intl.app_locale";
 
-#if BUILDFLAG(IS_ANDROID)
-inline constexpr char kAppLanguagePromptShown[] =
-    "language.app_language_prompt_shown";
-
-inline constexpr char kULPLanguages[] = "language.ulp_languages";
-#endif
 
 }  // namespace language::prefs
 

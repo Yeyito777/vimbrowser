@@ -45,11 +45,6 @@ class FilePath;
 class TimeDelta;
 }  // namespace base
 
-#if BUILDFLAG(IS_ANDROID)
-namespace discardable_memory {
-class DiscardableSharedMemoryManager;
-}
-#endif
 
 namespace gfx {
 class ScopedAnimationDurationScaleMode;
@@ -247,13 +242,11 @@ class BrowserTestBase : public ::testing::Test {
 
   bool set_up_called() const { return set_up_called_; }
 
-#if BUILDFLAG(IS_POSIX)
   // This is only needed by a test that raises SIGTERM to ensure that a specific
   // codepath is taken.
   void DisableSIGTERMHandling() {
     handle_sigterm_ = false;
   }
-#endif
 
   // This function is meant only for classes that directly derive from this
   // class to construct the test server in their constructor. They might need to
@@ -293,18 +286,6 @@ class BrowserTestBase : public ::testing::Test {
   void SetAllowFeaturesSwitches(bool allow);
 
  private:
-#if BUILDFLAG(IS_ANDROID)
-  // Android browser tests need to wait for async initialization in Java code.
-  // This waits for those to complete before we can continue with the test.
-  void WaitUntilJavaIsReady(base::OnceClosure quit_closure,
-                            const base::TimeDelta& wait_retry_left);
-  // Android browser tests need to wait for the Activity to finish after tests
-  // run to properly shut down the browser.
-  void WaitUntilActivityTeardownIsFinished(
-      base::OnceClosure quit_closure,
-      const base::TimeDelta& wait_retry_left);
-
-#endif
   // Performs a bunch of setup, and then runs the browser test body.
   void ProxyRunTestOnMainThreadLoop();
 
@@ -321,9 +302,6 @@ class BrowserTestBase : public ::testing::Test {
   // CreatedBrowserMainParts().
   void CreatedBrowserMainPartsImpl(BrowserMainParts* browser_main_parts);
 
-#if BUILDFLAG(IS_WIN)
-  std::optional<base::ScopedPathOverride> system_temp_override_;
-#endif
 
   // Embedded HTTP test server, cheap to create, started on demand.
   std::unique_ptr<net::EmbeddedTestServer> embedded_test_server_;
@@ -357,7 +335,6 @@ class BrowserTestBase : public ::testing::Test {
   // TODO(pkasting): Consider an alternate solution, e.g. changing tests to use
   // a `ui::MockOsSettingsProvider` instead of the
   // `ash::DarkLightModeController` and removing the `#if` guards here.
-#if !BUILDFLAG(IS_CHROMEOS)
   // Browser tests should not use the current machine settings for theming, but
   // should default to a consistent baseline. Instantiating
   // `ui::OsSettingsProvider` will both provide sane default behavior and
@@ -365,7 +342,6 @@ class BrowserTestBase : public ::testing::Test {
   // platform-specific subclass.
   ui::OsSettingsProvider os_settings_provider_{
       ui::OsSettingsProvider::PriorityLevel::kTesting};
-#endif
 
   // When true, the compositor will produce pixel output that can be read back
   // for pixel tests.
@@ -410,19 +386,8 @@ class BrowserTestBase : public ::testing::Test {
   raw_ptr<BrowserMainParts, AcrossTasksDanglingUntriaged> browser_main_parts_ =
       nullptr;
 
-#if BUILDFLAG(IS_POSIX)
   bool handle_sigterm_;
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-  // Mimic the destruction order of ContentMain:
-  // - ContentMainRunnerImpl::Shutdown() resets ipc support and shuts down the
-  //   BrowserTaskExecutor.
-  // - ContentMainRunnerImpl::~ContentMainRunnerImpl().
-  // - DiscardableSharedMemoryManager, owned by ContentMainRunnerImpl, is reset.
-  std::unique_ptr<discardable_memory::DiscardableSharedMemoryManager>
-      discardable_shared_memory_manager_;
-#endif
 
   // Whether allow tests to provide --enable-features and --disable-features
   // switches. Tests such as `GuestLoginTest` passes feature switches from PRE_

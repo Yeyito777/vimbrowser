@@ -6,12 +6,6 @@
 
 namespace prefs {
 
-#if BUILDFLAG(IS_CHROMEOS)
-// An integer property indicating the state of account id migration from
-// email to gaia id for the the profile.  See account_tracker_service.h
-// for possible values.
-const char kAccountIdMigrationState[] = "account_id_migration_state";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Name of the preference property that persists the account information
 // tracked by this signin.
@@ -129,26 +123,6 @@ const char kHistoryPageHistorySyncPromoShownAfterDismissal[] =
 const char kHistoryPageHistorySyncPromoShownCount[] =
     "history.sync_promo_shown_count";
 
-#if BUILDFLAG(IS_IOS)
-// List of patterns to determine the account visibility, according to the
-// "RestrictAccountsToPatterns" policy. Note that the policy also exists on
-// Android, but has a separate implementation there which doesn't use this pref.
-const char kRestrictAccountsToPatterns[] =
-    "signin.restrict_accounts_to_patterns";
-
-// Boolean that represent whether signin is allowed by the user. It is also used
-// to synchronize kSigninAllowed across profiles. This is used to
-// ensure that all profiles respect the setting while `kSigninAllowed` only
-// applies to a single profile. This is the UX we want on iOS since there are
-// multi profiles but not exposed to the user, so we should treat this setting
-// as affecting all profiles.
-const char kSigninAllowedOnDevice[] = "signin.allowed_on_device";
-
-// TODO(crbug.com/424385780): Update this comment.
-// Integer that represents the value of BrowserSigninPolicy. Values are defined
-// in ios/chrome/browser/policy/model/policy_util.h.
-const char kBrowserSigninPolicy[] = "signin.browser_signin_policy";
-#endif  // BUILDFLAG(IS_IOS)
 
 // Boolean which indicates if the user is allowed to sign into Chrome on the
 // next startup.

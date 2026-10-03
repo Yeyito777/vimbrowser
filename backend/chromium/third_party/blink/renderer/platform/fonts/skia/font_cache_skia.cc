@@ -171,61 +171,6 @@ const SimpleFontData* FontCache::GetLastResortFallbackFont(
                                              AlternateFontName::kLastResort);
     ++last_resort_fallback_attempt;
   }
-#if BUILDFLAG(IS_WIN)
-  // Try some more Windows-specific fallbacks.
-  if (!font_platform_data) {
-    DEFINE_THREAD_SAFE_STATIC_LOCAL(const FontFaceCreationParams,
-                                    msuigothic_creation_params,
-                                    (font_family_names::kMSUIGothic));
-    font_platform_data =
-        GetFontPlatformData(description, msuigothic_creation_params,
-                            AlternateFontName::kLastResort);
-    ++last_resort_fallback_attempt;
-  }
-  if (!font_platform_data) {
-    DEFINE_THREAD_SAFE_STATIC_LOCAL(const FontFaceCreationParams,
-                                    mssansserif_creation_params,
-                                    (font_family_names::kMicrosoftSansSerif));
-    font_platform_data =
-        GetFontPlatformData(description, mssansserif_creation_params,
-                            AlternateFontName::kLastResort);
-    ++last_resort_fallback_attempt;
-  }
-  if (!font_platform_data) {
-    DEFINE_THREAD_SAFE_STATIC_LOCAL(const FontFaceCreationParams,
-                                    segoeui_creation_params,
-                                    (font_family_names::kSegoeUI));
-    font_platform_data = GetFontPlatformData(
-        description, segoeui_creation_params, AlternateFontName::kLastResort);
-    ++last_resort_fallback_attempt;
-  }
-  if (!font_platform_data) {
-    DEFINE_THREAD_SAFE_STATIC_LOCAL(const FontFaceCreationParams,
-                                    calibri_creation_params,
-                                    (font_family_names::kCalibri));
-    font_platform_data = GetFontPlatformData(
-        description, calibri_creation_params, AlternateFontName::kLastResort);
-    ++last_resort_fallback_attempt;
-  }
-  if (!font_platform_data) {
-    DEFINE_THREAD_SAFE_STATIC_LOCAL(const FontFaceCreationParams,
-                                    timesnewroman_creation_params,
-                                    (font_family_names::kTimesNewRoman));
-    font_platform_data =
-        GetFontPlatformData(description, timesnewroman_creation_params,
-                            AlternateFontName::kLastResort);
-    ++last_resort_fallback_attempt;
-  }
-  if (!font_platform_data) {
-    DEFINE_THREAD_SAFE_STATIC_LOCAL(const FontFaceCreationParams,
-                                    couriernew_creation_params,
-                                    (font_family_names::kCourierNew));
-    font_platform_data =
-        GetFontPlatformData(description, couriernew_creation_params,
-                            AlternateFontName::kLastResort);
-    ++last_resort_fallback_attempt;
-  }
-#endif
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_WIN)
   if (!font_platform_data) {
@@ -282,20 +227,10 @@ sk_sp<SkTypeface> FontCache::CreateTypeface(
   // convert the name to utf8
   name = family.Utf8();
 
-#if BUILDFLAG(IS_ANDROID)
-  // If this is a locale-specific family, try looking up locale-specific
-  // typeface first.
-  if (const char* locale_family = GetLocaleSpecificFamilyName(family)) {
-    if (sk_sp<SkTypeface> typeface =
-            CreateLocaleSpecificTypeface(font_description, locale_family))
-      return typeface;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   return sk_sp<SkTypeface>(skia::DefaultFontMgr()->matchFamilyStyle(
       name.empty() ? nullptr : name.c_str(), font_description.SkiaFontStyle()));
 }
 
-#if !BUILDFLAG(IS_WIN)
 const FontPlatformData* FontCache::CreateFontPlatformData(
     const FontDescription& font_description,
     const FontFaceCreationParams& creation_params,
@@ -306,17 +241,6 @@ const FontPlatformData* FontCache::CreateFontPlatformData(
   sk_sp<SkTypeface> typeface;
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   bool noto_color_emoji_from_gmscore = false;
-#if BUILDFLAG(IS_ANDROID)
-  // Use the unique local matching pathway for fetching Noto Color Emoji Compat
-  // from GMS core if this family is requested, see font_cache_android.cc. Noto
-  // Color Emoji Compat is an up-to-date emoji font shipped with GMSCore which
-  // provides better emoji coverage and emoji sequence support than the firmware
-  // Noto Color Emoji font.
-  noto_color_emoji_from_gmscore =
-      (creation_params.CreationType() ==
-           FontFaceCreationType::kCreateFontByFamily &&
-       creation_params.Family() == kNotoColorEmojiCompat);
-#endif
   if (RuntimeEnabledFeatures::FontSrcLocalMatchingEnabled() &&
       (alternate_name == AlternateFontName::kLocalUniqueFace ||
        noto_color_emoji_from_gmscore)) {
@@ -355,6 +279,5 @@ const FontPlatformData* FontCache::CreateFontPlatformData(
 
   return font_platform_data;
 }
-#endif  // !BUILDFLAG(IS_WIN)
 
 }  // namespace blink

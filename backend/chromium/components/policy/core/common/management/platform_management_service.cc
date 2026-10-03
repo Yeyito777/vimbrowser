@@ -12,10 +12,6 @@
 #include "build/build_config.h"
 #if BUILDFLAG(IS_MAC)
 #include "components/policy/core/common/management/platform_management_status_provider_mac.h"
-#elif BUILDFLAG(IS_WIN)
-#include "components/policy/core/common/management/platform_management_status_provider_win.h"
-#elif BUILDFLAG(IS_IOS)
-#include "components/policy/core/common/management/platform_management_status_provider_ios.h"
 #endif
 
 namespace policy {
@@ -28,12 +24,6 @@ GetPlatformManagementSatusProviders() {
   providers.push_back(std::make_unique<DomainEnrollmentStatusProvider>());
   providers.push_back(
       std::make_unique<EnterpriseMDMManagementStatusProvider>());
-#endif
-#if BUILDFLAG(IS_WIN)
-  providers.push_back(std::make_unique<AzureActiveDirectoryStatusProvider>());
-#endif
-#if BUILDFLAG(IS_IOS)
-  providers.push_back(std::make_unique<DeviceManagementStatusProvider>());
 #endif
   return providers;
 }
@@ -57,13 +47,6 @@ void PlatformManagementService::AddLocalBrowserManagementStatusProvider(
   has_local_browser_managment_status_provider_ = true;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void PlatformManagementService::AddChromeOsStatusProvider(
-    std::unique_ptr<ManagementStatusProvider> provider) {
-  AddManagementStatusProvider(std::move(provider));
-  has_cros_status_provider_ = true;
-}
-#endif
 
 void PlatformManagementService::RefreshCache(CacheRefreshCallback callback) {
   base::ThreadPool::PostTaskAndReplyWithResult(

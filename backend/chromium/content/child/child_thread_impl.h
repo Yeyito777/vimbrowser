@@ -33,10 +33,6 @@
 #include "services/tracing/public/mojom/background_tracing_agent.mojom.h"
 #include "third_party/blink/public/mojom/associated_interfaces/associated_interfaces.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "content/public/common/font_cache_win.mojom.h"
-#include "mojo/public/cpp/bindings/remote.h"
-#endif
 
 namespace IPC {
 class SyncChannel;
@@ -85,10 +81,6 @@ class ChildThreadImpl : public IPC::Listener, virtual public ChildThread {
   virtual bool ShouldBeDestroyed();
 
   // ChildThread implementation:
-#if BUILDFLAG(IS_WIN)
-  void PreCacheFont(const LOGFONT& log_font) override;
-  void ReleaseCachedFonts() override;
-#endif
   void RecordAction(const base::UserMetricsAction& action) override;
   void RecordComputedAction(const std::string& action) override;
   void BindHostReceiver(mojo::GenericPendingReceiver receiver) override;
@@ -161,17 +153,11 @@ class ChildThreadImpl : public IPC::Listener, virtual public ChildThread {
 
   void EnsureConnected(int connection_timeout);
 
-#if BUILDFLAG(IS_WIN)
-  const mojo::Remote<mojom::FontCacheWin>& GetFontCacheWin();
-#endif
 
   const base::AutoReset<ChildThreadImpl*> resetter_;
 
   base::Thread mojo_ipc_thread_{"Mojo IPC"};
   std::unique_ptr<mojo::core::ScopedIPCSupport> mojo_ipc_support_;
-#if BUILDFLAG(IS_WIN)
-  mutable mojo::Remote<mojom::FontCacheWin> font_cache_win_;
-#endif
 
   std::unique_ptr<IPC::SyncChannel> channel_;
 

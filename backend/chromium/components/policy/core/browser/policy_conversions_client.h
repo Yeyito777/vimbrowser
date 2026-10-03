@@ -95,12 +95,6 @@ class POLICY_EXPORT PolicyConversionsClient {
   // Returns policies for Chrome extensions in a list of base::DictValue.
   virtual base::ListValue GetExtensionPolicies(PolicyDomain policy_domain) = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Returns policies for ChromeOS device.
-  virtual base::ListValue GetDeviceLocalAccountPolicies() = 0;
-  // Returns device specific information if this device is enterprise managed.
-  virtual base::DictValue GetIdentityFields() = 0;
-#endif
 
   // Returns the embedder's PolicyService.
   virtual PolicyService* GetPolicyService() const = 0;

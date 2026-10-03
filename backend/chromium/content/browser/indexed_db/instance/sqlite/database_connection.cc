@@ -90,12 +90,6 @@
 
 namespace content::indexed_db::sqlite {
 
-#if BUILDFLAG(IS_WIN)
-// This exists as an escape hatch and/or to experiment with its impact on
-// reliability metrics.
-BASE_FEATURE(kIdbSqliteExclusiveDatabaseFileLock,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 namespace {
 
@@ -1096,19 +1090,12 @@ base::OnceClosure DatabaseConnection::GetCleanupTask(bool force_closing) && {
     // `Transaction`s, `Connection`s and `Database`s. When the last
     // `BackingStore::Database` is deleted, `this` will be deleted, at which
     // point recovery will be attempted if appropriate.
-#if BUILDFLAG(IS_FUCHSIA)
-    // Recovery is not supported with WAL mode DBs in Fuchsia.
-    if (had_sql_error && sql::IsErrorCatastrophic(db_->GetErrorCode())) {
-      should_delete_db = true;
-    }
-#else
     // Don't attempt recovery if we're force closing. Note that this should be
     // rare since a database error should lead to only this database being
     // closed, not the whole backing store.
     should_attempt_recovery =
         !force_closing && had_sql_error &&
         sql::Recovery::ShouldAttemptRecovery(db_.get(), db_->GetErrorCode());
-#endif
 
     // Determine whether to vacuum.
     if (!had_sql_error && !should_delete_db) {
@@ -1120,7 +1107,6 @@ base::OnceClosure DatabaseConnection::GetCleanupTask(bool force_closing) && {
       // not a reason to vacuum.
       // TODO(crbug.com/436880909): consider vacuuming old-ish databases that
       // may be fragmented.
-#if !BUILDFLAG(IS_ANDROID)
       // Note that //sql configures a multi-page chunk size for large DBs, so if
       // this threshold is too low (<25%), vacuuming may not always reduce the
       // file size. See SQLITE_FCNTL_CHUNK_SIZE.
@@ -1134,7 +1120,6 @@ base::OnceClosure DatabaseConnection::GetCleanupTask(bool force_closing) && {
           LogVacuumEvent(VacuumEvent::kRequested);
         }
       }
-#endif
     }
 
     // Don't clean up legacy blobs if force closing.
@@ -1162,11 +1147,6 @@ Status DatabaseConnection::Init(std::optional<std::u16string_view> name) {
   auto options =
       sql::DatabaseOptions().set_wal_mode(true).set_enable_triggers(true);
 
-#if BUILDFLAG(IS_WIN)
-  // *Enforce* exclusivity on Windows, for the purposes of reliability.
-  options.set_exclusive_database_file_lock(
-      base::FeatureList::IsEnabled(kIdbSqliteExclusiveDatabaseFileLock));
-#endif
 
   if (g_vfs_name_override) {
     options.set_vfs_name_discouraged(g_vfs_name_override);

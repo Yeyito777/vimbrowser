@@ -4,7 +4,7 @@
 
 declare_args() {
   # Enable V8 to produce hints regarding which functions to compile eagerly.
-  produce_v8_compile_hints = !is_android
+  produce_v8_compile_hints = true
 }
 
 # The database file produced by
@@ -189,11 +189,6 @@ blink_core_sources_bindings =
                     "core/v8/world_safe_v8_reference.h",
                   ],
                   "abspath")
-
-if (is_win) {
-  blink_core_sources_bindings +=
-      get_path_info([ "core/v8/v8_initializer_win.cc" ], "abspath")
-}
 
 # Source files to be part of
 # "//third_party/blink/renderer/modules:modules".

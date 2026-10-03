@@ -31,9 +31,6 @@
 #include "device/vr/public/mojom/xr_device.mojom-forward.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#endif
 
 namespace content {
 class XRRuntimeManagerTest;
@@ -159,9 +156,6 @@ class CONTENT_EXPORT XRRuntimeManagerImpl
   size_t num_initialized_providers_ = 0;
 
   bool xr_compatible_restarted_gpu_ = false;
-#if BUILDFLAG(IS_WIN)
-  CHROME_LUID default_gpu_ = {0, 0};
-#endif
 
   content::WebXrLoggerManager logger_manager_;
   std::set<raw_ptr<VRServiceImpl, SetExperimental>> services_;

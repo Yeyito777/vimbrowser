@@ -17,9 +17,6 @@ static_library("common") {
   ]
 
   deps = [ "//base" ]
-  if (is_android) {
-    deps += [ "//components/bookmarks/common/android" ]
-  }
 }
 
 source_set("unit_tests") {

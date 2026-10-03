@@ -37,10 +37,6 @@ component("x11") {
     "//ui/events/keycodes:x11",
   ]
 
-  if (is_chromeos) {
-    deps += [ "//ui/events/ozone" ]
-  }
-
   if (use_glib) {
     sources += [
       "x11_event_watcher_glib.cc",

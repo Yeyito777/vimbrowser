@@ -22,9 +22,6 @@
 #include "services/network/public/mojom/url_loader_network_service_observer.mojom.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/application_status_listener.h"
-#endif
 
 namespace content {
 
@@ -60,9 +57,6 @@ class NetworkServiceClient
   // require low network latency.
   void OnPeerToPeerConnectionsCountChange(uint32_t count);
 
-#if BUILDFLAG(IS_ANDROID)
-  void OnApplicationStateChange(base::android::ApplicationState state);
-#endif
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
   // net::NetworkChangeNotifier::ConnectionTypeObserver implementation:
@@ -79,10 +73,6 @@ class NetworkServiceClient
       net::NetworkChangeNotifier::IPAddressChangeType change_type) override;
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_WIN)
-  // Called when the network service sandbox is enabled.
-  mojo::PendingRemote<network::mojom::SocketBroker> BindSocketBroker();
-#endif
 
  private:
   // network::mojom::URLLoaderNetworkServiceObserver overrides.
@@ -144,18 +134,11 @@ class NetworkServiceClient
 
   std::unique_ptr<WebRtcConnectionsObserver> webrtc_connections_observer_;
 
-#if BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<base::android::ApplicationStatusListener>
-      app_status_listener_;
-#endif
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
   mojo::Remote<network::mojom::NetworkChangeManager> network_change_manager_;
 #endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_WIN)
-  network::SocketBrokerImpl socket_broker_;
-#endif  // BUILDFLAG(IS_WIN)
 
   mojo::ReceiverSet<network::mojom::URLLoaderNetworkServiceObserver>
       url_loader_network_service_observers_;

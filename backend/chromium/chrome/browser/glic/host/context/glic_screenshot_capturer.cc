@@ -128,17 +128,7 @@ void GlicScreenshotCapturer::OnSourceSelected(const std::string& err,
                     kUserCancelledScreenPickerDialog);
     return;
   }
-#if BUILDFLAG(IS_WIN)
-  // TODO(crbug.com/405177421): Remove this delay once we land the code to skip
-  // the screen picker entirely on Windows.
-  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
-      FROM_HERE,
-      base::BindOnce(&GlicScreenshotCapturer::OnCaptureStarted,
-                     weak_ptr_factory_.GetWeakPtr(), id),
-      base::Milliseconds(500));
-#else
   OnCaptureStarted(id);
-#endif
 }
 
 void GlicScreenshotCapturer::OnCaptureStarted(content::DesktopMediaID id) {

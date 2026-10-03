@@ -90,7 +90,6 @@ class PrimaryAccountMutator {
       signin_metrics::AccessPoint access_point,
       base::OnceClosure prefs_committed_callback = base::NullCallback()) = 0;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Revokes sync consent from the primary account: the primary account is left
   // at ConsentLevel::kSignin.
   //
@@ -109,7 +108,6 @@ class PrimaryAccountMutator {
   // was successful and false if there was no primary account set.
   virtual bool RemovePrimaryAccountButKeepTokens(
       signin_metrics::ProfileSignout source_metric) = 0;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace signin

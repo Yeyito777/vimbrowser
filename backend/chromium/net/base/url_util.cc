@@ -6,11 +6,7 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include <netinet/in.h>
-#elif BUILDFLAG(IS_WIN)
-#include <ws2tcpip.h>
-#endif
 
 #include <optional>
 #include <string_view>

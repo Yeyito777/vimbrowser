@@ -15,9 +15,6 @@
 #include "build/build_config.h"
 #include "chrome/updater/updater_scope.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace base {
 class FilePath;
@@ -56,15 +53,6 @@ bool AnyAppEnablesUsageStats(
 bool RemoteEventLoggingAllowed(
     const std::vector<std::string>& installed_app_ids,
     const std::vector<base::FilePath>& app_support_directories,
-    std::optional<EventLoggingPermissionProvider>
-        event_logging_permission_provider);
-#elif BUILDFLAG(IS_WIN)
-bool AnyAppEnablesUsageStats(HKEY hive,
-                             const std::vector<std::wstring>& key_paths);
-bool RemoteEventLoggingAllowed(
-    HKEY hive,
-    const std::vector<std::wstring>& key_paths,
-    const std::vector<std::string>& installed_app_ids,
     std::optional<EventLoggingPermissionProvider>
         event_logging_permission_provider);
 #endif

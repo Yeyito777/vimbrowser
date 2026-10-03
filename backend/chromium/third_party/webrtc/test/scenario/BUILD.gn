@@ -32,19 +32,6 @@ if (rtc_include_tests && !build_with_chromium) {
   ]
   scenario_unittest_resources = [ "../../resources/foreman_cif.yuv" ]
 
-  if (is_ios) {
-    bundle_data("scenario_resources_bundle_data") {
-      testonly = true
-      sources = scenario_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-    bundle_data("scenario_unittest_resources_bundle_data") {
-      testonly = true
-      sources = scenario_unittest_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-  }
-
   rtc_library("scenario") {
     testonly = true
     sources = [
@@ -180,18 +167,14 @@ if (rtc_include_tests && !build_with_chromium) {
       "//third_party/abseil-cpp/absl/strings",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
-    if (is_android) {
-      deps += [ "../../modules/video_coding:android_codec_factory_helper" ]
-    } else if (is_ios || is_mac) {
+
+    if (is_ios || is_mac) {
       deps += [ "../../modules/video_coding:objc_codec_factory_helper" ]
     }
     if (rtc_enable_protobuf) {
       deps += [ "../../modules/audio_coding:ana_config_proto" ]
     }
     data = scenario_resources
-    if (is_ios) {
-      deps += [ ":scenario_resources_bundle_data" ]
-    }
   }
   rtc_library("scenario_unittests") {
     testonly = true
@@ -224,8 +207,5 @@ if (rtc_include_tests && !build_with_chromium) {
       "//testing/gmock",
     ]
     data = scenario_unittest_resources
-    if (is_ios) {
-      deps += [ ":scenario_unittest_resources_bundle_data" ]
-    }
   }
 }

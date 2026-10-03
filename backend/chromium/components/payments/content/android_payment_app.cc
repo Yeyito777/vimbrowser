@@ -170,13 +170,7 @@ bool AndroidPaymentApp::IsPreferred() const {
   // available is the trusted web application (TWA) that launched this instance
   // of Chrome with a TWA specific payment method, so this app should be
   // preferred.
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK_EQ(1U, GetAppMethodNames().size());
-  DCHECK_EQ(methods::kGooglePlayBilling, *GetAppMethodNames().begin());
-  return true;
-#else
   NOTREACHED();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void AndroidPaymentApp::OnPaymentAppResponse(

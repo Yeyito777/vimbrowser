@@ -313,16 +313,6 @@ void SavedFilesService::SavedFiles::EnqueueFileEntry(const std::string& id) {
   SavedFileEntry* file_entry = id_it->second.get();
   int old_sequence_number = file_entry->sequence_number;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // crbug.com/983844 Convert path from legacy Download/ to MyFiles/Downloads/
-  // so entries saved before MyFiles don't fail. TODO(lucmult): Remove this
-  // after M-83.
-  const auto legacy_downloads = context_->GetPath().AppendASCII("Downloads");
-  auto to_myfiles =
-      context_->GetPath().AppendASCII("MyFiles").AppendASCII("Downloads");
-  if (legacy_downloads.AppendRelativePath(file_entry->path, &to_myfiles))
-    file_entry->path = to_myfiles;
-#endif
 
   if (!saved_file_lru_.empty()) {
     // Get the sequence number after the last file entry in the LRU.

@@ -9,9 +9,7 @@
 
 #include "build/build_config.h"
 
-#if !BUILDFLAG(IS_IOS)
 #import <IOBluetooth/IOBluetooth.h>
-#endif
 
 namespace device {
 class BluetoothLowEnergyAdvertisementManagerMac;

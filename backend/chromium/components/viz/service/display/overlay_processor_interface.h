@@ -27,9 +27,6 @@
 #include "ui/gfx/overlay_priority_hint.h"
 #include "ui/gfx/swap_result.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/viz/service/display/dc_layer_overlay.h"
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 #include "components/viz/service/display/ca_layer_overlay.h"

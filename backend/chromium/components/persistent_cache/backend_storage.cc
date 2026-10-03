@@ -20,9 +20,7 @@
 #include "components/persistent_cache/pending_backend.h"
 #include "components/persistent_cache/persistent_cache.h"
 
-#if !BUILDFLAG(IS_FUCHSIA)
 #include "components/persistent_cache/sqlite/backend_storage_delegate.h"
-#endif
 
 namespace persistent_cache {
 
@@ -30,14 +28,10 @@ namespace {
 
 std::unique_ptr<BackendStorage::Delegate> MakeDelegateOfType(
     BackendType backend_type) {
-#if BUILDFLAG(IS_FUCHSIA)
-  return nullptr;
-#else
   switch (backend_type) {
     case BackendType::kSqlite:
       return std::make_unique<sqlite::BackendStorageDelegate>();
   }
-#endif
 }
 
 // Deletes the contents of `directory` without deleting `directory` itself.

@@ -18,17 +18,8 @@
 #include "storage/browser/file_system/file_system_url.h"
 #include "storage/common/file_system/file_system_mount_option.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/content_uri_utils.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "windows.h"
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include <grp.h>
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace storage {
 namespace {
@@ -151,37 +142,16 @@ base::File NativeFileUtil::CreateOrOpen(const base::FilePath& path,
 
 base::File::Error NativeFileUtil::EnsureFileExists(const base::FilePath& path,
                                                    bool* created) {
-#if !BUILDFLAG(IS_ANDROID)
   if (!base::DirectoryExists(path.DirName())) {
     // If its parent does not exist, should return NOT_FOUND error.
     return base::File::FILE_ERROR_NOT_FOUND;
   }
-#endif
 
   // If |path| is a directory, return an error.
   if (base::DirectoryExists(path)) {
     return base::File::FILE_ERROR_NOT_A_FILE;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (path.IsContentUri()) {
-    if (base::PathExists(path)) {
-      if (created) {
-        *created = false;
-      }
-      return base::File::FILE_OK;
-    }
-    base::FilePath result =
-        base::ContentUriGetDocumentFromQuery(path, /*create=*/true);
-    if (created) {
-      *created = !result.empty();
-    }
-    if (result.empty()) {
-      return base::File::FILE_ERROR_FAILED;
-    }
-    return base::File::FILE_OK;
-  }
-#endif
 
   // Tries to create the |path| exclusively.  This should fail
   // with base::File::FILE_ERROR_EXISTS if the path already exists.
@@ -206,12 +176,10 @@ base::File::Error NativeFileUtil::EnsureFileExists(const base::FilePath& path,
 base::File::Error NativeFileUtil::CreateDirectory(const base::FilePath& path,
                                                   bool exclusive,
                                                   bool recursive) {
-#if !BUILDFLAG(IS_ANDROID)
   // If parent dir of file doesn't exist.
   if (!recursive && !base::PathExists(path.DirName())) {
     return base::File::FILE_ERROR_NOT_FOUND;
   }
-#endif
 
   bool path_exists = base::PathExists(path);
   if (exclusive && path_exists) {
@@ -227,13 +195,6 @@ base::File::Error NativeFileUtil::CreateDirectory(const base::FilePath& path,
     return base::File::FILE_ERROR_NOT_A_DIRECTORY;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (path.IsContentUri()) {
-    const base::FilePath result =
-        base::ContentUriGetDocumentFromQuery(path, /*create=*/true);
-    return result.empty() ? base::File::FILE_ERROR_FAILED : base::File::FILE_OK;
-  }
-#endif
 
   base::File::Error error;
   return base::CreateDirectoryAndGetError(path, &error) ? base::File::FILE_OK
@@ -268,16 +229,6 @@ base::File::Error NativeFileUtil::Touch(const base::FilePath& path,
 
 base::File::Error NativeFileUtil::Truncate(const base::FilePath& path,
                                            int64_t length) {
-#if BUILDFLAG(IS_ANDROID)
-  if (path.IsContentUri()) {
-    if (length != 0) {
-      return base::File::FILE_ERROR_FAILED;
-    }
-    base::File file(path,
-                    base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
-    return file.error_details();
-  }
-#endif
   base::File file(path, base::File::FLAG_OPEN | base::File::FLAG_WRITE);
   if (!file.IsValid())
     return file.error_details();
@@ -316,13 +267,6 @@ base::File::Error NativeFileUtil::CopyOrMoveFile(
   if (error == base::File::FILE_OK) {
     if (info.is_directory != src_is_directory)
       return base::File::FILE_ERROR_INVALID_OPERATION;
-#if BUILDFLAG(IS_WIN)
-    // Overwriting an empty directory with another directory isn't supported
-    // natively on Windows, so treat this an unsupported. A higher layer is
-    // responsible for handling it.
-    if (info.is_directory)
-      return base::File::FILE_ERROR_NOT_A_FILE;
-#endif
   }
   if (error == base::File::FILE_ERROR_NOT_FOUND) {
     error = NativeFileUtil::GetFileInfo(dest_path.DirName(), &info);
@@ -334,7 +278,6 @@ base::File::Error NativeFileUtil::CopyOrMoveFile(
 
   // Cache permissions of dest file before copy/move overwrites the file.
   bool should_retain_file_permissions = false;
-#if BUILDFLAG(IS_POSIX)
   int dest_mode;
   if (options.Has(FileSystemOperation::CopyOrMoveOption::
                       kPreserveDestinationPermissions)) {
@@ -342,14 +285,6 @@ base::File::Error NativeFileUtil::CopyOrMoveFile(
     should_retain_file_permissions =
         base::GetPosixFilePermissions(dest_path, &dest_mode);
   }
-#elif BUILDFLAG(IS_WIN)
-  DWORD dest_attributes;
-  if (options.Has(FileSystemOperation::CopyOrMoveOption::
-                      kPreserveDestinationPermissions)) {
-    dest_attributes = ::GetFileAttributes(dest_path.value().c_str());
-    should_retain_file_permissions = dest_attributes != INVALID_FILE_ATTRIBUTES;
-  }
-#endif  // BUILDFLAG(IS_POSIX)
 
   switch (mode) {
     case COPY_NOSYNC:
@@ -374,11 +309,7 @@ base::File::Error NativeFileUtil::CopyOrMoveFile(
   }
 
   if (should_retain_file_permissions) {
-#if BUILDFLAG(IS_POSIX)
     base::SetPosixFilePermissions(dest_path, dest_mode);
-#elif BUILDFLAG(IS_WIN)
-    ::SetFileAttributes(dest_path.value().c_str(), dest_attributes);
-#endif  // BUILDFLAG(IS_POSIX)
   }
 
   return base::File::FILE_OK;

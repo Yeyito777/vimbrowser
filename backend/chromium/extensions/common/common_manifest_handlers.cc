@@ -11,7 +11,6 @@
 #include "extensions/common/api/commands/commands_handler.h"
 #include "extensions/common/api/declarative/declarative_manifest_handler.h"
 #include "extensions/common/api/declarative_net_request/dnr_manifest_handler.h"
-#include "extensions/common/api/printer_provider/usb_printer_manifest_handler.h"
 #include "extensions/common/api/sockets/sockets_manifest_handler.h"
 #include "extensions/common/api/speech/tts_engine_manifest_handler.h"
 #include "extensions/common/manifest_handler.h"
@@ -48,9 +47,6 @@
 #include "extensions/common/manifest_handlers/webview_info.h"
 #include "extensions/common/manifest_url_handlers.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "extensions/common/manifest_handlers/input_components_handler.h"
-#endif
 
 namespace extensions {
 
@@ -77,9 +73,6 @@ void RegisterCommonManifestHandlers(ManifestHandlerRegistry* registry) {
   registry->RegisterHandler(std::make_unique<IconsHandler>());
   registry->RegisterHandler(std::make_unique<IconVariantsHandler>());
   registry->RegisterHandler(std::make_unique<IncognitoHandler>());
-#if BUILDFLAG(IS_CHROMEOS)
-  registry->RegisterHandler(std::make_unique<InputComponentsHandler>());
-#endif
   registry->RegisterHandler(std::make_unique<KioskModeHandler>());
   registry->RegisterHandler(std::make_unique<MessageSerializationHandler>());
   registry->RegisterHandler(std::make_unique<MimeTypesHandlerParser>());
@@ -96,7 +89,6 @@ void RegisterCommonManifestHandlers(ManifestHandlerRegistry* registry) {
   registry->RegisterHandler(std::make_unique<TtsEngineManifestHandler>());
   registry->RegisterHandler(std::make_unique<UpdateURLHandler>());
   registry->RegisterHandler(std::make_unique<URLOverridesHandler>());
-  registry->RegisterHandler(std::make_unique<UsbPrinterManifestHandler>());
   registry->RegisterHandler(std::make_unique<WebAccessibleResourcesHandler>());
   registry->RegisterHandler(std::make_unique<WebviewHandler>());
 }

@@ -727,10 +727,8 @@ NTPTilesVector MostVisitedSites::GetEnterpriseShortcutTiles() {
     tile.title = shortcut.title;
     tile.url = shortcut.url;
     tile.source = TileSource::ENTERPRISE_SHORTCUTS;
-#if !BUILDFLAG(IS_ANDROID)
     tile.allow_user_edit = shortcut.allow_user_edit;
     tile.allow_user_delete = shortcut.allow_user_delete;
-#endif  // !BUILDFLAG(IS_ANDROID)
     new_tiles.push_back(std::move(tile));
   }
   return new_tiles;

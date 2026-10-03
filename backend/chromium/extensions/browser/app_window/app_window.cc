@@ -470,11 +470,7 @@ void AppWindow::ExitPictureInPicture() {
 }
 
 bool AppWindow::ShouldShowStaleContentOnEviction(content::WebContents* source) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return true;
-#else
   return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void AppWindow::RenderFrameCreated(content::RenderFrameHost* frame_host) {
@@ -537,13 +533,6 @@ void AppWindow::OnNativeWindowChanged() {
 
   SaveWindowPosition();
 
-#if BUILDFLAG(IS_WIN)
-  if (cached_always_on_top_ && !IsFullscreen() &&
-      !native_app_window_->IsMaximized() &&
-      !native_app_window_->IsMinimized()) {
-    UpdateNativeAlwaysOnTop();
-  }
-#endif
 
   if (app_window_contents_)
     app_window_contents_->NativeWindowChanged(native_app_window_.get());
@@ -861,22 +850,6 @@ void AppWindow::SetNativeWindowFullscreen() {
 }
 
 bool AppWindow::IntersectsWithTaskbar() const {
-#if BUILDFLAG(IS_WIN)
-  display::Screen* screen = display::Screen::Get();
-  gfx::Rect window_bounds = native_app_window_->GetRestoredBounds();
-  std::vector<display::Display> displays = screen->GetAllDisplays();
-
-  for (std::vector<display::Display>::const_iterator it = displays.begin();
-       it != displays.end(); ++it) {
-    gfx::Rect taskbar_bounds = it->bounds();
-    taskbar_bounds.Subtract(it->work_area());
-    if (taskbar_bounds.IsEmpty())
-      continue;
-
-    if (window_bounds.Intersects(taskbar_bounds))
-      return true;
-  }
-#endif
 
   return false;
 }

@@ -22,9 +22,6 @@
 #include "third_party/perfetto/protos/perfetto/trace/chrome/chrome_trace_event.pbzero.h"
 #include "third_party/perfetto/protos/perfetto/trace/extension_descriptor.pbzero.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/apk_info.h"
-#endif
 
 namespace tracing {
 namespace {
@@ -130,12 +127,7 @@ void MetadataDataSource::WriteMetadata(
       auto* bundle = packet->set_chrome_events();
       base::CommandLine::StringType command_line =
           base::CommandLine::ForCurrentProcess()->GetCommandLineString();
-#if BUILDFLAG(IS_WIN)
-      AddMetadataToBundle(kCommandLineKey, base::WideToUTF8(command_line),
-                          bundle);
-#else
       AddMetadataToBundle(kCommandLineKey, command_line, bundle);
-#endif
       AddMetadataToBundle(kClockDomainMetadataKey,
                           GetClockString(base::TimeTicks::GetClock()), bundle);
       AddMetadataToBundle(
@@ -166,24 +158,6 @@ void MetadataDataSource::WriteMetadata(
     packet->set_timestamp_clock_id(base::tracing::kTraceClockId);
     auto* chrome_metadata = packet->set_chrome_metadata();
 
-#if BUILDFLAG(IS_ANDROID)
-    const std::string& host_package_name =
-        base::android::apk_info::host_package_name();
-    if (!host_package_name.empty()) {
-      chrome_metadata->set_app_package_name(host_package_name);
-    }
-#if defined(OFFICIAL_BUILD)
-    // Version code is only set for official builds on Android.
-    const std::string& version_code_str =
-        base::android::apk_info::package_version_code();
-    if (!version_code_str.empty()) {
-      int version_code = 0;
-      bool res = base::StringToInt(version_code_str, &version_code);
-      DCHECK(res);
-      chrome_metadata->set_chrome_version_code(version_code);
-    }
-#endif  // defined(OFFICIAL_BUILD)
-#endif  // BUILDFLAG(IS_ANDROID)
 
     // Do not include low anonymity field trials, to prevent them from being
     // included in chrometto reports.
@@ -231,12 +205,8 @@ void MetadataDataSource::AddMetadataToBundle(
 
 void MetadataDataSource::RecordDefaultBundleMetadata(
     perfetto::protos::pbzero::ChromeEventBundle* bundle) {
-#if BUILDFLAG(IS_CHROMEOS)
-  MetadataDataSource::AddMetadataToBundle(kOSNameMetadataKey, "CrOS", bundle);
-#else
   MetadataDataSource::AddMetadataToBundle(
       kOSNameMetadataKey, base::SysInfo::OperatingSystemName(), bundle);
-#endif
   MetadataDataSource::AddMetadataToBundle(
       kOSVersionMetadataKey, base::SysInfo::OperatingSystemVersion(), bundle);
 

@@ -18,58 +18,27 @@
 
 namespace features {
 
-#if BUILDFLAG(IS_ANDROID)
-VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kAndroidDumpForBadCompositedUiState);
-#endif  // BUILDFLAG(IS_ANDROID)
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(
     kBackForwardTransitionsSameDocSharedImage);
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kBackdropFilterMirrorEdgeMode);
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kDelegatedCompositing);
 
-#if BUILDFLAG(IS_CHROMEOS)
-VIZ_COMMON_EXPORT extern const char kDrawQuadSplit[];
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kDrawQuadSplitLimit);
 
 enum class DelegatedCompositingMode {
   // Enable delegated compositing.
   kFull,
-#if BUILDFLAG(IS_WIN)
-  // Enable partially delegated compositing. In this mode, the web contents will
-  // be forced into its own render pass instead of merging into the root pass.
-  // This effectively makes it so only the browser UI quads get delegated
-  // compositing.
-  kLimitToUi,
-#endif
 };
 extern const VIZ_COMMON_EXPORT base::FeatureParam<DelegatedCompositingMode>
     kDelegatedCompositingModeParam;
 
-#if BUILDFLAG(IS_WIN)
-VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kDCompSurfacesForDelegatedInk);
-VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kRemoveRedirectionBitmap);
-VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kBufferQueue);
-#endif
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kUseDrmBlackFullscreenOptimization);
-#if BUILDFLAG(IS_ANDROID)
-VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(
-    kUseFrameIntervalDeciderAdaptiveFrameRate);
-#endif
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kUseMultipleOverlays);
 VIZ_COMMON_EXPORT extern const char kMaxOverlaysParam[];
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kVizFrameSubmissionForWebView);
-#if BUILDFLAG(IS_FUCHSIA)
-VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kUseSkiaOutputDeviceBufferQueue);
-#endif
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebRtcLogCapturePipeline);
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebViewVulkanIntermediateBuffer);
-#if BUILDFLAG(IS_ANDROID)
-VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kUseSurfaceLayerForVideoDefault);
-VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebViewEnableADPF);
-VIZ_COMMON_EXPORT extern const base::FeatureParam<std::string>
-    kWebViewADPFSocManufacturerAllowlist;
-#endif
 #if BUILDFLAG(IS_APPLE)
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kCALayerNewLimit);
 VIZ_COMMON_EXPORT extern const base::FeatureParam<int> kCALayerNewLimitDefault;
@@ -130,9 +99,6 @@ VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(
     kVizDirectCompositorThreadIpcFrameSinkManager);
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kVizWithIoMessagePump);
 VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kVizNullHypothesis);
-#if BUILDFLAG(IS_CHROMEOS)
-VIZ_COMMON_EXPORT BASE_DECLARE_FEATURE(kCrosContentAdjustedRefreshRate);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 VIZ_COMMON_EXPORT extern const char kDraw1Point12Ms[];
 VIZ_COMMON_EXPORT extern const char kDraw2Points6Ms[];
@@ -164,9 +130,6 @@ VIZ_COMMON_EXPORT bool IsDelegatedCompositingEnabled();
 VIZ_COMMON_EXPORT bool IsVizDirectCompositorThreadIpcNonRootEnabled();
 VIZ_COMMON_EXPORT bool IsVizDirectCompositorThreadIpcFrameSinkManagerEnabled();
 VIZ_COMMON_EXPORT bool IsVizWithIoMessagePumpEnabled();
-#if BUILDFLAG(IS_WIN)
-VIZ_COMMON_EXPORT bool ShouldRemoveRedirectionBitmap();
-#endif
 VIZ_COMMON_EXPORT bool IsUsingVizFrameSubmissionForWebView();
 VIZ_COMMON_EXPORT bool IsUsingPreferredIntervalForVideo();
 VIZ_COMMON_EXPORT bool ShouldWebRtcLogCapturePipeline();
@@ -180,19 +143,6 @@ NumCooldownFramesForAckOnSurfaceActivationDuringInteraction();
 VIZ_COMMON_EXPORT extern const base::FeatureParam<int>
     kNumCooldownFramesForAckOnSurfaceActivationDuringInteraction;
 VIZ_COMMON_EXPORT bool ShouldAckOnSurfaceActivationWhenInteractive();
-#if BUILDFLAG(IS_CHROMEOS)
-VIZ_COMMON_EXPORT bool IsCrosContentAdjustedRefreshRateEnabled();
-#endif  // BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_ANDROID)
-VIZ_COMMON_EXPORT bool IsBrowserControlsInVizEnabled();
-
-// If the allowlist is non-empty, the soc must be in the allowlist. Blocklist
-// is ignored in this case.
-// If the allowlist is empty, soc must be absent from the blocklist.
-VIZ_COMMON_EXPORT bool ShouldUseAdpfForSoc(std::string_view soc_allowlist,
-                                           std::string_view soc);
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 VIZ_COMMON_EXPORT bool ShouldAckCOREarlyForViewTransition();
 

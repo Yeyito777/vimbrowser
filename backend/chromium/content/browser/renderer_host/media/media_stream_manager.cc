@@ -88,23 +88,9 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_com_initializer.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/audio/cras_audio_handler.h"
-#include "content/browser/gpu/chromeos/video_capture_dependencies.h"
-#include "media/capture/video/chromeos/camera_hal_dispatcher_impl.h"
-#include "media/capture/video/chromeos/jpeg_accelerator_provider.h"
-#include "media/capture/video/chromeos/public/cros_features.h"
-#include "media/capture/video/chromeos/system_event_monitor_impl.h"
-#include "media/capture/video/chromeos/video_capture_device_factory_chromeos.h"
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "content/browser/media/captured_surface_controller.h"
-#endif
 
 using ::blink::mojom::MediaDeviceType;
 
@@ -142,12 +128,6 @@ void FilterAudioEffects(const StreamControls& controls, int* effects) {
 void EnableHotwordEffect(const StreamControls& controls, int* effects) {
   DCHECK(effects);
   if (controls.hotword_enabled) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // Only enable if a hotword device exists.
-    if (ash::CrasAudioHandler::Get()->HasHotwordDevice()) {
-      *effects |= media::AudioParameters::HOTWORD;
-    }
-#endif
   }
 }
 
@@ -664,9 +644,6 @@ class MediaStreamManager::DeviceRequest {
       state_[static_cast<int>(stream_type)] = new_state;
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    NotifyMultiCaptureStateChanged(requesting_render_frame_host_id, new_state);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     MediaObserver* media_observer =
         GetContentClient()->browser()->GetMediaObserver();
@@ -919,46 +896,6 @@ class MediaStreamManager::DeviceRequest {
   virtual base::WeakPtr<DeviceRequest> GetWeakPtr() = 0;
 
  private:
-#if BUILDFLAG(IS_CHROMEOS)
-  void NotifyMultiCaptureStateChanged(GlobalRenderFrameHostId frame_host_id,
-                                      MediaRequestState new_state) {
-    if (!IsGetAllScreensMedia()) {
-      return;
-    }
-    switch (new_state) {
-      case MediaRequestState::MEDIA_REQUEST_STATE_OPENING:
-        GetUIThreadTaskRunner({})->PostTask(
-            FROM_HERE,
-            base::BindOnce(
-                [](GlobalRenderFrameHostId renderer_id, std::string label) {
-                  GetContentClient()->browser()->NotifyMultiCaptureStateChanged(
-                      renderer_id, label,
-                      ContentBrowserClient::MultiCaptureChanged::kStarted);
-                },
-                frame_host_id, label_));
-        break;
-      case MediaRequestState::MEDIA_REQUEST_STATE_ERROR:
-        GetUIThreadTaskRunner({})->PostTask(
-            FROM_HERE,
-            base::BindOnce(
-                [](GlobalRenderFrameHostId renderer_id, std::string label) {
-                  GetContentClient()->browser()->NotifyMultiCaptureStateChanged(
-                      renderer_id, label,
-                      ContentBrowserClient::MultiCaptureChanged::kStopped);
-                },
-                frame_host_id, label_));
-        break;
-      case MediaRequestState::MEDIA_REQUEST_STATE_CLOSING:
-      case MediaRequestState::MEDIA_REQUEST_STATE_NOT_REQUESTED:
-      case MediaRequestState::MEDIA_REQUEST_STATE_REQUESTED:
-      case MediaRequestState::MEDIA_REQUEST_STATE_PENDING_APPROVAL:
-      case MediaRequestState::MEDIA_REQUEST_STATE_DONE:
-        // Nothing to do as usage indicators only need to shown while the
-        // capture is active.
-        break;
-    }
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Mark true if the MediaStreamDevice of |MediaStreamType| type should be
   // stopped but can't at the moment because of ongoing transfers.
@@ -1580,31 +1517,10 @@ MediaStreamManager::MediaStreamManager(
     // For all platforms other than MacOS start a new thread.
     video_capture_thread_.emplace("VideoCaptureThread");
     base::Thread::Options thread_options;
-#if BUILDFLAG(IS_WIN)
-    // Use an STA Video Capture Thread to try to avoid crashes on enumeration
-    // of buggy third party Direct Show modules, http://crbug.com/428958.
-    video_capture_thread_->init_com_with_mta(false);
-    thread_options.message_pump_type = base::MessagePumpType::UI;
-#elif BUILDFLAG(IS_FUCHSIA)
-    // On Fuchsia IO thread is required for FIDL connections.
-    thread_options.message_pump_type = base::MessagePumpType::IO;
-#endif
     CHECK(video_capture_thread_->StartWithOptions(std::move(thread_options)));
     device_task_runner = video_capture_thread_->task_runner();
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-    if (media::ShouldUseCrosCameraService()) {
-      jpeg_accelerator_provider_ =
-          std::make_unique<media::JpegAcceleratorProviderImpl>(
-              base::BindRepeating(
-                  &VideoCaptureDependencies::CreateJpegDecodeAccelerator),
-              base::BindRepeating(
-                  &VideoCaptureDependencies::CreateJpegEncodeAccelerator));
-      system_event_monitor_ = std::make_unique<media::SystemEventMonitorImpl>();
-      media::CameraHalDispatcherImpl::GetInstance()->Start();
-    }
-#endif
     video_capture_provider = std::make_unique<VideoCaptureProviderSwitcher>(
         std::make_unique<ServiceVideoCaptureProvider>(
             base::BindRepeating(&SendVideoCaptureLogMessage)),
@@ -2520,20 +2436,6 @@ void MediaStreamManager::DeleteRequest(
 
   SendLogMessage(base::StringPrintf("DeleteRequest([label=%s])",
                                     request_it->first.c_str()));
-#if BUILDFLAG(IS_CHROMEOS)
-  if (request_it->second->IsGetAllScreensMedia()) {
-    GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](GlobalRenderFrameHostId renderer_id, std::string label) {
-              GetContentClient()->browser()->NotifyMultiCaptureStateChanged(
-                  renderer_id, label,
-                  ContentBrowserClient::MultiCaptureChanged::kStopped);
-            },
-            request_it->second->requesting_render_frame_host_id,
-            request_it->first));
-  }
-#endif
 
   // Clean up permission controller subscription.
   GetUIThreadTaskRunner({})->PostTask(
@@ -3867,18 +3769,6 @@ void MediaStreamManager::WillDestroyCurrentMessageLoop() {
     audio_input_device_manager_->UnregisterListener(this);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // SystemEventMonitorImpl and JpegAcceleratorProviderImpl are created on the
-  // UI thread and must be destroyed there before the UI message loop stops.
-  if (system_event_monitor_) {
-    GetUIThreadTaskRunner({})->DeleteSoon(FROM_HERE,
-                                          std::move(system_event_monitor_));
-  }
-  if (jpeg_accelerator_provider_) {
-    GetUIThreadTaskRunner({})->DeleteSoon(
-        FROM_HERE, std::move(jpeg_accelerator_provider_));
-  }
-#endif
 
   audio_input_device_manager_ = nullptr;
   video_capture_manager_ = nullptr;

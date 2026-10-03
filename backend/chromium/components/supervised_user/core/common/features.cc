@@ -10,7 +10,6 @@
 #include "base/metrics/field_trial_params.h"
 #include "base/strings/string_util.h"
 #include "base/system/sys_info.h"
-#include "build/android_buildflags.h"
 #include "build/branding_buildflags.h"
 #include "build/build_config.h"
 
@@ -68,12 +67,7 @@ bool IsLocalWebApprovalsEnabled() {
   // Move this logic to SupervisedUserService, once it's migrated to
   // components, and de-release the intended usage of
   // WebsiteParentApproval::IsLocalApprovalSupported for Android.
-#if BUILDFLAG(IS_ANDROID)
-  return base::FeatureList::IsEnabled(kLocalWebApprovals) &&
-         IsGoogleBrandedBuild();
-#else
   return base::FeatureList::IsEnabled(kLocalWebApprovals);
-#endif
 }
 
 bool IsLocalWebApprovalsEnabledForSubframes() {

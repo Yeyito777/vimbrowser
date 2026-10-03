@@ -176,9 +176,6 @@ AutocompleteResult::AutocompleteResult()
 }
 
 AutocompleteResult::~AutocompleteResult() {
-#if BUILDFLAG(IS_ANDROID)
-  DestroyJavaObject();
-#endif
 }
 
 void AutocompleteResult::TransferOldMatches(const AutocompleteInput& input,
@@ -1054,9 +1051,6 @@ void AutocompleteResult::ConvertOpenTabMatches(
             auto action_in_suggest =
                 base::MakeRefCounted<OmniboxActionInSuggest>(
                     std::move(template_action), std::nullopt);
-#if BUILDFLAG(IS_ANDROID)
-            action_in_suggest->tab_id = tab_info->second.android_tab_id;
-#endif
             match.actions.push_back(action_in_suggest);
           } else {
             match.actions.push_back(
@@ -1325,9 +1319,6 @@ void AutocompleteResult::ClearMatches() {
   suggestion_groups_map_.clear();
   smart_compose_inline_hint_.clear();
   has_contextual_chips_ = false;
-#if BUILDFLAG(IS_ANDROID)
-  DestroyJavaObject();
-#endif
 }
 
 void AutocompleteResult::SwapMatchesWith(AutocompleteResult* other) {
@@ -1337,10 +1328,6 @@ void AutocompleteResult::SwapMatchesWith(AutocompleteResult* other) {
   std::swap(has_contextual_chips_, other->has_contextual_chips_);
   std::swap(sequence_id_, other->sequence_id_);
 
-#if BUILDFLAG(IS_ANDROID)
-  DestroyJavaObject();
-  other->DestroyJavaObject();
-#endif
 }
 
 void AutocompleteResult::CopyMatchesFrom(const AutocompleteResult& other) {
@@ -1352,9 +1339,6 @@ void AutocompleteResult::CopyMatchesFrom(const AutocompleteResult& other) {
   smart_compose_inline_hint_ = other.smart_compose_inline_hint_;
   has_contextual_chips_ = other.has_contextual_chips();
 
-#if BUILDFLAG(IS_ANDROID)
-  DestroyJavaObject();
-#endif
 }
 
 #if DCHECK_IS_ON()

@@ -18,9 +18,6 @@
 #endif
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <Objbase.h>
-#endif
 
 CefUIThread::CefUIThread(CefMainRunner* runner,
                          base::OnceClosure setup_callback)
@@ -88,10 +85,6 @@ int CefUIThread::InitializeBrowserRunner(
 void CefUIThread::ThreadMain() {
   base::PlatformThread::SetName("CefUIThread");
 
-#if BUILDFLAG(IS_WIN)
-  // Initializes the COM library on the current thread.
-  CoInitialize(nullptr);
-#endif
 
   start_event_.Signal();
 
@@ -117,9 +110,4 @@ void CefUIThread::ThreadMain() {
   // Run exit callbacks on the UI thread to avoid sequence check failures.
   base::AtExitManager::ProcessCallbacksNow();
 
-#if BUILDFLAG(IS_WIN)
-  // Closes the COM library on the current thread. CoInitialize must
-  // be balanced by a corresponding call to CoUninitialize.
-  CoUninitialize();
-#endif
 }

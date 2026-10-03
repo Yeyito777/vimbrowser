@@ -19,11 +19,7 @@ const sizer = document.querySelector<HTMLElement>('#sizer')!;
 const plugin = document.querySelector<InProcessPdfPluginElement>('embed')!;
 
 const srcUrl = new URL(plugin.src);
-let parentOrigin = srcUrl.origin;
-if (parentOrigin === 'chrome-untrusted://print') {
-  // Within Print Preview, the source origin differs from the parent origin.
-  parentOrigin = 'chrome://print';
-}
+const parentOrigin = srcUrl.origin;
 
 // Plugin-to-parent message handlers. All messages are passed through, but some
 // messages may affect this frame, too.
@@ -88,25 +84,6 @@ channel.port1.onmessage = e => {
       sizer.style.width = `${e.data.width}px`;
       sizer.style.height = `${e.data.height}px`;
       return;
-
-    case 'viewport':
-      // Snoop on "viewport" message to support real RTL scrolling in Print
-      // Preview.
-      // TODO(crbug.com/40737077): Support real RTL scrolling in the PDF viewer.
-      if (parentOrigin === 'chrome://print' && e.data.layoutOptions) {
-        switch (e.data.layoutOptions.direction) {
-          case 1:
-            document.dir = 'rtl';
-            break;
-          case 2:
-            document.dir = 'ltr';
-            break;
-          default:
-            document.dir = '';
-            break;
-        }
-      }
-      break;
 
     default:
       break;
@@ -216,7 +193,7 @@ document.addEventListener('keydown', e => {
     // </if>
     case 'Escape':
     case 'Tab':
-      // Print Preview is interested in Escape and Tab.
+      // The parent frame handles Escape and Tab.
       break;
 
     case '=':

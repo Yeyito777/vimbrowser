@@ -27,7 +27,6 @@
 #include "src/trace_processor/core/dataframe/dataframe.h"
 #include "src/trace_processor/importers/common/global_args_tracker.h"
 #include "src/trace_processor/storage/trace_storage.h"
-#include "src/trace_processor/tables/android_tables_py.h"
 #include "src/trace_processor/tables/counter_tables_py.h"
 #include "src/trace_processor/tables/flow_tables_py.h"
 #include "src/trace_processor/tables/memory_tables_py.h"
@@ -36,7 +35,6 @@
 #include "src/trace_processor/tables/slice_tables_py.h"
 #include "src/trace_processor/tables/trace_proto_tables_py.h"
 #include "src/trace_processor/tables/track_tables_py.h"
-#include "src/trace_processor/tables/winscope_tables_py.h"
 #include "src/trace_processor/types/trace_processor_context.h"
 #include "src/trace_processor/types/variadic.h"
 
@@ -140,81 +138,9 @@ class ArgsTracker {
     return AddArgsTo(context_->storage->mutable_flow_table(), id);
   }
 
-  BoundInserter AddArgsTo(tables::InputMethodClientsTable::Id id) {
-    return AddArgsTo(context_->storage->mutable_inputmethod_clients_table(),
-                     id);
-  }
-
-  BoundInserter AddArgsTo(tables::InputMethodServiceTable::Id id) {
-    return AddArgsTo(context_->storage->mutable_inputmethod_service_table(),
-                     id);
-  }
-
-  BoundInserter AddArgsTo(tables::InputMethodManagerServiceTable::Id id) {
-    return AddArgsTo(
-        context_->storage->mutable_inputmethod_manager_service_table(), id);
-  }
-
   BoundInserter AddArgsTo(tables::MemorySnapshotNodeTable::Id id) {
     return AddArgsTo(context_->storage->mutable_memory_snapshot_node_table(),
                      id);
-  }
-
-  BoundInserter AddArgsTo(tables::SurfaceFlingerLayersSnapshotTable::Id id) {
-    return AddArgsTo(
-        context_->storage->mutable_surfaceflinger_layers_snapshot_table(), id);
-  }
-
-  BoundInserter AddArgsTo(tables::SurfaceFlingerLayerTable::Id id) {
-    return AddArgsTo(context_->storage->mutable_surfaceflinger_layer_table(),
-                     id);
-  }
-
-  BoundInserter AddArgsTo(tables::SurfaceFlingerTransactionsTable::Id id) {
-    return AddArgsTo(
-        context_->storage->mutable_surfaceflinger_transactions_table(), id);
-  }
-
-  BoundInserter AddArgsTo(tables::SurfaceFlingerTransactionTable::Id id) {
-    return AddArgsTo(
-        context_->storage->mutable_surfaceflinger_transaction_table(), id);
-  }
-
-  BoundInserter AddArgsTo(tables::ViewCaptureTable::Id id) {
-    return AddArgsTo(context_->storage->mutable_viewcapture_table(), id);
-  }
-
-  BoundInserter AddArgsTo(tables::ViewCaptureViewTable::Id id) {
-    return AddArgsTo(context_->storage->mutable_viewcapture_view_table(), id);
-  }
-
-  BoundInserter AddArgsTo(tables::WindowManagerTable::Id id) {
-    return AddArgsTo(context_->storage->mutable_windowmanager_table(), id);
-  }
-
-  BoundInserter AddArgsTo(tables::WindowManagerWindowContainerTable::Id id) {
-    return AddArgsTo(
-        context_->storage->mutable_windowmanager_windowcontainer_table(), id);
-  }
-
-  BoundInserter AddArgsTo(tables::WindowManagerShellTransitionsTable::Id id) {
-    return AddArgsTo(
-        context_->storage->mutable_window_manager_shell_transitions_table(),
-        id);
-  }
-
-  BoundInserter AddArgsTo(tables::AndroidKeyEventsTable::Id id) {
-    return AddArgsTo(context_->storage->mutable_android_key_events_table(), id);
-  }
-
-  BoundInserter AddArgsTo(tables::AndroidMotionEventsTable::Id id) {
-    return AddArgsTo(context_->storage->mutable_android_motion_events_table(),
-                     id);
-  }
-
-  BoundInserter AddArgsTo(tables::AndroidInputEventDispatchTable::Id id) {
-    return AddArgsTo(
-        context_->storage->mutable_android_input_event_dispatch_table(), id);
   }
 
   BoundInserter AddArgsTo(MetadataId id) {

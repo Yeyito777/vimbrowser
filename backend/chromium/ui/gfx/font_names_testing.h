@@ -25,30 +25,20 @@ dessert.
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA)
 inline constexpr char kTestFontName[] = "Arimo";
-#elif BUILDFLAG(IS_ANDROID)
-inline constexpr char kTestFontName[] = "sans-serif";
 #else
 inline constexpr char kTestFontName[] = "Arial";
 #endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA)
 inline constexpr char kSymbolFontName[] = "DejaVu Sans";
-#elif BUILDFLAG(IS_ANDROID)
-inline constexpr char kSymbolFontName[] = "monospace";
-#elif BUILDFLAG(IS_WIN)
-inline constexpr char kSymbolFontName[] = "Segoe UI Symbol";
 #else
 inline constexpr char kSymbolFontName[] = "Symbol";
 #endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_FUCHSIA)
 inline constexpr char kCJKFontName[] = "Noto Sans CJK JP";
-#elif BUILDFLAG(IS_ANDROID)
-inline constexpr char kCJKFontName[] = "serif";
 #elif BUILDFLAG(IS_MAC)
 inline constexpr char kCJKFontName[] = "Heiti SC";
-#elif BUILDFLAG(IS_IOS)
-inline constexpr char kCJKFontName[] = "PingFang SC";
 #else
 inline constexpr char kCJKFontName[] = "SimSun";
 #endif

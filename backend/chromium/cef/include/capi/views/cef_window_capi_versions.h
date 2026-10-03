@@ -8,7 +8,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=c1ae84212f61340a47f26bbca1365ac17b23dd5b$
+// $hash=0f4dc7380477a6bc19340546d727977163766e7a$
 //
 
 #ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_WINDOW_CAPI_VERSIONS_H_
@@ -68,9 +68,6 @@ typedef struct _cef_window_0_t {
   cef_rect_t (CEF_CALLBACK *get_client_area_bounds_in_screen)(struct _cef_window_0_t* self);
   void (CEF_CALLBACK *set_draggable_regions)(struct _cef_window_0_t* self, size_t regionsCount, cef_draggable_region_t const* regions);
   cef_window_handle_t (CEF_CALLBACK *get_window_handle)(struct _cef_window_0_t* self);
-  void (CEF_CALLBACK *send_key_press)(struct _cef_window_0_t* self, int key_code, uint32_t event_flags);
-  void (CEF_CALLBACK *send_mouse_move)(struct _cef_window_0_t* self, int screen_x, int screen_y);
-  void (CEF_CALLBACK *send_mouse_events)(struct _cef_window_0_t* self, cef_mouse_button_type_t button, int mouse_down, int mouse_up);
   void (CEF_CALLBACK *set_accelerator)(struct _cef_window_0_t* self, int command_id, int key_code, int shift_pressed, int ctrl_pressed, int alt_pressed, int high_priority);
   void (CEF_CALLBACK *remove_accelerator)(struct _cef_window_0_t* self, int command_id);
   void (CEF_CALLBACK *remove_all_accelerators)(struct _cef_window_0_t* self);

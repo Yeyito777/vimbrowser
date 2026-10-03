@@ -22,9 +22,6 @@
 #include "gpu/config/gpu_util.h"
 #include "third_party/re2/src/re2/re2.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 namespace gpu {
 namespace {
@@ -372,29 +369,12 @@ bool GpuControlList::More::Contains(const GPUInfo& gpu_info) const {
       !pixel_shader_version.Contains(gpu_info.pixel_shader_version)) {
     return false;
   }
-#if BUILDFLAG(IS_WIN)
-  if (d3d11_feature_level.IsSpecified()) {
-    std::string feature_level_string =
-        D3DFeatureLevelToNumberString(gpu_info.d3d11_feature_level);
-    if (!d3d11_feature_level.Contains(feature_level_string)) {
-      return false;
-    }
-  }
-#endif
   switch (hardware_overlay) {
     case kDontCare:
       break;
     case kSupported:
-#if BUILDFLAG(IS_WIN)
-      if (!gpu_info.overlay_info.supports_overlays)
-        return false;
-#endif  // BUILDFLAG(IS_WIN)
       break;
     case kUnsupported:
-#if BUILDFLAG(IS_WIN)
-      if (gpu_info.overlay_info.supports_overlays)
-        return false;
-#endif  // BUILDFLAG(IS_WIN)
       break;
   }
   if ((subpixel_font_rendering == kUnsupported &&
@@ -721,15 +701,7 @@ std::set<int32_t> GpuControlList::MakeDecision(GpuControlList::OsType os,
     os = GetOsType();
   std::string processed_os_version(os_version);
   if (processed_os_version.empty()) {
-#if BUILDFLAG(IS_WIN)
-    base::win::OSInfo::VersionNumber version_number =
-        base::win::OSInfo::GetInstance()->version_number();
-    processed_os_version = base::StringPrintf(
-        "%d.%d.%d.%d", version_number.major, version_number.minor,
-        version_number.build, version_number.patch);
-#else
     processed_os_version = base::SysInfo::OperatingSystemVersion();
-#endif
   }
   // Get rid of the non numbers because later processing expects a valid
   // version string in the format of "a.b.c".
@@ -846,20 +818,10 @@ uint32_t GpuControlList::max_entry_id() const {
 
 // static
 GpuControlList::OsType GpuControlList::GetOsType() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return kOsChromeOS;
-#elif BUILDFLAG(IS_WIN)
-  return kOsWin;
-#elif BUILDFLAG(IS_ANDROID)
-  return kOsAndroid;
-#elif BUILDFLAG(IS_FUCHSIA)
-  return kOsFuchsia;
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OPENBSD)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OPENBSD)
   return kOsLinux;
 #elif BUILDFLAG(IS_MAC)
   return kOsMacosx;
-#elif BUILDFLAG(IS_IOS)
-  return kOsIOS;
 #else
   return kOsAny;
 #endif

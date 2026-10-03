@@ -41,11 +41,7 @@ std::vector<std::pair<std::string, time_t>> GetNewReports(
     time_t latest_creation_time) {
   base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
   base::FilePath::StringType sysmon_logs_path =
-#if BUILDFLAG(IS_WIN)
-      base::UTF8ToWide(cmd->GetSwitchValueASCII(kTelomereLogsPathFlag));
-#else
       cmd->GetSwitchValueASCII(kTelomereLogsPathFlag);
-#endif
   base::FilePath sysmon_logs_path_file(sysmon_logs_path);
   return GetLogsFromPath(latest_creation_time, sysmon_logs_path_file);
 }

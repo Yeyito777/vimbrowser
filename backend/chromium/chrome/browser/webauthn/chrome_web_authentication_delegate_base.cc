@@ -15,10 +15,6 @@
 #include "components/prefs/pref_service.h"
 #include "device/fido/public/features.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/user_manager/user.h"
-#include "components/user_manager/user_manager.h"
-#endif
 
 namespace {
 
@@ -35,7 +31,6 @@ bool IsCmdlineAllowedOrigin(const url::Origin& caller_origin) {
   return caller_origin == cmdline_allowed_origin;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 bool IsGoogleCorpCrdOrigin(content::BrowserContext* browser_context,
                            const url::Origin& caller_origin) {
   // This policy explicitly does not cover external instances of CRD. It
@@ -62,23 +57,12 @@ bool IsGoogleCorpCrdOrigin(content::BrowserContext* browser_context,
   // An additional origin can be passed on the command line for testing.
   return IsCmdlineAllowedOrigin(caller_origin);
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 bool RemoteDesktopClientOverrideAllowedByPolicy(
     content::BrowserContext* browser_context,
     const url::Origin& caller_origin) {
   const Profile* profile = Profile::FromBrowserContext(browser_context);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const user_manager::User* user =
-      user_manager::UserManager::Get()->GetActiveUser();
-  if (!user || !user->IsAffiliated()) {
-    // On ChromeOS, if the user is not affiliated with the device's
-    // managing organization, the origin isn't allowed to use the
-    // remoteDesktopClientOverride.
-    return false;
-  }
-#endif
 
   const PrefService* prefs = profile->GetPrefs();
   const base::ListValue& allowed_origins =
@@ -130,13 +114,11 @@ bool ChromeWebAuthenticationDelegateBase::
     return true;
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   // Check if the origin is a Google Corp Chrome Remote Desktop origin and
   // allowed by policy, (or allowed by the command-line flag for testing).
   if (IsGoogleCorpCrdOrigin(browser_context, caller_origin)) {
     return true;
   }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   return false;
 }

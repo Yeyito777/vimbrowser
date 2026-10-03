@@ -73,11 +73,6 @@
 #include "ui/views/widget/widget.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/shell_integration_win.h"
-#include "ui/base/win/shell.h"
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/global_keyboard_shortcuts_mac.h"
@@ -632,13 +627,6 @@ void ProfilePickerView::Init(Profile* picker_profile) {
   // The widget is owned by the native widget.
   new ProfilePickerWidget(this);
 
-#if BUILDFLAG(IS_WIN)
-  // Set the app id for the user manager to the app id of its parent.
-  ui::win::SetAppIdForWindow(
-      shell_integration::win::GetAppUserModelIdForBrowser(
-          picker_profile->GetPath()),
-      views::HWNDForWidget(GetWidget()));
-#endif
 
   DCHECK(flow_controller_);
   flow_controller_->Init();

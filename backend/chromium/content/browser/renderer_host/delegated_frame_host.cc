@@ -140,12 +140,6 @@ bool DelegatedFrameHost::HasSavedFrame() const {
 
 void DelegatedFrameHost::WasHidden(HiddenCause cause) {
   tab_switch_time_recorder_.TabWasHidden();
-#if BUILDFLAG(IS_WIN)
-  // Ignore if the native window was occluded.
-  // Windows needs the frame host to display tab previews.
-  if (cause == HiddenCause::kOccluded)
-    return;
-#endif
   frame_evictor_->SetVisible(false);
 }
 
@@ -497,9 +491,7 @@ void DelegatedFrameHost::DidCopyStaleContent(
 
 // TODO(crbug.com/1227661): Revert https://crrev.com/c/3222541 to re-enable this
 // CHECK on CrOS.
-#if !BUILDFLAG(IS_CHROMEOS)
   CHECK_NE(frame_eviction_state_, FrameEvictionState::kNotStarted);
-#endif
   SetFrameEvictionStateAndNotifyObservers(FrameEvictionState::kNotStarted);
   ContinueDelegatedFrameEviction(
       frame_evictor_->CollectSurfaceIdsForEviction());
@@ -515,9 +507,7 @@ void DelegatedFrameHost::DidCopyStaleContent(
     client_->DelegatedFrameHostGetLayer()->Add(stale_content_layer_.get());
 
 // TODO(crbug.com/40812011): This DCHECK occasionally gets hit on Chrome OS.
-#if !BUILDFLAG(IS_CHROMEOS)
   CHECK(!stale_content_layer_->has_external_content());
-#endif
   stale_content_layer_->SetVisible(true);
   stale_content_layer_->SetBounds(gfx::Rect(surface_dip_size_));
   stale_content_layer_->SetTransferableResource(

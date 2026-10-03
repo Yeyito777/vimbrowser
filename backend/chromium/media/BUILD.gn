@@ -18,10 +18,6 @@ if (enable_library_cdms) {
   import("//media/cdm/library_cdm/cdm_paths.gni")
 }
 
-if (is_ios) {
-  import("//build/config/ios/bundle_data_from_filelist.gni")
-}
-
 buildflag_header("media_buildflags") {
   header = "media_buildflags.h"
 
@@ -167,7 +163,6 @@ source_set("test_support") {
     ":media",
     "//media/audio:test_support",
     "//media/base:test_support",
-    "//media/base/android:test_support",
     "//media/filters:test_support",
     "//media/formats:test_support",
     "//media/mojo/services:test_support",
@@ -175,13 +170,6 @@ source_set("test_support") {
     "//media/renderers:test_support",
     "//media/video:test_support",
   ]
-}
-
-if (is_ios) {
-  bundle_data_from_filelist("unit_tests_bundle_data") {
-    testonly = true
-    filelist_name = "unit_tests_bundle_data.filelist"
-  }
 }
 
 # Contains tests for all targets in the "media" folder.
@@ -216,43 +204,8 @@ test("media_unittests") {
 
   data_deps = [ "//testing/buildbot/filters:media_unittests_filters" ]
 
-  if (is_android && enable_chrome_android_internal) {
-    data_deps += [ "//clank/build/bot/filters:media_unittests_filters" ]
-  }
-
   if (media_use_ffmpeg) {
     deps += [ "//media/ffmpeg:unit_tests" ]
-  }
-
-  if (is_android) {
-    deps += [
-      # The test needs the java dependencies to add the java classes for their
-      # native counterparts to the test apk.
-      "//gpu/command_buffer/service:android_texture_owner_unittests",
-      "//media/base/android:media_java",
-      "//media/base/android:unit_tests",
-      "//media/gpu:android_video_decode_accelerator_unittests",
-      "//ui/android:ui_java",
-    ]
-  }
-
-  if (is_fuchsia) {
-    deps += [ "//media/fuchsia/video:unittests" ]
-
-    # PaintCanvasVideoRendererWithGLTest.* uses SwiftShader, which generates
-    # machine code.
-    test_runner_shard = "//build/config/fuchsia/test/elf_test_ambient_exec_runner.shard.test-cml"
-
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/audio_output.shard.test-cml",
-      "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-      "//build/config/fuchsia/test/platform_video_codecs.shard.test-cml",
-      "//third_party/fuchsia-sdk/sdk/pkg/vulkan/client.shard.cml",
-    ]
-
-    if (enable_library_cdms) {
-      excluded_files = [ "lib.unstripped/libclearkeycdm.so" ]
-    }
   }
 
   if (enable_media_remoting) {
@@ -261,12 +214,6 @@ test("media_unittests") {
 
   # The test needs OPUS_FIXED_POINT conditional define.
   configs += [ "//third_party/opus:opus_config" ]
-
-  if (is_ios) {
-    deps += [ ":unit_tests_bundle_data" ]
-    bundle_deps =
-        [ "//testing/buildbot/filters:media_unittests_filters_bundle_data" ]
-  }
 }
 
 test("media_perftests") {
@@ -299,14 +246,14 @@ test("media_perftests") {
   ]
 
   if (enable_av1_decoder &&
-      ((is_chromeos && use_linux_video_acceleration) || is_win || is_android)) {
+      ((is_chromeos && use_linux_video_acceleration) || is_win)) {
     data_deps += [ "//media/gpu/test/:video_encode_accelerator_tests" ]
   }
 }
 
 # TODO(watk): Refactor tests that could be made to run on Android. See
 # http://crbug.com/570762
-if (media_use_ffmpeg && !is_android) {
+if (media_use_ffmpeg) {
   test("ffmpeg_regression_tests") {
     configs += [ "//media:media_config" ]
 

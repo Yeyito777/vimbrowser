@@ -35,7 +35,6 @@
 #include "perfetto/ext/tracing/core/trace_stats.h"
 #include "perfetto/ext/tracing/core/tracing_service.h"
 #include "perfetto/tracing/core/forward_decls.h"
-#include "src/android_stats/perfetto_atoms.h"
 #include "src/tracing/core/id_allocator.h"
 #include "src/tracing/service/clock.h"
 #include "src/tracing/service/dependencies.h"
@@ -343,14 +342,6 @@ class TracingServiceImpl : public TracingService {
   bool WriteIntoFile(TracingSession* tracing_session,
                      std::vector<TracePacket> packets);
   void OnStartTriggersTimeout(TracingSessionID tsid);
-  void MaybeLogUploadEvent(const TraceConfig&,
-                           const base::Uuid&,
-                           PerfettoStatsdAtom atom,
-                           const std::string& trigger_name = "");
-  void MaybeLogTriggerEvent(const TraceConfig&,
-                            const base::Uuid&,
-                            PerfettoTriggerAtom atom,
-                            const std::string& trigger_name);
   size_t PurgeExpiredAndCountTriggerInWindow(int64_t now_ns,
                                              uint64_t trigger_name_hash);
   void StopOnDurationMsExpiry(TracingSessionID);

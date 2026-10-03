@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/android/android_info.h"
 #include "base/base64.h"
 #include "base/check_deref.h"
 #include "base/containers/flat_set.h"
@@ -145,18 +144,6 @@ void CreditCardFidoAuthenticator::IsUserVerifiable(
     std::move(callback).Run(false);
     return;
   }
-#if BUILDFLAG(IS_ANDROID)
-  // Due to Android N devices having a low market share, only Android P or
-  // higher version devices are allowed to go through FIDO authentication.
-  // Because Android N key is better than P key and can provide additional PIN
-  // device unlock, payments servers accept WebAuthn credentials for Android N
-  // key so that Android P+ devices can use N key to do the FIDO authentication.
-  if (base::android::android_info::sdk_int() <
-      base::android::android_info::SDK_VERSION_P) {
-    std::move(callback).Run(false);
-    return;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   authenticator()->IsUserVerifyingPlatformAuthenticatorAvailable(
       std::move(callback));
 }
@@ -179,21 +166,10 @@ UserOptInIntention CreditCardFidoAuthenticator::GetUserOptInIntention(
   // mismatches.
   if (unmask_details.server_denotes_fido_eligible_but_not_opted_in &&
       user_local_opt_in_status) {
-#if BUILDFLAG(IS_ANDROID)
-    // For Android, if local pref says user is opted in while payments not, it
-    // denotes that user intended to opt in from settings page. We will opt user
-    // in and hide the checkbox in the next checkout flow.
-    // For intent to opt in, we also update |user_is_opted_in_| here so that
-    // |current_flow_| can be correctly set to kOptInWithChallengeFlow when
-    // calling Authorize() later.
-    user_is_opted_in_ = false;
-    return UserOptInIntention::kIntentToOptIn;
-#else
     // For desktop, just update the local pref, since the desktop settings page
     // attempts opt-in at time of toggling the switch, unlike mobile.
     user_is_opted_in_ = false;
     UpdateUserPref();
-#endif
   }
 
   // If payments is requesting a FIDO auth, then that means user is opted in
@@ -218,7 +194,6 @@ void CreditCardFidoAuthenticator::CancelVerification() {
     full_card_request_->OnFIDOVerificationCancelled();
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void CreditCardFidoAuthenticator::OnWebauthnOfferDialogRequested(
     std::string card_authorization_token) {
   card_authorization_token_ = card_authorization_token;
@@ -264,7 +239,6 @@ void CreditCardFidoAuthenticator::OnWebauthnOfferDialogUserResponse(
     UpdateUserPref();
   }
 }
-#endif
 
 FidoAuthenticationStrikeDatabase*
 CreditCardFidoAuthenticator::GetOrCreateFidoAuthenticationStrikeDatabase() {
@@ -303,7 +277,6 @@ bool CreditCardFidoAuthenticator::IsValidRequestOptions(
 
 void CreditCardFidoAuthenticator::GetAssertion(
     blink::mojom::PublicKeyCredentialRequestOptionsPtr request_options) {
-#if !BUILDFLAG(IS_ANDROID)
   // On desktop, during an opt-in flow, close the WebAuthn offer dialog and get
   // ready to show the OS level authentication dialog. If dialog is already
   // closed, then the offer was declined during the fetching challenge process,
@@ -319,7 +292,6 @@ void CreditCardFidoAuthenticator::GetAssertion(
       return;
     }
   }
-#endif
   authenticator()->GetAssertion(
       std::move(request_options),
       base::BindOnce(&CreditCardFidoAuthenticator::OnDidGetAssertion,
@@ -328,7 +300,6 @@ void CreditCardFidoAuthenticator::GetAssertion(
 
 void CreditCardFidoAuthenticator::MakeCredential(
     blink::mojom::PublicKeyCredentialCreationOptionsPtr creation_options) {
-#if !BUILDFLAG(IS_ANDROID)
   // On desktop, close the WebAuthn offer dialog and get ready to show the OS
   // level authentication dialog. If dialog is already closed, then the offer
   // was declined during the fetching challenge process, and thus returned
@@ -342,7 +313,6 @@ void CreditCardFidoAuthenticator::MakeCredential(
     current_flow_ = Flow::kNoneFlow;
     return;
   }
-#endif
   authenticator()->MakeCredential(
       std::move(creation_options),
       base::BindOnce(&CreditCardFidoAuthenticator::OnDidMakeCredential,
@@ -470,12 +440,10 @@ void CreditCardFidoAuthenticator::OnDidGetOptChangeResult(
 
   // End the flow if the server responded with an error.
   if (result != payments::PaymentsAutofillClient::PaymentsRpcResult::kSuccess) {
-#if !BUILDFLAG(IS_ANDROID)
     if (current_flow_ == Flow::kOptInFetchChallengeFlow) {
       autofill_client_->GetPaymentsAutofillClient()
           ->UpdateWebauthnOfferDialogWithError();
     }
-#endif
     current_flow_ = Flow::kNoneFlow;
     return;
   }
@@ -759,12 +727,6 @@ void CreditCardFidoAuthenticator::HandleGetAssertionSuccess(
       break;
     }
     case Flow::kOptInWithChallengeFlow: {
-#if BUILDFLAG(IS_ANDROID)
-      // For Android, opt-in flow (kOptInWithChallengeFlow) also delays form
-      // filling.
-      if (requester_)
-        requester_->OnFidoAuthorizationComplete(/*did_succeed=*/true);
-#endif
       break;
     }
     case Flow::kNoneFlow:
@@ -798,13 +760,6 @@ void CreditCardFidoAuthenticator::HandleGetAssertionFailure() {
     case Flow::kOptInWithChallengeFlow: {
       // Treat failure to perform user verification as a strong signal not to
       // offer opt-in in the future.
-#if BUILDFLAG(IS_ANDROID)
-      // For Android, even if GetAssertion fails for opting-in, we still report
-      // success to |requester_| to fill the form with the fetched card info.
-      if (requester_) {
-        requester_->OnFidoAuthorizationComplete(/*did_succeed=*/true);
-      }
-#endif  // BUILDFLAG(IS_ANDROID)
       if (auto* strike_database =
               GetOrCreateFidoAuthenticationStrikeDatabase()) {
         strike_database->AddStrikes(

@@ -102,11 +102,7 @@ std::vector<std::string> FilterProperties(base::DictValue& properties,
 
 bool CanChangeSharedConfig(const Extension* extension,
                            mojom::ContextType context) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return context == mojom::ContextType::kWebUi;
-#else
   return true;
-#endif
 }
 
 std::string InvalidPropertiesError(const std::vector<std::string>& properties) {

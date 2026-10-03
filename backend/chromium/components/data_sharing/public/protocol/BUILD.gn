@@ -15,19 +15,6 @@ proto_library("protocol") {
   deps = [ "//components/sync/protocol" ]
 }
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-
-  proto_java_library("proto_java") {
-    proto_path = "//"
-    sources = [
-      "data_sharing_sdk.proto",
-      "group_data.proto",
-    ]
-    deps = [ "//components/sync/protocol:protocol_java" ]
-  }
-}
-
 mojom("mojo_bindings") {
   sources = [ "group_data.mojom" ]
   deps = [ "//url/mojom:url_mojom_gurl" ]

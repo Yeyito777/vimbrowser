@@ -71,24 +71,7 @@
 #include "ui/views/window/frame_view.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/public/cpp/window_properties.h"  // nogncheck
-#include "chromeos/ui/base/app_types.h"
-#include "chromeos/ui/base/chromeos_ui_constants.h"
-#include "chromeos/ui/base/window_properties.h"
-#include "ui/aura/client/aura_constants.h"
-#include "ui/aura/window.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/shell_integration_win.h"
-#include "content/public/browser/render_widget_host_view.h"
-#include "ui/aura/window.h"
-#include "ui/aura/window_tree_host.h"
-#include "ui/base/ime/text_input_client.h"
-#include "ui/base/ime/win/tsf_input_scope.h"
-#include "ui/base/win/shell.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/ui/views/overlay/video_overlay_window_native_widget_mac.h"
@@ -272,14 +255,6 @@ class OverlayWindowFrameView : public views::FrameView {
       return window_component;
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // If the resize handle is clicked on, we want to force the hit test to
-    // force a resize drag.
-    if (window->AreControlsVisible() &&
-        window->GetResizeHandleControlsBounds().Contains(point)) {
-      return window->GetResizeHTComponent();
-    }
-#endif
 
     // If the live caption dialog is open, then we'll want to capture all mouse
     // clicks within the window so we can use them to close the dialog when the
@@ -291,21 +266,6 @@ class OverlayWindowFrameView : public views::FrameView {
     // Allows for dragging and resizing the window.
     return (window_component == HTNOWHERE) ? HTCAPTION : window_component;
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  void UpdateWindowRoundedCorners() override {
-    // The first call to  occurs in `UpdateWindowRoundedCorners()`. However, the
-    // layer is initialized after the widget is initialized, hence the null
-    // check.
-    ui::Layer* root_view_layer = GetWidget()->GetRootView()->layer();
-    if (root_view_layer) {
-      const gfx::RoundedCornersF window_radii(
-          chromeos::kPipRoundedCornerRadius);
-
-      root_view_layer->SetRoundedCornerRadius(window_radii);
-      root_view_layer->SetIsFastRoundedCorner(true);
-    }
-  }
-#endif
 
   // views::ViewTargeterDelegate:
   bool DoesIntersectRect(const View* target,
@@ -377,12 +337,10 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
 // Fade in animation is disabled for Document and Video Picture-in-Picture on
 // Windows. On Windows, resizable windows can not be translucent. See
 // crbug.com/425711450.
-#if !BUILDFLAG(IS_WIN)
   if (base::FeatureList::IsEnabled(
           media::kPictureInPictureShowWindowAnimation)) {
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
   }
-#endif
 
 #if BUILDFLAG(IS_MAC)
   // On Mac, we override the default native widget with our own subclass, which
@@ -392,51 +350,10 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
       new VideoOverlayWindowNativeWidgetMac(overlay_window.get());
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  params.init_properties_container.SetProperty(chromeos::kAppTypeKey,
-                                               chromeos::AppType::BROWSER);
-  params.rounded_corners =
-      gfx::RoundedCornersF(chromeos::kPipRoundedCornerRadius);
-#endif
 
   overlay_window->Init(std::move(params));
   overlay_window->OnRootViewReady();
 
-#if BUILDFLAG(IS_WIN)
-  std::wstring app_user_model_id;
-  Browser* browser = chrome::FindBrowserWithTab(controller->GetWebContents());
-  if (browser) {
-    const base::FilePath& profile_path = browser->profile()->GetPath();
-    // Set the window app id to GetAppUserModelIdForApp if the original window
-    // is an app window, GetAppUserModelIdForBrowser if it's a browser window.
-    app_user_model_id =
-        browser->is_type_app()
-            ? shell_integration::win::GetAppUserModelIdForApp(
-                  base::UTF8ToWide(browser->app_name()), profile_path)
-            : shell_integration::win::GetAppUserModelIdForBrowser(profile_path);
-    if (!app_user_model_id.empty()) {
-      ui::win::SetAppIdForWindow(
-          app_user_model_id,
-          overlay_window->GetNativeWindow()->GetHost()->GetAcceleratedWidget());
-    }
-  }
-
-  // Default to private input scope in the case where we don't have a
-  // TextInputClient, such as when this is running inside an InnerWebContents.
-  InputScope input_scope = IS_PRIVATE;
-  ui::TextInputClient* text_input_client = overlay_window->GetController()
-                                               ->GetWebContents()
-                                               ->GetRenderWidgetHostView()
-                                               ->GetTextInputClient();
-  if (text_input_client && text_input_client->ShouldDoLearning()) {
-    input_scope = IS_DEFAULT;
-  }
-
-  ui::tsf_inputscope::SetInputScope(
-      overlay_window->GetNativeWindow()->GetHost()->GetAcceleratedWidget(),
-      input_scope);
-
-#endif  // BUILDFLAG(IS_WIN)
 
   PictureInPictureOcclusionTracker* tracker =
       PictureInPictureWindowManager::GetInstance()->GetOcclusionTracker();
@@ -607,13 +524,6 @@ void VideoOverlayWindowViews::OnNativeWidgetMove() {
   // window.
   UpdateMaxSize(GetWorkAreaForWindow());
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Update the positioning of some icons when the window is moved.
-  WindowQuadrant quadrant =
-      GetCurrentWindowQuadrant(GetBounds(), GetController());
-
-  UpdateResizeHandleBounds(quadrant);
-#endif
 
   views::Widget::OnNativeWidgetMove();
 }
@@ -646,13 +556,6 @@ void VideoOverlayWindowViews::OnKeyEvent(ui::KeyEvent* event) {
 // On Windows, the Alt+F4 keyboard combination closes the window. Only handle
 // closure on key press so Close() is not called a second time when the key
 // is released.
-#if BUILDFLAG(IS_WIN)
-  if (event->type() == ui::EventType::kKeyPressed && event->IsAltDown() &&
-      event->key_code() == ui::VKEY_F4) {
-    CloseAndPauseIfAvailable();
-    event->SetHandled();
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   // If there's no focused control, then we handle certain keys as if they went
   // to the relevant control.
@@ -1281,10 +1184,6 @@ void VideoOverlayWindowViews::SetUpViews() {
   hang_up_button->SetSize({kCenterButtonSize, kCenterButtonSize});
   hang_up_button->SetVisible(false);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  auto resize_handle_view =
-      std::make_unique<ResizeHandleButton>(views::Button::PressedCallback());
-#endif
 
   window_background_view->SetPaintToLayer(ui::LAYER_SOLID_COLOR);
   window_background_view->layer()->SetName("WindowBackgroundView");
@@ -1393,18 +1292,9 @@ void VideoOverlayWindowViews::SetUpViews() {
   toggle_microphone_button_ = vc_controls_container_view_->AddChildView(
       std::move(toggle_microphone_button));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  resize_handle_view_ =
-      controls_container_view_->AddChildView(std::move(resize_handle_view));
-#endif
 }
 
 void VideoOverlayWindowViews::OnRootViewReady() {
-#if BUILDFLAG(IS_CHROMEOS)
-  GetNativeWindow()->SetProperty(ash::kWindowPipTypeKey, true);
-  highlight_border_overlay_ =
-      std::make_unique<HighlightBorderOverlay>(this, nullptr);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   GetRootView()->SetPaintToLayer(ui::LAYER_TEXTURED);
   GetRootView()->layer()->SetName("RootView");
@@ -1490,9 +1380,6 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
   WindowQuadrant quadrant = GetCurrentWindowQuadrant(GetBounds(), controller_);
   close_controls_view_->SetPosition(GetBounds().size(), quadrant);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  UpdateResizeHandleBounds(quadrant);
-#endif
 
   constexpr int kTopControlsHeight = 34;
   constexpr int kBottomControlsHeight = 64;
@@ -1696,15 +1583,6 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
                                          !is_live_);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void VideoOverlayWindowViews::UpdateResizeHandleBounds(
-    WindowQuadrant quadrant) {
-  resize_handle_view_->SetPosition(GetBounds().size(), quadrant);
-  GetNativeWindow()->SetProperty(
-      ash::kWindowPipResizeHandleBoundsKey,
-      new gfx::Rect(GetResizeHandleControlsBounds()));
-}
-#endif
 
 bool VideoOverlayWindowViews::IsActive() const {
   return views::Widget::IsActive();
@@ -1724,9 +1602,6 @@ void VideoOverlayWindowViews::ShowInactive() {
 // Fade in animation is disabled for Document and Video Picture-in-Picture on
 // Windows. On Windows, resizable windows can not be translucent. See
 // crbug.com/425711450.
-#if BUILDFLAG(IS_WIN)
-  views::Widget::ShowInactive();
-#else
   if (base::FeatureList::IsEnabled(
           media::kPictureInPictureShowWindowAnimation)) {
     if (!fade_animator_) {
@@ -1738,12 +1613,8 @@ void VideoOverlayWindowViews::ShowInactive() {
   } else {
     views::Widget::ShowInactive();
   }
-#endif
 
   views::Widget::SetVisibleOnAllWorkspaces(true);
-#if BUILDFLAG(IS_CHROMEOS)
-  non_client_view()->frame_view()->UpdateWindowRoundedCorners();
-#endif
 
   // If there is an existing overlay view, remove it now.
   RemoveOverlayViewIfExists();
@@ -2053,11 +1924,6 @@ gfx::Rect VideoOverlayWindowViews::GetMinimizeControlsBounds() {
   return minimize_button_->GetMirroredBounds();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-gfx::Rect VideoOverlayWindowViews::GetResizeHandleControlsBounds() {
-  return resize_handle_view_->GetMirroredBounds();
-}
-#endif
 
 gfx::Rect VideoOverlayWindowViews::GetPlayPauseControlsBounds() {
   return play_pause_controls_view_->GetMirroredBounds();
@@ -2147,11 +2013,6 @@ bool VideoOverlayWindowViews::IsTrustedForMediaPlayback() const {
   return HasHighMediaEngagement(origin);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-int VideoOverlayWindowViews::GetResizeHTComponent() const {
-  return resize_handle_view_->GetHTComponent();
-}
-#endif
 
 void VideoOverlayWindowViews::TogglePlayPause() {
   // Retrieve expected active state based on what command was sent in
@@ -2273,11 +2134,6 @@ gfx::Point VideoOverlayWindowViews::close_image_position_for_testing() const {
   return close_controls_view_->origin();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-gfx::Point VideoOverlayWindowViews::resize_handle_position_for_testing() const {
-  return resize_handle_view_->origin();
-}
-#endif
 
 VideoOverlayWindowViews::PlaybackState
 VideoOverlayWindowViews::playback_state_for_testing() const {

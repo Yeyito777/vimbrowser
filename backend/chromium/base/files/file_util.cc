@@ -10,9 +10,6 @@
 #include "base/task/sequenced_task_runner.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <io.h>
-#endif
 #include <stdio.h>
 
 #include <algorithm>
@@ -37,15 +34,11 @@
 #include "base/task/bind_post_task.h"
 #include "base/threading/scoped_blocking_call.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace base {
 
 namespace {
 
-#if !BUILDFLAG(IS_WIN)
 
 void RunAndReply(OnceCallback<bool()> action_callback,
                  OnceCallback<void(bool)> reply_callback) {
@@ -55,7 +48,6 @@ void RunAndReply(OnceCallback<bool()> action_callback,
   }
 }
 
-#endif  // !BUILDFLAG(IS_WIN)
 
 bool ReadStreamToSpanWithMaxSize(
     FILE* stream,
@@ -75,19 +67,6 @@ bool ReadStreamToSpanWithMaxSize(
   constexpr size_t kDefaultChunkSize = 1 << 16;
   size_t chunk_size = kDefaultChunkSize - 1;
   ScopedBlockingCall scoped_blocking_call(FROM_HERE, BlockingType::MAY_BLOCK);
-#if BUILDFLAG(IS_WIN)
-  BY_HANDLE_FILE_INFORMATION file_info = {};
-  if (::GetFileInformationByHandle(
-          reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(stream))),
-          &file_info)) {
-    LARGE_INTEGER size;
-    size.HighPart = static_cast<LONG>(file_info.nFileSizeHigh);
-    size.LowPart = file_info.nFileSizeLow;
-    if (size.QuadPart > 0) {
-      chunk_size = static_cast<size_t>(size.QuadPart);
-    }
-  }
-#else   // BUILDFLAG(IS_WIN)
   // In cases where the reported file size is 0, use a smaller chunk size to
   // minimize memory allocated and cost of string::resize() in case the read
   // size is small (i.e. proc files). If the file is larger than this, the read
@@ -98,7 +77,6 @@ bool ReadStreamToSpanWithMaxSize(
   if (!File::Fstat(fileno(stream), &file_info) && file_info.st_size > 0) {
     chunk_size = static_cast<size_t>(file_info.st_size);
   }
-#endif  // BUILDFLAG(IS_WIN)
 
   // We need to attempt to read at EOF for feof flag to be set so here we use
   // |chunk_size| + 1.
@@ -147,7 +125,6 @@ bool ReadStreamToSpanWithMaxSize(
 
 }  // namespace
 
-#if !BUILDFLAG(IS_WIN)
 
 OnceClosure GetDeleteFileCallback(const FilePath& path,
                                   OnceCallback<void(bool)> reply_callback) {
@@ -168,7 +145,6 @@ OnceClosure GetDeletePathRecursivelyCallback(
                                      std::move(reply_callback)));
 }
 
-#endif  // !BUILDFLAG(IS_WIN)
 
 int64_t ComputeDirectorySize(const FilePath& root_path) {
   int64_t running_size = 0;
@@ -230,12 +206,7 @@ bool ContentsEqual(const FilePath& filename1, const FilePath& filename2) {
   // We open the file in binary format even if they are text files because
   // we are just comparing that bytes are exactly same in both files and not
   // doing anything smart with text formatting.
-#if BUILDFLAG(IS_WIN)
-  std::ifstream file1(filename1.value().c_str(),
-                      std::ios::in | std::ios::binary);
-  std::ifstream file2(filename2.value().c_str(),
-                      std::ios::in | std::ios::binary);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   std::ifstream file1(filename1.value(), std::ios::in | std::ios::binary);
   std::ifstream file2(filename2.value(), std::ios::in | std::ios::binary);
 #endif  // BUILDFLAG(IS_WIN)
@@ -268,10 +239,7 @@ bool ContentsEqual(const FilePath& filename1, const FilePath& filename2) {
 }
 
 bool TextContentsEqual(const FilePath& filename1, const FilePath& filename2) {
-#if BUILDFLAG(IS_WIN)
-  std::ifstream file1(filename1.value().c_str(), std::ios::in);
-  std::ifstream file2(filename2.value().c_str(), std::ios::in);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   std::ifstream file1(filename1.value(), std::ios::in);
   std::ifstream file2(filename2.value(), std::ios::in);
 #endif  // BUILDFLAG(IS_WIN)
@@ -428,16 +396,6 @@ bool TouchFile(const FilePath& path,
                const Time& last_modified) {
   uint32_t flags = File::FLAG_OPEN | File::FLAG_WRITE_ATTRIBUTES;
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, FILE_FLAG_BACKUP_SEMANTICS is needed to open a directory.
-  if (DirectoryExists(path)) {
-    flags |= File::FLAG_WIN_BACKUP_SEMANTICS;
-  }
-#elif BUILDFLAG(IS_FUCHSIA)
-  // On Fuchsia, we need O_RDONLY for directories, or O_WRONLY for files.
-  // TODO(crbug.com/40620916): Find a cleaner workaround for this.
-  flags |= (DirectoryExists(path) ? File::FLAG_READ : File::FLAG_WRITE);
-#endif
 
   File file(path, flags);
   if (!file.IsValid()) {
@@ -462,17 +420,10 @@ bool TruncateFile(FILE* file) {
   if (current_offset == -1) {
     return false;
   }
-#if BUILDFLAG(IS_WIN)
-  int fd = _fileno(file);
-  if (_chsize(fd, current_offset) != 0) {
-    return false;
-  }
-#else
   int fd = fileno(file);
   if (ftruncate(fd, current_offset) != 0) {
     return false;
   }
-#endif
   return true;
 }
 

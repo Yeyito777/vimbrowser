@@ -461,9 +461,6 @@ class ObserverList {
     requires check_empty
   {
     std::string result("\n");
-#if BUILDFLAG(IS_IOS)
-    result += "Use go/observer-list-empty to interpret.\n";
-#endif
     for (const auto& observer : observers_) {
       result += observer.GetCreationStackString();
       result += "\n";

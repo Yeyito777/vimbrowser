@@ -177,15 +177,6 @@ View* DropHelper::CalculateTargetViewImpl(const gfx::Point& root_view_location,
   // TODO(sky): for the time being these are separate. Once I port chrome menu
   // I can switch to the #else implementation and nuke the OS_WIN
   // implementation.
-#if BUILDFLAG(IS_WIN)
-  // View under mouse changed, which means a new view may want the drop.
-  // Walk the tree, stopping at target_view_ as we know it'll accept the
-  // drop.
-  while (view && view != target_view_ &&
-         (!view->GetEnabled() || !view->CanDrop(data))) {
-    view = view->parent();
-  }
-#else
   int formats = 0;
   std::set<ui::ClipboardFormatType> format_types;
   while (view && view != target_view_) {
@@ -199,7 +190,6 @@ View* DropHelper::CalculateTargetViewImpl(const gfx::Point& root_view_location,
     format_types.clear();
     view = view->parent();
   }
-#endif
   return view;
 }
 

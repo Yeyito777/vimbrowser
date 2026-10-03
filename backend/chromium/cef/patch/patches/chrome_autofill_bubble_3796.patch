@@ -65,23 +65,6 @@ index 38ab8a7599cb3d6031efd8453c0f7f3c3e0e479a..0fbe1cbb7609c4323bf10a19ac9a6cca
  }
  
  BubbleType AddressBubblesController::GetBubbleType() const {
-@@ -312,10 +322,12 @@ void AddressBubblesController::SetUpBubble(
- }
- 
- void AddressBubblesController::MaybeShowIOSDektopAddressPromo() {
--  Browser* browser =
--      BrowserWindow::FindBrowserWindowWithWebContents(web_contents())
--          ->AsBrowserView()
--          ->browser();
-+  auto browser_window =
-+      BrowserWindow::FindBrowserWindowWithWebContents(web_contents());
-+  if (!browser_window) {
-+    return;
-+  }
-+  Browser* browser = browser_window->AsBrowserView()->browser();
- 
-   // Verify if user is eligible for iOS promo, and attempt showing if they are.
-   ios_promos_utils::VerifyIOSPromoEligibility(
 diff --git chrome/browser/ui/autofill/payments/save_card_bubble_controller_impl.cc chrome/browser/ui/autofill/payments/save_card_bubble_controller_impl.cc
 index 11ae2d1d559b5cd4ea9e9911697255e4fae51cba..9c67ff132d1cc110dc77698abdfe4cff7b647aae 100644
 --- chrome/browser/ui/autofill/payments/save_card_bubble_controller_impl.cc

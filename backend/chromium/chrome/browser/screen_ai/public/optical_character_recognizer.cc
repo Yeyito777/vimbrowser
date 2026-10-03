@@ -205,24 +205,6 @@ void OpticalCharacterRecognizer::PerformOCR(
               ref_ptr, std::move(callback)))));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void OpticalCharacterRecognizer::PerformOCR(
-    const SkBitmap& image,
-    base::OnceCallback<void(const ui::AXTreeUpdate&)> callback) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-
-  if (!is_ready()) {
-    VLOG(0)
-        << "PerformOCR called before the service is ready, returning empty.";
-    std::move(callback).Run(ui::AXTreeUpdate());
-    return;
-  }
-
-  MaybeConnectToOcrService();
-  (*screen_ai_annotator_)
-      ->PerformOcrAndReturnAXTreeUpdate(image, std::move(callback));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void OpticalCharacterRecognizer::SetOCRLightMode(bool enabled) {
   // This should be executed in UI thread only. Re-post this request to UI

@@ -50,24 +50,6 @@ source_set("network") {
   ]
 }
 
-if (is_win) {
-  source_set("win_key_network_delegate") {
-    public = [ "win_key_network_delegate.h" ]
-
-    sources = [ "win_key_network_delegate.cc" ]
-
-    public_deps = [
-      ":common",
-      "//base",
-      "//components/winhttp",
-      "//net",
-      "//url",
-    ]
-
-    deps = [ "//chrome/browser/enterprise/connectors/device_trust/key_management/core/network/fetcher" ]
-  }
-}
-
 source_set("test_support") {
   testonly = true
   public = [ "mock_key_network_delegate.h" ]
@@ -97,13 +79,4 @@ source_set("unit_tests") {
     "//services/network:test_support",
     "//testing/gtest",
   ]
-
-  if (is_win) {
-    sources += [ "win_key_network_delegate_unittest.cc" ]
-
-    deps += [
-      ":win_key_network_delegate",
-      "//chrome/browser/enterprise/connectors/device_trust/key_management/core/network/fetcher:test_support",
-    ]
-  }
 }

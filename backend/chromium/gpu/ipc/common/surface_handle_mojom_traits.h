@@ -16,21 +16,13 @@ template <>
 struct GPU_IPC_COMMON_EXPORT StructTraits<gpu::mojom::SurfaceHandleDataView,
                                           gpu::SurfaceHandle> {
   static uint64_t surface_handle(const gpu::SurfaceHandle& handle) {
-#if BUILDFLAG(IS_WIN)
-    return reinterpret_cast<uint64_t>(handle);
-#else
     return static_cast<uint64_t>(handle);
-#endif
   }
 
   static bool Read(gpu::mojom::SurfaceHandleDataView data,
                    gpu::SurfaceHandle* out) {
     uint64_t handle = data.surface_handle();
-#if BUILDFLAG(IS_WIN)
-    *out = reinterpret_cast<gpu::SurfaceHandle>(handle);
-#else
     *out = static_cast<gpu::SurfaceHandle>(handle);
-#endif
     return true;
   }
 };

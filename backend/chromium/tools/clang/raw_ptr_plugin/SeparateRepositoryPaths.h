@@ -33,7 +33,6 @@ inline constexpr std::array kSeparateRepositoryPaths = {
     "chrome/browser/resources/downloads/internal/",
     "chrome/browser/resources/preinstalled_web_apps/internal/",
     "chrome/browser/resources/settings/internal/",
-    "chrome/browser/spellchecker/internal/",
     "chrome/installer/mac/internal/",
     "chromeos/assistant/internal/",
     "chrome/services/speech/internal/",

@@ -8,6 +8,5 @@ import("//build/config/chrome_build.gni")
 declare_args() {
   # Page info drawables from the downstream clank/ repository are used for
   # branded builds.
-  page_info_use_internal_android_resources =
-      is_android && enable_chrome_android_internal && is_chrome_branded
+  page_info_use_internal_android_resources = false
 }

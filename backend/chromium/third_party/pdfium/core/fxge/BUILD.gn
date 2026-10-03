@@ -142,22 +142,6 @@ source_set("fxge") {
     }
   }
 
-  if (is_android) {
-    sources += [
-      "android/cfpf_skiadevicemodule.cpp",
-      "android/cfpf_skiadevicemodule.h",
-      "android/cfpf_skiafont.cpp",
-      "android/cfpf_skiafont.h",
-      "android/cfpf_skiafontmgr.cpp",
-      "android/cfpf_skiafontmgr.h",
-      "android/cfpf_skiapathfont.cpp",
-      "android/cfpf_skiapathfont.h",
-      "android/cfx_androidfontinfo.cpp",
-      "android/cfx_androidfontinfo.h",
-      "android/fx_android_impl.cpp",
-    ]
-  }
-
   if (is_linux || is_chromeos) {
     sources += [ "linux/fx_linux_impl.cpp" ]
   }
@@ -171,34 +155,6 @@ source_set("fxge") {
       "apple/fx_quartz_device.h",
     ]
     frameworks = [ "CoreGraphics.framework" ]
-  }
-
-  if (is_win) {
-    sources += [
-      "cfx_windowsrenderdevice.cpp",
-      "cfx_windowsrenderdevice.h",
-      "win32/cfx_psfonttracker.cpp",
-      "win32/cfx_psfonttracker.h",
-      "win32/cfx_psrenderer.cpp",
-      "win32/cfx_psrenderer.h",
-      "win32/cgdi_device_driver.cpp",
-      "win32/cgdi_device_driver.h",
-      "win32/cgdi_display_driver.cpp",
-      "win32/cgdi_display_driver.h",
-      "win32/cgdi_plus_ext.cpp",
-      "win32/cgdi_plus_ext.h",
-      "win32/cgdi_printer_driver.cpp",
-      "win32/cgdi_printer_driver.h",
-      "win32/cps_printer_driver.cpp",
-      "win32/cps_printer_driver.h",
-      "win32/cpsoutput.cpp",
-      "win32/cpsoutput.h",
-      "win32/ctext_only_printer_driver.cpp",
-      "win32/ctext_only_printer_driver.h",
-      "win32/cwin32_platform.cpp",
-      "win32/cwin32_platform.h",
-    ]
-    configs -= [ "//build/config/win:lean_and_mean" ]
   }
 
   visibility = [ "../../*" ]
@@ -225,10 +181,6 @@ pdfium_unittest_source_set("unittests") {
     "../fpdfapi/parser",
   ]
   pdfium_root_dir = "../../"
-
-  if (is_win) {
-    sources += [ "win32/cfx_psrenderer_unittest.cpp" ]
-  }
 }
 
 pdfium_embeddertest_source_set("embeddertests") {
@@ -244,14 +196,6 @@ pdfium_embeddertest_source_set("embeddertests") {
       "../fpdfapi/page",
       "../fpdfapi/render",
       "//skia",
-    ]
-  }
-
-  if (is_win) {
-    sources += [ "cfx_windowsrenderdevice_embeddertest.cpp" ]
-    deps += [
-      ":fxge",
-      "../fxcodec",
     ]
   }
 }

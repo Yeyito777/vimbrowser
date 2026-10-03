@@ -15,10 +15,6 @@
 #include "chrome/browser/web_applications/isolated_web_apps/commands/isolated_web_app_apply_update_command.h"
 #include "chrome/browser/web_applications/isolated_web_apps/isolated_web_app_url_info.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/web_applications/isolated_web_apps/commands/copy_bundle_to_cache_command.h"
-#include "chrome/browser/web_applications/isolated_web_apps/policy/isolated_web_app_cache_client.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class ScopedKeepAlive;
 class ScopedProfileKeepAlive;
@@ -54,19 +50,10 @@ class IsolatedWebAppUpdateApplyTask {
 
   base::Value AsDebugValue() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  static constexpr char kCopyToCacheFailedMessage[] =
-      "Failed to cache the bundle update";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   void OnUpdateApplied(IsolatedWebAppApplyUpdateCommandResult result);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void CopyUpdatedBundleToCache();
-
-  void OnBundleCopiedToCache(CopyBundleToCacheResult result);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   IsolatedWebAppUrlInfo url_info_;
   std::unique_ptr<ScopedKeepAlive> optional_keep_alive_;
@@ -78,10 +65,6 @@ class IsolatedWebAppUpdateApplyTask {
   bool has_started_ = false;
   CompletionCallback callback_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // `cache_client_` is created only when `IsIwaBundleCacheEnabled()` is true.
-  std::unique_ptr<IwaCacheClient> cache_client_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   base::WeakPtrFactory<IsolatedWebAppUpdateApplyTask> weak_factory_{this};
 };

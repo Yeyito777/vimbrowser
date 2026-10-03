@@ -40,24 +40,11 @@
 #include "ui/views/view_utils.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-// TODO(crbug.com/40147906): Enable gn check once it learns about conditional
-// includes.
-#include "components/metrics/structured/structured_events.h"  // nogncheck
-#include "components/metrics/structured/structured_metrics_client.h"  // nogncheck
-#endif
 
 namespace web_app {
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace cros_events = metrics::structured::events::v2::cr_os_events;
-
-int64_t ToLong(web_app::WebAppInstallStatus web_app_install_status) {
-  return static_cast<int64_t>(web_app_install_status);
-}
-#endif
 
 // Creates a scoped highlight on the corresponding page action icon, if any.
 // Returns nullopt if not found.
@@ -173,15 +160,6 @@ void WebAppInstallDialogDelegate::OnAccept() {
     tracker_->NotifyEvent(feature_engagement::events::kDesktopPwaInstalled);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const webapps::AppId app_id =
-      web_app::GenerateAppIdFromManifestId(install_info_->manifest_id());
-  metrics::structured::StructuredMetricsClient::Record(
-      cros_events::AppDiscovery_Browser_AppInstallDialogResult()
-          .SetWebAppInstallStatus(
-              ToLong(web_app::WebAppInstallStatus::kAccepted))
-          .SetAppId(app_id));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // DIY apps get their name from the DIY install dialog and are always set to
   // open in a new window.
@@ -299,15 +277,6 @@ void WebAppInstallDialogDelegate::MeasureIphOnDialogClose() {
 
   // If |install_info_| is populated, then the dialog was not accepted.
   if (install_info_) {
-#if BUILDFLAG(IS_CHROMEOS)
-    const webapps::AppId app_id =
-        web_app::GenerateAppIdFromManifestId(install_info_->manifest_id());
-    metrics::structured::StructuredMetricsClient::Record(
-        cros_events::AppDiscovery_Browser_AppInstallDialogResult()
-            .SetWebAppInstallStatus(
-                ToLong(web_app::WebAppInstallStatus::kCancelled))
-            .SetAppId(app_id));
-#endif  // BUILDFLAG(IS_CHROMEOS)
     std::move(callback_).Run(false, std::move(install_info_));
   }
 }

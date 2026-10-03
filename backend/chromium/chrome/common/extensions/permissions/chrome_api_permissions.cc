@@ -167,8 +167,6 @@ constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
      APIPermissionInfo::kFlagCannotBeOptional},
     {APIPermissionID::kInputMethodPrivate, "inputMethodPrivate",
      APIPermissionInfo::kFlagCannotBeOptional},
-    {APIPermissionID::kLanguageSettingsPrivate, "languageSettingsPrivate",
-     APIPermissionInfo::kFlagCannotBeOptional},
     {APIPermissionID::kMediaPlayerPrivate, "mediaPlayerPrivate",
      APIPermissionInfo::kFlagCannotBeOptional},
     {APIPermissionID::kPasswordsPrivate, "passwordsPrivate",

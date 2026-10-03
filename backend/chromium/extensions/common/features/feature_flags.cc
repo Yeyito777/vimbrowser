@@ -35,9 +35,6 @@ const base::Feature* kFeatureFlags[] = {
     &extensions_features::
         kApiEnterpriseReportingPrivateOnDataMaskingRulesTriggered,
     &extensions_features::kWebstoreInstallerUserGestureKillSwitch,
-#if BUILDFLAG(IS_CHROMEOS)
-    &blink::features::kSmartCard,
-#endif
 };
 
 constinit base::span<const base::Feature*> g_feature_flags_test_override;

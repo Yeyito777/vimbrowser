@@ -90,11 +90,7 @@ constexpr char kMvtScoringParamRecencyFactor_DecayStaircase[] =
 // The name of the recency factor strategy to use for MVT computation.
 constexpr base::FeatureParam<std::string> kMvtScoringParamRecencyFactor{
     &kMostVisitedTilesNewScoring, "recency_factor",
-#if BUILDFLAG(IS_ANDROID)
-    kMvtScoringParamRecencyFactor_DecayStaircase};
-#else
     kMvtScoringParamRecencyFactor_Classic};
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // The per-day decay factor for each visit, used by "decay" only.
 constexpr base::FeatureParam<double> kMvtScoringParamDecayPerDay{
@@ -104,11 +100,7 @@ constexpr base::FeatureParam<double> kMvtScoringParamDecayPerDay{
 // "decay_staircase"}.
 constexpr base::FeatureParam<int> kMvtScoringParamDailyVisitCountCap{
     &kMostVisitedTilesNewScoring, "daily_visit_count_cap",
-#if BUILDFLAG(IS_ANDROID)
-    10};
-#else
     INT_MAX};
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // If enabled, very old history databases that cannot be migrated are deleted.
 BASE_FEATURE(kRazeOldHistoryDatabase,

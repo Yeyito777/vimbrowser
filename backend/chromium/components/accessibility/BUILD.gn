@@ -6,11 +6,6 @@
 # allow_internal = is_chrome_branded
 allow_internal = false
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 source_set("reading") {
   sources = [ "reading/distillable_pages.h" ]
 
@@ -36,25 +31,4 @@ source_set("penguin") {
     "//base",
     "//content/public/browser",
   ]
-
-  if (is_android) {
-    deps += [ ":penguin_jni_headers" ]
-  }
-}
-
-if (is_android) {
-  generate_jni("penguin_jni_headers") {
-    sources = [ "android/java/src/org/chromium/components/accessibility/penguin/PenguinClient.java" ]
-  }
-
-  android_library("penguin_java") {
-    srcjar_deps = [ ":penguin_jni_headers" ]
-
-    sources = [ "android/java/src/org/chromium/components/accessibility/penguin/PenguinClient.java" ]
-
-    deps = [
-      "//content/public/android:content_full_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-  }
 }

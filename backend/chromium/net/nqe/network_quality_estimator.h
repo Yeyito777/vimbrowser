@@ -251,14 +251,6 @@ class NET_EXPORT_PRIVATE NetworkQualityEstimator
 
   const NetworkQualityEstimatorParams* params() { return params_.get(); }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Enables getting the network id asynchronously when
-  // GatherEstimatesForNextConnectionType(). This should always be called in
-  // production, because getting the network id involves a blocking call to
-  // recv() in AddressTrackerLinux, and the IO thread should never be blocked.
-  // TODO(crbug.com/41376341): Remove after the bug is resolved.
-  void EnableGetNetworkIdAsynchronously();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Forces the effective connection type to be recomputed as `type`. Once
   // called, effective connection type would always be computed as `type`.
@@ -655,10 +647,6 @@ class NET_EXPORT_PRIVATE NetworkQualityEstimator
 
   std::optional<base::TimeTicks> last_signal_strength_check_timestamp_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Whether the network id should be obtained on a worker thread.
-  bool get_network_id_asynchronously_ = false;
-#endif
 
   bool force_report_wifi_as_slow_2g_for_testing_ = false;
 

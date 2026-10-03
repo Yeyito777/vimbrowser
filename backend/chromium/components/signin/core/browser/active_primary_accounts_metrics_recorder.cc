@@ -27,11 +27,6 @@ constexpr char kActiveAccountsPrefName[] = "signin.active_accounts";
 constexpr char kActiveAccountsManagedPrefName[] =
     "signin.active_accounts_managed";
 
-#if BUILDFLAG(IS_IOS)
-// A list of timestamps of recent account switches.
-constexpr char kAccountSwitchTimestampsPrefName[] =
-    "signin.account_switch_timestamps";
-#endif  // BUILDFLAG(IS_IOS)
 
 constexpr char kTimerPrefName[] = "signin.active_accounts_last_emitted";
 
@@ -62,9 +57,6 @@ void ActivePrimaryAccountsMetricsRecorder::RegisterLocalStatePrefs(
     PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kActiveAccountsPrefName);
   registry->RegisterDictionaryPref(kActiveAccountsManagedPrefName);
-#if BUILDFLAG(IS_IOS)
-  registry->RegisterListPref(kAccountSwitchTimestampsPrefName);
-#endif  // BUILDFLAG(IS_IOS)
   registry->RegisterTimePref(kTimerPrefName, base::Time());
 }
 
@@ -107,25 +99,6 @@ void ActivePrimaryAccountsMetricsRecorder::MarkAccountAsManaged(
   managed_accounts_pref_update.Get().Set(key, is_managed_account);
 }
 
-#if BUILDFLAG(IS_IOS)
-void ActivePrimaryAccountsMetricsRecorder::AccountWasSwitched() {
-  const base::Time now = base::Time::Now();
-
-  ScopedListPrefUpdate switch_timestamps_pref_update(
-      &local_state_.get(), kAccountSwitchTimestampsPrefName);
-  switch_timestamps_pref_update->Append(base::TimeToValue(now));
-
-  // Ensure the number of entries in the pref doesn't grow unreasonably large.
-  constexpr size_t kMaxTimestamps = 100;
-  if (switch_timestamps_pref_update->size() > kMaxTimestamps) {
-    size_t entries_to_erase =
-        switch_timestamps_pref_update->size() - kMaxTimestamps;
-    switch_timestamps_pref_update->erase(
-        switch_timestamps_pref_update->begin(),
-        switch_timestamps_pref_update->begin() + entries_to_erase);
-  }
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 std::optional<base::Time>
 ActivePrimaryAccountsMetricsRecorder::GetLastActiveTimeForAccount(
@@ -190,27 +163,6 @@ void ActivePrimaryAccountsMetricsRecorder::EmitMetrics() {
         accounts_in_28_days);
   }
 
-#if BUILDFLAG(IS_IOS)
-  int switches_in_7_days = 0;
-  int switches_in_28_days = 0;
-  const base::ListValue& account_switch_timestamps =
-      local_state_->GetList(kAccountSwitchTimestampsPrefName);
-  for (const base::Value& timestamp : account_switch_timestamps) {
-    base::Time switch_time =
-        base::ValueToTime(timestamp).value_or(base::Time());
-    if (now - switch_time <= base::Days(7)) {
-      ++switches_in_7_days;
-    }
-    if (now - switch_time <= base::Days(28)) {
-      ++switches_in_28_days;
-    }
-  }
-
-  base::UmaHistogramCounts100("Signin.IOSNumberOfAccountSwitches.Last7Days",
-                              switches_in_7_days);
-  base::UmaHistogramCounts100("Signin.IOSNumberOfAccountSwitches.Last28Days",
-                              switches_in_28_days);
-#endif  // BUILDFLAG(IS_IOS)
 }
 
 void ActivePrimaryAccountsMetricsRecorder::CleanUpExpiredEntries() {
@@ -249,22 +201,6 @@ void ActivePrimaryAccountsMetricsRecorder::CleanUpExpiredEntries() {
     }
   }
 
-#if BUILDFLAG(IS_IOS)
-  const base::ListValue& old_timestamps =
-      local_state_->GetList(kAccountSwitchTimestampsPrefName);
-  base::ListValue new_timestamps;
-  for (const base::Value& timestamp : old_timestamps) {
-    base::Time switch_time =
-        base::ValueToTime(timestamp).value_or(base::Time());
-    if (now - switch_time <= base::Days(28)) {
-      new_timestamps.Append(timestamp.Clone());
-    }
-  }
-  if (new_timestamps.size() != old_timestamps.size()) {
-    local_state_->SetList(kAccountSwitchTimestampsPrefName,
-                          std::move(new_timestamps));
-  }
-#endif  // BUILDFLAG(IS_IOS)
 }
 
 }  // namespace signin

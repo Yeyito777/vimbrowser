@@ -25,10 +25,6 @@ namespace {
 #if BUILDFLAG(IS_MAC)
 constexpr int kFocusToggleAcceleratorModifiers =
     ui::EF_CONTROL_DOWN | ui::EF_COMMAND_DOWN;
-#elif BUILDFLAG(IS_CHROMEOS)
-// ui::EF_COMMAND_DOWN is the search key for ChromeOS.
-constexpr int kFocusToggleAcceleratorModifiers =
-    ui::EF_COMMAND_DOWN | ui::EF_ALT_DOWN;
 #else
 constexpr int kFocusToggleAcceleratorModifiers =
     ui::EF_ALT_DOWN | ui::EF_SHIFT_DOWN;
@@ -48,10 +44,6 @@ constexpr std::array kCloseAccelerators = {
 #endif
 };
 
-#if BUILDFLAG(IS_WIN)
-constexpr std::array kTitleBarContextMenuAccelerators = {
-    ui::Accelerator{ui::VKEY_SPACE, ui::EF_ALT_DOWN}};
-#endif
 
 #if BUILDFLAG(IS_MAC)
 constexpr int kZoomModifier = ui::EF_COMMAND_DOWN;
@@ -78,10 +70,6 @@ constexpr auto kHotkeyToStaticAcceleratorsMap =
          {LocalHotkeyManager::Hotkey::kZoomIn, kZoomInAccelerators},
          {LocalHotkeyManager::Hotkey::kZoomOut, kZoomOutAccelerators},
          {LocalHotkeyManager::Hotkey::kZoomReset, kZoomResetAccelerators},
-#if BUILDFLAG(IS_WIN)
-         {LocalHotkeyManager::Hotkey::kTitleBarContextMenu,
-          kTitleBarContextMenuAccelerators}
-#endif
         });
 
 // Compile-time helper to check if the keys in two maps are disjoint.

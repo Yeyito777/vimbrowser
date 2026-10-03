@@ -28,14 +28,12 @@ size_t CollectStackTrace(const void** trace, size_t count);
 PA_COMPONENT_EXPORT(PARTITION_ALLOC_BASE)
 void PrintStackTrace(const void** trace, size_t count);
 
-#if PA_BUILDFLAG(IS_POSIX)
 PA_COMPONENT_EXPORT(PARTITION_ALLOC_BASE)
 void OutputStackTrace(unsigned index,
                       uintptr_t address,
                       uintptr_t base_address,
                       const char* module_name,
                       uintptr_t offset);
-#endif
 
 #if PA_BUILDFLAG(CAN_UNWIND_WITH_FRAME_POINTERS)
 

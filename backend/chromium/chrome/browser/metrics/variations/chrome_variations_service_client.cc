@@ -29,14 +29,7 @@
 #include "chrome/browser/upgrade_detector/build_state.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/variations/android/variations_seed_bridge.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/install_attributes/install_attributes.h"
-#include "chromeos/ash/components/settings/cros_settings.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 #include "base/enterprise_util.h"
@@ -71,13 +64,7 @@ ChromeVariationsServiceClient::GetNetworkTimeTracker() {
 
 bool ChromeVariationsServiceClient::OverridesRestrictParameter(
     std::string* parameter) {
-#if BUILDFLAG(IS_CHROMEOS)
-  ash::CrosSettings::Get()->GetString(ash::kVariationsRestrictParameter,
-                                      parameter);
-  return true;
-#else
   return false;
-#endif
 }
 
 base::FilePath ChromeVariationsServiceClient::GetVariationsSeedFileDir() {
@@ -88,21 +75,12 @@ base::FilePath ChromeVariationsServiceClient::GetVariationsSeedFileDir() {
 
 std::unique_ptr<variations::SeedResponse>
 ChromeVariationsServiceClient::TakeSeedFromNativeVariationsSeedStore() {
-#if BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<variations::SeedResponse> seed =
-      variations::android::GetVariationsFirstRunSeed();
-  variations::android::ClearJavaFirstRunPrefs();
-  return seed;
-#else
   return nullptr;
-#endif
 }
 
 bool ChromeVariationsServiceClient::IsEnterprise() {
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
   return base::IsEnterpriseDevice();
-#elif BUILDFLAG(IS_CHROMEOS)
-  return ash::InstallAttributes::Get()->IsEnterpriseManaged();
 #else
   return false;
 #endif

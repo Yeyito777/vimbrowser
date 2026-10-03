@@ -20,7 +20,7 @@ if (rtc_include_tests) {
     # prefers_late_decoding = implementation_name = 'fake_decoder',
     # is_hardware_accelerated = true
     # Figure out how to run libvpx instead.
-    if (rtc_enable_protobuf && !is_android) {
+    if (rtc_enable_protobuf) {
       sources += [
         "bwe_ramp_up_test.cc",
         "l4s_test.cc",

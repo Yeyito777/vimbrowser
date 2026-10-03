@@ -31,9 +31,6 @@
 #include "third_party/zlib/zlib.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <io.h>
-#endif
 
 namespace heap_profiling {
 
@@ -88,12 +85,7 @@ void ProfilingProcessHost::SaveTraceToFileOnBlockingThread(
 
   // Pass ownership of the underlying fd/HANDLE to zlib.
   base::PlatformFile platform_file = file.TakePlatformFile();
-#if BUILDFLAG(IS_WIN)
-  // The underlying handle |platform_file| is also closed when |fd| is closed.
-  int fd = _open_osfhandle(reinterpret_cast<intptr_t>(platform_file), 0);
-#else
   int fd = platform_file;
-#endif
   gzFile gz_file = gzdopen(fd, "w");
   if (!gz_file) {
     DLOG(ERROR) << "Cannot compress trace file";

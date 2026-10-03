@@ -148,11 +148,6 @@ class PLATFORM_EXPORT FontPlatformData
                                             SkFontStyle,
                                             TextRenderingMode text_rendering);
 #endif
-#if BUILDFLAG(IS_WIN)
-  // TODO(https://crbug.com/808221): Remove and use QuerySystemRenderStyle()
-  // instead.
-  WebFontRenderStyle QuerySystemForRenderStyle();
-#endif
 
   const sk_sp<SkTypeface> typeface_;
 #if !BUILDFLAG(IS_WIN) && !BUILDFLAG(IS_MAC)

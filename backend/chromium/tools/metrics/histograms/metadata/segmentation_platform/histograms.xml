@@ -85,8 +85,6 @@ chromium-metrics-reviews@google.com.
   <variant name="FeedUserSegment"/>
   <variant name="FrequentFeatureUser"/>
   <variant name="IntentionalUser"/>
-  <variant name="IosDefaultBrowserPromo"/>
-  <variant name="IosModuleRanker"/>
   <variant name="MetricsClustering"/>
   <variant name="MostVisitedTilesUser"/>
   <variant name="PasswordManagerUser"/>
@@ -123,9 +121,6 @@ chromium-metrics-reviews@google.com.
   <variant name="FeedUser"/>
   <variant name="FrequentFeatureUserSegment"/>
   <variant name="IntentionalUserSegment"/>
-  <variant name="IosDefaultBrowserPromo"/>
-  <variant name="IosModuleRanker"/>
-  <variant name="IosModuleRankerTest"/>
   <variant name="MetricsClustering"/>
   <variant name="MostVisitedTilesUser"/>
   <variant name="NewTab"/>

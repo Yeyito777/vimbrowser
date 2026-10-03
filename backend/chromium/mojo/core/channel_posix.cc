@@ -253,10 +253,6 @@ void ChannelPosix::ShutDownOnIOThread() {
     } else {
       socket_.reset();
     }
-#if BUILDFLAG(IS_IOS)
-    base::AutoLock fd_lock(fds_to_close_lock_);
-    fds_to_close_.clear();
-#endif
   }
 
   // May destroy the |this| if it was the last reference.
@@ -365,29 +361,6 @@ bool ChannelPosix::WriteNoLock(MessageView message_view) {
       // TODO: Handle lots of handles.
       result = SendmsgWithHandles(socket_.get(), &iov, 1, fds);
       if (result >= 0) {
-#if BUILDFLAG(IS_IOS)
-        // There is a bug in XNU which makes it dangerous to close
-        // a file descriptor while it is in transit. So instead we
-        // store the file descriptor in a set and send a message to
-        // the recipient, which is queued AFTER the message that
-        // sent the FD. The recipient will reply to the message,
-        // letting us know that it is now safe to close the file
-        // descriptor. For more information, see:
-        // http://crbug.com/298276
-        MessagePtr fds_message = Message::CreateMessage(
-            sizeof(int) * fds.size(), 0, Message::MessageType::HANDLES_SENT);
-        int* fd_data = reinterpret_cast<int*>(fds_message->mutable_payload());
-        for (size_t i = 0; i < fds.size(); ++i) {
-          UNSAFE_TODO(fd_data[i]) = fds[i].get();
-        }
-        outgoing_messages_.emplace_back(std::move(fds_message), 0);
-        {
-          base::AutoLock l(fds_to_close_lock_);
-          for (auto& fd : fds) {
-            fds_to_close_.emplace_back(std::move(fd));
-          }
-        }
-#endif  // BUILDFLAG(IS_IOS)
         handles_written += num_handles_to_send;
         DCHECK_LE(handles_written, num_handles);
         message_view.set_num_handles_sent(handles_written);
@@ -407,22 +380,6 @@ bool ChannelPosix::WriteNoLock(MessageView message_view) {
     if (result < 0) {
       if (errno != EAGAIN &&
           errno != EWOULDBLOCK
-#if BUILDFLAG(IS_IOS)
-          // On iOS if sendmsg() is trying to send fds between processes and
-          // there isn't enough room in the output buffer to send the fd
-          // structure over atomically then EMSGSIZE is returned.
-          //
-          // EMSGSIZE presents a problem since the system APIs can only call
-          // us when there's room in the socket buffer and not when there is
-          // "enough" room.
-          //
-          // The current behavior is to return to the event loop when EMSGSIZE
-          // is received and hopefully service another FD.  This is however
-          // still technically a busy wait since the event loop will call us
-          // right back until the receiver has read enough data to allow
-          // passing the FD over atomically.
-          && errno != EMSGSIZE
-#endif
       ) {
         return false;
       }
@@ -509,31 +466,6 @@ bool ChannelPosix::OnControlMessage(Message::MessageType message_type,
       RejectPreIpczUpgradeOffer();
       return true;
     }
-#if BUILDFLAG(IS_IOS)
-    case Message::MessageType::HANDLES_SENT: {
-      if (payload_size == 0) {
-        break;
-      }
-      MessagePtr message = Message::CreateMessage(
-          payload_size, 0, Message::MessageType::HANDLES_SENT_ACK);
-      UNSAFE_TODO(memcpy(message->mutable_payload(), payload, payload_size));
-      Write(std::move(message));
-      return true;
-    }
-
-    case Message::MessageType::HANDLES_SENT_ACK: {
-      size_t num_fds = payload_size / sizeof(int);
-      if (num_fds == 0 || payload_size % sizeof(int) != 0) {
-        break;
-      }
-
-      const int* fds = reinterpret_cast<const int*>(payload);
-      if (!CloseHandles(fds, num_fds)) {
-        break;
-      }
-      return true;
-    }
-#endif
     default:
       break;
   }
@@ -541,42 +473,6 @@ bool ChannelPosix::OnControlMessage(Message::MessageType message_type,
   return false;
 }
 
-#if BUILDFLAG(IS_IOS)
-// Closes handles referenced by |fds|. Returns false if |num_fds| is 0, or if
-// |fds| does not match a sequence of handles in |fds_to_close_|.
-bool ChannelPosix::CloseHandles(const int* fds, size_t num_fds) {
-  base::AutoLock l(fds_to_close_lock_);
-  if (!num_fds) {
-    return false;
-  }
-
-  auto start = std::ranges::find(fds_to_close_, fds[0], &base::ScopedFD::get);
-  if (start == fds_to_close_.end()) {
-    return false;
-  }
-
-  auto it = start;
-  size_t i = 0;
-  // The FDs in the message should match a sequence of handles in
-  // |fds_to_close_|.
-  // TODO(wez): Consider making |fds_to_close_| a circular_deque<>
-  // for greater efficiency? Or assign a unique Id to each FD-containing
-  // message, and map that to a vector of FDs to close, to avoid the
-  // need for this traversal? Id could even be the first FD in the message.
-  for (; i < num_fds && it != fds_to_close_.end(); i++, ++it) {
-    if (it->get() != UNSAFE_TODO(fds[i])) {
-      return false;
-    }
-  }
-  if (i != num_fds) {
-    return false;
-  }
-
-  // Close the FDs by erase()ing their ScopedFDs.
-  fds_to_close_.erase(start, it);
-  return true;
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 // static
 scoped_refptr<Channel> Channel::Create(

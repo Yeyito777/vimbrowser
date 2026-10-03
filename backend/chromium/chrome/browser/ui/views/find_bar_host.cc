@@ -36,9 +36,6 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 #if defined(IS_AURA)
 #include "ui/aura/window.h"
@@ -399,9 +396,6 @@ void FindBarHost::UpdateUIForFindResult(
 
 void FindBarHost::AudibleAlert() {
   ++audible_alerts_;
-#if BUILDFLAG(IS_WIN)
-  MessageBeep(MB_OK);
-#endif
 }
 
 bool FindBarHost::IsFindBarVisible() const {

@@ -69,7 +69,6 @@ static_assert(std::is_standard_layout<CrashpadInfo>::value,
 // because it’s POD, no code should need to run to initialize this under
 // release-mode optimization.
 
-#if BUILDFLAG(IS_POSIX)
 __attribute__((
 
 #if BUILDFLAG(IS_APPLE)
@@ -94,16 +93,6 @@ __attribute__((
     // The “used” attribute prevents the structure from being dead-stripped.
     used))
 
-#elif BUILDFLAG(IS_WIN)
-
-// Put the struct in a section name CPADinfo where it can be found without the
-// symbol table.
-#pragma section("CPADinfo", read, write)
-__declspec(allocate("CPADinfo"))
-
-#else  // !BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_WIN)
-#error Port
-#endif  // !BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_WIN)
 
 CrashpadInfo g_crashpad_info;
 
@@ -138,10 +127,6 @@ CrashpadInfo::CrashpadInfo()
       simple_annotations_(nullptr),
       user_data_minidump_stream_head_(nullptr),
       annotations_list_(nullptr)
-#if BUILDFLAG(IS_IOS)
-      ,
-      intermediate_dump_extra_memory_ranges_(nullptr)
-#endif
 {
 }
 

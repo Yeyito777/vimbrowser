@@ -7,30 +7,15 @@
 #include "ui/base/pointer/touch_ui_controller.h"
 #include "ui/gfx/geometry/size.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/constants/chromeos_features.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace views {
 
 int GetCaptionButtonWidth() {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (chromeos::features::IsRoundedWindowsEnabled()) {
-    return 36;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   return 32;
 }
 
 gfx::Size GetCaptionButtonLayoutSize(CaptionButtonLayoutSize size) {
   const int button_width = GetCaptionButtonWidth();
-#if BUILDFLAG(IS_CHROMEOS)
-  if (chromeos::features::IsRoundedWindowsEnabled()) {
-    return gfx::Size(
-        button_width,
-        size == CaptionButtonLayoutSize::kBrowserCaptionMaximized ? 34 : 40);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (size == CaptionButtonLayoutSize::kNonBrowserCaption) {
     return gfx::Size(button_width, 32);

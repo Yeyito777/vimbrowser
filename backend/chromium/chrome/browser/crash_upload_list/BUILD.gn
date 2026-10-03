@@ -14,30 +14,12 @@ static_library("crash_upload_list") {
     "crash_upload_list.h",
   ]
 
-  if (is_android) {
-    sources += [
-      "crash_upload_list_android.cc",
-      "crash_upload_list_android.h",
-    ]
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "crash_upload_list_chromeos.cc",
-      "crash_upload_list_chromeos.h",
-    ]
-  }
-
   deps = [
     "//chrome/common:constants",
     "//components/crash/core/app",
     "//components/crash/core/browser",
     "//components/upload_list",
   ]
-
-  if (is_android) {
-    deps += [ "//chrome/android:chrome_jni_headers" ]
-  }
 
   public_deps = [
     "//base",
@@ -47,10 +29,6 @@ static_library("crash_upload_list") {
 
 source_set("unit_tests") {
   testonly = true
-
-  if (is_chromeos) {
-    sources = [ "crash_upload_list_chromeos_unittest.cc" ]
-  }
 
   deps = [
     ":crash_upload_list",

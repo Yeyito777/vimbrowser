@@ -31,9 +31,6 @@
 #else
 #include <malloc.h>
 #endif
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 #include <features.h>
@@ -60,67 +57,6 @@ BASE_FEATURE(kMallocDumpProviderPopulateDiscardableBytes,
              base::FEATURE_ENABLED_BY_DEFAULT);
 #endif  // PA_BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
 
-#if BUILDFLAG(IS_WIN)
-// A structure containing some information about a given heap.
-struct WinHeapInfo {
-  size_t committed_size;
-  size_t uncommitted_size;
-  size_t allocated_size;
-  size_t block_count;
-};
-
-// NOTE: crbug.com/665516
-// Unfortunately, there is no safe way to collect information from secondary
-// heaps due to limitations and racy nature of this piece of WinAPI.
-void WinHeapMemoryDumpImpl(WinHeapInfo* crt_heap_info) {
-  // Iterate through whichever heap our CRT is using.
-  HANDLE crt_heap = reinterpret_cast<HANDLE>(_get_heap_handle());
-  ::HeapLock(crt_heap);
-  PROCESS_HEAP_ENTRY heap_entry;
-  heap_entry.lpData = nullptr;
-  // Walk over all the entries in the main heap.
-  while (::HeapWalk(crt_heap, &heap_entry) != FALSE) {
-    if ((heap_entry.wFlags & PROCESS_HEAP_ENTRY_BUSY) != 0) {
-      crt_heap_info->allocated_size += heap_entry.cbData;
-      crt_heap_info->block_count++;
-    } else if ((heap_entry.wFlags & PROCESS_HEAP_REGION) != 0) {
-      crt_heap_info->committed_size += heap_entry.Region.dwCommittedSize;
-      crt_heap_info->uncommitted_size += heap_entry.Region.dwUnCommittedSize;
-    }
-  }
-  CHECK(::HeapUnlock(crt_heap) == TRUE);
-}
-
-void ReportWinHeapStats(MemoryDumpLevelOfDetail level_of_detail,
-                        ProcessMemoryDump* pmd,
-                        size_t* total_virtual_size,
-                        size_t* resident_size,
-                        size_t* allocated_objects_size,
-                        size_t* allocated_objects_count) {
-  // This is too expensive on Windows, crbug.com/780735.
-  if (level_of_detail == MemoryDumpLevelOfDetail::kDetailed) {
-    WinHeapInfo main_heap_info = {};
-    WinHeapMemoryDumpImpl(&main_heap_info);
-    *total_virtual_size +=
-        main_heap_info.committed_size + main_heap_info.uncommitted_size;
-    // Resident size is approximated with committed heap size. Note that it is
-    // possible to do this with better accuracy on windows by intersecting the
-    // working set with the virtual memory ranges occuipied by the heap. It's
-    // not clear that this is worth it, as it's fairly expensive to do.
-    *resident_size += main_heap_info.committed_size;
-    *allocated_objects_size += main_heap_info.allocated_size;
-    *allocated_objects_count += main_heap_info.block_count;
-
-    if (pmd) {
-      MemoryAllocatorDump* win_heap_dump =
-          pmd->CreateAllocatorDump("malloc/win_heap");
-      win_heap_dump->AddScalar(MemoryAllocatorDump::kNameSize,
-                               MemoryAllocatorDump::kUnitsBytes,
-                               main_heap_info.allocated_size);
-    }
-  }
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 #if PA_BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
 void ReportPartitionAllocStats(ProcessMemoryDump* pmd,
@@ -377,24 +313,10 @@ bool MallocDumpProvider::OnMemoryDump(const MemoryDumpArgs& args,
 
   // Even when PartitionAlloc is used, WinHeap / System malloc is still used as
   // well, report its statistics.
-#if BUILDFLAG(IS_ANDROID)
-  ReportMallinfoStats(pmd, &total_virtual_size, &resident_size,
-                      &allocated_objects_size, &allocated_objects_count);
-#elif BUILDFLAG(IS_WIN)
-  ReportWinHeapStats(args.level_of_detail, pmd, &total_virtual_size,
-                     &resident_size, &allocated_objects_size,
-                     &allocated_objects_count);
-#endif  // BUILDFLAG(IS_ANDROID), BUILDFLAG(IS_WIN)
 
 #elif BUILDFLAG(IS_APPLE)
   ReportAppleAllocStats(&total_virtual_size, &resident_size,
                         &allocated_objects_size);
-#elif BUILDFLAG(IS_WIN)
-  ReportWinHeapStats(args.level_of_detail, nullptr, &total_virtual_size,
-                     &resident_size, &allocated_objects_size,
-                     &allocated_objects_count);
-#elif BUILDFLAG(IS_FUCHSIA)
-// TODO(fuchsia): Port, see https://crbug.com/706592.
 #else
   ReportMallinfoStats(/*pmd=*/nullptr, &total_virtual_size, &resident_size,
                       &allocated_objects_size, &allocated_objects_count);

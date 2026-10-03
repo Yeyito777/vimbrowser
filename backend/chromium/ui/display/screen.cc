@@ -161,17 +161,6 @@ bool Screen::IsHeadless() const {
   return false;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-TabletState Screen::GetTabletState() const {
-  return TabletState::kInClamshellMode;
-}
-
-bool Screen::InTabletMode() const {
-  TabletState state = GetTabletState();
-  return state == TabletState::kInTabletMode ||
-         state == TabletState::kEnteringTabletMode;
-}
-#endif
 
 void Screen::SetScopedDisplayForNewWindows(int64_t display_id) {
   if (display_id == scoped_display_id_for_new_windows_)

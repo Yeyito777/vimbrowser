@@ -37,11 +37,9 @@
 #include "google_apis/gaia/gaia_id.h"
 #include "net/base/network_change_notifier.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/sync/sync_service_factory.h"
 #include "chrome/browser/ui/webui/signin/signin_utils_desktop.h"
 #include "components/sync/service/sync_prefs.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "chrome/browser/extensions/sync/extension_sync_util.h"
@@ -531,13 +529,7 @@ bool ShouldShowSignInPromoCommon(Profile& profile, SignInPromoType type) {
 
 }  // namespace
 
-#if !BUILDFLAG(IS_ANDROID)
 bool ShouldShowSyncPromo(Profile& profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // There's no need to show the sign in promo on cros since cros users are
-  // already logged in.
-  return false;
-#else
 
   // Don't bother if we don't have any kind of network connection.
   if (net::NetworkChangeNotifier::IsOffline()) {
@@ -583,9 +575,7 @@ bool ShouldShowSyncPromo(Profile& profile) {
   // Verified the base checks. Depending on whether the promo should be for sync
   // or signin, additional checks are necessary.
   return true;
-#endif
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 bool ShouldShowExtensionSignInPromo(Profile& profile,

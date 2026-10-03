@@ -22,9 +22,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <rpc.h>
-#endif
 
 namespace crashpad {
 

@@ -13,9 +13,6 @@
 #include "base/sequence_checker.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#error "ChromeOS does not use MtabWatcherLinux."
-#endif
 
 namespace storage_monitor {
 

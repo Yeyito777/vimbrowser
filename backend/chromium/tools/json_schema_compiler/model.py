@@ -871,7 +871,6 @@ class Platforms(object):
   """Enum of the possible platforms.
   """
   CHROMEOS = _PlatformInfo("chromeos")
-  DESKTOP_ANDROID = _PlatformInfo("desktop_android")
   LINUX = _PlatformInfo("linux")
   MAC = _PlatformInfo("mac")
   WIN = _PlatformInfo("win")

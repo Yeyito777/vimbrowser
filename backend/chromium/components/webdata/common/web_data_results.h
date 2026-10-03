@@ -22,9 +22,6 @@ typedef enum {
   BOOL_RESULT = 1,                   // WDResult<bool>
   KEYWORDS_RESULT,                   // WDResult<WDKeywordsResult>
   INT64_RESULT,                      // WDResult<int64_t>
-#if BUILDFLAG(IS_WIN)                //
-  PASSWORD_IE7_RESULT,               // WDResult<IE7PasswordInfo>
-#endif                               //
   WEB_APP_IMAGES,                    // WDResult<WDAppImagesResult>
   TOKEN_RESULT,                      // WDResult<TokenResult>
   AUTOFILL_VALUE_RESULT,             // WDResult<std::vector<AutofillEntry>>

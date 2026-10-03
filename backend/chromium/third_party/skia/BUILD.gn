@@ -293,59 +293,6 @@ template("optional") {
   }
 }
 
-optional("android_utils") {
-  enabled = skia_enable_android_utils
-
-  public = [
-    "client_utils/android/BRDAllocator.h",
-    "client_utils/android/BitmapRegionDecoder.h",
-    "client_utils/android/FrontBufferedStream.h",
-  ]
-  public_defines = [ "SK_ENABLE_ANDROID_UTILS" ]
-  sources = [
-    "client_utils/android/BitmapRegionDecoder.cpp",
-    "client_utils/android/FrontBufferedStream.cpp",
-  ]
-}
-
-optional("fontmgr_android_parser") {
-  enabled = skia_use_expat
-
-  deps = [ "//third_party/expat" ]
-  sources = skia_ports_fontmgr_android_parser_sources
-}
-
-optional("fontmgr_android") {
-  enabled = skia_enable_fontmgr_android
-
-  deps = [
-    ":fontmgr_android_parser",
-    ":typeface_proxy",
-  ]
-  public_defines = [ "SK_FONTMGR_ANDROID_AVAILABLE" ]
-  public = skia_ports_fontmgr_android_public
-  sources = skia_ports_fontmgr_android_sources
-  sources_for_tests = [ "tests/FontMgrAndroidParserTest.cpp" ]
-}
-
-# if building Skia for API >= 30 and not using custom fonts, enable
-# skia_enable_fontmgr_android_ndk and disable skia_enable_fontmgr_android
-optional("fontmgr_android_ndk") {
-  enabled = skia_enable_fontmgr_android_ndk
-
-  deps = [
-    ":fontmgr_android_parser",
-    ":typeface_proxy",
-  ]
-  libs = [ "android" ]
-  if (defined(ndk_api) && ndk_api >= 31) {
-    libs += [ "icu" ]
-  }
-  public_defines = [ "SK_FONTMGR_ANDROID_NDK_AVAILABLE" ]
-  public = skia_ports_fontmgr_android_ndk_public
-  sources = skia_ports_fontmgr_android_ndk_sources
-}
-
 optional("fontmgr_custom") {
   enabled =
       skia_enable_fontmgr_custom_directory ||
@@ -592,7 +539,7 @@ if (skia_compile_modules) {
       sources += [ "src/utils/SkGetExecutablePath_win.cpp" ]
     } else if (is_mac || is_ios) {
       sources += [ "src/utils/SkGetExecutablePath_mac.cpp" ]
-    } else if (is_linux || is_android) {
+    } else if (is_linux) {
       sources += [ "src/utils/SkGetExecutablePath_linux.cpp" ]
     }
     if (is_win) {
@@ -719,7 +666,7 @@ if (skia_compile_sksl_tests) {
       sources += [ "src/utils/SkGetExecutablePath_win.cpp" ]
     } else if (is_mac || is_ios) {
       sources += [ "src/utils/SkGetExecutablePath_mac.cpp" ]
-    } else if (is_linux || is_android) {
+    } else if (is_linux) {
       sources += [ "src/utils/SkGetExecutablePath_linux.cpp" ]
     }
     if (is_win) {
@@ -922,10 +869,6 @@ optional("gpu_shared") {
     public_defines += [ "SK_METAL" ]
     sources += skia_shared_mtl_sources
   }
-
-  if (is_android) {
-    sources += skia_shared_android_sources
-  }
 }
 
 optional("gpu") {
@@ -949,30 +892,10 @@ optional("gpu") {
   libs = []
   frameworks = []
 
-  if (is_android) {
-    public += skia_gpu_android_private_hdrs
-    sources += skia_gpu_android_private
-
-    # this lib is required to link against AHardwareBuffer
-    if (defined(ndk_api) && ndk_api >= 26) {
-      libs += [ "android" ]
-    }
-  }
-
   if (skia_use_gl) {
     public_defines += [ "SK_GL" ]
-    if (is_android) {
-      sources += [
-        "src/gpu/ganesh/gl/egl/GrGLMakeEGLInterface.cpp",
-        "src/gpu/ganesh/gl/egl/GrGLMakeNativeInterface_egl.cpp",
-      ]
-      sources += skia_android_gl_sources
 
-      # this lib is required to link against AHardwareBuffer
-      if (defined(ndk_api) && ndk_api >= 26) {
-        libs += [ "android" ]
-      }
-    } else if (skia_use_egl) {
+    if (skia_use_egl) {
       if (skia_use_epoxy_egl) {
         sources += [ "src/gpu/ganesh/gl/epoxy/GrGLMakeEpoxyEGLInterface.cpp" ]
         libs += [ "epoxy" ]
@@ -1014,9 +937,6 @@ optional("gpu") {
     public += skia_gpu_vk_public
     sources += skia_gpu_vk_private
     configs += [ ":use_skia_vulkan_headers" ]
-    if (is_android) {
-      sources += skia_gpu_vk_android_private
-    }
   }
 
   if (skia_use_direct3d) {
@@ -1164,10 +1084,6 @@ optional("graphite") {
   public = skia_graphite_public
   sources = skia_graphite_sources
   sources += skia_sksl_graphite_modules_sources
-
-  if (is_android) {
-    sources += skia_graphite_android_private
-  }
 
   if (skia_enable_vello_shaders) {
     sources += skia_graphite_vello_sources
@@ -1805,8 +1721,6 @@ skia_source_set("core") {
   # These deps don't belong to :core, but they are currently needed to support (de)serialization.
   public_deps = [
     ":fontmgr_FontConfigInterface",
-    ":fontmgr_android",
-    ":fontmgr_android_ndk",
     ":fontmgr_custom_directory",
     ":fontmgr_custom_embedded",
     ":fontmgr_custom_empty",
@@ -1837,7 +1751,6 @@ skia_component("skia") {
   ]
 
   deps = [
-    ":android_utils",
     ":avif",
     ":crabbyavif",
     ":hsw",
@@ -1934,19 +1847,6 @@ skia_component("skia") {
       sources += [ "src/ports/SkOSFile_ios.h" ]
     }
     libs += [ "dl" ]
-  }
-
-  if (is_android) {
-    deps += [ "//third_party/expat" ]
-    if (defined(ndk) && ndk != "") {
-      deps += [ "//third_party/cpu-features" ]
-    }
-    sources += [ "src/ports/SkLog_android.cpp" ]
-    libs += [
-      "EGL",
-      "GLESv2",
-      "log",
-    ]
   }
 
   if (is_linux || is_wasm) {
@@ -2229,21 +2129,6 @@ if (skia_enable_tools) {
           testonly = true
         }
       }
-      if (is_android && skia_android_serial != "" && defined(_executable)) {
-        action("push_" + target_name) {
-          output_dir = root_build_dir
-          script = "gn/push_to_android.py"
-          deps = [ ":" + _executable ]
-          _stamp = "$target_gen_dir/$_executable.pushed_$skia_android_serial"
-          outputs = [ _stamp ]
-          args = [
-            rebase_path("$root_build_dir/$_executable"),
-            skia_android_serial,
-            rebase_path(_stamp),
-          ]
-          testonly = true
-        }
-      }
     }
   }
 
@@ -2295,7 +2180,7 @@ if (skia_enable_tools) {
       frameworks = []
 
       if (skia_use_gl && !is_canvaskit) {
-        if (is_android || skia_use_egl) {
+        if (skia_use_egl) {
           sources +=
               [ "tools/ganesh/gl/egl/CreatePlatformGLTestContext_egl.cpp" ]
           libs += [ "EGL" ]
@@ -2718,7 +2603,6 @@ if (skia_enable_tools) {
         ":bmp_decode_rust_tests",
         ":flags",
         ":fontmgr_FontConfigInterface_tests",
-        ":fontmgr_android_tests",
         ":fontmgr_fontconfig_tests",
         ":fontmgr_mac_ct_tests",
         ":fontscanner_tests",
@@ -3134,34 +3018,6 @@ if (skia_enable_tools) {
         }
       }
     }
-    if (is_android) {
-      shared_library("libskqp_jni") {  # Not a skia_shared_library
-        configs += [ ":skia_private" ]
-        testonly = true
-        sources = [ "tools/skqp/src/jni_skqp.cpp" ]
-        deps = [
-          ":skia",
-          ":skqp_lib",
-          ":tool_utils",
-        ]
-        libs = [ "android" ]
-      }
-    }
-    if (is_android && skia_use_gl) {
-      test_app("skottie_android") {
-        is_shared_library = true
-
-        sources = [ "platform_tools/android/apps/skottie/skottielib/src/main/cpp/native-lib.cpp" ]
-        libs = []
-
-        deps = [
-          ":skia",
-          "modules/skottie",
-          "modules/skshaper",
-          "modules/skunicode",
-        ]
-      }
-    }
 
     if (is_ios && skia_enable_skottie) {
       group("skottie_ios") {
@@ -3186,16 +3042,7 @@ if (skia_enable_tools) {
       public_deps += [ ":gpu_tool_utils" ]
     }
 
-    if (is_android) {
-      sources += [
-        "tools/sk_app/android/Window_android.cpp",
-        "tools/sk_app/android/Window_android.h",
-        "tools/sk_app/android/main_android.cpp",
-        "tools/sk_app/android/surface_glue_android.cpp",
-        "tools/sk_app/android/surface_glue_android.h",
-      ]
-      libs += [ "android" ]
-    } else if (is_linux) {
+    if (is_linux) {
       sources += [
         "tools/sk_app/unix/Window_unix.cpp",
         "tools/sk_app/unix/Window_unix.h",
@@ -3237,9 +3084,7 @@ if (skia_enable_tools) {
       ":tool_utils",
       "tools/window",
     ]
-    if (is_android) {
-      deps += [ "//third_party/native_app_glue" ]
-    }
+
     if (skia_use_gl && skia_use_angle) {
       deps += [ "//third_party/angle2" ]
     }
@@ -3249,7 +3094,7 @@ if (skia_enable_tools) {
   # therefore cannot stand alone.
   if (skia_enable_ganesh || skia_enable_graphite) {
     test_app("viewer") {
-      is_shared_library = is_android
+      is_shared_library = false
       sources = [
         "tools/viewer/3DSlide.cpp",
         "tools/viewer/AndroidShadowsSlide.cpp",
@@ -3435,7 +3280,7 @@ if (skia_enable_tools) {
 
     if (is_linux || is_win || is_mac) {
       test_app("editor") {
-        is_shared_library = is_android
+        is_shared_library = false
         deps = [ "modules/skplaintexteditor:editor_app" ]
       }
     }

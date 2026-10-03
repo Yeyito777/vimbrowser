@@ -8,9 +8,7 @@
 #include "build/build_config.h"
 #include "crypto/crypto_buildflags.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/utility/importer/nss_decryptor_win.h"
-#elif BUILDFLAG(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
 #include "chrome/utility/importer/nss_decryptor_system_nss.h"
 #else
 #error NSSDecryptor not implemented.

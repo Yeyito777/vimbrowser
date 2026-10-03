@@ -65,10 +65,6 @@ class VirtualFidoDeviceFactory : public device::FidoDiscoveryFactory {
   // nothing.
   void DisconnectDevice();
 
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<device::FidoDiscoveryBase>
-  MaybeCreateWinWebAuthnApiDiscovery() override;
-#endif
 
  protected:
   // device::FidoDiscoveryFactory:

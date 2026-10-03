@@ -66,9 +66,6 @@ class StatusIcon {
 
   // Dispatches a click event to the observers.
   void DispatchClickEvent();
-#if BUILDFLAG(IS_WIN)
-  void DispatchBalloonClickEvent();
-#endif
 
   // Attempts to make the status icon directly visible on system UI.  Currently
   // this only applies to Windows, where status icons are hidden by default

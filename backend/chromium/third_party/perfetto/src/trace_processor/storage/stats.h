@@ -24,11 +24,6 @@ namespace perfetto::trace_processor::stats {
 // Compile time list of parsing and processing stats.
 // clang-format off
 #define PERFETTO_TP_STATS(F)                                                   \
-  F(android_br_parse_errors,              kSingle,  kError,    kTrace,    ""), \
-  F(android_log_num_failed,               kSingle,  kError,    kTrace,    ""), \
-  F(android_log_format_invalid,           kSingle,  kError,    kTrace,    ""), \
-  F(android_log_num_skipped,              kSingle,  kInfo,     kTrace,    ""), \
-  F(android_log_num_total,                kSingle,  kInfo,     kTrace,    ""), \
   F(deobfuscate_location_parse_error,     kSingle,  kError,    kTrace,    ""), \
   F(energy_breakdown_missing_values,      kSingle,  kError,    kAnalysis, ""), \
   F(energy_descriptor_invalid,            kSingle,  kError,    kAnalysis, ""), \
@@ -359,9 +354,6 @@ namespace perfetto::trace_processor::stats {
        "because of SELinux. Please use /data/local/tests"),                    \
   F(metatrace_overruns,                   kSingle,  kError,    kTrace,    ""), \
   F(packages_list_has_parse_errors,       kSingle,  kError,    kTrace,    ""), \
-  F(packages_list_has_read_errors,        kSingle,  kError,    kTrace,    ""), \
-  F(user_list_errors,       kSingle,  kError,    kTrace,                       \
-        "Errors occurred while reading or parsing the user.list file."),       \
   F(game_intervention_has_parse_errors,   kSingle,  kError,    kTrace,         \
        "One or more parsing errors occurred. This could result from "          \
        "unknown game more or intervention added to the file to be parsed."),   \
@@ -446,13 +438,6 @@ namespace perfetto::trace_processor::stats {
       "TraceEvent had unknown extension fields, which might result in "        \
       "missing some arguments. You may need a newer version of trace "         \
       "processor to parse them."),                                             \
-  F(network_trace_intern_errors,          kSingle,  kInfo,     kAnalysis, ""), \
-  F(network_trace_parse_errors,           kSingle,  kInfo,     kAnalysis, ""), \
-  F(atom_timestamp_missing,               kSingle,  kError,    kTrace,         \
-      "The corresponding timestamp_nanos entry for a StatsdAtom was "          \
-      "missing. Defaulted to inaccurate packet timestamp."),                   \
-  F(atom_unknown,                         kSingle,  kInfo,     kAnalysis,      \
-      "Unknown statsd atom. Atom descriptor may need to be updated"),          \
   F(v8_intern_errors,                                                          \
                                           kSingle,  kDataLoss, kAnalysis,      \
       "Failed to resolve V8 interned data."),                                  \
@@ -469,65 +454,6 @@ namespace perfetto::trace_processor::stats {
   F(v8_unknown_code_type,                 kSingle,  kError,    kAnalysis, ""), \
   F(v8_code_load_missing_code_range,      kSingle,  kError,    kAnalysis,      \
       "V8 load had no code range or an empty one. Event ignored."),            \
-  F(winscope_inputmethod_clients_parse_errors,                                 \
-                                          kSingle,  kError,    kAnalysis,      \
-      "InputMethod clients packet has unknown fields, which results in "       \
-      "some arguments missing. You may need a newer version of trace "         \
-      "processor to parse them."),                                             \
-  F(winscope_inputmethod_manager_service_parse_errors,                         \
-                                          kSingle,  kError,    kAnalysis,      \
-      "InputMethod manager service packet has unknown fields, which results "  \
-      "in some arguments missing. You may need a newer version of trace "      \
-      "processor to parse them."),                                             \
-  F(winscope_inputmethod_service_parse_errors,                                 \
-                                          kSingle,  kError,    kAnalysis,      \
-      "InputMethod service packet has unknown fields, which results in "       \
-      "some arguments missing. You may need a newer version of trace "         \
-      "processor to parse them."),                                             \
-  F(winscope_sf_layers_parse_errors,      kSingle,  kError,    kAnalysis,      \
-      "SurfaceFlinger layers snapshot has unknown fields, which results in "   \
-      "some arguments missing. You may need a newer version of trace "         \
-      "processor to parse them."),                                             \
-  F(winscope_sf_transactions_parse_errors,                                     \
-                                          kSingle,  kError,    kAnalysis,      \
-      "SurfaceFlinger transactions packet has unknown fields, which results "  \
-      "in some arguments missing. You may need a newer version of trace "      \
-      "processor to parse them."),                                             \
-  F(winscope_shell_transitions_parse_errors,                                   \
-                                          kSingle,  kError,    kAnalysis,      \
-      "Shell transition packet has unknown fields, which results "             \
-      "in some arguments missing. You may need a newer version of trace "      \
-      "processor to parse them."),                                             \
-  F(winscope_protolog_invalid_interpolation_parse_errors,                      \
-                                          kSingle,  kInfo,     kAnalysis,      \
-      "ProtoLog message string has invalid interplation parameter."),          \
-  F(winscope_protolog_missing_interned_arg_parse_errors,                       \
-                                          kSingle,  kInfo,     kAnalysis,      \
-      "Failed to find interned ProtoLog argument."),                           \
-  F(winscope_protolog_missing_interned_stacktrace_parse_errors,                \
-                                          kSingle,  kInfo,     kAnalysis,      \
-      "Failed to find interned ProtoLog stacktrace."),                         \
-  F(winscope_protolog_message_decoding_failed,                                 \
-                                          kSingle,  kInfo,     kAnalysis,      \
-      "Failed to decode ProtoLog message."),                                   \
-  F(winscope_protolog_view_config_collision,                                   \
-                                          kSingle,  kInfo,     kAnalysis,      \
-      "Got a viewer config collision!"),                                       \
-  F(winscope_protolog_param_mismatch,                                          \
-                                          kSingle,  kInfo,     kAnalysis,      \
-      "Message had mismatching parameters!"),                                  \
-  F(winscope_viewcapture_parse_errors,                                         \
-                                          kSingle,  kError,    kAnalysis,      \
-      "ViewCapture packet has unknown fields, which results in some "          \
-      "arguments missing. You may need a newer version of trace processor "    \
-      "to parse them."),                                                       \
-  F(winscope_viewcapture_missing_interned_string_parse_errors,                 \
-                                          kSingle,  kError,    kAnalysis,      \
-      "Failed to find interned ViewCapture string."),                          \
-  F(winscope_windowmanager_parse_errors, kSingle,   kError,    kAnalysis,      \
-      "WindowManager state packet has unknown fields, which results "          \
-      "in some arguments missing. You may need a newer version of trace "      \
-      "processor to parse them."),                                             \
   F(jit_unknown_frame,                    kSingle,  kDataLoss, kTrace,         \
       "Indicates that we were unable to determine the function for a frame in "\
       "a jitted memory region"),                                               \
@@ -535,14 +461,8 @@ namespace perfetto::trace_processor::stats {
       "Indicates that the ftrace event was dropped because the event id was "  \
       "missing. This is an 'info' stat rather than an error stat because "     \
       "this can be legitimately missing due to proto filtering."),             \
-  F(android_input_event_parse_errors,     kSingle,  kInfo,     kAnalysis,      \
-      "Android input event packet has unknown fields, which results "          \
-      "in some arguments missing. You may need a newer version of trace "      \
-      "processor to parse them."),                                             \
   F(mali_unknown_mcu_state_id,            kSingle,  kError,   kAnalysis,       \
       "An invalid Mali GPU MCU state ID was detected."),                       \
-  F(pixel_modem_negative_timestamp,       kSingle,  kError,   kAnalysis,       \
-      "A negative timestamp was received from a Pixel modem event."),          \
   F(legacy_v8_cpu_profile_invalid_callsite, kSingle, kError,  kTrace,          \
       "Indicates a callsite in legacy v8 CPU profiling is invalid. This is "   \
       "a sign that the trace is malformed."),                                  \

@@ -23,9 +23,7 @@
 #include "content/public/browser/web_ui_message_handler.h"
 #include "extensions/buildflags/buildflags.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "components/enterprise/browser/promotion/promotion_eligibility_checker.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 class PrefChangeRegistrar;
 
@@ -91,9 +89,7 @@ class PolicyUIHandler : public content::WebUIMessageHandler,
   void HandleShouldShowPromotion(const base::ListValue& args);
   void HandleSetBannerDismissed(const base::ListValue& args);
   void HandleRecordBannerRedirected(const base::ListValue& args);
-#if !BUILDFLAG(IS_CHROMEOS)
   void HandleUploadReport(const base::ListValue& args);
-#endif
 
   // Handler functions for chrome://policy/logs.
   void HandleGetPolicyLogs(const base::ListValue& args);
@@ -117,19 +113,15 @@ class PolicyUIHandler : public content::WebUIMessageHandler,
   // information.
   void SendStatus();
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Called when report has been uploaded, successfully or not.
   void OnReportUploaded(const std::string& callback_id);
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
   void OnPromotionEligibilityFetched(
       const std::string& callback_id,
       enterprise_management::GetUserEligiblePromotionsResponse response);
 
   std::unique_ptr<enterprise_promotion::PromotionEligibilityChecker>
       promotion_eligibility_checker_;
-#endif
 
   // Build a JSON string of all the policies.
   std::string GetPoliciesAsJson();

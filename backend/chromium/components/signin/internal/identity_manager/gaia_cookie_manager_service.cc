@@ -607,12 +607,6 @@ GaiaCookieManagerService::GetURLLoaderFactory() {
 
 void GaiaCookieManagerService::MarkListAccountsStale() {
   list_accounts_stale_ = true;
-#if BUILDFLAG(IS_IOS)
-  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE,
-      base::BindOnce(&GaiaCookieManagerService::ForceOnCookieChangeProcessing,
-                     weak_ptr_factory_.GetWeakPtr()));
-#endif  // BUILDFLAG(IS_IOS)
 }
 
 void GaiaCookieManagerService::OnCookieChange(

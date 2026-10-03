@@ -22,7 +22,7 @@ gen_policy_templates_local = false
 gen_policy_templates_common = true
 gen_policy_templates_win = is_win
 gen_policy_templates_linux = is_linux || is_chromeos
-gen_policy_templates_android = is_android
+gen_policy_templates_android = false
 gen_policy_templates_mac = is_mac
 gen_policy_templates_ios = is_ios
 
@@ -296,29 +296,7 @@ if (is_chromeos || is_linux) {
   }
 }
 
-if (gen_policy_templates_android && is_android) {
-  import("//build/config/android/rules.gni")
-
-  _generated_resources_dir = "$root_gen_dir/chrome/app/policy/android"
-
-  copy("app_restrictions_resources_copy") {
-    sources = [ "$target_gen_dir/app_restrictions.xml" ]
-    outputs = [ "$_generated_resources_dir/xml-v21/app_restrictions.xml" ]
-    deps = [
-      ":policy_code_generate",
-      ":policy_templates",
-    ]
-  }
-
-  android_resources("app_restrictions_resources") {
-    sources = policy_templates_android_outputs +
-              [ "$_generated_resources_dir/xml-v21/app_restrictions.xml" ]
-    deps = [
-      ":app_restrictions_resources_copy",
-      ":policy_templates",
-    ]
-  }
-} else if (gen_policy_templates_mac && is_mac) {
+if (gen_policy_templates_mac && is_mac) {
   convert_plist("convert_mcx_plist") {
     source = "$policy_templates_base_dir/mac/app-Manifest.plist"
     output = "$target_gen_dir/$chrome_mac_bundle_id.manifest"

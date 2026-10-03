@@ -35,10 +35,6 @@ constexpr char kMainDatabaseName[] = "main";
 bool Recovery::ShouldAttemptRecovery(Database* database, int extended_error) {
   return database && database->is_open() &&
          !database->DbPath(InternalApiToken()).empty() &&
-#if BUILDFLAG(IS_FUCHSIA)
-         // Recovering WAL databases is not supported on Fuchsia.
-         !database->UseWALMode() &&
-#endif  // BUILDFLAG(IS_FUCHSIA)
          IsErrorCatastrophic(extended_error);
 }
 

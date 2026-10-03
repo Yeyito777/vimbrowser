@@ -240,9 +240,6 @@ const NetLogWithSource& UDPClientSocket::NetLog() const {
 }
 
 void UDPClientSocket::UseNonBlockingIO() {
-#if BUILDFLAG(IS_WIN)
-  socket_.UseNonBlockingIO();
-#endif
 }
 
 int UDPClientSocket::SetMulticastInterface(uint32_t interface_index) {
@@ -250,28 +247,20 @@ int UDPClientSocket::SetMulticastInterface(uint32_t interface_index) {
 }
 
 void UDPClientSocket::EnableRecvOptimization() {
-#if BUILDFLAG(IS_POSIX)
   socket_.enable_experimental_recv_optimization();
-#endif
 }
 
 void UDPClientSocket::SetIOSNetworkServiceType(int ios_network_service_type) {
-#if BUILDFLAG(IS_POSIX)
   socket_.SetIOSNetworkServiceType(ios_network_service_type);
-#endif
 }
 
 void UDPClientSocket::RegisterQuicConnectionClosePayload(
     base::span<uint8_t> payload) {
-#if BUILDFLAG(IS_POSIX)
   socket_.RegisterQuicConnectionClosePayload(payload);
-#endif
 }
 
 void UDPClientSocket::UnregisterQuicConnectionClosePayload() {
-#if BUILDFLAG(IS_POSIX)
   socket_.UnregisterQuicConnectionClosePayload();
-#endif
 }
 
 int UDPClientSocket::AdoptOpenedSocket(AddressFamily address_family,

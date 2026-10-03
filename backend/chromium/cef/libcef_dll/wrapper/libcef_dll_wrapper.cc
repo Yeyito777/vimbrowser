@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=d11b600963fd72fd079de6cb9c97be6df8bc28e4$
+// $hash=e4c6f746500ecc1102b135ed26e70967159d9589$
 //
 
 #include "include/capi/cef_app_capi.h"
@@ -25,7 +25,6 @@
 #include "include/capi/cef_task_capi.h"
 #include "include/capi/cef_trace_capi.h"
 #include "include/capi/cef_v8_capi.h"
-#include "include/capi/test/cef_test_helpers_capi.h"
 #include "include/cef_api_hash.h"
 #include "include/cef_app.h"
 #include "include/cef_crash_util.h"
@@ -40,7 +39,6 @@
 #include "include/cef_task.h"
 #include "include/cef_trace.h"
 #include "include/cef_v8.h"
-#include "include/test/cef_test_helpers.h"
 #include "libcef_dll/cpptoc/app_cpptoc.h"
 #include "libcef_dll/cpptoc/completion_callback_cpptoc.h"
 #include "libcef_dll/cpptoc/end_tracing_callback_cpptoc.h"
@@ -49,7 +47,6 @@
 #include "libcef_dll/cpptoc/v8_handler_cpptoc.h"
 #include "libcef_dll/ctocpp/binary_value_ctocpp.h"
 #include "libcef_dll/ctocpp/command_line_ctocpp.h"
-#include "libcef_dll/ctocpp/frame_ctocpp.h"
 #include "libcef_dll/ctocpp/value_ctocpp.h"
 #include "libcef_dll/shutdown_checker.h"
 #include "libcef_dll/transfer_util.h"
@@ -836,53 +833,6 @@ NO_SANITIZE("cfi-icall") CEF_GLOBAL bool CefRegisterExtension(const CefString& e
       extension_name.GetStruct(),
       javascript_code.GetStruct(),
       CefV8HandlerCppToC_Wrap(handler));
-
-  // Return type: bool
-  return _retval?true:false;
-}
-
-NO_SANITIZE("cfi-icall") CEF_GLOBAL void CefExecuteJavaScriptWithUserGestureForTests(CefRefPtr<CefFrame> frame, const CefString& javascript) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: frame; type: refptr_same
-  DCHECK(frame.get());
-  if (!frame.get()) {
-    return;
-  }
-  // Unverified params: javascript
-
-  // Execute
-  cef_execute_java_script_with_user_gesture_for_tests(
-      CefFrameCToCpp_Unwrap(frame),
-      javascript.GetStruct());
-}
-
-NO_SANITIZE("cfi-icall") CEF_GLOBAL void CefSetDataDirectoryForTests(const CefString& dir) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: dir; type: string_byref_const
-  DCHECK(!dir.empty());
-  if (dir.empty()) {
-    return;
-  }
-
-  // Execute
-  cef_set_data_directory_for_tests(
-      dir.GetStruct());
-}
-
-NO_SANITIZE("cfi-icall") CEF_GLOBAL bool CefIsFeatureEnabledForTests(const CefString& feature_name) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: feature_name; type: string_byref_const
-  DCHECK(!feature_name.empty());
-  if (feature_name.empty()) {
-    return false;
-  }
-
-  // Execute
-  int _retval = cef_is_feature_enabled_for_tests(
-      feature_name.GetStruct());
 
   // Return type: bool
   return _retval?true:false;

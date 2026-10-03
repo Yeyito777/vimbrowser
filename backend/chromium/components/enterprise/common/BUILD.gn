@@ -27,15 +27,13 @@ if (use_blink) {
 source_set("unit_tests") {
   testonly = true
 
-  if (!is_ios) {
-    sources = [ "files_scan_data_unittest.cc" ]
+  sources = [ "files_scan_data_unittest.cc" ]
 
-    deps = [
-      ":files_scan_data",
-      "//base/test:test_support",
-      "//content/public/browser",
-      "//content/test:test_support",
-      "//testing/gtest",
-    ]
-  }
+  deps = [
+    ":files_scan_data",
+    "//base/test:test_support",
+    "//content/public/browser",
+    "//content/test:test_support",
+    "//testing/gtest",
+  ]
 }

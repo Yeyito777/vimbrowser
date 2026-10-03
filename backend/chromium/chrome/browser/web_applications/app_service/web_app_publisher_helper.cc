@@ -108,33 +108,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/webui/projector_app/public/cpp/projector_app_constants.h"  // nogncheck
-#include "ash/webui/system_apps/public/system_web_app_type.h"
-#include "chrome/browser/ash/guest_os/guest_os_terminal.h"
-#include "chrome/browser/ash/login/demo_mode/demo_session.h"
-#include "chrome/browser/ash/system_web_apps/system_web_app_manager.h"
-#include "chrome/browser/badging/badge_manager.h"
-#include "chrome/browser/badging/badge_manager_factory.h"
-#include "chrome/browser/chromeos/arc/arc_web_contents_data.h"  // nogncheck
-#include "chrome/browser/media/webrtc/media_capture_devices_dispatcher.h"
-#include "chrome/browser/notifications/notification_display_service_factory.h"
-#include "chrome/browser/web_applications/chromeos_web_app_experiments.h"
-#include "chrome/browser/web_applications/policy/app_service_web_app_policy.h"
-#include "chromeos/ash/components/file_manager/app_id.h"
-#include "chromeos/ash/experiences/system_web_apps/types/system_web_app_data.h"
-#include "chromeos/ash/experiences/system_web_apps/types/system_web_app_delegate.h"
-#include "chromeos/constants/chromeos_features.h"
-#include "components/app_restore/app_launch_info.h"
-#include "components/app_restore/full_restore_save_handler.h"
-#include "components/app_restore/full_restore_utils.h"
-#include "components/services/app_service/public/cpp/app_registry_cache.h"
-#include "components/services/app_service/public/cpp/preferred_apps_list_handle.h"
-#include "components/sessions/core/session_id.h"
-#include "extensions/browser/api/file_handlers/mime_util.h"  // nogncheck
-#include "ui/message_center/public/cpp/notification.h"
-#include "ui/message_center/public/cpp/notifier_id.h"
-#endif
 
 using apps::IconEffects;
 
@@ -487,38 +460,6 @@ apps::IntentFilters CreateIntentFiltersFromFileHandlers(
   return filters;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool AppHasSupportedLinks(apps::AppServiceProxy* proxy,
-                         const webapps::AppId& app_id) {
-  bool has_intent_filters = false;
-  proxy->AppRegistryCache().ForOneApp(
-      app_id, [&](const apps::AppUpdate& update) {
-        for (auto& intent_filter : update.IntentFilters()) {
-          if (apps_util::IsSupportedLinkForApp(app_id, intent_filter)) {
-            has_intent_filters = true;
-            break;
-          }
-        }
-      });
-  return has_intent_filters;
-}
-
-bool AreOtherAppsPreferredForLinks(
-    apps::AppServiceProxy* proxy,
-    const webapps::AppId& app_id,
-    const std::optional<apps::IntentFilters>& new_app_intent_filters) {
-  if (!new_app_intent_filters.has_value() || new_app_intent_filters->empty()) {
-    return false;
-  }
-
-  base::flat_set<std::string> preferred_apps =
-      proxy->PreferredAppsList().FindPreferredAppsForFilters(
-          *new_app_intent_filters);
-  preferred_apps.erase(app_id);
-
-  return preferred_apps.size() > 0;
-}
-#endif  //  BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -542,29 +483,6 @@ WebAppPublisherHelper::Delegate::Delegate() = default;
 
 WebAppPublisherHelper::Delegate::~Delegate() = default;
 
-#if BUILDFLAG(IS_CHROMEOS)
-WebAppPublisherHelper::BadgeManagerDelegate::BadgeManagerDelegate(
-    const base::WeakPtr<WebAppPublisherHelper>& publisher_helper)
-    : badging::BadgeManagerDelegate(publisher_helper->profile(),
-                                    publisher_helper->badge_manager_),
-      publisher_helper_(publisher_helper) {}
-
-WebAppPublisherHelper::BadgeManagerDelegate::~BadgeManagerDelegate() = default;
-
-void WebAppPublisherHelper::BadgeManagerDelegate::OnAppBadgeUpdated(
-    const webapps::AppId& app_id) {
-  if (!publisher_helper_) {
-    return;
-  }
-  apps::AppPtr app =
-      publisher_helper_->app_notifications_.CreateAppWithHasBadgeStatus(
-          apps::AppType::kWeb, app_id);
-  DCHECK(app->has_badge.has_value());
-  app->has_badge =
-      publisher_helper_->ShouldShowBadge(app_id, app->has_badge.value());
-  publisher_helper_->delegate_->PublishWebApp(std::move(app));
-}
-#endif
 
 WebAppPublisherHelper::WebAppPublisherHelper(Profile* profile,
                                              WebAppProvider* provider,
@@ -596,12 +514,6 @@ void WebAppPublisherHelper::SetWebAppShowInFields(const WebApp* web_app,
     bool should_show_app = true;
     // TODO(b/201422755): Remove Web app specific hiding for demo mode once icon
     // load fixed.
-#if BUILDFLAG(IS_CHROMEOS)
-    if (ash::DemoSession::Get()) {
-      should_show_app = ash::DemoSession::Get()->ShouldShowWebApp(
-          web_app->start_url().spec());
-    }
-#endif
     app.show_in_launcher = chromeos_data.show_in_launcher && should_show_app;
     app.show_in_shelf = app.show_in_search =
         chromeos_data.show_in_search_and_shelf && should_show_app;
@@ -683,15 +595,6 @@ apps::IntentFilters WebAppPublisherHelper::CreateIntentFiltersForWebApp(
                               scope_extension_info));
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (chromeos::features::IsUploadOfficeToCloudEnabled()) {
-    for (const ScopeExtensionInfo& scope_extension_info :
-         ChromeOsWebAppExperiments::GetScopeExtensions(app.app_id())) {
-      base::Extend(filters, CreateIntentFiltersFromScopeExtensionInfo(
-                                scope_extension_info));
-    }
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (app.share_target()) {
     base::Extend(filters,
@@ -718,12 +621,6 @@ apps::IntentFilters WebAppPublisherHelper::CreateIntentFiltersForWebApp(
                  CreateIntentFiltersFromFileHandlers(*enabled_file_handlers));
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (app.app_id() == ash::kChromeUIUntrustedProjectorSwaAppId) {
-    filters.push_back(apps_util::MakeIntentFilterForUrlScope(
-        GURL(ash::kChromeUIUntrustedProjectorPwaUrl)));
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return filters;
 }
@@ -745,12 +642,6 @@ apps::AppPtr WebAppPublisherHelper::CreateWebApp(const WebApp* web_app) {
       readiness = apps::Readiness::kDisabledByUser;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK(web_app->chromeos_data().has_value());
-  if (web_app->chromeos_data()->is_disabled) {
-    readiness = apps::Readiness::kDisabledByPolicy;
-  }
-#endif
 
   auto app = apps::AppPublisher::MakeApp(
       apps::AppType::kWeb, web_app->app_id(), readiness,
@@ -795,24 +686,11 @@ apps::AppPtr WebAppPublisherHelper::CreateWebApp(const WebApp* web_app) {
 
   SetWebAppShowInFields(web_app, *app);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (readiness != apps::Readiness::kReady) {
-    UpdateAppDisabledMode(*app);
-  }
-
-  app->has_badge = ShouldShowBadge(
-      web_app->app_id(), app_notifications_.HasNotification(web_app->app_id()));
-#else
   app->has_badge = false;
-#endif
 
   app->allow_uninstall = web_app->CanUserUninstallWebApp();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  app->paused = IsPaused(web_app->app_id());
-#else
   app->paused = false;
-#endif
 
   // Add the intent filters for PWAs.
   app->intent_filters = CreateIntentFiltersForWebApp(*provider_, *web_app);
@@ -841,15 +719,6 @@ apps::AppPtr WebAppPublisherHelper::CreateWebApp(const WebApp* web_app) {
     app->intent_filters->push_back(apps_util::CreateLockScreenFilter());
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (web_app->app_id() == guest_os::kTerminalSystemAppId) {
-    app->intent_filters->push_back(apps_util::CreateFileFilter(
-        {apps_util::kIntentActionView},
-        /*mime_types=*/
-        {extensions::app_file_handler_util::kMimeTypeInodeDirectory},
-        /*file_extensions=*/{}));
-  }
-#endif
 
   app->window_mode = ConvertDisplayModeToWindowMode(
       registrar().GetAppEffectiveDisplayMode(web_app->app_id()));
@@ -939,61 +808,6 @@ void WebAppPublisherHelper::SetIconEffect(const std::string& app_id) {
   delegate_->PublishWebApp(std::move(app));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void WebAppPublisherHelper::PauseApp(const std::string& app_id) {
-  if (IsShuttingDown()) {
-    return;
-  }
-
-  if (paused_apps_.MaybeAddApp(app_id)) {
-    SetIconEffect(app_id);
-  }
-
-  provider_->ui_manager().CloseAppWindows(app_id);
-
-  delegate_->PublishWebApp(paused_apps_.CreateAppWithPauseStatus(
-      apps::AppType::kWeb, app_id, /*paused=*/true));
-}
-
-void WebAppPublisherHelper::UnpauseApp(const std::string& app_id) {
-  if (IsShuttingDown()) {
-    return;
-  }
-
-  if (paused_apps_.MaybeRemoveApp(app_id)) {
-    SetIconEffect(app_id);
-  }
-
-  delegate_->PublishWebApp(paused_apps_.CreateAppWithPauseStatus(
-      apps::AppType::kWeb, app_id, /*paused=*/false));
-}
-
-bool WebAppPublisherHelper::IsPaused(const std::string& app_id) {
-  return paused_apps_.IsPaused(app_id);
-}
-
-void WebAppPublisherHelper::StopApp(const std::string& app_id) {
-  if (IsShuttingDown()) {
-    return;
-  }
-
-  provider_->ui_manager().CloseAppWindows(app_id);
-}
-
-void WebAppPublisherHelper::GetCompressedIconData(
-    const std::string& app_id,
-    int32_t size_in_dip,
-    ui::ResourceScaleFactor scale_factor,
-    apps::LoadIconCallback callback) {
-  DCHECK(provider_);
-  if (IsShuttingDown()) {
-    return;
-  }
-
-  apps::GetWebAppCompressedIconData(profile_, app_id, size_in_dip, scale_factor,
-                                    std::move(callback));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void WebAppPublisherHelper::LoadIcon(const std::string& app_id,
                                      apps::IconType icon_type,
@@ -1071,24 +885,6 @@ void WebAppPublisherHelper::LaunchAppWithIntent(
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (app_id == guest_os::kTerminalSystemAppId) {
-    int64_t display_id =
-        window_info ? window_info->display_id : display::kInvalidDisplayId;
-    guest_os::LaunchTerminalWithIntent(
-        profile_, display_id, std::move(intent),
-        base::BindOnce(
-            [](apps::LaunchCallback callback, bool success,
-               const std::string& failure_reason) {
-              if (!success) {
-                LOG(WARNING) << "Launch terminal failed: " << failure_reason;
-              }
-              std::move(callback).Run(apps::ConvertBoolToLaunchResult(success));
-            },
-            std::move(callback)));
-    return;
-  }
-#endif
 
   LaunchAppWithIntentImpl(
       app_id, event_flags, std::move(intent), launch_source,
@@ -1096,17 +892,6 @@ void WebAppPublisherHelper::LaunchAppWithIntent(
       base::BindOnce(
           [](apps::LaunchCallback callback, apps::LaunchSource launch_source,
              std::vector<content::WebContents*> web_contentses) {
-#if BUILDFLAG(IS_CHROMEOS)
-            for (content::WebContents* web_contents : web_contentses) {
-              if (launch_source == apps::LaunchSource::kFromArc) {
-                // Add a flag to remember this tab originated in the ARC
-                // context.
-                web_contents->SetUserData(
-                    &arc::ArcWebContentsData::kArcTransitionFlag,
-                    std::make_unique<arc::ArcWebContentsData>(web_contents));
-              }
-            }
-#endif
             std::move(callback).Run(
                 apps::ConvertBoolToLaunchResult(!web_contentses.empty()));
           },
@@ -1135,37 +920,6 @@ void WebAppPublisherHelper::LaunchAppWithParams(
   bool is_system_web_app = false;
   std::optional<GURL> override_url = std::nullopt;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Terminal SWA has custom launch code and manages its own restore data.
-  if (params.app_id == guest_os::kTerminalSystemAppId) {
-    guest_os::LaunchTerminalHome(profile_, params.display_id,
-                                 params.restore_id);
-    std::move(on_complete).Run(nullptr);
-    return;
-  }
-
-  auto* swa_manager = ash::SystemWebAppManager::Get(profile());
-  if (swa_manager) {
-    const WebApp* web_app = GetWebApp(params_for_restore.app_id);
-    is_system_web_app = web_app && web_app->IsSystemApp();
-
-    // TODO(crbug.com/40240250): Determine whether override URL can
-    // be restored for all SWAs.
-    auto system_app_type =
-        swa_manager->GetSystemAppTypeForAppId(params_for_restore.app_id);
-    if (system_app_type.has_value()) {
-      auto* system_app = swa_manager->GetSystemApp(*system_app_type);
-      CHECK(system_app);
-      if (system_app->ShouldRestoreOverrideUrl()) {
-        override_url = params.override_url;
-      }
-    }
-  }
-
-  // Create the FullRestoreSaveHandler instance before launching the app to
-  // observe the browser window.
-  full_restore::FullRestoreSaveHandler::GetInstance();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   provider_->scheduler().LaunchAppWithCustomParams(
       std::move(params),
@@ -1401,26 +1155,11 @@ void WebAppPublisherHelper::OnWebAppInstalled(const webapps::AppId& app_id) {
     // icon disk cache.
     app->icon_key->update_version = true;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    bool iwa_capture_links_set_default =
-        registrar().AppMatches(app_id, WebAppFilter::IsIsolatedApp() |
-                                           WebAppFilter::IsIsolatedSubApp()) &&
-        !AreOtherAppsPreferredForLinks(
-            apps::AppServiceProxyFactory::GetForProfile(profile_), app_id,
-            app->intent_filters);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     delegate_->PublishWebApp(std::move(app));
 
     // Todo(b:372661290): Extract custom link preference handling into a new
     // post web app install hook.
-#if BUILDFLAG(IS_CHROMEOS)
-    if (iwa_capture_links_set_default ||
-        ChromeOsWebAppExperiments::ShouldAddLinkPreference(app_id, profile_)) {
-      auto* proxy = apps::AppServiceProxyFactory::GetForProfile(profile_);
-      proxy->SetSupportedLinksPreference(app_id);
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
 }
 
@@ -1438,20 +1177,6 @@ void WebAppPublisherHelper::OnWebAppManifestUpdated(
   if (web_app) {
     auto app = CreateWebApp(web_app);
 
-#if BUILDFLAG(IS_CHROMEOS)
-    auto* proxy = apps::AppServiceProxyFactory::GetForProfile(profile_);
-
-    bool iwa_capture_links_set_default =
-        registrar().AppMatches(app_id, WebAppFilter::IsIsolatedApp() |
-                                           WebAppFilter::IsIsolatedSubApp()) &&
-        (proxy->PreferredAppsList().IsPreferredAppForSupportedLinks(app_id) ||
-         // IsPreferredAppForSupportedLinks returns false if app has 0 intent
-         // filters, regardless of SetSupportedLinksPreference was called on
-         // install.
-         (!AppHasSupportedLinks(proxy, app_id) &&
-          !AreOtherAppsPreferredForLinks(proxy, app_id, app->intent_filters)));
-
-#endif  //  BUILDFLAG(IS_CHROMEOS)
 
     // The manifest updated might cause the app raw icon updated. So set
     // a new `raw_icon_data_version`, to remove the icon files saved in the
@@ -1460,36 +1185,12 @@ void WebAppPublisherHelper::OnWebAppManifestUpdated(
     app->icon_key->update_version = true;
     delegate_->PublishWebApp(std::move(app));
 
-#if BUILDFLAG(IS_CHROMEOS)
-    if (iwa_capture_links_set_default) {
-      proxy->SetSupportedLinksPreference(app_id);
-    }
-#endif  //  BUILDFLAG(IS_CHROMEOS)
   }
 }
 
 void WebAppPublisherHelper::OnWebAppUninstalled(
     const webapps::AppId& app_id,
     webapps::WebappUninstallSource uninstall_source) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // If a web app has been uninstalled, we do not know if it is a shortcut from
-  // web app registrar. Here we check if we have got an app registered in
-  // AppRegistryCache to be uninstalled. If not, we do not publish the update.
-  bool found = apps::AppServiceProxyFactory::GetForProfile(profile_)
-                   ->AppRegistryCache()
-                   .ForOneApp(app_id, [](const apps::AppUpdate& update) {});
-  if (!found) {
-    return;
-  }
-
-  paused_apps_.MaybeRemoveApp(app_id);
-
-  app_notifications_.RemoveNotificationsForApp(app_id);
-
-  auto result = media_requests_.RemoveRequests(app_id);
-  delegate_->ModifyWebAppCapabilityAccess(app_id, result.camera,
-                                          result.microphone);
-#endif
 
   delegate_->PublishWebApp(ConvertUninstalledWebApp(app_id, uninstall_source));
 }
@@ -1538,120 +1239,7 @@ void WebAppPublisherHelper::OnWebAppRunOnOsLoginModeChanged(
   PublishRunOnOsLoginModeUpdate(app_id, run_on_os_login_mode);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// If is_disabled is set, the app backed by |app_id| is published with readiness
-// kDisabledByPolicy, otherwise it's published with readiness kReady.
-void WebAppPublisherHelper::OnWebAppDisabledStateChanged(
-    const webapps::AppId& app_id,
-    bool is_disabled) {
-  const WebApp* web_app = GetWebApp(app_id);
-  if (!web_app) {
-    return;
-  }
 
-  DCHECK_EQ(is_disabled, web_app->chromeos_data()->is_disabled);
-  apps::AppPtr app = CreateWebApp(web_app);
-  app->icon_key = apps::IconKey(GetIconEffects(web_app));
-
-  // If the disable mode is hidden, update the visibility of the new disabled
-  // app.
-  std::optional<ash::SystemWebAppType> system_app_type = std::nullopt;
-  auto* swa_manager = ash::SystemWebAppManager::Get(profile());
-  if (swa_manager) {
-    system_app_type = swa_manager->GetSystemAppTypeForAppId(app->app_id);
-  }
-  if (is_disabled &&
-      provider_->policy_manager().IsDisabledAppsModeHidden(system_app_type)) {
-    UpdateAppDisabledMode(*app);
-  }
-
-  delegate_->PublishWebApp(std::move(app));
-}
-
-void WebAppPublisherHelper::OnWebAppsDisabledModeChanged() {
-  std::vector<apps::AppPtr> apps;
-  std::vector<webapps::AppId> app_ids = registrar().GetAppIds();
-  for (const auto& id : app_ids) {
-    // We only update visibility of disabled apps in this method. When enabling
-    // previously disabled app, OnWebAppDisabledStateChanged() method will be
-    // called and this method will update visibility and readiness of the newly
-    // enabled app.
-    if (provider_->policy_manager().IsWebAppInDisabledList(id)) {
-      const WebApp* web_app = GetWebApp(id);
-      if (!web_app) {
-        continue;
-      }
-      auto app =
-          std::make_unique<apps::App>(apps::AppType::kWeb, web_app->app_id());
-      UpdateAppDisabledMode(*app);
-      apps.push_back(std::move(app));
-    }
-  }
-  delegate_->PublishWebApps(std::move(apps));
-}
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS)
-void WebAppPublisherHelper::OnNotificationDisplayed(
-    const message_center::Notification& notification,
-    const NotificationCommon::Metadata* const metadata) {
-  if (notification.notifier_id().type !=
-      message_center::NotifierType::WEB_PAGE) {
-    return;
-  }
-  MaybeAddWebPageNotifications(notification, metadata);
-}
-
-void WebAppPublisherHelper::OnNotificationClosed(
-    const std::string& notification_id) {
-  auto app_ids = app_notifications_.GetAppIdsForNotification(notification_id);
-  if (app_ids.empty()) {
-    return;
-  }
-
-  app_notifications_.RemoveNotification(notification_id);
-
-  for (const auto& app_id : app_ids) {
-    auto app = app_notifications_.CreateAppWithHasBadgeStatus(
-        apps::AppType::kWeb, app_id);
-    DCHECK(app->has_badge.has_value());
-    app->has_badge = ShouldShowBadge(app_id, app->has_badge.value());
-    delegate_->PublishWebApp(std::move(app));
-  }
-}
-
-void WebAppPublisherHelper::OnNotificationDisplayServiceDestroyed(
-    NotificationDisplayService* service) {
-  DCHECK(notification_display_service_.IsObservingSource(service));
-  notification_display_service_.Reset();
-}
-
-void WebAppPublisherHelper::OnIsCapturingVideoChanged(
-    content::WebContents* web_contents,
-    bool is_capturing_video) {
-  const webapps::AppId* app_id = WebAppTabHelper::GetAppId(web_contents);
-  if (!app_id) {
-    return;
-  }
-  auto result = media_requests_.UpdateCameraState(*app_id, web_contents,
-                                                  is_capturing_video);
-  delegate_->ModifyWebAppCapabilityAccess(*app_id, result.camera,
-                                          result.microphone);
-}
-
-void WebAppPublisherHelper::OnIsCapturingAudioChanged(
-    content::WebContents* web_contents,
-    bool is_capturing_audio) {
-  const webapps::AppId* app_id = WebAppTabHelper::GetAppId(web_contents);
-  if (!app_id) {
-    return;
-  }
-  auto result = media_requests_.UpdateMicrophoneState(*app_id, web_contents,
-                                                      is_capturing_audio);
-  delegate_->ModifyWebAppCapabilityAccess(*app_id, result.camera,
-                                          result.microphone);
-}
-#endif
 
 void WebAppPublisherHelper::OnContentSettingChanged(
     const ContentSettingsPattern& primary_pattern,
@@ -1698,28 +1286,7 @@ void WebAppPublisherHelper::Init() {
   content_settings_observation_.Observe(
       HostContentSettingsMapFactory::GetForProfile(profile_));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // NotificationDisplayService could be null in some tests.
-  if (auto* notification_display_service =
-          NotificationDisplayServiceFactory::GetForProfile(profile())) {
-    notification_display_service_.Observe(notification_display_service);
-  }
 
-  badge_manager_ = badging::BadgeManagerFactory::GetForProfile(profile());
-  // badge_manager_ is nullptr in guest and incognito profiles.
-  if (badge_manager_) {
-    badge_manager_->SetDelegate(
-        std::make_unique<WebAppPublisherHelper::BadgeManagerDelegate>(
-            weak_ptr_factory_.GetWeakPtr()));
-  }
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS)
-  media_indicator_observation_.Observe(
-      MediaCaptureDevicesDispatcher::GetInstance()
-          ->GetMediaStreamCaptureIndicator()
-          .get());
-#endif
 }
 
 void WebAppPublisherHelper::ObserveWebAppSubsystems() {
@@ -1737,11 +1304,6 @@ IconEffects WebAppPublisherHelper::GetIconEffects(const WebApp* web_app) {
   icon_effects |= web_app->is_generated_icon() ? IconEffects::kCrOsStandardMask
                                                : IconEffects::kCrOsStandardIcon;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (IsPaused(web_app->app_id())) {
-    icon_effects |= IconEffects::kPaused;
-  }
-#endif
 
   bool is_disabled = false;
   if (web_app->chromeos_data().has_value()) {
@@ -1800,109 +1362,9 @@ void WebAppPublisherHelper::LaunchAppWithIntentImpl(
 
 apps::PackageId WebAppPublisherHelper::GetPackageId(
     const WebApp& web_app) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (web_app.client_data().system_web_app_data) {
-    const std::optional<std::string_view> policy_id =
-        GetPolicyIdForSystemWebAppType(
-            web_app.client_data().system_web_app_data->system_app_type);
-    if (policy_id) {
-      return apps::PackageId(apps::PackageType::kSystem, *policy_id);
-    }
-  }
-#endif
   return apps::PackageId(apps::PackageType::kWeb, web_app.manifest_id().spec());
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void WebAppPublisherHelper::UpdateAppDisabledMode(apps::App& app) {
-  std::optional<ash::SystemWebAppType> system_app_type = std::nullopt;
-  auto* swa_manager = ash::SystemWebAppManager::Get(profile());
-  if (swa_manager) {
-    system_app_type = swa_manager->GetSystemAppTypeForAppId(app.app_id);
-  }
-
-  if (provider_->policy_manager().IsDisabledAppsModeHidden(system_app_type)) {
-    app.show_in_launcher = false;
-    app.show_in_search = false;
-    app.show_in_shelf = false;
-    return;
-  }
-  app.show_in_launcher = true;
-  app.show_in_search = true;
-  app.show_in_shelf = true;
-
-  if (system_app_type.has_value()) {
-    auto* system_app = swa_manager->GetSystemApp(*system_app_type);
-    DCHECK(system_app);
-    app.show_in_launcher = system_app->ShouldShowInLauncher();
-    app.show_in_shelf = system_app->ShouldShowInSearchAndShelf();
-    app.show_in_search = system_app->ShouldShowInSearchAndShelf();
-  }
-}
-
-bool WebAppPublisherHelper::MaybeAddNotification(
-    const std::string& app_id,
-    const std::string& notification_id) {
-  const WebApp* web_app = GetWebApp(app_id);
-  if (!web_app) {
-    return false;
-  }
-
-  app_notifications_.AddNotification(app_id, notification_id);
-  auto app = app_notifications_.CreateAppWithHasBadgeStatus(apps::AppType::kWeb,
-                                                            app_id);
-  DCHECK(app->has_badge.has_value());
-  app->has_badge = ShouldShowBadge(app_id, app->has_badge.value());
-  delegate_->PublishWebApp(std::move(app));
-  return true;
-}
-
-void WebAppPublisherHelper::MaybeAddWebPageNotifications(
-    const message_center::Notification& notification,
-    const NotificationCommon::Metadata* const metadata) {
-  const PersistentNotificationMetadata* persistent_metadata =
-      PersistentNotificationMetadata::From(metadata);
-
-  const NonPersistentNotificationMetadata* non_persistent_metadata =
-      NonPersistentNotificationMetadata::From(metadata);
-
-  if (persistent_metadata) {
-    // For persistent notifications, find the web app with the SW scope url.
-    std::optional<webapps::AppId> app_id = FindInstalledAppWithUrlInScope(
-        profile(), persistent_metadata->service_worker_scope,
-        /*window_only=*/false);
-    if (app_id.has_value()) {
-      MaybeAddNotification(app_id.value(), notification.id());
-    }
-  } else {
-    // For non-persistent notifications, find all web apps that are installed
-    // under the origin url.
-
-    const GURL& url = non_persistent_metadata &&
-                              !non_persistent_metadata->document_url.is_empty()
-                          ? non_persistent_metadata->document_url
-                          : notification.origin_url();
-
-    auto app_ids = registrar().FindAllAppsNestedInUrl(
-        url, web_app::WebAppFilter::SupportsOsNotifications());
-    for (const auto& app_id : app_ids) {
-      MaybeAddNotification(app_id, notification.id());
-    }
-  }
-}
-
-bool WebAppPublisherHelper::ShouldShowBadge(const std::string& app_id,
-                                            bool has_notification) {
-  // We show a badge if either the Web Badging API recently has a badge set, or
-  // the Badging API has not been recently used by the app and a notification is
-  // showing.
-  if (!badge_manager_ || !badge_manager_->HasRecentApiUsage(app_id)) {
-    return has_notification;
-  }
-
-  return badge_manager_->GetBadgeValue(app_id).has_value();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void WebAppPublisherHelper::LaunchAppWithFilesCheckingUserPermission(
     const std::string& app_id,
@@ -1916,18 +1378,7 @@ void WebAppPublisherHelper::LaunchAppWithFilesCheckingUserPermission(
 
   if (std::ranges::all_of(file_paths, [this, &app_id](auto file) {
         std::optional<std::string> file_extension_string;
-#if BUILDFLAG(IS_WIN)
-        std::string converted_extension_utf8;
-        std::wstring file_extension = file.Extension();
-        if (base::WideToUTF8(file_extension.c_str(), file_extension.size(),
-                             &converted_extension_utf8)) {
-          file_extension_string = converted_extension_utf8;
-        } else {
-          file_extension_string = std::nullopt;
-        }
-#else   // BUILDFLAG(IS_WIN)
         file_extension_string = file.Extension();
-#endif  // BUILDFLAG(IS_WIN)
         return provider_->registrar_unsafe().GetAppFileHandlerApprovalState(
                    app_id, file_extension_string) == ApiApprovalState::kAllowed;
       })) {
@@ -1965,24 +1416,6 @@ void WebAppPublisherHelper::LaunchAppFromProtocolCheckingUserPermission(
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(crbug.com/458271211): Find a more generic solution.
-  if (const auto& action = params.confirmation_dialog_action) {
-    const bool should_persist = [&] {
-      switch (*action) {
-        case apps::AppLaunchParams::ConfirmationDialogAction::
-            kPersistentlyForceSkip:
-          return true;
-        case apps::AppLaunchParams::ConfirmationDialogAction::kForceSkip:
-          return false;
-      }
-    }();
-    OnProtocolHandlerDialogCompleted(std::move(params), std::move(callback),
-                                     /*allowed=*/true,
-                                     /*remember_user_choice=*/should_persist);
-    return;
-  }
-#endif
 
   provider_->ui_manager().ShowWebAppProtocolLaunchDialog(
       protocol_url, app_id,
@@ -2081,30 +1514,6 @@ void WebAppPublisherHelper::OnLaunchCompleted(
     base::WeakPtr<Browser> browser,
     base::WeakPtr<content::WebContents> web_contents,
     apps::LaunchContainer container) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Save all launch information for system web apps, because the
-  // browser session restore can't restore system web apps.
-  int session_id =
-      apps::GetSessionIdForRestoreFromWebContents(web_contents.get());
-  if (SessionID::IsValidValue(session_id)) {
-    if (is_system_web_app) {
-      std::unique_ptr<app_restore::AppLaunchInfo> launch_info =
-          std::make_unique<app_restore::AppLaunchInfo>(
-              params_for_restore.app_id, session_id,
-              params_for_restore.container, params_for_restore.disposition,
-              params_for_restore.display_id,
-              std::move(params_for_restore.launch_files),
-              std::move(params_for_restore.intent));
-
-      if (override_url) {
-        launch_info->override_url = override_url.value();
-      }
-
-      full_restore::SaveAppLaunchInfo(profile()->GetPath(),
-                                      std::move(launch_info));
-    }
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   std::move(on_complete).Run(web_contents.get());
 }

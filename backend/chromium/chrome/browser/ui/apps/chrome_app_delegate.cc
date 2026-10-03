@@ -47,9 +47,6 @@
 #include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/chromeos/policy/dlp/dlp_content_tab_helper.h"
-#endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/printing_init.h"
@@ -121,9 +118,6 @@ void OpenURLAfterCheckIsDefaultBrowser(
     case shell_integration::UNKNOWN_DEFAULT:
     case shell_integration::OTHER_MODE_IS_DEFAULT:
       platform_util::OpenExternal(
-#if BUILDFLAG(IS_CHROMEOS)
-          profile,
-#endif
           params.url);
       return;
     case shell_integration::NUM_DEFAULT_STATES:
@@ -246,9 +240,6 @@ void ChromeAppDelegate::InitWebContents(content::WebContents* web_contents) {
 
   apps::AudioFocusWebContentsObserver::CreateForWebContents(web_contents);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  policy::DlpContentTabHelper::MaybeCreateForWebContents(web_contents);
-#endif
 
   zoom::ZoomController::CreateForWebContents(web_contents);
 
@@ -345,12 +336,7 @@ bool ChromeAppDelegate::CheckMediaAccessPermission(
 }
 
 int ChromeAppDelegate::PreferredIconSize() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Use a size appropriate for the ash shelf (see ash::kShelfSize).
-  return extension_misc::EXTENSION_ICON_MEDIUM;
-#else
   return extension_misc::EXTENSION_ICON_SMALL;
-#endif
 }
 
 void ChromeAppDelegate::SetWebContentsBlocked(

@@ -23,12 +23,8 @@
 #include "services/video_capture/public/mojom/video_capture_service.mojom.h"
 #include "services/video_capture/video_capture_service_impl.h"
 
-#if BUILDFLAG(IS_WIN)
-#define CREATE_IN_PROCESS_TASK_RUNNER base::ThreadPool::CreateCOMSTATaskRunner
-#else
 #define CREATE_IN_PROCESS_TASK_RUNNER \
   base::ThreadPool::CreateSingleThreadTaskRunner
-#endif
 
 namespace content {
 
@@ -163,7 +159,6 @@ video_capture::mojom::VideoCaptureService& GetVideoCaptureService() {
     } else {
       // Launch in a utility service.
       VideoCaptureServiceLauncher::Launch(std::move(receiver));
-#if !BUILDFLAG(IS_ANDROID)
       // On Android, we do not use automatic service shutdown, because when
       // shutting down the service, we lose caching of the supported formats,
       // and re-querying these can take several seconds on certain Android
@@ -174,7 +169,6 @@ video_capture::mojom::VideoCaptureService& GetVideoCaptureService() {
               [](mojo::Remote<video_capture::mojom::VideoCaptureService>*
                      remote) { remote->reset(); },
               &remote));
-#endif  // !BUILDFLAG(IS_ANDROID)
 
       // Make sure the Remote is also reset in case of e.g. service crash so we
       // can restart it as needed.

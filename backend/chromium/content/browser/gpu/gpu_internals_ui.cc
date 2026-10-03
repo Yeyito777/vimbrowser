@@ -58,10 +58,6 @@
 #include "ui/gfx/gpu_extra_info.h"
 #include "ui/gl/gpu_switching_manager.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#include "ui/gfx/win/physical_size.h"
-#endif
 
 #if BUILDFLAG(IS_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
@@ -93,17 +89,9 @@ std::string GPUDeviceToString(const gpu::GPUInfo::GPUDevice& gpu) {
   if (!gpu.device_string.empty())
     base::StrAppend(&device, {" [", gpu.device_string, "]"});
   std::string rt = base::StringPrintf("VENDOR= %s, DEVICE=%s", vendor, device);
-#if BUILDFLAG(IS_WIN)
-  if (gpu.sub_sys_id)
-    rt += base::StringPrintf(", SUBSYS=0x%08x", gpu.sub_sys_id);
-#endif
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
   if (gpu.revision)
     rt += base::StringPrintf(", REV=%u", gpu.revision);
-#endif
-#if BUILDFLAG(IS_WIN)
-  rt += base::StringPrintf(", LUID={%ld,%lu}", gpu.luid.HighPart,
-                           gpu.luid.LowPart);
 #endif
   if (!gpu.driver_vendor.empty())
     base::StrAppend(&rt, {", DRIVER_VENDOR=", gpu.driver_vendor});
@@ -147,61 +135,6 @@ base::ListValue GetBasicGpuInfo(const gpu::GPUInfo& gpu_info,
       display::BuildGpuInfoEntry("Optimus", base::Value(gpu_info.optimus)));
   basic_info.Append(display::BuildGpuInfoEntry(
       "AMD switchable", base::Value(gpu_info.amd_switchable)));
-#if BUILDFLAG(IS_WIN)
-  basic_info.Append(
-      display::BuildGpuInfoEntry("Desktop compositing", "Aero Glass"));
-
-  basic_info.Append(display::BuildGpuInfoEntry(
-      "Direct composition",
-      base::Value(gpu_info.overlay_info.direct_composition)));
-  basic_info.Append(display::BuildGpuInfoEntry(
-      "Supports overlays",
-      base::Value(gpu_info.overlay_info.supports_overlays)));
-  basic_info.Append(display::BuildGpuInfoEntry(
-      "YUY2 overlay support",
-      gpu::OverlaySupportToString(gpu_info.overlay_info.yuy2_overlay_support)));
-  basic_info.Append(display::BuildGpuInfoEntry(
-      "NV12 overlay support",
-      gpu::OverlaySupportToString(gpu_info.overlay_info.nv12_overlay_support)));
-  basic_info.Append(display::BuildGpuInfoEntry(
-      "BGRA8 overlay support",
-      gpu::OverlaySupportToString(
-          gpu_info.overlay_info.bgra8_overlay_support)));
-  basic_info.Append(display::BuildGpuInfoEntry(
-      "RGB10A2 overlay support",
-      gpu::OverlaySupportToString(
-          gpu_info.overlay_info.rgb10a2_overlay_support)));
-  basic_info.Append(display::BuildGpuInfoEntry(
-      "P010 overlay support",
-      gpu::OverlaySupportToString(gpu_info.overlay_info.p010_overlay_support)));
-
-  std::vector<gfx::PhysicalDisplaySize> display_sizes =
-      gfx::GetPhysicalSizeForDisplays();
-  for (const auto& display_size : display_sizes) {
-    const int w = display_size.width_mm;
-    const int h = display_size.height_mm;
-    const double size_mm = sqrt(w * w + h * h);
-    const double size_inches = 0.0393701 * size_mm;
-    const double rounded_size_inches = floor(10.0 * size_inches) / 10.0;
-    std::string size_string = base::StringPrintf("%.1f\"", rounded_size_inches);
-    std::string description_string = base::StringPrintf(
-        "Diagonal Monitor Size of %s", display_size.display_name);
-    basic_info.Append(
-        display::BuildGpuInfoEntry(description_string, size_string));
-  }
-
-  basic_info.Append(display::BuildGpuInfoEntry(
-      "DirectML feature level",
-      gpu::DirectMLFeatureLevelToString(gpu_info.directml_feature_level)));
-
-  basic_info.Append(display::BuildGpuInfoEntry(
-      "Driver D3D12 feature level",
-      gpu::D3DFeatureLevelToString(gpu_info.d3d12_feature_level)));
-
-  basic_info.Append(display::BuildGpuInfoEntry(
-      "Driver Vulkan API version",
-      gpu::VulkanVersionToString(gpu_info.vulkan_version)));
-#endif
 
   basic_info.Append(display::BuildGpuInfoEntry("Pixel shader version",
                                                gpu_info.pixel_shader_version));
@@ -360,48 +293,6 @@ base::ListValue GetDisplayInfo() {
   return display_info;
 }
 
-#if BUILDFLAG(IS_WIN)
-const char* D3dFeatureLevelToString(D3D_FEATURE_LEVEL level) {
-  switch (level) {
-    case D3D_FEATURE_LEVEL_1_0_CORE:
-      return "Unknown";
-    case D3D_FEATURE_LEVEL_9_1:
-      return "9_1";
-    case D3D_FEATURE_LEVEL_9_2:
-      return "9_2";
-    case D3D_FEATURE_LEVEL_9_3:
-      return "9_3";
-    case D3D_FEATURE_LEVEL_10_0:
-      return "10_0";
-    case D3D_FEATURE_LEVEL_10_1:
-      return "10_1";
-    case D3D_FEATURE_LEVEL_11_0:
-      return "11_0";
-    case D3D_FEATURE_LEVEL_11_1:
-      return "11_1";
-    case D3D_FEATURE_LEVEL_12_0:
-      return "12_0";
-    case D3D_FEATURE_LEVEL_12_1:
-      return "12_1";
-    case D3D_FEATURE_LEVEL_12_2:
-      return "12_2";
-    default:
-      NOTREACHED();
-  }
-}
-
-const char* HasDiscreteGpuToString(gpu::HasDiscreteGpu has_discrete_gpu) {
-  switch (has_discrete_gpu) {
-    case gpu::HasDiscreteGpu::kUnknown:
-      return "unknown";
-    case gpu::HasDiscreteGpu::kNo:
-      return "no";
-    case gpu::HasDiscreteGpu::kYes:
-      return "yes";
-  }
-  NOTREACHED();
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 base::ListValue GetDevicePerfInfo() {
   base::ListValue list;
@@ -419,17 +310,6 @@ base::ListValue GetDevicePerfInfo() {
         "Hardware Concurrency",
         base::NumberToString(device_perf_info->hardware_concurrency)));
 
-#if BUILDFLAG(IS_WIN)
-    list.Append(display::BuildGpuInfoEntry(
-        "System Commit Limit (Gb)",
-        base::NumberToString(device_perf_info->system_commit_limit_mb / 1024)));
-    list.Append(display::BuildGpuInfoEntry(
-        "D3D11 Feature Level",
-        D3dFeatureLevelToString(device_perf_info->d3d11_feature_level)));
-    list.Append(display::BuildGpuInfoEntry(
-        "Has Discrete GPU",
-        HasDiscreteGpuToString(device_perf_info->has_discrete_gpu)));
-#endif  // BUILDFLAG(IS_WIN)
 
     if (device_perf_info->intel_gpu_generation !=
         gpu::IntelGpuGeneration::kNonIntel) {
@@ -712,33 +592,9 @@ base::DictValue GpuMessageHandler::GetClientInfo() {
   dict.Set("version", GetContentClient()->browser()->GetProduct());
   base::CommandLine::StringType command_line =
       base::CommandLine::ForCurrentProcess()->GetCommandLineString();
-#if BUILDFLAG(IS_WIN)
-  dict.Set("command_line", base::WideToUTF8(command_line));
-#else
   dict.Set("command_line", command_line);
-#endif
-#if BUILDFLAG(IS_WIN)
-  const base::win::OSInfo& os_info = *base::win::OSInfo::GetInstance();
-  const base::win::OSInfo::VersionNumber os_version = os_info.version_number();
-  base::win::OSInfo::VersionNumber kernel32_version =
-      os_info.Kernel32VersionNumber();
-  dict.Set(
-      "operating_system",
-      base::StringPrintf("%s %u.%u.%u.%u (kernel32 %u.%u.%u.%u)",
-                         base::SysInfo::OperatingSystemName(), os_version.major,
-                         os_version.minor, os_version.build, os_version.patch,
-                         kernel32_version.major, kernel32_version.minor,
-                         kernel32_version.build, kernel32_version.patch));
-#elif BUILDFLAG(IS_ANDROID)
-  dict.Set("operating_system",
-           base::StringPrintf("%s %s %s", base::SysInfo::OperatingSystemName(),
-                              base::SysInfo::OperatingSystemVersion(),
-                              base::SysInfo::GetAndroidBuildID()));
-
-#else
   dict.Set("operating_system", base::SysInfo::OperatingSystemName() + " " +
                                    base::SysInfo::OperatingSystemVersion());
-#endif
   dict.Set("angle_commit_id", angle::GetANGLECommitHash());
   dict.Set("graphics_backend",
            std::string("Skia/" STRINGIZE(SK_MILESTONE) " " SKIA_COMMIT_HASH));

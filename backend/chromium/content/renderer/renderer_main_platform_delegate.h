@@ -8,9 +8,6 @@
 #include "base/memory/raw_ref.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 #include "content/common/content_export.h"
 #include "content/public/common/main_function_params.h"
@@ -37,9 +34,6 @@ class CONTENT_EXPORT RendererMainPlatformDelegate {
   bool EnableSandbox();
 
  private:
-#if BUILDFLAG(IS_WIN)
-  const raw_ref<const MainFunctionParams> parameters_;
-#endif
 };
 
 }  // namespace content

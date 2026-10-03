@@ -37,20 +37,7 @@ class ChromeViewsDelegate : public views::ViewsDelegate {
       const std::string& window_name,
       gfx::Rect* bounds,
       ui::mojom::WindowShowState* show_state) const override;
-#if BUILDFLAG(IS_CHROMEOS)
-  ProcessMenuAcceleratorResult ProcessAcceleratorWhileMenuShowing(
-      const ui::Accelerator& accelerator) override;
-  bool ShouldCloseMenuIfMouseCaptureLost() const override;
-  std::unique_ptr<views::FrameView> CreateDefaultFrameView(
-      views::Widget* widget) override;
-#endif
 
-#if BUILDFLAG(IS_WIN)
-  HICON GetDefaultWindowIcon() const override;
-  HICON GetSmallWindowIcon() const override;
-  int GetAppbarAutohideEdges(HMONITOR monitor,
-                             base::OnceClosure callback) override;
-#endif
 
 #if BUILDFLAG(IS_LINUX)
   bool WindowManagerProvidesTitleBar(bool maximized) override;
@@ -69,22 +56,7 @@ class ChromeViewsDelegate : public views::ViewsDelegate {
   std::string GetApplicationName() override;
 
  private:
-#if BUILDFLAG(IS_WIN)
-  typedef std::map<HMONITOR, int> AppbarAutohideEdgeMap;
 
-  // Callback on main thread with the edges. |returned_edges| is the value that
-  // was returned from the call to GetAutohideEdges() that initiated the lookup.
-  void OnGotAppbarAutohideEdges(base::OnceClosure callback,
-                                HMONITOR monitor,
-                                int returned_edges,
-                                int edges);
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS)
-  // Called from GetSavedWindowPlacement() on ChromeOS to adjust the bounds.
-  void AdjustSavedWindowPlacementChromeOS(const views::Widget* widget,
-                                          gfx::Rect* bounds) const;
-#endif
 
   views::NativeWidget* CreateNativeWidget(
       views::Widget::InitParams* params,
@@ -103,14 +75,6 @@ class ChromeViewsDelegate : public views::ViewsDelegate {
   std::map<Profile*, std::unique_ptr<ScopedProfileKeepAlive>>
       profile_keep_alives_;
 
-#if BUILDFLAG(IS_WIN)
-  AppbarAutohideEdgeMap appbar_autohide_edge_map_;
-  // If true we're in the process of notifying a callback from
-  // GetAutohideEdges().start a new query.
-  bool in_autohide_edges_callback_ = false;
-
-  base::WeakPtrFactory<ChromeViewsDelegate> weak_factory_{this};
-#endif
 };
 
 #endif  // CHROME_BROWSER_UI_VIEWS_CHROME_VIEWS_DELEGATE_H_

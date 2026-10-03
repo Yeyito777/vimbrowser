@@ -44,12 +44,6 @@ const sync_pb::PreferenceSpecifics& GetSpecifics(const syncer::SyncData& pref) {
       return pref.GetSpecifics().preference();
     case syncer::PRIORITY_PREFERENCES:
       return pref.GetSpecifics().priority_preference().preference();
-#if BUILDFLAG(IS_CHROMEOS)
-    case syncer::OS_PREFERENCES:
-      return pref.GetSpecifics().os_preference().preference();
-    case syncer::OS_PRIORITY_PREFERENCES:
-      return pref.GetSpecifics().os_priority_preference().preference();
-#endif
     default:
       NOTREACHED();
   }
@@ -79,14 +73,7 @@ PrefModelAssociator::PrefModelAssociator(
       user_prefs_(user_prefs),
       dual_layer_user_prefs_(nullptr) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK(type_ == syncer::PREFERENCES ||
-         type_ == syncer::PRIORITY_PREFERENCES ||
-         type_ == syncer::OS_PREFERENCES ||
-         type_ == syncer::OS_PRIORITY_PREFERENCES);
-#else
   DCHECK(type_ == syncer::PREFERENCES || type_ == syncer::PRIORITY_PREFERENCES);
-#endif
   user_prefs_->AddObserver(this);
 }
 
@@ -122,12 +109,6 @@ sync_pb::PreferenceSpecifics* PrefModelAssociator::GetMutableSpecifics(
       return specifics->mutable_preference();
     case syncer::PRIORITY_PREFERENCES:
       return specifics->mutable_priority_preference()->mutable_preference();
-#if BUILDFLAG(IS_CHROMEOS)
-    case syncer::OS_PREFERENCES:
-      return specifics->mutable_os_preference()->mutable_preference();
-    case syncer::OS_PRIORITY_PREFERENCES:
-      return specifics->mutable_os_priority_preference()->mutable_preference();
-#endif
     default:
       NOTREACHED();
   }
@@ -405,15 +386,6 @@ base::WeakPtr<syncer::SyncableService> PrefModelAssociator::AsWeakPtr() {
 
 std::string PrefModelAssociator::GetClientTag(
     const syncer::EntityData& entity_data) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (type_ == syncer::OS_PREFERENCES) {
-    DCHECK(entity_data.specifics.has_os_preference());
-    return entity_data.specifics.os_preference().preference().name();
-  } else if (type_ == syncer::OS_PRIORITY_PREFERENCES) {
-    DCHECK(entity_data.specifics.has_os_priority_preference());
-    return entity_data.specifics.os_priority_preference().preference().name();
-  }
-#endif
   if (type_ == syncer::PREFERENCES) {
     DCHECK(entity_data.specifics.has_preference());
     return entity_data.specifics.preference().name();

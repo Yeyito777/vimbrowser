@@ -28,10 +28,6 @@ component("core") {
     "//services/network/public/cpp",
     "//url",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/network" ]
-  }
 }
 
 component("features") {

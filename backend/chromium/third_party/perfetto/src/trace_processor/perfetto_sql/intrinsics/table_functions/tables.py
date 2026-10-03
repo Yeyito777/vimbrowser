@@ -31,7 +31,6 @@ from src.trace_processor.tables.profiler_tables import STACK_PROFILE_CALLSITE_TA
 from src.trace_processor.tables.profiler_tables import STACK_PROFILE_FRAME_TABLE
 from src.trace_processor.tables.slice_tables import SLICE_TABLE
 from src.trace_processor.tables.track_tables import TRACK_TABLE
-from src.trace_processor.tables.winscope_tables import SURFACE_FLINGER_LAYERS_SNAPSHOT_TABLE
 
 TABLE_INFO_TABLE = Table(
     python_module=__file__,
@@ -123,53 +122,6 @@ CONNECTED_FLOW_TABLE = Table(
     ],
 )
 
-ARGS_WITH_DEFAULTS_TABLE = Table(
-    python_module=__file__,
-    class_name='WinscopeArgsWithDefaultsTable',
-    sql_name='__intrinsic_winscope_proto_to_args_with_defaults',
-    columns=[
-        C("table_name",
-          CppString(),
-          flags=ColumnFlag.HIDDEN,
-          cpp_access=CppAccess.READ_AND_HIGH_PERF_WRITE),
-        C(
-            'base64_proto_id',
-            CppUint32(),
-            cpp_access=CppAccess.READ_AND_LOW_PERF_WRITE,
-        ),
-        C(
-            'flat_key',
-            CppString(),
-            cpp_access=CppAccess.READ_AND_HIGH_PERF_WRITE,
-        ),
-        C(
-            'key',
-            CppString(),
-            cpp_access=CppAccess.READ_AND_HIGH_PERF_WRITE,
-        ),
-        C(
-            'int_value',
-            CppOptional(CppInt64()),
-            cpp_access=CppAccess.READ_AND_LOW_PERF_WRITE,
-        ),
-        C(
-            'string_value',
-            CppOptional(CppString()),
-            cpp_access=CppAccess.READ_AND_HIGH_PERF_WRITE,
-        ),
-        C(
-            'real_value',
-            CppOptional(CppDouble()),
-            cpp_access=CppAccess.READ_AND_LOW_PERF_WRITE,
-        ),
-        C(
-            'value_type',
-            CppString(),
-            cpp_access=CppAccess.READ_AND_HIGH_PERF_WRITE,
-        ),
-    ],
-)
-
 EXPERIMENTAL_ANNOTATED_CALLSTACK_TABLE = Table(
     python_module=__file__,
     class_name="ExperimentalAnnotatedCallstackTable",
@@ -227,17 +179,6 @@ DATAFRAME_QUERY_PLAN_DECODER_TABLE_TABLE = Table(
     ],
 )
 
-SURFACE_FLINGER_HIERARCHY_PATH_TABLE = Table(
-    python_module=__file__,
-    class_name="WinscopeSurfaceFlingerHierarchyPathTable",
-    sql_name="__intrinsic_winscope_surfaceflinger_hierarchy_path",
-    columns=[
-        C('snapshot_id', CppUint32()),
-        C('layer_id', CppUint32()),
-        C('ancestor_id', CppUint32()),
-    ],
-)
-
 EXPERIMENTAL_FLAT_SLICE_TABLE = Table(
     python_module=__file__,
     class_name='ExperimentalFlatSliceTable',
@@ -288,7 +229,6 @@ EXPERIMENTAL_FLAT_SLICE_TABLE = Table(
 # Keep this list sorted.
 ALL_TABLES = [
     ANCESTOR_STACK_PROFILE_CALLSITE_TABLE,
-    ARGS_WITH_DEFAULTS_TABLE,
     CONNECTED_FLOW_TABLE,
     DATAFRAME_QUERY_PLAN_DECODER_TABLE_TABLE,
     DFS_WEIGHT_BOUNDED_TABLE,
@@ -296,6 +236,5 @@ ALL_TABLES = [
     EXPERIMENTAL_FLAT_SLICE_TABLE,
     EXPERIMENTAL_SLICE_LAYOUT_TABLE,
     SLICE_SUBSET_TABLE,
-    SURFACE_FLINGER_HIERARCHY_PATH_TABLE,
     TABLE_INFO_TABLE,
 ]

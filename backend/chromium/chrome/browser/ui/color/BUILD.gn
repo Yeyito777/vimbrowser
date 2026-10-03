@@ -65,10 +65,6 @@ source_set("mixers") {
     "//ui/color:mixers",
   ]
 
-  if (is_chromeos) {
-    sources += [ "chromeos/native_chrome_color_mixer_chromeos.cc" ]
-  }
-
   if (is_linux) {
     sources += [ "linux/native_chrome_color_mixer_linux.cc" ]
   }
@@ -77,61 +73,33 @@ source_set("mixers") {
     sources += [ "mac/native_chrome_color_mixer_mac.cc" ]
   }
 
-  if (is_win) {
-    sources += [ "win/native_chrome_color_mixer_win.cc" ]
-    deps += [
-      "//chrome/browser:titlebar_config",
-      "//chrome/browser/win:mica_titlebar",
-      "//ui/base",
-      "//ui/color:accent_color_observer",
-      "//ui/native_theme",
-      "//ui/views",
-    ]
-  }
-
   if (is_chromeos || is_linux || is_mac || is_win) {
     deps += [ "//chrome/browser/themes" ]
   }
 }
 
-if (!is_android) {
-  executable("dump_colors") {
-    testonly = true
+executable("dump_colors") {
+  testonly = true
 
-    sources = [ "tools/dump_colors.cc" ]
+  sources = [ "tools/dump_colors.cc" ]
 
-    deps = [
-      ":color_headers",
-      ":mixers",
-      "//chrome/browser",
-      "//components/color",
-      "//ui/color:mixers",
+  deps = [
+    ":color_headers",
+    ":mixers",
+    "//chrome/browser",
+    "//components/color",
+    "//ui/color:mixers",
+  ]
+
+  if (is_mac) {
+    sources += [
+      "//chrome/app/chrome_crash_reporter_client.cc",
+      "//chrome/app/chrome_crash_reporter_client_mac.mm",
     ]
 
-    if (is_mac) {
-      sources += [
-        "//chrome/app/chrome_crash_reporter_client.cc",
-        "//chrome/app/chrome_crash_reporter_client_mac.mm",
-      ]
-
-      deps += [
-        "//chrome/app_shim",
-        "//components/upload_list",
-      ]
-    }
-
-    if (is_win) {
-      deps += [
-        "//chrome/chrome_elf:test_stubs",
-        "//components/crash/core/app:crash_export_thunks",
-      ]
-    }
-
-    if (is_chromeos) {
-      deps += [
-        "//chrome/services/sharing/nearby",
-        "//components/exo/wayland:ui_controls_protocol_stub",
-      ]
-    }
+    deps += [
+      "//chrome/app_shim",
+      "//components/upload_list",
+    ]
   }
 }

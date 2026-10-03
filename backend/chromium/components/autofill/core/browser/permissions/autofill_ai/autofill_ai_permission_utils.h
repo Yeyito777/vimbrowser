@@ -21,9 +21,7 @@ namespace syncer {
 class SyncService;
 }
 
-#if !BUILDFLAG(IS_FUCHSIA)
 class GoogleGroupsManager;
-#endif
 
 namespace autofill {
 
@@ -111,9 +109,7 @@ bool MayPerformAutofillAiAction(
     std::string* debug_message = nullptr);
 
 bool MayPerformAutofillAiAction(
-#if !BUILDFLAG(IS_FUCHSIA)
     const GoogleGroupsManager* google_groups_manager,
-#endif
     const PrefService* prefs,
     const EntityDataManager* edm,
     const signin::IdentityManager* identity_manager,
@@ -152,9 +148,7 @@ bool MayPerformAutofillAiAction(
 bool SetAutofillAiOptInStatus(AutofillClient& client,
                               AutofillAiOptInStatus opt_in_status);
 bool SetAutofillAiOptInStatus(
-#if !BUILDFLAG(IS_FUCHSIA)
     const GoogleGroupsManager* google_groups_manager,
-#endif
     PrefService* prefs,
     const EntityDataManager* edm,
     const signin::IdentityManager* identity_manager,

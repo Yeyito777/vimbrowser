@@ -85,12 +85,6 @@ GetAllSlotsAndHandlesForCert(CERTCertificate* nss_cert,
   crypto::AutoSECMODListReadLock lock_id;
   for (const SECMODModuleList* item = SECMOD_GetDefaultModuleList();
        item != nullptr; item = item->next) {
-#if BUILDFLAG(IS_CHROMEOS)
-    if (ignore_chaps_module && crypto::IsChapsModule(item->module)) {
-      // This check avoids unnecessary IPCs between NSS and Chaps.
-      continue;
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     // SAFETY: item->module->slots is an array with item->module->slotCount
     // elements. slotCount is a signed int so use checked_cast when creating

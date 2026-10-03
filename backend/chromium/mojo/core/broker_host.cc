@@ -20,9 +20,6 @@
 #include "mojo/core/ipcz_driver/envelope.h"
 #include "mojo/core/platform_handle_utils.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace mojo {
 namespace core {
@@ -31,19 +28,11 @@ BrokerHost::BrokerHost(base::Process client_process,
                        ConnectionParams connection_params,
                        const ProcessErrorCallback& process_error_callback)
     : process_error_callback_(process_error_callback)
-#if BUILDFLAG(IS_WIN)
-      ,
-      client_process_(std::move(client_process))
-#endif
 {
   base::CurrentThread::Get()->AddDestructionObserver(this);
   CHECK(connection_params.endpoint().is_valid());
   channel_ = Channel::Create(this, std::move(connection_params),
-#if BUILDFLAG(IS_WIN)
-                             client_process_
-#else
                              client_process
-#endif
                                      .IsValid()
                                  ? Channel::HandlePolicy::kAcceptHandles
                                  : Channel::HandlePolicy::kRejectHandles,
@@ -62,35 +51,15 @@ BrokerHost::~BrokerHost() {
 
 bool BrokerHost::PrepareHandlesForClient(
     std::vector<PlatformHandleInTransit>* handles) {
-#if BUILDFLAG(IS_WIN)
-  if (!client_process_.IsValid()) {
-    return false;
-  }
-  bool handles_ok = true;
-  for (auto& handle : *handles) {
-    if (!handle.TransferToProcess(client_process_.Duplicate())) {
-      handles_ok = false;
-    }
-  }
-  return handles_ok;
-#else
   return true;
-#endif
 }
 
 bool BrokerHost::SendChannel(PlatformHandle handle) {
   CHECK(handle.is_valid());
   CHECK(channel_);
 
-#if BUILDFLAG(IS_WIN)
-  InitData* data;
-  Channel::MessagePtr message =
-      CreateBrokerMessage(BrokerMessageType::INIT, 1, 0, &data);
-  data->pipe_name_length = 0;
-#else
   Channel::MessagePtr message =
       CreateBrokerMessage(BrokerMessageType::INIT, 1, nullptr);
-#endif
   std::vector<PlatformHandleInTransit> handles(1);
   handles[0] = PlatformHandleInTransit(std::move(handle));
 
@@ -105,20 +74,6 @@ bool BrokerHost::SendChannel(PlatformHandle handle) {
   return true;
 }
 
-#if BUILDFLAG(IS_WIN)
-
-void BrokerHost::SendNamedChannel(std::wstring_view pipe_name) {
-  InitData* data;
-  wchar_t* name_data;
-  Channel::MessagePtr message = CreateBrokerMessage(
-      BrokerMessageType::INIT, 0, sizeof(*name_data) * pipe_name.length(),
-      &data, reinterpret_cast<void**>(&name_data));
-  data->pipe_name_length = static_cast<uint32_t>(pipe_name.length());
-  std::ranges::copy(pipe_name, name_data);
-  channel_->Write(std::move(message));
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 void BrokerHost::OnBufferRequest(uint32_t num_bytes) {
   base::subtle::PlatformSharedMemoryRegion region =

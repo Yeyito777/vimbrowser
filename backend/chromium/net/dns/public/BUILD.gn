@@ -2,10 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 source_set("public") {
   # Due to circular dependencies, should only be depended on through //net.
   # Limit visibility to //net and other source_sets with the same access
@@ -43,7 +39,7 @@ source_set("public") {
     "util.h",
   ]
 
-  if (is_posix && !is_android) {
+  if (is_posix) {
     sources += [
       "resolv_reader.cc",
       "resolv_reader.h",
@@ -52,22 +48,9 @@ source_set("public") {
     ]
   }
 
-  if (is_win) {
-    sources += [
-      "win_dns_system_settings.cc",
-      "win_dns_system_settings.h",
-    ]
-  }
-
   deps = [ "//net:net_deps" ]
 
   public_deps = [ "//net:net_public_deps" ]
-}
-
-if (is_android) {
-  java_cpp_enum("secure_dns_mode_generated_enum") {
-    sources = [ "secure_dns_mode.h" ]
-  }
 }
 
 source_set("tests") {
@@ -78,12 +61,8 @@ source_set("tests") {
     "doh_provider_entry_unittest.cc",
   ]
 
-  if (is_posix && !is_android) {
+  if (is_posix) {
     sources += [ "resolv_reader_unittest.cc" ]
-  }
-
-  if (is_win) {
-    sources += [ "win_dns_system_settings_unittest.cc" ]
   }
 
   deps = [

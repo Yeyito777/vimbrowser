@@ -5,5 +5,5 @@
 import("//build/config/chromeos/ui_mode.gni")
 
 declare_args() {
-  enable_downgrade_processing = !is_android && !is_chromeos
+  enable_downgrade_processing = !is_chromeos
 }

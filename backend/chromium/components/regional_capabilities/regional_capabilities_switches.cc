@@ -10,13 +10,6 @@
 
 namespace switches {
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kRestrictLegacySearchEnginePromoOnFormFactors,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-
-BASE_FEATURE(kResolveRegionalCapabilitiesFromDevice,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 BASE_FEATURE(kTaiyaki, base::FEATURE_ENABLED_BY_DEFAULT);

@@ -60,23 +60,8 @@
 #include "ui/strings/grit/app_locale_settings.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "ui/base/resource/resource_bundle_android.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/gfx/platform_font_skia.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/threading/scoped_blocking_call.h"
-#include "ui/display/win/dpi.h"
-
-// To avoid conflicts with the macro from the Windows SDK...
-#undef LoadBitmap
-#endif
 
 namespace ui {
 
@@ -100,11 +85,7 @@ base::FilePath GetResourcesPakFilePath(const std::string& pak_name) {
     return path.AppendASCII(pak_name);
 
   // Return just the name of the pak file.
-#if BUILDFLAG(IS_WIN)
-  return base::FilePath(base::ASCIIToWide(pak_name));
-#else
   return base::FilePath(pak_name);
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 SkBitmap CreateEmptyBitmap() {
@@ -219,14 +200,9 @@ class ResourceBundle::BitmapImageSource : public gfx::ImageSkiaSource {
     bool found = rb_->LoadBitmap(resource_id_, &scale_factor,
                                  &image, &fell_back_to_1x);
     if (!found) {
-#if BUILDFLAG(IS_ANDROID)
-      // TODO(oshima): Android unit_tests runs at DSF=3 with 100P assets.
-      return gfx::ImageSkiaRep();
-#else
       DUMP_WILL_BE_NOTREACHED() << "Unable to load bitmap image with id "
                                 << resource_id_ << ", scale=" << scale;
       return gfx::ImageSkiaRep(CreateEmptyBitmap(), scale);
-#endif
     }
 
     // If the resource is in the package with kScaleFactorNone, it
@@ -275,20 +251,12 @@ ResourceBundle::SharedInstanceSwapperForTesting::
 ResourceBundle::SharedInstanceSwapperForTesting::
     SharedInstanceSwapperForTesting(ResourceBundle* instance) {
   instance_ = SwapSharedInstanceForTesting(instance  // IN-TEST
-#if BUILDFLAG(IS_ANDROID)
-                                           ,
-                                           {}, &android_locale_packs_
-#endif  // BUILDFLAG(IS_ANDROID)
   );
 }
 
 ResourceBundle::SharedInstanceSwapperForTesting::
     ~SharedInstanceSwapperForTesting() {
   SwapSharedInstanceForTesting(instance_  // IN-TEST
-#if BUILDFLAG(IS_ANDROID)
-                               ,
-                               android_locale_packs_, nullptr
-#endif  // BUILDFLAG(IS_ANDROID)
   );
 }
 
@@ -347,27 +315,12 @@ void ResourceBundle::CleanupSharedInstance() {
   delete g_shared_instance_;
   g_shared_instance_ = nullptr;
 
-#if BUILDFLAG(IS_ANDROID)
-  UnloadAndroidLocaleResources();
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 // static
 ResourceBundle* ResourceBundle::SwapSharedInstanceForTesting(
     ResourceBundle* instance
-#if BUILDFLAG(IS_ANDROID)
-    ,
-    const std::vector<ResourceBundle::FdAndRegion>& new_android_locale_packs,
-    std::vector<ResourceBundle::FdAndRegion>* old_android_locale_packs
-#endif  // BUILDFLAG(IS_ANDROID)
 ) {
-#if BUILDFLAG(IS_ANDROID)
-  const std::vector<ResourceBundle::FdAndRegion> tmp =
-      SwapAndroidGlobalsForTesting(new_android_locale_packs);  // IN-TEST
-  if (old_android_locale_packs != nullptr) {
-    *old_android_locale_packs = tmp;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   ResourceBundle* ret = g_shared_instance_;
   g_shared_instance_ = instance;
   return ret;
@@ -394,7 +347,6 @@ void ResourceBundle::LoadAdditionalLocaleDataWithPakFileRegion(
   locale_resources_data_.push_back(std::move(data_pack));
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 // static
 bool ResourceBundle::LocaleDataPakExists(std::string_view locale,
                                          Gender gender) {
@@ -403,49 +355,8 @@ bool ResourceBundle::LocaleDataPakExists(std::string_view locale,
   if (path.empty()) {
     return false;
   }
-#if BUILDFLAG(IS_WIN)
-  // https://crbug.com/40688225: Chrome sometimes fails to find standard .pak
-  // files. One theory is that this happens shortly after an update because
-  // scanners (e.g., A/V) are busy checking Chrome's files. Record the last
-  // found and the last not found pak file in crash keys to reveal what was
-  // searched for and/or found when there is a failure to load resources.
-  DWORD attributes;
-  {
-    base::ScopedBlockingCall scoped_blocking_call(
-        FROM_HERE, base::BlockingType::MAY_BLOCK);
-    attributes = ::GetFileAttributes(path.value().c_str());
-  }
-  if (attributes != INVALID_FILE_ATTRIBUTES) {
-    static auto* const found_path_key = base::debug::AllocateCrashKeyString(
-        "LocaleDataPakExists-found_path", base::debug::CrashKeySize::Size256);
-    base::debug::SetCrashKeyString(found_path_key, path.AsUTF8Unsafe());
-    static auto* const found_attrs_key = base::debug::AllocateCrashKeyString(
-        "LocaleDataPakExists-found_attrs", base::debug::CrashKeySize::Size32);
-    base::debug::SetCrashKeyString(found_attrs_key,
-                                   base::NumberToString(attributes));
-    // Report that the file exists as long as it isn't a directory.
-    return (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
-  }
-
-  // ERROR_FILE_NOT_FOUND means that path.BaseName() does not exist.
-  // PATH_NOT_FOUND means that path.DirName() does not exist.
-  // ERROR_ACCESS_DENIED could mean that the file has been marked for deletion.
-  // ERROR_FILE_CORRUPT has been known to happen, and is surely unrecoverable.
-  // Treat these and all other errors as if the file does not exist.
-  const auto error = ::GetLastError();
-  static auto* const not_found_path_key = base::debug::AllocateCrashKeyString(
-      "LocaleDataPakExists-not_found_path", base::debug::CrashKeySize::Size256);
-  base::debug::SetCrashKeyString(not_found_path_key, path.AsUTF8Unsafe());
-  static auto* const not_found_error_key = base::debug::AllocateCrashKeyString(
-      "LocaleDataPakExists-not_found_error", base::debug::CrashKeySize::Size32);
-  base::debug::SetCrashKeyString(not_found_error_key,
-                                 base::NumberToString(error));
-  return false;
-#else
   return base::PathExists(path);
-#endif
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 void ResourceBundle::AddDataPackFromPath(const base::FilePath& path,
                                          ResourceScaleFactor scale_factor) {
@@ -499,7 +410,6 @@ base::FilePath ResourceBundle::GetLocaleFilePath(std::string_view app_locale) {
 }
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 std::string ResourceBundle::LoadLocaleResources(const std::string& pref_locale,
                                                 bool crash_on_failure) {
   DCHECK_EQ(locale_resources_data_.size(), 0u) << "locale.pak already loaded";
@@ -564,7 +474,6 @@ std::string ResourceBundle::LoadLocaleResources(const std::string& pref_locale,
   loaded_locale_ = pref_locale;
   return app_locale;
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 void ResourceBundle::LoadTestResources(const base::FilePath& path,
                                        const base::FilePath& locale_path) {
@@ -595,9 +504,6 @@ void ResourceBundle::LoadTestResources(const base::FilePath& path,
 void ResourceBundle::UnloadLocaleResources() {
   locale_resources_data_.clear();
 
-#if BUILDFLAG(IS_ANDROID)
-  UnloadAndroidLocaleResources();
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void ResourceBundle::OverrideLocalePakForTest(const base::FilePath& pak_path) {
@@ -1039,38 +945,20 @@ void ResourceBundle::InitSharedInstance(Delegate* delegate) {
   DCHECK(g_shared_instance_ == nullptr) << "ResourceBundle initialized twice";
   g_shared_instance_ = new ResourceBundle(delegate);
   std::vector<ResourceScaleFactor> supported_scale_factors;
-#if BUILDFLAG(IS_IOS)
-  float internal_display_device_scale_factor =
-      display::GetInternalDisplayDeviceScaleFactor();
-  if (internal_display_device_scale_factor > 2.0) {
-    supported_scale_factors.push_back(k300Percent);
-  } else if (internal_display_device_scale_factor > 1.0) {
-    supported_scale_factors.push_back(k200Percent);
-  } else {
-    supported_scale_factors.push_back(k100Percent);
-  }
-#else
   // On platforms other than iOS, 100P is always a supported scale factor.
   supported_scale_factors.push_back(k100Percent);
 
 #if BUILDFLAG(ENABLE_HIDPI)
   supported_scale_factors.push_back(k200Percent);
 #endif
-#endif
   ui::SetSupportedResourceScaleFactors(supported_scale_factors);
 
 // Register Png Decoder for use by DataURIResourceProviderProxy for embedded
 // images.
-#if BUILDFLAG(IS_CHROMEOS)
-  SkCodecs::Register(SkPngRustDecoder::Decoder());
-#endif
 }
 
 void ResourceBundle::FreeImages() {
   images_.clear();
-#if BUILDFLAG(IS_CHROMEOS)
-  image_models_.clear();
-#endif
 }
 
 void ResourceBundle::LoadChromeResources() {
@@ -1128,23 +1016,8 @@ void ResourceBundle::AddResourceHandle(
 }
 
 void ResourceBundle::InitDefaultFontList() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // InitDefaultFontList() is called earlier than overriding the locale strings.
-  // So we call the |GetLocalizedStringImpl()| which doesn't set the flag
-  // |can_override_locale_string_resources_| to false. This is okay, because the
-  // font list doesn't need to be overridden by variations.
-  std::string font_family =
-      base::UTF16ToUTF8(GetLocalizedStringImpl(IDS_UI_FONT_FAMILY_CROS));
-  gfx::FontList::SetDefaultFontDescription(font_family);
-
-  // TODO(yukishiino): Remove SetDefaultFontDescription() once the migration to
-  // the font list is done.  We will no longer need SetDefaultFontDescription()
-  // after every client gets started using a FontList instead of a Font.
-  gfx::PlatformFontSkia::SetDefaultFontDescription(font_family);
-#else
   // Use a single default font as the default font list.
   gfx::FontList::SetDefaultFontDescription(std::string());
-#endif
 }
 
 gfx::ImageSkia ResourceBundle::CreateImageSkia(int resource_id) {
@@ -1155,15 +1028,7 @@ gfx::ImageSkia ResourceBundle::CreateImageSkia(int resource_id) {
     return ParseLottieAsStillImage(std::move(*data));
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const ResourceScaleFactor scale_factor_to_load = GetMaxResourceScaleFactor();
-#elif BUILDFLAG(IS_WIN)
-  const ResourceScaleFactor scale_factor_to_load =
-      display::win::GetDPIScale() > 1.25 ? GetMaxResourceScaleFactor()
-                                         : ui::k100Percent;
-#else
   const ResourceScaleFactor scale_factor_to_load = ui::k100Percent;
-#endif
 
   // TODO(oshima): Consider reading the image size from png IHDR chunk and
   // skip decoding here and remove #ifdef below.
@@ -1188,7 +1053,6 @@ bool ResourceBundle::LoadBitmap(const ResourceHandle& data_handle,
     return true;
   }
 
-#if !BUILDFLAG(IS_IOS)
   // iOS does not compile or use the JPEG codec.  On other platforms,
   // 99% of our assets are PNGs, however fallback to JPEG.
   SkBitmap jpeg_bitmap = gfx::JPEGCodec::Decode(*memory);
@@ -1197,7 +1061,6 @@ bool ResourceBundle::LoadBitmap(const ResourceHandle& data_handle,
     *fell_back_to_1x = false;
     return true;
   }
-#endif
 
   NOTREACHED() << "Unable to decode theme image resource " << resource_id;
 }
@@ -1247,15 +1110,6 @@ gfx::Image& ResourceBundle::GetEmptyImage() {
   return empty_image_;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-const ui::ImageModel& ResourceBundle::GetEmptyImageModel() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  if (empty_image_model_.IsEmpty())
-    empty_image_model_ = ui::ImageModel::FromImage(GetEmptyImage());
-  return empty_image_model_;
-}
-#endif
 
 std::u16string ResourceBundle::GetLocalizedStringImpl(int resource_id) const {
   std::u16string string;

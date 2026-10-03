@@ -441,9 +441,7 @@ class PA_COMPONENT_EXPORT(PARTITION_ALLOC) InSlotMetadata {
   }
 #endif  // PA_CONFIG(IN_SLOT_METADATA_CHECK_COOKIE)
 
-#if !PA_BUILDFLAG(IS_IOS)
   [[noreturn]]
-#endif  // !PA_BUILDFLAG(IS_IOS)
   PA_NOINLINE PA_NOT_TAIL_CALLED static void DoubleFreeOrCorruptionDetected(
       CountType count,
       UntaggedSlotStart slot_start,
@@ -571,12 +569,6 @@ static inline constexpr size_t kInSlotMetadataSizeAdjustment =
     0ul;
 #endif
 
-#if PA_BUILDFLAG(IS_IOS)
-// Once called, all detected double frees are just ignored.
-void SuppressDoubleFreeDetectedCrash();
-// Once called, all corruptions detected are just ignored.
-void SuppressCorruptionDetectedCrash();
-#endif  // PA_BUILDFLAG(IS_IOS)
 
 }  // namespace partition_alloc::internal
 

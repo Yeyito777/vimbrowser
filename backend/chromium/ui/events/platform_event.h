@@ -11,12 +11,8 @@
 // are typedefs for native event types on different platforms, but they're
 // slightly different and used in different places. They should be merged.
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 #include "base/apple/owned_objc.h"
-#elif BUILDFLAG(IS_ANDROID)
-#include "ui/events/android/platform_event_android.h"
 #endif
 
 namespace ui {
@@ -28,14 +24,8 @@ namespace ui {
 // Cross platform typedefs for native event types.
 #if BUILDFLAG(IS_OZONE)
 using PlatformEvent = ui::Event*;
-#elif BUILDFLAG(IS_WIN)
-using PlatformEvent = CHROME_MSG;
 #elif BUILDFLAG(IS_MAC)
 using PlatformEvent = base::apple::OwnedNSEvent;
-#elif BUILDFLAG(IS_IOS)
-using PlatformEvent = base::apple::OwnedUIEvent;
-#elif BUILDFLAG(IS_ANDROID)
-using PlatformEvent = ui::PlatformEventAndroid;
 #else
 using PlatformEvent = void*;
 #endif

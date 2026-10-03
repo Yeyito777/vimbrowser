@@ -26,10 +26,6 @@
 #include "third_party/perfetto/protos/perfetto/trace/track_event/chrome_active_processes.pbzero.h"
 #include "third_party/perfetto/protos/perfetto/trace/track_event/chrome_user_event.pbzero.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/application_status_listener.h"
-#include "base/trace_event/application_state_proto_android.h"
-#endif
 
 using TraceConfig = base::trace_event::TraceConfig;
 namespace pbzero_enums = perfetto::protos::chrome_enums::pbzero;
@@ -67,14 +63,6 @@ void CustomEventRecorder::EmitRecurringUpdates() {
                           }
                         });
   }
-#if BUILDFLAG(IS_ANDROID)
-  static const pbzero_enums::ProcessType process_type =
-      base::CurrentProcess::GetInstance().GetType({});
-  if (process_type == pbzero_enums::PROCESS_BROWSER) {
-    auto state = base::android::ApplicationStatusListener::GetState();
-    TRACE_APPLICATION_STATE(state);
-  }
-#endif
 }
 
 void CustomEventRecorder::OnStart(const perfetto::DataSourceBase::StartArgs&) {

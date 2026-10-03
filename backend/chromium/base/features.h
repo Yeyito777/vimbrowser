@@ -46,31 +46,9 @@ BASE_EXPORT BASE_DECLARE_FEATURE(kPartialLowEndModeOn3GbDevices);
 BASE_EXPORT BASE_DECLARE_FEATURE(kPartialLowEndModeOnMidRangeDevices);
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_EXPORT BASE_DECLARE_FEATURE(kBackgroundNotPerceptibleBinding);
-BASE_EXPORT BASE_DECLARE_FEATURE(
-    kPostPowerMonitorBroadcastReceiverInitToBackground);
-BASE_EXPORT BASE_DECLARE_FEATURE(kPostGetMyMemoryStateToBackground);
-BASE_EXPORT BASE_DECLARE_FEATURE(kRebindingChildServiceConnectionController);
-BASE_EXPORT BASE_DECLARE_FEATURE(kRebindServiceBatchApi);
-BASE_EXPORT BASE_DECLARE_FEATURE(kUseSharedRebindServiceConnection);
-
-BASE_EXPORT BASE_DECLARE_FEATURE(kBackgroundThreadPoolFieldTrial);
-BASE_EXPORT BASE_DECLARE_FEATURE_PARAM(int,
-                                       kBackgroundThreadPoolFieldTrialConfig);
-
-BASE_EXPORT BASE_DECLARE_FEATURE(kLibraryPrefetcherMadvise);
-BASE_EXPORT BASE_DECLARE_FEATURE_PARAM(size_t, kLibraryPrefetcherMadviseLength);
-BASE_EXPORT BASE_DECLARE_FEATURE_PARAM(bool, kLibraryPrefetcherMadviseFallback);
-
-#endif
 
 BASE_EXPORT BASE_DECLARE_FEATURE(kUseTerminationStatusMemoryExhaustion);
 
-#if BUILDFLAG(IS_WIN)
-BASE_EXPORT BASE_DECLARE_FEATURE(kUserBlockingAboveNormalPriority);
-BASE_EXPORT BASE_DECLARE_FEATURE(kRetryCreateFileMappingOnCommitLimit);
-#endif
 
 // Whether the ReducePPMs feature is enabled. Unlike
 // `FeatureList::IsEnabled(base::features::kReducePPMs)`, this can be called

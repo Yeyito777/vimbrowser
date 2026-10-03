@@ -12,29 +12,10 @@
 #include "build/build_config.h"
 #include "media/base/media_export.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "media/cdm/media_foundation_cdm_data.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace media {
 
 // Important events happened to the CDM.
-#if BUILDFLAG(IS_WIN)
-enum class CdmEvent {
-  // Significant (e.g. played >1 minute) successful playback happened using the
-  // CDM.
-  kSignificantPlayback,
-
-  // Error happened during playback using the CDM.
-  kPlaybackError,
-
-  // Error happened in the CDM except for Hardware Context Reset.
-  kCdmError,
-
-  // Hardware context reset happened.
-  kHardwareContextReset,
-};
-#endif  // BUILDFLAG(IS_WIN)
 
 class MEDIA_EXPORT CdmDocumentService {
  public:
@@ -52,10 +33,6 @@ class MEDIA_EXPORT CdmDocumentService {
       base::OnceCallback<void(uint32_t version,
                               const std::vector<uint8_t>& storage_id)>;
 
-#if BUILDFLAG(IS_WIN)
-  using GetMediaFoundationCdmDataCB =
-      base::OnceCallback<void(std::unique_ptr<MediaFoundationCdmData>)>;
-#endif  // BUILDFLAG(IS_WIN)
 
   // Allows authorized services to verify that the underlying platform is
   // trusted. An example of a trusted platform is a Chrome OS device in
@@ -82,22 +59,6 @@ class MEDIA_EXPORT CdmDocumentService {
   //                 version does not exist.
   virtual void GetStorageId(uint32_t version, StorageIdCB callback) = 0;
 
-#if BUILDFLAG(IS_WIN)
-  // Gets the Media Foundation cdm data for the origin associated with the CDM.
-  virtual void GetMediaFoundationCdmData(
-      GetMediaFoundationCdmDataCB callback) = 0;
-
-  // Sets the client token for the origin associated with the CDM. The token is
-  // set by the content during license exchange. The token is then saved in the
-  // Pref Service so that it can be reused next time the CDM request a new
-  // license for that origin.
-  virtual void SetCdmClientToken(const std::vector<uint8_t>& client_token) = 0;
-
-  // Reports a CDM event. This can be used for metrics reporting or fallback
-  // logic, e.g. disable the CDM in the current robustness level. For error
-  // events, the `hresult` provides more details about the error.
-  virtual void OnCdmEvent(CdmEvent event, HRESULT hresult) = 0;
-#endif  // BUILDFLAG(IS_WIN)
 };
 
 }  // namespace media

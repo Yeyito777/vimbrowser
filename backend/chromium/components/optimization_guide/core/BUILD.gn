@@ -4,9 +4,6 @@
 
 import("//mojo/public/tools/bindings/mojom.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
 import("//components/optimization_guide/features.gni")
 
 # bloomfilter is isolated because of the allowlisted murmurhash3 dep.
@@ -361,17 +358,6 @@ source_set("ondevice") {
       "//third_party/re2",
       "//third_party/tflite:buildflags",
     ]
-    if (is_android) {
-      sources += [
-        "model_execution/android/model_broker_android.cc",
-        "model_execution/android/model_broker_android.h",
-      ]
-      deps += [
-        "//services/on_device_model:on_device_model_service",
-        "//services/on_device_model/android",
-        "//services/on_device_model/android:mojom",
-      ]
-    }
   }
 }
 
@@ -625,26 +611,6 @@ group("test_support") {
   }
 }
 
-if (is_ios) {
-  source_set("eg_test_support+eg2") {
-    testonly = true
-    sources = [
-      "optimization_guide_constants.cc",
-      "optimization_guide_constants.h",
-      "optimization_guide_enums.h",
-      "optimization_guide_switches.cc",
-      "optimization_guide_switches.h",
-    ]
-    public_deps = [ ":hints_test_support" ]
-    deps = [
-      "//base",
-      "//components/optimization_guide/proto:optimization_guide_proto",
-      "//google_apis",
-      "//url",
-    ]
-  }
-}
-
 source_set("filters_unit_tests") {
   testonly = true
   sources = [
@@ -809,13 +775,6 @@ source_set("model_execution_unit_tests") {
       "//services/on_device_model/public/mojom",
       "//third_party/tflite:buildflags",
     ]
-    if (is_android) {
-      sources += [ "model_execution/android/model_broker_android_unittest.cc" ]
-      deps += [
-        "//services/on_device_model/android",
-        "//services/on_device_model/android:test_support",
-      ]
-    }
   }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
@@ -869,13 +828,6 @@ bundle_data("unit_tests_bundle_data") {
   ]
   outputs = [ "{{bundle_resources_dir}}/" +
               "{{source_root_relative_dir}}/{{source_file_part}}" ]
-}
-
-if (is_android) {
-  java_cpp_enum("optimization_guide_generated_enums") {
-    sources = [ "hints/optimization_guide_decision.h" ]
-    visibility = [ "//chrome/browser/optimization_guide/android:*" ]
-  }
 }
 
 if (is_mac && build_with_internal_optimization_guide) {

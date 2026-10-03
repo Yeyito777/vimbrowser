@@ -13,4 +13,4 @@ declare_args() {
 enable_dice_support = is_linux || is_mac || is_win || is_fuchsia
 
 # Mirror is enabled and other account consistency mechanisms are not available.
-enable_mirror = is_android || is_chromeos || is_ios
+enable_mirror = is_chromeos || is_ios

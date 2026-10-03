@@ -138,12 +138,6 @@ PermissionRequest::GetDialogAnnotatedMessageText(
                        ? IDS_MOTION_AND_LIGHT_SENSORS_INFOBAR_TEXT
                        : IDS_MOTION_SENSORS_INFOBAR_TEXT;
       break;
-#if BUILDFLAG(IS_ANDROID)
-    case RequestType::kProtectedMediaIdentifier:
-      message_id =
-          IDS_PROTECTED_MEDIA_IDENTIFIER_PER_ORIGIN_PROVISIONING_INFOBAR_TEXT;
-      break;
-#endif  // BUILDFLAG(IS_ANDROID)
     case RequestType::kStorageAccess:
       // The SA prompt does not currently bold any part of its message.
       return AnnotatedMessageText(
@@ -440,11 +434,6 @@ std::u16string PermissionRequest::GetMessageTextFragment() const {
     case RequestType::kRegisterProtocolHandler:
       // Handled by an override in `RegisterProtocolHandlerPermissionRequest`.
       NOTREACHED();
-#if BUILDFLAG(IS_CHROMEOS)
-    case RequestType::kSmartCard:
-      // Handled by an override in `SmartCardPermissionRequest`.
-      NOTREACHED();
-#endif
     case RequestType::kStorageAccess:
     case RequestType::kTopLevelStorageAccess:
       message_id = IDS_STORAGE_ACCESS_PERMISSION_FRAGMENT;

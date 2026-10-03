@@ -18,20 +18,11 @@ static_library("storage_selector") {
     "//components/reporting/util:status",
   ]
   sources = [ "storage_selector.h" ]
-  if (is_chromeos) {
-    sources += [ "storage_selector_chromeos.cc" ]
-    deps = [
-      "//chromeos/dbus/missive",
-      "//components/reporting/proto:interface_proto",
-    ]
-  } else {
-    sources += [ "storage_selector.cc" ]
-    deps = [
-      "//components/reporting/compression:compression_module",
-      "//components/reporting/encryption:encryption_module",
-      "//components/reporting/storage:storage_module",
-    ]
-    public_deps +=
-        [ "//components/reporting/storage:storage_uploader_interface" ]
-  }
+  sources += [ "storage_selector.cc" ]
+  deps = [
+    "//components/reporting/compression:compression_module",
+    "//components/reporting/encryption:encryption_module",
+    "//components/reporting/storage:storage_module",
+  ]
+  public_deps += [ "//components/reporting/storage:storage_uploader_interface" ]
 }

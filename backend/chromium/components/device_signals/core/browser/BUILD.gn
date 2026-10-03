@@ -52,24 +52,15 @@ static_library("browser") {
     "//net",
   ]
 
-  if (!is_ios) {
-    public += [ "browser_utils.h" ]
-    sources += [ "browser_utils.cc" ]
+  public += [ "browser_utils.h" ]
+  sources += [ "browser_utils.cc" ]
 
-    deps += [
-      "//components/policy/core/browser",
-      "//content/public/browser",
-    ]
-  }
+  deps += [
+    "//components/policy/core/browser",
+    "//content/public/browser",
+  ]
 
-  if (is_android) {
-    public += [ "android/android_os_signals_collector.h" ]
-    sources += [ "android/android_os_signals_collector.cc" ]
-    deps += [
-      "//components/safe_browsing/android:safe_browsing_api_handler",
-      "//components/safe_browsing/android:safe_browsing_api_handler_util",
-    ]
-  } else if (is_win || is_mac || is_linux) {
+  if (is_win || is_mac || is_linux) {
     public += [
       "agent_signals_collector.h",
       "crowdstrike_client.h",
@@ -83,26 +74,12 @@ static_library("browser") {
     deps += [ "//services/data_decoder/public/cpp" ]
   }
 
-  if (is_win) {
-    sources += [ "win/browser_utils_win.cc" ]
-
-    public_deps += [ "//components/device_signals/core/common/win" ]
-  }
-
   if (is_mac) {
     sources += [ "mac/browser_utils_mac.cc" ]
   }
 
   if (is_linux) {
     sources += [ "linux/browser_utils_linux.cc" ]
-  }
-
-  if (is_chromeos) {
-    sources += [ "chromeos/browser_utils_chromeos.cc" ]
-  }
-
-  if (is_android) {
-    sources += [ "android/browser_utils_android.cc" ]
   }
 }
 
@@ -157,15 +134,6 @@ source_set("unit_tests") {
     "//testing/gtest",
   ]
 
-  if (is_android) {
-    sources += [ "android/android_os_signals_collector_unittest.cc" ]
-    deps += [
-      "//components/safe_browsing/android:safe_browsing_api_handler",
-      "//components/safe_browsing/android:safe_browsing_api_handler_util",
-      "//content/test:test_support",
-    ]
-  }
-
   if (is_win || is_mac || is_linux) {
     sources += [
       "agent_signals_collector_unittest.cc",
@@ -178,15 +146,7 @@ source_set("unit_tests") {
     ]
   }
 
-  if (is_win) {
-    deps += [ "//components/device_signals/core/browser/win:unit_tests" ]
-  }
-
   if (is_mac) {
     deps += [ "//components/device_signals/core/browser/mac:unit_tests" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//components/device_signals/core/browser/ash:unit_tests" ]
   }
 }

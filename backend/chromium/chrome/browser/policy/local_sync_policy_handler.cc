@@ -32,12 +32,7 @@ void LocalSyncPolicyHandler::ApplyPolicySettings(const PolicyMap& policies,
   if (value) {
     string_value = value->GetString();
     base::FilePath::StringType expanded_value =
-#if BUILDFLAG(IS_WIN)
-        policy::path_parser::ExpandPathVariables(
-            base::UTF8ToWide(string_value));
-#else
         policy::path_parser::ExpandPathVariables(string_value);
-#endif
     base::FilePath expanded_path(expanded_value);
     prefs->SetValue(syncer::prefs::kLocalSyncBackendDir,
                     base::Value(expanded_path.AsUTF8Unsafe()));

@@ -93,9 +93,6 @@ const char kTabResumptionClassifierUmaName[] = "TabResumptionClassifier";
 const char kURLVisitResumptionRankerKey[] = "url_visit_resumption_ranker";
 const char kURLVisitResumptionRankerUmaName[] = "URLVisitResumptionRanker";
 
-const char kIosModuleRankerKey[] = "ios_module_ranker";
-const char kIosModuleRankerUmaName[] = "IosModuleRanker";
-
 const char kAndroidHomeModuleRankerKey[] = "android_home_module_ranker";
 const char kAndroidHomeModuleRankerUmaName[] = "AndroidHomeModuleRanker";
 
@@ -111,10 +108,6 @@ const char kComposePromotionKey[] = "compose_promotion";
 const char kComposePromotionUmaName[] = "ComposePromotion";
 
 const char kEphemeralHomeModuleBackendKey[] = "ephemeral_home_module_backend";
-
-const char kIosDefaultBrowserPromoKey[] = "ios_default_browser_promo";
-const char kIosDefaultBrowserPromoUmaName[] = "IosDefaultBrowserPromo";
-const char kIosDefaultBrowserPromoShowLabel[] = "ShowIosDefaultBrowserPromo";
 
 // The key is used to decide whether the user would use FedCM.
 const char kFedCmUserKey[] = "fedcm_user";

@@ -4,7 +4,7 @@
 
 import("//third_party/protobuf/proto_library.gni")
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 proto_library("lcp_critical_path_predictor_proto") {
   sources = [ "lcp_critical_path_predictor.proto" ]

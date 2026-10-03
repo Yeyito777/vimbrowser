@@ -23,11 +23,7 @@ namespace web_app {
 namespace {
 
 bool IsOsUninstallationSupported() {
-#if BUILDFLAG(IS_WIN)
-  return true;
-#else
   return false;
-#endif
 }
 
 bool ShouldRegisterOsUninstall(

@@ -30,9 +30,6 @@
 #include <compare>
 #endif
 
-#if PA_BUILDFLAG(IS_WIN)
-#include "partition_alloc/partition_alloc_base/win/win_handle_types.h"
-#endif
 
 #if PA_BUILDFLAG(USE_PARTITION_ALLOC)
 #include "partition_alloc/partition_alloc_base/check.h"
@@ -195,25 +192,6 @@ struct IsSupportedType {
       // Specific disallowed types.
       !partition_alloc::internal::base::kSameAsAny<
           T,
-#if PA_BUILDFLAG(IS_WIN)
-// raw_ptr<HWND__> is unsafe at runtime - if the handle happens to also
-// represent a valid pointer into a PartitionAlloc-managed region then it can
-// lead to manipulating random memory when treating it as BackupRefPtr
-// ref-count.  See also https://crbug.com/1262017.
-//
-// TODO(crbug.com/40799223): Cover other handle types like HANDLE,
-// HLOCAL, HINTERNET, or HDEVINFO.  Maybe we should avoid using raw_ptr<T> when
-// T=void (as is the case in these handle types).  OTOH, explicit,
-// non-template-based raw_ptr<void> should be allowed.  Maybe this can be solved
-// by having 2 traits: IsPointeeAlwaysSafe (to be used in templates) and
-// IsPointeeUsuallySafe (to be used in the static_assert in raw_ptr).  The
-// upside of this approach is that it will safely handle base::Bind closing over
-// HANDLE.  The downside of this approach is that base::Bind closing over a
-// void* pointer will not get UaF protection.
-#define PA_WINDOWS_HANDLE_TYPE(name) name##__,
-#include "partition_alloc/partition_alloc_base/win/win_handle_types_list.inc"
-#undef PA_WINDOWS_HANDLE_TYPE
-#endif
           // Performance-sensitive types identified via sampling profiler data;
           // see crbug.com/1287151
           base::internal::DelayTimerBase,

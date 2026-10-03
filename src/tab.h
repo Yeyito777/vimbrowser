@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <string>
 
@@ -25,6 +26,11 @@ struct Tab {
   // Trusted automation can create user-gesture popups too. Keep them in the
   // background until this tab is explicitly activated again by the user/IPC.
   bool automation_popup_background = false;
+  // Transient IPC activity only: never persisted or granted to restored tabs.
+  std::chrono::steady_clock::time_point activity_deadline{};
+  bool activity_applied = false;
+  bool activity_timer_pending = false;
+  uint64_t activity_timer_generation = 0;
   bool audible = false;
   bool focused_editable_node = false;
   std::string focused_editable_purpose = "text";

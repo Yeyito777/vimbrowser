@@ -14,14 +14,7 @@
 #include "media/mojo/mojom/speech_recognizer.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "base/feature_list.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) && defined(ARCH_CPU_X86_FAMILY)
 #include "base/cpu.h"
@@ -31,13 +24,6 @@ namespace speech {
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool IsSupportedChromeOS() {
-  // Some Chrome OS devices do not support on-device speech.
-  return base::FeatureList::IsEnabled(
-      ash::features::kOnDeviceSpeechRecognition);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_LINUX)
 bool IsSupportedLinux() {
@@ -53,17 +39,6 @@ bool IsSupportedLinux() {
 }
 #endif  // BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_WIN)
-bool IsSupportedWin() {
-#if defined(ARCH_CPU_ARM64)
-  // The Speech On-Device API (SODA) component does not support Windows on
-  // arm64.
-  return false;
-#else
-  return true;
-#endif  // defined(ARCH_CPU_ARM64)
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -71,12 +46,8 @@ bool IsOnDeviceSpeechRecognitionSupported() {
   // TODO(crbug.com/446260680): Disable on-device speech recognition if the
   // OnDeviceWebSpeechGeminiNano feature flag is enabled and the device doesn't
   // support Gemini Nano.
-#if BUILDFLAG(IS_CHROMEOS)
-  return IsSupportedChromeOS();
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   return IsSupportedLinux();
-#elif BUILDFLAG(IS_WIN)
-  return IsSupportedWin();
 #else
   return true;
 #endif

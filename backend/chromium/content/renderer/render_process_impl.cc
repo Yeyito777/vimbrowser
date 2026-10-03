@@ -6,12 +6,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include <mlang.h>
-#include <objidl.h>
-#endif
 
 #include <stddef.h>
 
@@ -44,9 +38,6 @@
 #include "third_party/blink/public/web/web_frame.h"
 #include "v8/include/v8-initialization.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/win_util.h"
-#endif
 
 namespace {
 
@@ -140,10 +131,6 @@ RenderProcessImpl::RenderProcessImpl()
 
     SetV8FlagIfOverridden(features::kV8VmFuture, "--future", "--no-future");
 
-#if BUILDFLAG(IS_ANDROID)
-    SetV8FlagIfOverridden(features::kV8AndroidDesktopHighEndConfig,
-                          "--high-end-android", "--no-high-end-android");
-#endif
 
     SetV8FlagIfOverridden(features::kWebAssemblyBaseline, "--liftoff",
                           "--no-liftoff");
@@ -178,7 +165,6 @@ RenderProcessImpl::RenderProcessImpl()
   bool enable_shared_array_buffer_unconditionally =
       base::FeatureList::IsEnabled(features::kSharedArrayBuffer);
 
-#if !BUILDFLAG(IS_ANDROID)
   // Bypass the SAB restriction when enabled by Enterprise Policy.
   if (!enable_shared_array_buffer_unconditionally &&
       base::CommandLine::ForCurrentProcess()->HasSwitch(
@@ -187,7 +173,6 @@ RenderProcessImpl::RenderProcessImpl()
     blink::WebRuntimeFeatures::EnableSharedArrayBufferUnrestrictedAccessAllowed(
         true);
   }
-#endif
 
   // Do not conditionally set the V8 SharedArrayBuffer feature flag if V8
   // feature flag overrides are disallowed.

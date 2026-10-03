@@ -128,9 +128,6 @@ void CalculateAndFormatExtensionDirectorySize(
 }
 
 base::FilePath ResolveHomeDirectory(const base::FilePath& path) {
-#if BUILDFLAG(IS_WIN)
-  return path;
-#else
   const auto& value = path.value();
   // Look for a path starting with the "~" character. It must be alone or
   // followed by a separator.
@@ -145,7 +142,6 @@ base::FilePath ResolveHomeDirectory(const base::FilePath& path) {
     result = result.Append(value.substr(2));
   }
   return result;
-#endif
 }
 
 }  // namespace extensions::path_util

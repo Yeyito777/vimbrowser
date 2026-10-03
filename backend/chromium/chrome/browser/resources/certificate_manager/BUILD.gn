@@ -47,19 +47,6 @@ build_webui("build") {
   icons_html_files = [ "certificate_manager_icons.html" ]
   css_files = [ "certificate_manager_style.css" ]
 
-  if (is_chromeos) {
-    web_component_files += [
-      "certificate_provisioning_details_dialog.ts",
-      "certificate_provisioning_entry.ts",
-      "certificate_provisioning_list.ts",
-    ]
-    css_files += [ "certificate_shared.css" ]
-    ts_files += [
-      "certificate_manager_types.ts",
-      "certificate_provisioning_browser_proxy.ts",
-    ]
-  }
-
   ts_definitions = [
     "//tools/typescript/definitions/chrome_send.d.ts",
     "//tools/typescript/definitions/metrics_private.d.ts",

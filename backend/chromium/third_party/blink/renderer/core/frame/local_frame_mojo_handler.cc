@@ -186,7 +186,8 @@ mojom::blink::VimbrowserElementActivationResult ResolveInspectedElement(
       &element->GetDocument() != document) {
     return Result::kStaleNode;
   }
-  if (element->IsDisabledFormControl()) {
+  if (element->IsDisabledFormControl() ||
+      element->FastGetAttribute(html_names::kAriaDisabledAttr) == "true") {
     return Result::kTargetDisabled;
   }
 
@@ -892,14 +893,32 @@ void LocalFrameMojoHandler::VimbrowserInspectControls(
   click_hints::CollectCandidates(*frame_, candidates,
                                  click_hints::CandidateGroup::kClickables);
 
+  // Hint candidates are viewport/click oriented. Form inspection must also
+  // enumerate disabled native controls and editable recipient widgets, without
+  // activating anything or substituting the first matching DOM node.
+  HeapVector<Member<Element>> elements;
+  for (const HintCandidate& candidate : candidates) {
+    if (candidate.element) elements.push_back(candidate.element.Get());
+  }
+  DummyExceptionStateForTesting exception_state;
+  StaticElementList* form_controls = document->QuerySelectorAll(AtomicString(
+      "input,button,select,textarea,[contenteditable]:not([contenteditable=false]),"
+      "[role=combobox],[role=textbox],[role=searchbox],[role=button],[role=option]"),
+      exception_state);
+  if (form_controls) {
+    for (unsigned i = 0; i < form_controls->length(); ++i)
+      elements.push_back(form_controls->item(i));
+  }
+
   Vector<mojom::blink::VimbrowserControlInfoPtr> controls;
   HashSet<DOMNodeId> seen;
   uint32_t match_count = 0;
   bool truncated = false;
-  for (const HintCandidate& candidate : candidates) {
-    Element* element = candidate.element.Get();
+  for (const auto& member : elements) {
+    Element* element = member.Get();
     if (!element || !element->isConnected() ||
-        &element->GetDocument() != document) {
+        &element->GetDocument() != document || !element->GetLayoutObject() ||
+        !HasStrictlyVisibleStyle(*element)) {
       continue;
     }
     const DOMNodeId node_id = DOMNodeIds::IdForNode(element);
@@ -937,7 +956,8 @@ void LocalFrameMojoHandler::VimbrowserInspectControls(
     info->id = BoundedControlText(element->GetIdAttribute(), 256);
     info->text = text;
     info->context = context;
-    info->disabled = element->IsDisabledFormControl();
+    info->disabled = element->IsDisabledFormControl() ||
+        element->FastGetAttribute(html_names::kAriaDisabledAttr) == "true";
     controls.push_back(std::move(info));
   }
   std::move(callback).Run(Result::kSuccess, std::move(controls), match_count,
@@ -1010,6 +1030,7 @@ void LocalFrameMojoHandler::VimbrowserActivatePreparedElement(
     int32_t dom_node_id,
     const gfx::PointF& expected_point,
     const base::UnguessableToken& activation_nonce,
+    bool grant_user_activation,
     VimbrowserActivatePreparedElementCallback callback) {
   using Result = mojom::blink::VimbrowserElementActivationResult;
   Element* element = nullptr;
@@ -1022,6 +1043,15 @@ void LocalFrameMojoHandler::VimbrowserActivatePreparedElement(
   }
 
   Document* document = GetDocument();
+  if (grant_user_activation) {
+    // This browser-process-only operation is reached only after a short-lived,
+    // one-shot exact-node capability has been consumed and the element has
+    // passed renderer, ancestor, and compositor hit testing. Grant activation
+    // for this single validated native action instead of weakening Blink's
+    // popup policy for script-generated clicks in general.
+    frame_->NotifyUserActivation(
+        mojom::blink::UserActivationNotificationType::kInteraction);
+  }
   ScopedVimbrowserFileActivationNonce nonce_scope(*document, activation_nonce);
   const gfx::RectF exact_point_rect(expected_point.x() - 0.5f,
                                     expected_point.y() - 0.5f, 1.0f, 1.0f);

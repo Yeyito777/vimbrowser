@@ -46,10 +46,6 @@ source_set("browser") {
     "//services/network/public/cpp",
     "//services/network/public/cpp:cpp_base",
   ]
-
-  if (is_win) {
-    deps += [ "//chrome/browser/enterprise/connectors/device_trust/key_management/core/network:win_key_network_delegate" ]
-  }
 }
 
 source_set("test_support") {

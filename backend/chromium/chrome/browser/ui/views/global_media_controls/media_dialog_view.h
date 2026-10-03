@@ -11,7 +11,6 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
-#include "chrome/browser/ui/global_media_controls/live_translate_combobox_model.h"
 #include "components/global_media_controls/public/constants.h"
 #include "components/global_media_controls/public/media_dialog_delegate.h"
 #include "components/global_media_controls/public/media_item_ui_observer.h"
@@ -37,7 +36,6 @@ class MediaItemUIUpdatedView;
 }  // namespace global_media_controls
 
 namespace views {
-class Combobox;
 class Label;
 class Separator;
 class ToggleButton;
@@ -100,8 +98,6 @@ class MediaDialogView : public views::BubbleDialogDelegateView,
   void AddObserver(MediaDialogViewObserver* observer);
   void RemoveObserver(MediaDialogViewObserver* observer);
 
-  void TargetLanguageChanged();
-
   const std::map<
       const std::string,
       raw_ptr<global_media_controls::MediaItemUIUpdatedView, CtnExperimental>>&
@@ -135,13 +131,11 @@ class MediaDialogView : public views::BubbleDialogDelegateView,
 
   // views::Button::PressedCallback
   void OnLiveCaptionButtonPressed();
-  void OnLiveTranslateButtonPressed();
   void OnSettingsButtonPressed();
 
   void UpdateBubbleSize();
 
   void OnLiveCaptionEnabledChanged();
-  void OnLiveTranslateEnabledChanged();
 
   // SodaInstaller::Observer overrides:
   void OnSodaInstalled(speech::LanguageCode language_code) override;
@@ -151,7 +145,6 @@ class MediaDialogView : public views::BubbleDialogDelegateView,
                       int progress) override;
 
   void InitializeLiveCaptionSection();
-  void InitializeLiveTranslateSection();
   void InitializeCaptionSettingsSection();
   void SetLiveCaptionTitle(const std::u16string& new_text);
 
@@ -182,15 +175,6 @@ class MediaDialogView : public views::BubbleDialogDelegateView,
   raw_ptr<views::ToggleButton> live_caption_button_ = nullptr;
 
   raw_ptr<views::Separator> separator_ = nullptr;
-  raw_ptr<views::View> live_translate_container_ = nullptr;
-  raw_ptr<views::View> live_translate_label_wrapper_ = nullptr;
-  raw_ptr<views::Label> live_translate_title_ = nullptr;
-  raw_ptr<views::ToggleButton> live_translate_button_ = nullptr;
-  raw_ptr<views::View> live_translate_settings_container_ = nullptr;
-
-  raw_ptr<views::View> target_language_container_ = nullptr;
-  raw_ptr<views::Combobox> target_language_combobox_ = nullptr;
-
   raw_ptr<RichHoverButton> caption_settings_button_ = nullptr;
   raw_ptr<views::View> caption_settings_container_ = nullptr;
 

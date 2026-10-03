@@ -71,9 +71,6 @@
 #include "sandbox/linux/services/credentials.h"
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 #include "extensions/common/constants.h"
@@ -94,9 +91,6 @@
 #endif
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/common/media/chrome_media_drm_bridge_client.h"
-#endif
 
 namespace {
 
@@ -195,19 +189,12 @@ static const char* const kChromeStandardURLSchemes[] = {
         // BUILDFLAG(IS_CHROMEOS)
     chrome::kChromeNativeScheme,        chrome::kChromeSearchScheme,
     dom_distiller::kDomDistillerScheme,
-#if BUILDFLAG(IS_ANDROID)
-    content::kAndroidAppScheme,
-#endif
 };
 
 void ChromeContentClient::AddAdditionalSchemes(Schemes* schemes) {
   for (auto* standard_scheme : kChromeStandardURLSchemes)
     schemes->standard_schemes.push_back(standard_scheme);
 
-#if BUILDFLAG(IS_ANDROID)
-  schemes->referrer_schemes.push_back(content::kAndroidAppScheme);
-  schemes->referrer_schemes.push_back(dom_distiller::kDomDistillerScheme);
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
   schemes->extension_schemes.push_back(extensions::kExtensionScheme);
@@ -255,12 +242,6 @@ void ChromeContentClient::AddAdditionalSchemes(Schemes* schemes) {
   schemes->csp_bypassing_schemes.push_back(extensions::kExtensionScheme);
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  schemes->predefined_handler_schemes.emplace_back(
-      url::kMailToScheme, chrome::kChromeOSDefaultMailtoHandler);
-  schemes->predefined_handler_schemes.emplace_back(
-      url::kWebcalScheme, chrome::kChromeOSDefaultWebcalHandler);
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
     BUILDFLAG(IS_CHROMEOS)
@@ -271,13 +252,7 @@ void ChromeContentClient::AddAdditionalSchemes(Schemes* schemes) {
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) ||
         // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  schemes->local_schemes.push_back(content::kExternalFileScheme);
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-  schemes->local_schemes.push_back(url::kContentScheme);
-#endif
 }
 
 std::u16string ChromeContentClient::GetLocalizedString(int message_id) {
@@ -333,11 +308,6 @@ blink::OriginTrialPolicy* ChromeContentClient::GetOriginTrialPolicy() {
   return origin_trial_policy_.get();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-media::MediaDrmBridgeClient* ChromeContentClient::GetMediaDrmBridgeClient() {
-  return new ChromeMediaDrmBridgeClient();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void ChromeContentClient::ExposeInterfacesToBrowser(
     scoped_refptr<base::SequencedTaskRunner> io_task_runner,

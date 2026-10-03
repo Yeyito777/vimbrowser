@@ -256,13 +256,6 @@ void AutocompleteControllerMetrics::OnStop() {
 void AutocompleteControllerMetrics::LogSuggestionFinalizationMetrics() {
   // Finalization metrics should be logged once only, either when all
   // async providers complete or they're interrupted before completion.
-#if BUILDFLAG(IS_IOS)
-  // iOS is weird in that it sometimes calls `InjectAdHocMatch()` when the user
-  // selects a suggestion, thus changing the results when autocompletion is done
-  // and suggestions should be stable.
-  if (logged_finalization_metrics_)
-    return;
-#endif
   DCHECK(!logged_finalization_metrics_)
       << "last_update_type: "
       << AutocompleteController::UpdateTypeToDebugString(

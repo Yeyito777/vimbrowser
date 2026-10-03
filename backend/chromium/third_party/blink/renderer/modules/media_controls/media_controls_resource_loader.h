@@ -51,8 +51,6 @@ class MediaControlsResourceLoader
 
  private:
   String GetMediaControlsCSS() const;
-
-  String GetMediaControlsAndroidCSS() const;
 };
 
 }  // namespace blink

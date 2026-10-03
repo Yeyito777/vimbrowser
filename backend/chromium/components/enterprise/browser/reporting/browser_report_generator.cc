@@ -49,11 +49,7 @@ void BrowserReportGenerator::GenerateBasicInfo(em::BrowserReport* report,
                                                ReportType report_type) {
   // Chrome OS user session report doesn't include version and channel
   // information.
-#if BUILDFLAG(IS_CHROMEOS)
-  bool contains_version_and_channel = report_type == ReportType::kProfileReport;
-#else
   bool contains_version_and_channel = true;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (contains_version_and_channel) {
     report->set_browser_version(std::string(version_info::GetVersionNumber()));

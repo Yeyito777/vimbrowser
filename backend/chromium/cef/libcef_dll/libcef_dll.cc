@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=4b0b95234a112833e4388943e16f617d7da34c92$
+// $hash=970aa2ab8381e5b5d8cd4931a6a1b4391517ecc0$
 //
 
 #include "include/capi/cef_app_capi_versions.h"
@@ -25,7 +25,6 @@
 #include "include/capi/cef_task_capi_versions.h"
 #include "include/capi/cef_trace_capi_versions.h"
 #include "include/capi/cef_v8_capi_versions.h"
-#include "include/capi/test/cef_test_helpers_capi_versions.h"
 #include "include/cef_app.h"
 #include "include/cef_crash_util.h"
 #include "include/cef_file_util.h"
@@ -39,10 +38,8 @@
 #include "include/cef_task.h"
 #include "include/cef_trace.h"
 #include "include/cef_v8.h"
-#include "include/test/cef_test_helpers.h"
 #include "libcef_dll/cpptoc/binary_value_cpptoc.h"
 #include "libcef_dll/cpptoc/command_line_cpptoc.h"
-#include "libcef_dll/cpptoc/frame_cpptoc.h"
 #include "libcef_dll/cpptoc/value_cpptoc.h"
 #include "libcef_dll/ctocpp/app_ctocpp.h"
 #include "libcef_dll/ctocpp/completion_callback_ctocpp.h"
@@ -935,53 +932,6 @@ CEF_EXPORT int cef_register_extension(const cef_string_t* extension_name, const 
       CefString(extension_name),
       CefString(javascript_code),
       CefV8HandlerCToCpp_Wrap(handler));
-
-  // Return type: bool
-  return _retval;
-}
-
-CEF_EXPORT void cef_execute_java_script_with_user_gesture_for_tests(struct _cef_frame_0_t* frame, const cef_string_t* javascript) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: frame; type: refptr_same
-  DCHECK(frame);
-  if (!frame) {
-    return;
-  }
-  // Unverified params: javascript
-
-  // Execute
-  CefExecuteJavaScriptWithUserGestureForTests(
-      CefFrameCppToC_Unwrap(frame),
-      CefString(javascript));
-}
-
-CEF_EXPORT void cef_set_data_directory_for_tests(const cef_string_t* dir) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: dir; type: string_byref_const
-  DCHECK(dir);
-  if (!dir) {
-    return;
-  }
-
-  // Execute
-  CefSetDataDirectoryForTests(
-      CefString(dir));
-}
-
-CEF_EXPORT int cef_is_feature_enabled_for_tests(const cef_string_t* feature_name) {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Verify param: feature_name; type: string_byref_const
-  DCHECK(feature_name);
-  if (!feature_name) {
-    return 0;
-  }
-
-  // Execute
-  bool _retval = CefIsFeatureEnabledForTests(
-      CefString(feature_name));
 
   // Return type: bool
   return _retval;

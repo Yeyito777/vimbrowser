@@ -4,10 +4,6 @@
 
 import("//testing/libfuzzer/fuzzer_test.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 static_library("favicon_base") {
   sources = [
     "fallback_icon_style.cc",
@@ -61,10 +57,4 @@ fuzzer_test("favicon_url_parser_fuzzer") {
     "//base",
     "//base:i18n",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("favicon_base_enums_java") {
-    sources = [ "favicon_types.h" ]
-  }
 }

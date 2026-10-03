@@ -18,6 +18,5 @@ source_set("impl") {
   deps = [
     ":common",
     "//base",
-    "//build:android_buildflags",
   ]
 }

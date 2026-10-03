@@ -48,14 +48,6 @@ component("views") {
     "//ui/views",
     "//url",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//ash",
-      "//chromeos/ash/experiences/arc",
-      "//chromeos/ash/experiences/arc/intent_helper",
-    ]
-  }
 }
 
 source_set("test_support") {

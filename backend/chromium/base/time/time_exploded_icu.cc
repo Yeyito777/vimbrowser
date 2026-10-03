@@ -142,23 +142,5 @@ bool Time::FromExplodedUsingIcu(bool is_local,
   return true;
 }
 
-#if BUILDFLAG(IS_FUCHSIA)
-
-void Time::Explode(bool is_local, Exploded* exploded) const {
-  return ExplodeUsingIcu(ToRoundedDownMillisecondsSinceUnixEpoch(), is_local,
-                         exploded);
-}
-
-// static
-bool Time::FromExploded(bool is_local, const Exploded& exploded, Time* time) {
-  int64_t millis_since_unix_epoch;
-  if (FromExplodedUsingIcu(is_local, exploded, &millis_since_unix_epoch)) {
-    return FromMillisecondsSinceUnixEpoch(millis_since_unix_epoch, time);
-  }
-  *time = Time(0);
-  return false;
-}
-
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 }  // namespace base

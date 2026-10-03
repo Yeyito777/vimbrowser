@@ -183,14 +183,6 @@ static std::string TerminationStatusToString(base::TerminationStatus status) {
     case base::TERMINATION_STATUS_ABNORMAL_TERMINATION:
     case base::TERMINATION_STATUS_STILL_RUNNING:
       return "abnormal";
-#if BUILDFLAG(IS_CHROMEOS)
-    case base::TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM:
-      return "oom killed";
-#endif
-#if BUILDFLAG(IS_ANDROID)
-    case base::TERMINATION_STATUS_OOM_PROTECTED:
-      return "oom";
-#endif
     case base::TERMINATION_STATUS_OOM:
       return "oom";
     case base::TERMINATION_STATUS_PROCESS_WAS_KILLED:
@@ -199,10 +191,6 @@ static std::string TerminationStatusToString(base::TerminationStatus status) {
       return "crashed";
     case base::TERMINATION_STATUS_LAUNCH_FAILED:
       return "failed to launch";
-#if BUILDFLAG(IS_WIN)
-    case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
-      return "integrity failure";
-#endif
     case base::TERMINATION_STATUS_EVICTED_FOR_MEMORY:
       return "evicted for memory";
     case base::TERMINATION_STATUS_MAX_ENUM:

@@ -24,12 +24,8 @@
 namespace enterprise_connectors {
 
 namespace {
-#if BUILDFLAG(IS_CHROMEOS)
-const char kPolicyClientDescription[] = "any";
-#else
 const char kChromeBrowserCloudManagementClientDescription[] =
     "a machine-level user";
-#endif
 const char kProfilePolicyClientDescription[] = "a profile-level user";
 
 bool IsClientValid(const std::string& dm_token,
@@ -77,14 +73,9 @@ void RealtimeReportingClientBase::InitRealtimeReportingClient(
 
   policy::CloudPolicyClient* client = nullptr;
   std::string policy_client_desc;
-#if BUILDFLAG(IS_CHROMEOS)
-  std::pair<std::string, policy::CloudPolicyClient*> desc_and_client =
-      InitBrowserReportingClient(dm_token);
-#else
   std::pair<std::string, policy::CloudPolicyClient*> desc_and_client =
       per_profile ? InitProfileReportingClient(dm_token)
                   : InitBrowserReportingClient(dm_token);
-#endif
   if (!desc_and_client.second) {
     return;
   }
@@ -98,11 +89,7 @@ std::pair<std::string, policy::CloudPolicyClient*>
 RealtimeReportingClientBase::InitBrowserReportingClient(
     const std::string& dm_token) {
   std::string policy_client_desc;
-#if BUILDFLAG(IS_CHROMEOS)
-  policy_client_desc = kPolicyClientDescription;
-#else
   policy_client_desc = kChromeBrowserCloudManagementClientDescription;
-#endif
   if (!device_management_service_) {
     DVLOG(2) << "Safe browsing real-time event requires a device management "
                 "service.";

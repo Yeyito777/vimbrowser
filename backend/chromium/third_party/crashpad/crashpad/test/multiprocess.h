@@ -28,11 +28,7 @@ namespace internal {
 struct MultiprocessInfo;
 }  // namespace internal
 
-#if BUILDFLAG(IS_FUCHSIA)
-using ReturnCodeType = int64_t;
-#else
 using ReturnCodeType = int;
-#endif
 
 //! \brief Manages a multiprocess test.
 //!
@@ -55,13 +51,11 @@ class Multiprocess {
     //! that call `exit()` or `_exit()`.
     kTerminationNormal = false,
 
-#if !BUILDFLAG(IS_FUCHSIA)  // There are no signals on Fuchsia.
     //! \brief The child terminated by signal.
     //!
     //! Signal termination happens as a result of a crash, a call to `abort()`,
     //! assertion failure (including Google Test assertions), etc.
     kTerminationSignal,
-#endif  // !BUILDFLAG(IS_FUCHSIA)
   };
 
   Multiprocess();
@@ -104,11 +98,9 @@ class Multiprocess {
   void SetExpectedChildTermination(TerminationReason reason,
                                    ReturnCodeType code);
 
-#if !BUILDFLAG(IS_WIN)
   //! \brief Sets termination reason and code appropriately for a child that
   //!     terminates via `__builtin_trap()`.
   void SetExpectedChildTerminationBuiltinTrap();
-#endif  // !BUILDFLAG(IS_WIN)
 
  protected:
   ~Multiprocess();

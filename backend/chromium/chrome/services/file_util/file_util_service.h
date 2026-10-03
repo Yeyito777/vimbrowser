@@ -24,10 +24,6 @@ class FileUtilService : public chrome::mojom::FileUtilService {
 
  private:
   // chrome::mojom::FileUtilService implementation:
-#if BUILDFLAG(IS_CHROMEOS)
-  void BindZipFileCreator(
-      mojo::PendingReceiver<chrome::mojom::ZipFileCreator> receiver) override;
-#endif
 
 #if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
   void BindSafeArchiveAnalyzer(

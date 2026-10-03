@@ -50,11 +50,9 @@ AccountInfo ImplicitSignInUnconsentedAccount(
 void SignOut(Profile* profile,
              network::TestURLLoaderFactory* test_url_loader_factory);
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Grants sync consent to an account (`signin::ConsentLevel::kSync`). The
 // account must already be signed in (per SignInUnconsentedAccount).
 void GrantSyncConsent(Profile* profile, const std::string& email);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace secondary_account_helper
 

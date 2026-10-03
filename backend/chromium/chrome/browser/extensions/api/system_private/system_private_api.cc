@@ -19,11 +19,7 @@
 #include "components/prefs/pref_service.h"
 #include "google_apis/google_api_keys.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/dbus/update_engine/update_engine_client.h"
-#else
 #include "chrome/browser/upgrade_detector/upgrade_detector.h"
-#endif
 
 namespace {
 
@@ -43,9 +39,6 @@ const char kStateKey[] = "state";
 const char kNotAvailableState[] = "NotAvailable";
 const char kNeedRestartState[] = "NeedRestart";
 
-#if BUILDFLAG(IS_CHROMEOS)
-const char kUpdatingState[] = "Updating";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -68,62 +61,12 @@ SystemPrivateGetIncognitoModeAvailabilityFunction::Run() {
 ExtensionFunction::ResponseAction SystemPrivateGetUpdateStatusFunction::Run() {
   std::string state;
   double download_progress = 0;
-#if BUILDFLAG(IS_CHROMEOS)
-  // With UpdateEngineClient, we can provide more detailed information about
-  // system updates on ChromeOS.
-  const update_engine::StatusResult status =
-      ash::UpdateEngineClient::Get()->GetLastStatus();
-  // |download_progress| is set to 1 after download finishes
-  // (i.e. verify, finalize and need-reboot phase) to indicate the progress
-  // even though |status.download_progress| is 0 in these phases.
-  switch (status.current_operation()) {
-    case update_engine::Operation::ERROR:
-    case update_engine::Operation::DISABLED:
-      state = kNotAvailableState;
-      break;
-    case update_engine::Operation::IDLE:
-      state = kNotAvailableState;
-      break;
-    case update_engine::Operation::CHECKING_FOR_UPDATE:
-      state = kNotAvailableState;
-      break;
-    case update_engine::Operation::UPDATE_AVAILABLE:
-      state = kUpdatingState;
-      break;
-    case update_engine::Operation::DOWNLOADING:
-      state = kUpdatingState;
-      download_progress = status.progress();
-      break;
-    case update_engine::Operation::VERIFYING:
-      state = kUpdatingState;
-      download_progress = 1;
-      break;
-    case update_engine::Operation::FINALIZING:
-      state = kUpdatingState;
-      download_progress = 1;
-      break;
-    case update_engine::Operation::UPDATED_NEED_REBOOT:
-      state = kNeedRestartState;
-      download_progress = 1;
-      break;
-    case update_engine::Operation::REPORTING_ERROR_EVENT:
-    case update_engine::Operation::ATTEMPTING_ROLLBACK:
-    case update_engine::Operation::NEED_PERMISSION_TO_UPDATE:
-    case update_engine::Operation::CLEANUP_PREVIOUS_UPDATE:
-    case update_engine::Operation::UPDATED_BUT_DEFERRED:
-      state = kNotAvailableState;
-      break;
-    default:
-      NOTREACHED();
-  }
-#else
   if (UpgradeDetector::GetInstance()->notify_upgrade()) {
     state = kNeedRestartState;
     download_progress = 1;
   } else {
     state = kNotAvailableState;
   }
-#endif
 
   base::DictValue dict;
   dict.Set(kStateKey, state);

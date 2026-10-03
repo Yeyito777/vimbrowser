@@ -137,17 +137,6 @@ class UpgradeDetector {
     return critical_update_acknowledged_;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  bool is_factory_reset_required() const {
-    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-    return is_factory_reset_required_;
-  }
-
-  bool is_rollback() const {
-    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-    return is_rollback_;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   UpgradeNotificationAnnoyanceLevel upgrade_notification_stage() const {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -336,17 +325,6 @@ class UpgradeDetector {
     upgrade_notification_stage_ = stage;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void set_is_factory_reset_required(bool is_factory_reset_required) {
-    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-    is_factory_reset_required_ = is_factory_reset_required;
-  }
-
-  void set_is_rollback(bool is_rollback) {
-    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-    is_rollback_ = is_rollback;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   FRIEND_TEST_ALL_PREFIXES(AppMenuModelTest, Basics);
@@ -405,15 +383,6 @@ class UpgradeDetector {
   // for execution.
   bool pref_change_task_pending_ = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Whether a factory reset is needed to complete an update.
-  bool is_factory_reset_required_ = false;
-
-  // Whether the update is actually an admin-initiated rollback of the device
-  // to an earlier version of Chrome OS, which results in the device being
-  // wiped when it's rebooted.
-  bool is_rollback_ = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // A timer to check to see if we've been idle for long enough to show the
   // critical warning. Should only be set if |upgrade_available_| is

@@ -6,8 +6,7 @@ import("//build/config/ui.gni")
 import("//media/gpu/args.gni")
 import("//media/media_options.gni")
 
-if (enable_av1_decoder &&
-    (use_linux_video_acceleration || is_win || is_android)) {
+if (enable_av1_decoder && (use_linux_video_acceleration || is_win)) {
   test("video_decode_accelerator_tests") {
     testonly = true
     sources = [
@@ -85,14 +84,6 @@ if (enable_av1_decoder &&
       "//testing/gmock",
       "//testing/gtest",
     ]
-
-    if (is_android) {
-      deps += [
-        # The test needs the java dependencies to add the java classes for their
-        # native counterparts to the test apk.
-        "//media/base/android:media_java",
-      ]
-    }
   }
 
   test("video_encode_accelerator_perf_tests") {
@@ -325,25 +316,5 @@ if (use_linux_video_acceleration) {
       "//third_party/libyuv",
     ]
     data = [ "//media/test/data/" ]
-  }
-}
-
-if (is_chromeos) {
-  static_library("local_gpu_memory_buffer_manager") {
-    testonly = true
-    sources = [
-      "test_gbm_buffer_manager.cc",
-      "test_gbm_buffer_manager.h",
-    ]
-    deps = [
-      "//base",
-      "//build/config/linux/libdrm",
-      "//gpu/command_buffer/client",
-      "//gpu/ipc/common:surface_handle_type",
-      "//third_party/minigbm",
-      "//ui/gfx:memory_buffer",
-      "//ui/gfx/geometry",
-      "//ui/gfx/linux:gbm",
-    ]
   }
 }

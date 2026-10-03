@@ -15,12 +15,7 @@
 #include "components/sharing_message/sharing_message_handler.h"
 #include "components/sharing_message/sharing_message_sender.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/sharing/click_to_call/click_to_call_message_handler_android.h"
-#include "chrome/browser/sharing/sms/sms_fetch_request_handler.h"
-#else
 #include "chrome/browser/sharing/shared_clipboard/shared_clipboard_message_handler_desktop.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
     BUILDFLAG(IS_CHROMEOS)
@@ -40,19 +35,6 @@ SharingHandlerRegistryImpl::SharingHandlerRegistryImpl(
   AddSharingHandler(std::make_unique<AckMessageHandler>(message_sender),
                     {components_sharing_message::SharingMessage::kAckMessage});
 
-#if BUILDFLAG(IS_ANDROID)
-  // Note: IsClickToCallSupported() is not used as it requires JNI call.
-  AddSharingHandler(
-      std::make_unique<ClickToCallMessageHandler>(),
-      {components_sharing_message::SharingMessage::kClickToCallMessage});
-
-  if (sharing_device_registration->IsSmsFetcherSupported()) {
-    AddSharingHandler(
-        std::make_unique<SmsFetchRequestHandler>(device_source, sms_fetcher),
-        {components_sharing_message::SharingMessage::kSmsFetchRequest});
-  }
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Profile can be null in tests.
   if (optimization_guide::features::IsPushNotificationsEnabled() &&
@@ -62,7 +44,6 @@ SharingHandlerRegistryImpl::SharingHandlerRegistryImpl(
                            kOptimizationGuidePushNotification});
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   if (sharing_device_registration->IsSharedClipboardSupported()) {
     std::unique_ptr<SharingMessageHandler> shared_clipboard_message_handler;
     shared_clipboard_message_handler =
@@ -72,7 +53,6 @@ SharingHandlerRegistryImpl::SharingHandlerRegistryImpl(
         std::move(shared_clipboard_message_handler),
         {components_sharing_message::SharingMessage::kSharedClipboardMessage});
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
     BUILDFLAG(IS_CHROMEOS)
@@ -83,7 +63,6 @@ SharingHandlerRegistryImpl::SharingHandlerRegistryImpl(
   }
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) ||
         // BUILDFLAG(IS_CHROMEOS)
-#if !BUILDFLAG(IS_ANDROID)
   if (sharing_device_registration
           ->IsOneTimeTokenBackendNotificationSupported()) {
     AddSharingHandler(
@@ -91,7 +70,6 @@ SharingHandlerRegistryImpl::SharingHandlerRegistryImpl(
         {components_sharing_message::SharingMessage::
              kOneTimeTokenBackendNotification});
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 SharingHandlerRegistryImpl::~SharingHandlerRegistryImpl() = default;

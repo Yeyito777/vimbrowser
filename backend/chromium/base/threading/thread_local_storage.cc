@@ -417,27 +417,7 @@ namespace base {
 
 namespace internal {
 
-#if BUILDFLAG(IS_WIN)
-void PlatformThreadLocalStorage::OnThreadExit() {
-  PlatformThreadLocalStorage::TLSKey key =
-      g_native_tls_key.load(std::memory_order_relaxed);
-  if (key == PlatformThreadLocalStorage::TLS_KEY_OUT_OF_INDEXES) {
-    return;
-  }
-  TlsVectorEntry* tls_vector = nullptr;
-  const TlsVectorState state = GetTlsVectorStateAndValue(key, &tls_vector);
-
-  // On Windows, thread destruction callbacks are only invoked once per module,
-  // so there should be no way that this could be invoked twice.
-  DCHECK_NE(state, TlsVectorState::kDestroyed);
-
-  // Maybe we have never initialized TLS for this thread.
-  if (state == TlsVectorState::kUninitialized) {
-    return;
-  }
-  OnThreadExitInternal(tls_vector);
-}
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 void PlatformThreadLocalStorage::OnThreadExit(void* value) {
   // On posix this function may be called twice. The first pass calls dtors and
   // sets state to kDestroyed. The second pass sets kDestroyed to

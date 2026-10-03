@@ -49,11 +49,6 @@ public_app_shared_deps = [
   "//content/public/utility:utility_sources",
 ]
 
-if (is_win) {
-  public_app_shared_sources += [ "sandbox_helper_win.h" ]
-  public_app_shared_deps += [ "//sandbox/win:common" ]
-}
-
 if (is_component_build) {
   source_set("app_sources") {
     # Only the main content shared library can pull this in.

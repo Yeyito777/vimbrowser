@@ -40,16 +40,7 @@ ax::mojom::Role GetAccessibleRoleForReason(
   // appears spontaneously over the course of the user's interaction with
   // Chrome and doesn't get focused. We need an alert-like role so the
   // corresponding event is triggered and ATs announce the bubble.
-#if BUILDFLAG(IS_WIN)
-  // crbug.com/1125118: Windows ATs only announce these bubbles if the alert
-  // role is used, despite it not being the most appropriate choice.
-  // TODO(accessibility): review the role mappings for alerts and dialogs,
-  // making sure they are translated to the best candidate in each flatform
-  // without resorting to hacks like this.
-  return ax::mojom::Role::kAlert;
-#else
   return ax::mojom::Role::kAlertDialog;
-#endif
 }
 
 }  // namespace

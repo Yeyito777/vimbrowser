@@ -35,9 +35,6 @@
 #include "ui/message_center/public/cpp/notification.h"
 #include "ui/native_theme/native_theme.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/notifier_catalogs.h"
-#endif
 
 namespace safe_browsing {
 
@@ -55,21 +52,11 @@ void LogUnconsentedOutcome(TailoredSecurityOutcome outcome) {
       outcome);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-message_center::NotifierId GetPromotionNotifierId() {
-  return message_center::NotifierId(
-      message_center::NotifierType::SYSTEM_COMPONENT,
-      kTailoredSecurityNotifierId,
-      ash::NotificationCatalogName::kTailoredSecurityPromotion);
-}
-#else
 message_center::NotifierId GetNotifierId() {
   return message_center::NotifierId(
       message_center::NotifierType::SYSTEM_COMPONENT,
       kTailoredSecurityNotifierId);
 }
-#endif
 
 }  // namespace
 
@@ -133,11 +120,7 @@ void DisplayTailoredSecurityUnconsentedPromotionNotification(Profile* profile) {
       IDS_TAILORED_SECURITY_UNCONSENTED_PROMOTION_NOTIFICATION_ACCEPT);
   const std::u16string& secondary_button =
       l10n_util::GetStringUTF16(IDS_NO_THANKS);
-#if BUILDFLAG(IS_CHROMEOS)
-  const message_center::NotifierId notifier_id = GetPromotionNotifierId();
-#else
   const message_center::NotifierId notifier_id = GetNotifierId();
-#endif
   auto icon = GetNotificationIcon();
   LogUnconsentedOutcome(TailoredSecurityOutcome::kShown);
   message_center::Notification notification(

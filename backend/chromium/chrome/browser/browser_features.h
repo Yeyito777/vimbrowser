@@ -29,9 +29,6 @@ namespace features {
 // All features in alphabetical order. The features should be documented
 // alongside the definition of their values in the .cc file.
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_DECLARE_FEATURE(kAllowUnmutedAutoplayForTWA);
-#endif  // BUILDFLAG(IS_ANDROID)
 BASE_DECLARE_FEATURE(kAutocompleteActionPredictorConfidenceCutoff);
 BASE_DECLARE_FEATURE(kBookmarksTreeView);
 BASE_DECLARE_FEATURE(kBookmarkTriggerForPrerender2KillSwitch);
@@ -55,9 +52,7 @@ BASE_DECLARE_FEATURE(kIncomingCallNotifications);
 BASE_DECLARE_FEATURE(kInitialExternalExtensions);
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
-#if !BUILDFLAG(IS_ANDROID)
 BASE_DECLARE_FEATURE(kMuteNotificationSnoozeAction);
-#endif
 
 BASE_DECLARE_FEATURE(kNetworkAnnotationMonitoring);
 BASE_DECLARE_FEATURE(kNewTabPageTriggerForPrerender2);
@@ -71,9 +66,7 @@ const base::FeatureParam<int>
         &features::kNewTabPageTriggerForPrefetch,
         "prefetch_start_delay_on_mouse_hover_ms", 300};
 
-#if !BUILDFLAG(IS_ANDROID)
 BASE_DECLARE_FEATURE(kNotificationOneTapUnsubscribeOnDesktop);
-#endif
 
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
 BASE_DECLARE_FEATURE(kRegisterOsUpdateHandlerWin);
@@ -94,16 +87,6 @@ BASE_DECLARE_FEATURE(kTriggerNetworkDataMigration);
 
 BASE_DECLARE_FEATURE(kWebUsbDeviceDetection);
 
-#if BUILDFLAG(IS_WIN)
-BASE_DECLARE_FEATURE(kBrowserDynamicCodeDisabled);
-
-BASE_DECLARE_FEATURE(kNoPreReadMainDll);
-BASE_DECLARE_FEATURE(kNoPreReadMainDllIfSsd);
-BASE_DECLARE_FEATURE(kNoPreReadMainDllStartup);
-extern const base::FeatureParam<base::TimeDelta>
-    kNoPreReadMainDllStartup_StartupDuration;
-BASE_DECLARE_FEATURE(kAutoDeElevate);
-#endif
 
 BASE_DECLARE_FEATURE(kReportPakFileIntegrity);
 

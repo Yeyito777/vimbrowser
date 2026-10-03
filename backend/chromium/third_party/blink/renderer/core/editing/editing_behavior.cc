@@ -174,14 +174,7 @@ const KeyboardCodeKeyDownEntry kKeyboardCodeKeyDownEntries[] = {
     {'Z', kCtrlKey | kShiftKey, "Redo"},
     {'Y', kCtrlKey, "Redo"},
 #endif
-#if BUILDFLAG(IS_WIN)
-    {VKEY_BACK, kAltKey, "Undo"},
-    {VKEY_BACK, kAltKey | kShiftKey, "Redo"},
-#endif
     {VKEY_INSERT, 0, "OverWrite"},
-#if BUILDFLAG(IS_ANDROID)
-    {VKEY_BACK, kAltKey, "DeleteToBeginningOfLine"},
-#endif
 };
 
 const KeyboardCodeKeyPressEntry kKeyboardCodeKeyPressEntries[] = {
@@ -313,7 +306,7 @@ bool EditingBehavior::ShouldInsertCharacter(const KeyboardEvent& event) const {
   // contain printable characters.
   if (event.ctrlKey())
     return false;
-#elif !BUILDFLAG(IS_WIN)
+#else
   // Don't insert ASCII character if ctrl w/o alt or meta is on.
   // On Mac, we should ignore events when meta is on (Command-<x>).
   if (ch < 0x80) {

@@ -65,11 +65,6 @@ void CreateProfileReadme(const base::FilePath& profile_path) {
 void RegisterProfilePrefs(bool is_signin_profile,
                           const std::string& locale,
                           user_prefs::PrefRegistrySyncable* pref_registry) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (is_signin_profile)
-    RegisterSigninProfilePrefs(pref_registry, GetCountry());
-  else
-#endif
     RegisterUserProfilePrefs(pref_registry, locale);
 
   SimpleDependencyManager::GetInstance()->RegisterProfilePrefsForServices(

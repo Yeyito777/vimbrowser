@@ -16,10 +16,6 @@
 #include "components/unified_consent/url_keyed_data_collection_consent_helper.h"
 #include "google_apis/gaia/google_service_auth_error.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/components/kiosk/kiosk_utils.h"  // nogncheck
-#include "chromeos/components/mgs/managed_guest_session_utils.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 using unified_consent::UrlKeyedDataCollectionConsentHelper;
 
@@ -27,23 +23,12 @@ namespace ukm {
 namespace {
 
 bool IsMsbbConsentStateAllowed() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // MGS should report only AppKM metrics.
-  return !chromeos::IsManagedGuestSession();
-#else  // !BUILDFLAG(IS_CHROMEOS)
   return true;
-#endif
 }
 
 bool CanUploadUkmForType(syncer::SyncService* sync_service,
                          syncer::DataType data_type,
                          bool msbb_consent) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Enable uploading of UKM for Kiosk and MGS only if MSBB consent is set.
-  if (chromeos::IsKioskSession() || chromeos::IsManagedGuestSession()) {
-    return msbb_consent;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   switch (GetUploadToGoogleState(sync_service, data_type)) {
     case syncer::UploadState::NOT_ACTIVE:
@@ -71,11 +56,7 @@ UkmConsentStateObserver::~UkmConsentStateObserver() {
 }
 
 bool UkmConsentStateObserver::ProfileState::IsUkmConsented() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  return consent_state.Has(MSBB) || consent_state.Has(APPS);
-#else
   return consent_state.Has(MSBB);
-#endif
 }
 
 void UkmConsentStateObserver::ProfileState::SetConsentType(
@@ -103,24 +84,12 @@ UkmConsentStateObserver::ProfileState UkmConsentStateObserver::GetProfileState(
     state.SetConsentType(EXTENSIONS);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const bool app_sync_consent =
-      CanUploadUkmForType(sync_service, syncer::DataType::APPS, msbb_consent) ||
-      // Demo mode is a special managed guest session that doesn't support
-      // AppKM. To support AppKM an exception needs to be made within UKM.
-      IsDeviceInDemoMode();
-
-  if (app_sync_consent) {
-    state.SetConsentType(APPS);
-  }
-#else
   // This separation isn't actually needed for non-ChromeOS devices. But for
   // clarity it is added.
   if (msbb_consent &&
       CanUploadUkmForType(sync_service, syncer::DataType::APPS, msbb_consent)) {
     state.SetConsentType(APPS);
   }
-#endif
 
   return state;
 }
@@ -237,11 +206,7 @@ void UkmConsentStateObserver::OnSyncShutdown(syncer::SyncService* sync) {
 
 bool UkmConsentStateObserver::IsUkmAllowedForAllProfiles() {
   const UkmConsentState ukm_consent_state = GetUkmConsentState();
-#if BUILDFLAG(IS_CHROMEOS)
-  return ukm_consent_state.Has(MSBB) || ukm_consent_state.Has(APPS);
-#else
   return ukm_consent_state.Has(MSBB);
-#endif
 }
 
 // TODO(crbug.com/394931297): Add a comment in UkmConsentStateObserver header to
@@ -261,14 +226,5 @@ UkmConsentState UkmConsentStateObserver::GetUkmConsentState() {
   return ukm_consent_state_.value_or(UkmConsentState());
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void UkmConsentStateObserver::SetIsDemoMode(bool is_device_in_demo_mode) {
-  is_device_in_demo_mode_ = is_device_in_demo_mode;
-}
-
-bool UkmConsentStateObserver::IsDeviceInDemoMode() {
-  return is_device_in_demo_mode_;
-}
-#endif
 
 }  // namespace ukm

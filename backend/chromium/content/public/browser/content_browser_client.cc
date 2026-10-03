@@ -98,13 +98,8 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/browser/renderer_host/navigation_transitions/navigation_transition_config.h"
-#include "content/public/browser/tts_environment_android.h"
-#else
 #include "content/public/browser/authenticator_request_client_delegate.h"
 #include "third_party/blink/public/mojom/installedapp/related_application.mojom.h"
-#endif
 
 using AttributionReportType =
     content::ContentBrowserClient::AttributionReportingOsRegistrar;
@@ -382,11 +377,7 @@ ContentBrowserClient::GetOriginsRequiringDedicatedProcess() {
 }
 
 bool ContentBrowserClient::ShouldEnableStrictSiteIsolation() {
-#if BUILDFLAG(IS_ANDROID)
-  return false;
-#else
   return true;
-#endif
 }
 
 std::optional<bool>
@@ -414,11 +405,9 @@ bool ContentBrowserClient::ShouldUrlUseApplicationIsolationLevel(
   return false;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 bool ContentBrowserClient::IsInitialWebUIURL(const GURL& url) {
   return false;
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 bool ContentBrowserClient::IsTopChromeWebUIURL(const GURL& url) {
   return false;
@@ -844,11 +833,6 @@ ContentBrowserClient::GetGeolocationSystemPermissionManager() {
   return nullptr;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool ContentBrowserClient::ShouldUseGmsCoreGeolocationProvider() {
-  return false;
-}
-#endif
 
 StoragePartitionConfig ContentBrowserClient::GetStoragePartitionConfigForSite(
     BrowserContext* browser_context,
@@ -901,21 +885,14 @@ ContentBrowserClient::GetOnDeviceSpeechRecognitionAvailabilityStatus(
   return media::mojom::AvailabilityStatus::kUnavailable;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-TtsControllerDelegate* ContentBrowserClient::GetTtsControllerDelegate() {
-  return nullptr;
-}
-#endif
 
 TtsPlatform* ContentBrowserClient::GetTtsPlatform() {
   return nullptr;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 DirectSocketsDelegate* ContentBrowserClient::GetDirectSocketsDelegate() {
   return nullptr;
 }
-#endif
 
 base::FilePath ContentBrowserClient::GetDefaultDownloadDirectory() {
   return base::FilePath();
@@ -1041,60 +1018,6 @@ std::unique_ptr<NavigationUIData> ContentBrowserClient::GetNavigationUIData(
   return nullptr;
 }
 
-#if BUILDFLAG(IS_WIN)
-
-bool ContentBrowserClient::PreSpawnChild(sandbox::TargetConfig* config,
-                                         sandbox::mojom::Sandbox sandbox_type,
-                                         ChildSpawnFlags flags) {
-  return true;
-}
-
-bool ContentBrowserClient::IsUtilityCetCompatible(
-    const std::string& utility_sub_type) {
-  return true;
-}
-
-std::wstring ContentBrowserClient::GetAppContainerSidForSandboxType(
-    sandbox::mojom::Sandbox sandbox_type,
-    AppContainerFlags flags) {
-  // Embedders should override this method and return different SIDs for each
-  // sandbox type. Note: All content level tests will run child processes in the
-  // same AppContainer.
-  return std::wstring(
-      L"S-1-15-2-3251537155-1984446955-2931258699-841473695-1938553385-"
-      L"924012148-129201922");
-}
-
-bool ContentBrowserClient::IsAppContainerDisabled(
-    sandbox::mojom::Sandbox sandbox_type) {
-  return false;
-}
-
-std::wstring ContentBrowserClient::GetLPACCapabilityNameForNetworkService() {
-  // Embedders should override this method and return different LPAC capability
-  // name. This will be used to secure the user data files required for the
-  // network service.
-  return std::wstring(L"lpacContentNetworkService");
-}
-
-bool ContentBrowserClient::ShouldEnableAudioProcessHighPriority() {
-  // TODO(crbug.com/40242320): Delete this method when the
-  // kAudioProcessHighPriorityEnabled enterprise policy is deprecated.
-  return false;
-}
-
-bool ContentBrowserClient::ShouldRestrictCoreSharingOnRenderer() {
-  return false;
-}
-
-std::optional<std::wstring>
-ContentBrowserClient::GetWindowsSecurityAttributeName() const {
-  // Embedders should override this method and return the name of the security
-  // attribute previously assigned to the browser's process token.
-  return std::nullopt;
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 std::vector<std::unique_ptr<blink::URLLoaderThrottle>>
 ContentBrowserClient::CreateURLLoaderThrottles(
@@ -1240,21 +1163,6 @@ base::DictValue ContentBrowserClient::GetNetLogConstants() {
   return base::DictValue();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool ContentBrowserClient::ShouldOverrideUrlLoading(
-    FrameTreeNodeId frame_tree_node_id,
-    bool browser_initiated,
-    const GURL& gurl,
-    const std::string& request_method,
-    bool has_user_gesture,
-    bool is_redirect,
-    bool is_outermost_main_frame,
-    bool is_prerendering,
-    ui::PageTransition transition,
-    bool* ignore_navigation) {
-  return true;
-}
-#endif
 
 bool ContentBrowserClient::SupportsAvoidUnnecessaryBeforeUnloadCheckSync() {
   return true;
@@ -1312,11 +1220,6 @@ FontAccessDelegate* ContentBrowserClient::GetFontAccessDelegate() {
   return nullptr;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-SmartCardDelegate* ContentBrowserClient::GetSmartCardDelegate() {
-  return nullptr;
-}
-#endif
 
 bool ContentBrowserClient::ShowPaymentHandlerWindow(
     content::BrowserContext* browser_context,
@@ -1338,13 +1241,11 @@ ContentBrowserClient::GetWebAuthenticationDelegate() {
   return delegate.get();
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 std::unique_ptr<AuthenticatorRequestClientDelegate>
 ContentBrowserClient::GetWebAuthenticationRequestDelegate(
     RenderFrameHost* render_frame_host) {
   return std::make_unique<DefaultAuthenticatorRequestClientDelegate>();
 }
-#endif
 
 std::unique_ptr<net::ClientCertStore>
 ContentBrowserClient::CreateClientCertStore(BrowserContext* browser_context) {
@@ -1496,22 +1397,6 @@ ContentBrowserClient::GetSpareRendererDelayForSiteURL(const GURL& site_url) {
   return std::nullopt;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-ContentBrowserClient::WideColorGamutHeuristic
-ContentBrowserClient::GetWideColorGamutHeuristic() {
-  return WideColorGamutHeuristic::kNone;
-}
-
-std::unique_ptr<TtsEnvironmentAndroid>
-ContentBrowserClient::CreateTtsEnvironmentAndroid() {
-  return nullptr;
-}
-
-bool ContentBrowserClient::
-    ShouldObserveContainerViewLocationForDialogOverlays() {
-  return false;
-}
-#endif
 
 base::flat_set<std::string>
 ContentBrowserClient::GetPluginMimeTypesWithExternalHandlers(
@@ -1903,13 +1788,6 @@ void ContentBrowserClient::BindAIManager(
   EchoAIManagerImpl::Create(std::move(receiver));
 }
 
-void ContentBrowserClient::BindTranslationManager(
-    RenderProcessHost* process_host,
-    BrowserContext* browser_context,
-    base::SupportsUserData* context_user_data,
-    const url::Origin& origin,
-    mojo::PendingReceiver<blink::mojom::TranslationManager> receiver) {}
-
 namespace {
 // TODO(https://crbug.com/383035345): Use BASE_FEATURE_PARAM.
 const base::FeatureParam<std::string> kLanguageDetectionLocalFileModelPath{
@@ -1957,7 +1835,6 @@ void ContentBrowserClient::BindLanguageDetectionDriver(
   }
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void ContentBrowserClient::QueryInstalledWebAppsByManifestId(
     const GURL& frame_url,
     const GURL& manifest_id,
@@ -1966,7 +1843,6 @@ void ContentBrowserClient::QueryInstalledWebAppsByManifestId(
         callback) {
   std::move(callback).Run(std::nullopt);
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 bool ContentBrowserClient::AllowNonActivatedCrossOriginPaintHolding() {
   return false;
@@ -2018,19 +1894,13 @@ bool ContentBrowserClient::UsePrefetchPrerenderIntegration() {
   return false;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 bool ContentBrowserClient::ShouldDisallowCredentialRequest(
     WebContents* web_contents) {
   return false;
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 bool ContentBrowserClient::ShouldAnimateBackForwardTransitions() {
-#if BUILDFLAG(IS_ANDROID)
-  return NavigationTransitionConfig::SupportsBackForwardTransitions({});
-#else
   return false;
-#endif
 }
 
 blink::mojom::PerformanceTier ContentBrowserClient::GetCpuPerformanceTier() {

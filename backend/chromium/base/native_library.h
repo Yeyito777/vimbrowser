@@ -16,17 +16,13 @@
 #include "base/memory/raw_ptr_exclusion.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 #import <CoreFoundation/CoreFoundation.h>
 #endif  // OS_*
 
 namespace base {
 
-#if BUILDFLAG(IS_WIN)
-using NativeLibrary = HMODULE;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 enum NativeLibraryType { BUNDLE, DYNAMIC_LIB };
 struct NativeLibraryStruct {
   NativeLibraryType type;
@@ -43,16 +39,11 @@ using NativeLibrary = void*;
 #endif  // OS_*
 
 struct BASE_EXPORT NativeLibraryLoadError {
-#if BUILDFLAG(IS_WIN)
-  NativeLibraryLoadError() : code(0) {}
-#endif  // BUILDFLAG(IS_WIN)
 
   // Returns a string representation of the load error.
   std::string ToString() const;
 
-#if BUILDFLAG(IS_WIN)
-  DWORD code;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   std::string message;
 #endif  // BUILDFLAG(IS_WIN)
 };
@@ -63,24 +54,6 @@ struct BASE_EXPORT NativeLibraryLoadError {
 BASE_EXPORT NativeLibrary LoadNativeLibrary(const FilePath& library_path,
                                             NativeLibraryLoadError* error);
 
-#if BUILDFLAG(IS_WIN)
-// Loads a native library from the system directory using the appropriate flags.
-// The function first checks to see if the library is already loaded and will
-// get a handle if so. This method results in a lock that may block the calling
-// thread.
-BASE_EXPORT NativeLibrary
-LoadSystemLibrary(FilePath::StringViewType name,
-                  NativeLibraryLoadError* error = nullptr);
-
-// Gets the module handle for the specified system library and pins it to
-// ensure it never gets unloaded. If the module is not loaded, it will first
-// call LoadSystemLibrary to load it. If the module cannot be pinned, this
-// method returns null and includes the error. This method results in a lock
-// that may block the calling thread.
-BASE_EXPORT NativeLibrary
-PinSystemLibrary(FilePath::StringViewType name,
-                 NativeLibraryLoadError* error = nullptr);
-#endif
 
 // Unloads a native library.
 BASE_EXPORT void UnloadNativeLibrary(NativeLibrary library);

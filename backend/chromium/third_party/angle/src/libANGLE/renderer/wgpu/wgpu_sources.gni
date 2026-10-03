@@ -67,13 +67,6 @@ wgpu_backend_sources = [
   "wgpu_wgsl_util.h",
 ]
 
-if (is_win) {
-  wgpu_backend_sources += [
-    "win32/WindowSurfaceWgpuWin32.cpp",
-    "win32/WindowSurfaceWgpuWin32.h",
-  ]
-}
-
 if (is_mac || is_ios) {
   wgpu_backend_sources += [
     "mac/WindowSurfaceWgpuMetalLayer.h",

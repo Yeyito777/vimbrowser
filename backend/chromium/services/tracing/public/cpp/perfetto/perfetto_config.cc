@@ -109,12 +109,6 @@ void AddDataSourceConfigs(
         json_agent_label_filter, enable_package_name_filter);
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-    AddDataSourceConfig(
-        perfetto_config, tracing::mojom::kArcTraceDataSourceName,
-        chrome_config_string, privacy_filtering_enabled, convert_to_legacy_json,
-        json_agent_label_filter, enable_package_name_filter);
-#endif
   }
 
   // Also capture global metadata.

@@ -23,9 +23,7 @@
 #include "third_party/metrics_proto/omnibox_event.pb.h"
 #include "url/gurl.h"
 
-#if !BUILDFLAG(IS_IOS)
 #include "components/history_clusters/core/config.h"  // nogncheck
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 #include "extensions/common/extension_features.h"  // nogncheck
@@ -68,25 +66,10 @@ int AutocompleteClassifier::DefaultOmniboxProviders(bool is_low_memory_device) {
       AutocompleteProvider::TYPE_MOST_VISITED_SITES |
       AutocompleteProvider::TYPE_VERBATIM_MATCH |
 #endif
-#if BUILDFLAG(IS_ANDROID)
-      AutocompleteProvider::TYPE_VOICE_SUGGEST |
-      // Only enabled for hub search.
-      AutocompleteProvider::TYPE_OPEN_TAB |
-      // Only enabled for hub search.
-      (base::FeatureList::IsEnabled(omnibox::kAndroidHubSearchTabGroups)
-           ? AutocompleteProvider::TYPE_TAB_GROUP
-           : 0) |
-      // Keyword search for Android.
-      (base::FeatureList::IsEnabled(omnibox::kOmniboxSiteSearch)
-           ? AutocompleteProvider::TYPE_KEYWORD
-           : 0) |
-#endif
-#if !BUILDFLAG(IS_IOS)
       (history_clusters::GetConfig().is_journeys_enabled_no_locale_check &&
                history_clusters::GetConfig().omnibox_history_cluster_provider
            ? AutocompleteProvider::TYPE_HISTORY_CLUSTER_PROVIDER
            : 0) |
-#endif
       AutocompleteProvider::TYPE_ZERO_SUGGEST |
       AutocompleteProvider::TYPE_ZERO_SUGGEST_LOCAL_HISTORY |
       (base::FeatureList::IsEnabled(omnibox::kDocumentProvider)

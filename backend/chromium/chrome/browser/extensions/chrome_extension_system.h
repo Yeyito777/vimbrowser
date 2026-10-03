@@ -19,16 +19,6 @@ static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
 class Profile;
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace extensions {
-class ExtensionsPermissionsTracker;
-}  // namespace extensions
-
-namespace chromeos {
-class DeviceLocalAccountManagementPolicyProvider;
-class SigninScreenPolicyProvider;
-}  // namespace chromeos
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace value_store {
 class ValueStoreFactory;
@@ -146,15 +136,6 @@ class ChromeExtensionSystem : public ExtensionSystem {
 
     std::unique_ptr<UninstallPingSender> uninstall_ping_sender_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    std::unique_ptr<chromeos::DeviceLocalAccountManagementPolicyProvider>
-        device_local_account_management_policy_provider_;
-    std::unique_ptr<chromeos::SigninScreenPolicyProvider>
-        signin_screen_policy_provider_;
-    std::unique_ptr<InstallGate> kiosk_app_update_install_gate_;
-    std::unique_ptr<ExtensionsPermissionsTracker>
-        extensions_permissions_tracker_;
-#endif
 
     base::OneShotEvent ready_;
   };

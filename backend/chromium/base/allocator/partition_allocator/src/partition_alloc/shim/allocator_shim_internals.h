@@ -9,9 +9,7 @@
 
 #if defined(__GNUC__)
 
-#if PA_BUILDFLAG(IS_POSIX)
 #include <sys/cdefs.h>  // for __THROW
-#endif
 
 #ifndef __THROW   // Not a glibc system
 #ifdef _NOEXCEPT  // LLVM libc++ uses noexcept instead
@@ -46,11 +44,6 @@
 // DSOs altogether. This will save a little space and stop giving DSOs the false
 // impression that they can hook the allocator.
 #define SHIM_ALWAYS_EXPORT __attribute__((used, visibility("default"), noinline))
-
-#elif PA_BUILDFLAG(IS_WIN)  // __GNUC__
-
-#define __THROW
-#define SHIM_ALWAYS_EXPORT __declspec(noinline) __attribute__((used))
 
 #endif  // __GNUC__
 

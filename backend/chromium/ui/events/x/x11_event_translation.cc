@@ -120,14 +120,9 @@ std::unique_ptr<KeyEvent> CreateKeyEvent(EventType event_type,
   // in KeyEvent::ApplyLayout() which makes it possible for CrOS/Linux, for
   // example, to support host system keyboard layouts.
   std::unique_ptr<KeyEvent> event =
-#if BUILDFLAG(IS_CHROMEOS)
-      std::make_unique<KeyEvent>(event_type, key_code, event_flags,
-                                 EventTimeFromXEvent(x11_event));
-#else
       std::make_unique<KeyEvent>(
           event_type, key_code, CodeFromXEvent(x11_event), event_flags,
           GetDomKeyFromXEvent(x11_event), EventTimeFromXEvent(x11_event));
-#endif
 
   DCHECK(event);
   event->SetProperties(GetEventPropertiesFromXEvent(event_type, x11_event));

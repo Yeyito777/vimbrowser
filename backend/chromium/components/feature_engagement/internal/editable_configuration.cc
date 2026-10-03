@@ -11,9 +11,6 @@
 #include "build/build_config.h"
 #include "components/feature_engagement/public/configuration.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/feature_engagement/public/configuration_provider.h"
-#endif
 
 namespace feature_engagement {
 
@@ -91,21 +88,5 @@ const std::vector<std::string> EditableConfiguration::GetRegisteredGroups()
   return groups;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void EditableConfiguration::UpdateConfig(
-    const base::Feature& feature,
-    const ConfigurationProvider* provider) {
-  FeatureConfig& config = configs_[feature.name];
-
-  // Clear existing configs.
-  config = FeatureConfig();
-  provider->MaybeProvideFeatureConfiguration(feature, config, {}, {});
-}
-
-const Configuration::EventPrefixSet&
-EditableConfiguration::GetRegisteredAllowedEventPrefixes() const {
-  return event_prefixes_;
-}
-#endif
 
 }  // namespace feature_engagement

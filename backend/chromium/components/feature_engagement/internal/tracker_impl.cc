@@ -63,7 +63,6 @@ namespace {
 const char kEventDBName[] = "EventDB";
 const char kAvailabilityDBName[] = "AvailabilityDB";
 
-#if !BUILDFLAG(IS_ANDROID)
 
 // Reads event data from `config` and - if valid - places it into `result` along
 // with the event count in the appropriate window.
@@ -79,7 +78,6 @@ void MaybeGetEventData(Tracker::EventList& result,
                                  config.name, current_day, config.window)));
 }
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
@@ -295,7 +293,6 @@ void TrackerImpl::NotifyEvent(const std::string& event) {
                            event_model_provider_->IsReady());
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void TrackerImpl::NotifyUsedEvent(const base::Feature& feature) {
   const auto& feature_config = configuration_->GetFeatureConfig(feature);
   if (!feature_config.used.name.empty()) {
@@ -334,7 +331,6 @@ Tracker::EventList TrackerImpl::ListEvents(const base::Feature& feature) const {
   return result;
 }
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 bool TrackerImpl::ShouldTriggerHelpUI(const base::Feature& feature) {
   return ShouldTriggerHelpUIWithSnooze(feature).ShouldShowIph();
@@ -547,13 +543,6 @@ void TrackerImpl::UnregisterPriorityNotificationHandler(
   priority_notification_handlers_.erase(feature.name);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void TrackerImpl::UpdateConfig(const base::Feature& feature,
-                               const ConfigurationProvider* provider) {
-  CHECK(IsInitialized());
-  configuration_->UpdateConfig(feature, provider);
-}
-#endif
 
 const Configuration* TrackerImpl::GetConfigurationForTesting() const {
   CHECK_IS_TEST();

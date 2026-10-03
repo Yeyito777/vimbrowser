@@ -125,17 +125,11 @@
 #include "net/dns/mdns_client_impl.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <Winsock2.h>
-#include "net/base/winsock_init.h"
-#endif
 
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #include <net/if.h>
 #include "net/base/sys_addrinfo.h"
-#if !BUILDFLAG(IS_ANDROID)
 #include <ifaddrs.h>
-#endif  // !BUILDFLAG(IS_ANDROID)
 #endif  // BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 
 namespace net {
@@ -456,9 +450,6 @@ HostResolverManager::HostResolverManager(
 
   DCHECK_GE(dispatcher_->num_priorities(), static_cast<size_t>(NUM_PRIORITIES));
 
-#if BUILDFLAG(IS_WIN)
-  EnsureWinsockInit();
-#endif
 #if (BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_APPLE) && !BUILDFLAG(IS_ANDROID)) || \
     BUILDFLAG(IS_FUCHSIA)
   RunLoopbackProbeJob();
@@ -513,15 +504,8 @@ HostResolverManager::CreateNetworkBoundHostResolverManager(
     const HostResolver::ManagerOptions& options,
     handles::NetworkHandle target_network,
     NetLog* net_log) {
-#if BUILDFLAG(IS_ANDROID)
-  DCHECK(NetworkChangeNotifier::AreNetworkHandlesSupported());
-  return std::make_unique<HostResolverManager>(
-      PassKey(), options, nullptr /* system_dns_config_notifier */,
-      target_network, net_log);
-#else   // !BUILDFLAG(IS_ANDROID)
   NOTIMPLEMENTED();
   return nullptr;
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 std::unique_ptr<HostResolver::ResolveHostRequest>

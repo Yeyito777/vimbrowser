@@ -99,93 +99,7 @@ chromium_strings.grd. -->
     <output filename="branded_strings_en-XA.pak" type="data_package" lang="en-XA" />
 
     <!-- On Android, output some strings into Android's xml string format.
-         These strings are tagged with formatter_data="android_java" -->
-    <if expr="is_android">
-      <output filename="java/res/values-af/branded_strings.xml" lang="af" type="android" context="android_java" />
-      <output filename="java/res/values-am/branded_strings.xml" lang="am" type="android" context="android_java" />
-      <output filename="java/res/values-ar/branded_strings.xml" lang="ar" type="android" context="android_java" />
-      <output filename="java/res/values-as/branded_strings.xml" lang="as" type="android" context="android_java" />
-      <output filename="java/res/values-az/branded_strings.xml" lang="az" type="android" context="android_java" />
-      <output filename="java/res/values-be/branded_strings.xml" lang="be" type="android" context="android_java" />
-      <output filename="java/res/values-bg/branded_strings.xml" lang="bg" type="android" context="android_java" />
-      <output filename="java/res/values-bn/branded_strings.xml" lang="bn" type="android" context="android_java" />
-      <output filename="java/res/values-bs/branded_strings.xml" lang="bs" type="android" context="android_java" />
-      <output filename="java/res/values-ca/branded_strings.xml" lang="ca" type="android" context="android_java" />
-      <output filename="java/res/values-cs/branded_strings.xml" lang="cs" type="android" context="android_java" />
-      <output filename="java/res/values-da/branded_strings.xml" lang="da" type="android" context="android_java" />
-      <output filename="java/res/values-de/branded_strings.xml" lang="de" type="android" context="android_java" />
-      <output filename="java/res/values-el/branded_strings.xml" lang="el" type="android" context="android_java" />
-      <output filename="java/res/values/branded_strings.xml" lang="en" type="android" context="android_java" />
-      <output filename="java/res/values-en-rGB/branded_strings.xml" lang="en-GB" type="android" context="android_java" />
-      <output filename="java/res/values-es/branded_strings.xml" lang="es" type="android" context="android_java" />
-      <output filename="java/res/values-es-rUS/branded_strings.xml" lang="es-419" type="android" context="android_java" />
-      <output filename="java/res/values-et/branded_strings.xml" lang="et" type="android" context="android_java" />
-      <output filename="java/res/values-eu/branded_strings.xml" lang="eu" type="android" context="android_java" />
-      <output filename="java/res/values-fa/branded_strings.xml" lang="fa" type="android" context="android_java" />
-      <output filename="java/res/values-fi/branded_strings.xml" lang="fi" type="android" context="android_java" />
-      <output filename="java/res/values-tl/branded_strings.xml" lang="fil" type="android" context="android_java" />
-      <output filename="java/res/values-fr/branded_strings.xml" lang="fr" type="android" context="android_java" />
-      <output filename="java/res/values-fr-rCA/branded_strings.xml" lang="fr-CA" type="android" context="android_java" />
-      <output filename="java/res/values-gl/branded_strings.xml" lang="gl" type="android" context="android_java" />
-      <output filename="java/res/values-gu/branded_strings.xml" lang="gu" type="android" context="android_java" />
-      <output filename="java/res/values-iw/branded_strings.xml" lang="he" type="android" context="android_java" />
-      <output filename="java/res/values-hi/branded_strings.xml" lang="hi" type="android" context="android_java" />
-      <output filename="java/res/values-hr/branded_strings.xml" lang="hr" type="android" context="android_java" />
-      <output filename="java/res/values-hu/branded_strings.xml" lang="hu" type="android" context="android_java" />
-      <output filename="java/res/values-hy/branded_strings.xml" lang="hy" type="android" context="android_java" />
-      <output filename="java/res/values-in/branded_strings.xml" lang="id" type="android" context="android_java" />
-      <output filename="java/res/values-is/branded_strings.xml" lang="is" type="android" context="android_java" />
-      <output filename="java/res/values-it/branded_strings.xml" lang="it" type="android" context="android_java" />
-      <output filename="java/res/values-ja/branded_strings.xml" lang="ja" type="android" context="android_java" />
-      <output filename="java/res/values-ka/branded_strings.xml" lang="ka" type="android" context="android_java" />
-      <output filename="java/res/values-kk/branded_strings.xml" lang="kk" type="android" context="android_java" />
-      <output filename="java/res/values-km/branded_strings.xml" lang="km" type="android" context="android_java" />
-      <output filename="java/res/values-kn/branded_strings.xml" lang="kn" type="android" context="android_java" />
-      <output filename="java/res/values-ko/branded_strings.xml" lang="ko" type="android" context="android_java" />
-      <output filename="java/res/values-ky/branded_strings.xml" lang="ky" type="android" context="android_java" />
-      <output filename="java/res/values-lo/branded_strings.xml" lang="lo" type="android" context="android_java" />
-      <output filename="java/res/values-lt/branded_strings.xml" lang="lt" type="android" context="android_java" />
-      <output filename="java/res/values-lv/branded_strings.xml" lang="lv" type="android" context="android_java" />
-      <output filename="java/res/values-mk/branded_strings.xml" lang="mk" type="android" context="android_java" />
-      <output filename="java/res/values-ml/branded_strings.xml" lang="ml" type="android" context="android_java" />
-      <output filename="java/res/values-mn/branded_strings.xml" lang="mn" type="android" context="android_java" />
-      <output filename="java/res/values-mr/branded_strings.xml" lang="mr" type="android" context="android_java" />
-      <output filename="java/res/values-ms/branded_strings.xml" lang="ms" type="android" context="android_java" />
-      <output filename="java/res/values-my/branded_strings.xml" lang="my" type="android" context="android_java" />
-      <output filename="java/res/values-ne/branded_strings.xml" lang="ne" type="android" context="android_java" />
-      <output filename="java/res/values-nl/branded_strings.xml" lang="nl" type="android" context="android_java" />
-      <output filename="java/res/values-nb/branded_strings.xml" lang="no" type="android" context="android_java" />
-      <output filename="java/res/values-or/branded_strings.xml" lang="or" type="android" context="android_java" />
-      <output filename="java/res/values-pa/branded_strings.xml" lang="pa" type="android" context="android_java" />
-      <output filename="java/res/values-pl/branded_strings.xml" lang="pl" type="android" context="android_java" />
-      <output filename="java/res/values-pt-rBR/branded_strings.xml" lang="pt-BR" type="android" context="android_java" />
-      <output filename="java/res/values-pt-rPT/branded_strings.xml" lang="pt-PT" type="android" context="android_java" />
-      <output filename="java/res/values-ro/branded_strings.xml" lang="ro" type="android" context="android_java" />
-      <output filename="java/res/values-ru/branded_strings.xml" lang="ru" type="android" context="android_java" />
-      <output filename="java/res/values-si/branded_strings.xml" lang="si" type="android" context="android_java" />
-      <output filename="java/res/values-sk/branded_strings.xml" lang="sk" type="android" context="android_java" />
-      <output filename="java/res/values-sl/branded_strings.xml" lang="sl" type="android" context="android_java" />
-      <output filename="java/res/values-sq/branded_strings.xml" lang="sq" type="android" context="android_java" />
-      <output filename="java/res/values-sr/branded_strings.xml" lang="sr" type="android" context="android_java" />
-      <output filename="java/res/values-b+sr+Latn/branded_strings.xml" lang="sr-Latn" type="android" context="android_java" />
-      <output filename="java/res/values-sv/branded_strings.xml" lang="sv" type="android" context="android_java" />
-      <output filename="java/res/values-sw/branded_strings.xml" lang="sw" type="android" context="android_java" />
-      <output filename="java/res/values-ta/branded_strings.xml" lang="ta" type="android" context="android_java" />
-      <output filename="java/res/values-te/branded_strings.xml" lang="te" type="android" context="android_java" />
-      <output filename="java/res/values-th/branded_strings.xml" lang="th" type="android" context="android_java" />
-      <output filename="java/res/values-tr/branded_strings.xml" lang="tr" type="android" context="android_java" />
-      <output filename="java/res/values-uk/branded_strings.xml" lang="uk" type="android" context="android_java" />
-      <output filename="java/res/values-ur/branded_strings.xml" lang="ur" type="android" context="android_java" />
-      <output filename="java/res/values-uz/branded_strings.xml" lang="uz" type="android" context="android_java" />
-      <output filename="java/res/values-vi/branded_strings.xml" lang="vi" type="android" context="android_java" />
-      <output filename="java/res/values-zh-rCN/branded_strings.xml" lang="zh-CN" type="android" context="android_java" />
-      <output filename="java/res/values-zh-rHK/branded_strings.xml" lang="zh-HK" type="android" context="android_java" />
-      <output filename="java/res/values-zh-rTW/branded_strings.xml" lang="zh-TW" type="android" context="android_java" />
-      <output filename="java/res/values-zu/branded_strings.xml" lang="zu" type="android" context="android_java" />
-      <!-- Pseudolocales -->
-      <output filename="java/res/values-ar-rXB/branded_strings.xml" lang="ar-XB" type="android" context="android_java" />
-      <output filename="java/res/values-en-rXA/branded_strings.xml" lang="en-XA" type="android" context="android_java" />
-    </if>
+         These strings are tagged with -->
   </outputs>
   <translations>
     <file path="resources/google_chrome_strings_af.xtb" lang="af" />
@@ -274,9 +188,7 @@ chromium_strings.grd. -->
   <release seq="1">
     <messages fallback_to_english="true">
       <!-- Settings specific strings -->
-      <if expr="not is_android">
         <part file="settings_google_chrome_strings.grdp" />
-      </if>
 
       <message name="IDS_PRODUCT_NAME" desc="The Chrome application name" translateable="false">
         Google Chrome
@@ -346,7 +258,7 @@ chromium_strings.grd. -->
           </message>
         </if>
       </if>
-      <message name="IDS_PRODUCT_LOGO_ENTERPRISE_ALT_TEXT" desc="Alt text for the Chrome Enterprise logo image." formatter_data="android_java">
+      <message name="IDS_PRODUCT_LOGO_ENTERPRISE_ALT_TEXT" desc="Alt text for the Chrome Enterprise logo image.">
         Chrome Enterprise logo
       </message>
       <if expr="is_win">
@@ -359,7 +271,7 @@ chromium_strings.grd. -->
           Task Manager
         </message>
       </if>
-      <if expr="not is_macosx and not is_chromeos">
+      <if expr="not is_macosx and (not is_chromeos)">
         <message name="IDS_TASK_MANAGER_TITLE" desc="The title of the Task Manager window">
           Task Manager - Google Chrome
         </message>
@@ -397,20 +309,11 @@ chromium_strings.grd. -->
       <message name="IDS_SESSION_CRASHED_VIEW_UMA_OPTIN" desc="Text besides the checkbox to let users optin to UMA in the restore from previous crash bubble.">
         Help make Google Chrome better by sending crash reports and <ph name="UMA_LINK">$1<ex>usage statistics</ex></ph> to Google
       </message>
-      <if expr="not is_android">
         <message name="IDS_CHROME_SIGNOUT_CONFIRMATION_PROMPT_TOO_MANY_BOOKMARKS_BODY" desc="Body of the signout confirmation dialog when the user has too many bookmarks.">
         You reached Google Chrome’s limit of <ph name="BOOKMARK_LIMIT">$1<ex>100,000</ex></ph> bookmarks, so some of your bookmarks haven’t been saved in your Google Account yet.
 
 New bookmarks can’t be saved in your account until you delete some. If you sign out now, unsaved bookmarks will be deleted.
         </message>
-      </if>
-      <if expr="is_android">
-        <message name="IDS_CHROME_SIGNOUT_CONFIRMATION_PROMPT_TOO_MANY_BOOKMARKS_BODY" desc="Body of the signout confirmation dialog when the user has too many bookmarks." formatter_data="android_java">
-        You reached Google Chrome’s limit of <ph name="BOOKMARK_LIMIT">%1$s<ex>100,000</ex></ph> bookmarks, so some of your bookmarks haven’t been saved in your Google Account yet.
-
-New bookmarks can’t be saved in your account until you delete some. If you sign out now, unsaved bookmarks will be deleted.
-        </message>
-      </if>
       <!-- Reset Profile Settings strings -->
       <message name="IDS_RESET_PROFILE_SETTINGS_EXPLANATION_IN_BULLET_POINTS" desc="A label formatted with bullet points describing the consequences of the 'reset profile settings' feature">
         This action will:
@@ -435,7 +338,7 @@ New bookmarks can’t be saved in your account until you delete some. If you sig
           Chrome - <ph name="PAGE_TITLE">$1<ex>Google</ex></ph>
         </message>
       </if>
-      <if expr="not is_chromeos and not is_macosx">
+      <if expr="not is_chromeos and (not is_macosx)">
         <!-- Captive Portal Browser Window Title Format -->
         <message name="IDS_CAPTIVE_PORTAL_BROWSER_WINDOW_TITLE_FORMAT" desc="The format for titles displayed in captive portal popup windows">
           <ph name="PAGE_TITLE">$1<ex>Google</ex></ph> - Network Sign-in - Chrome
@@ -537,7 +440,7 @@ New bookmarks can’t be saved in your account until you delete some. If you sig
         </message>
       </if>
       <!-- General app failure messages -->
-      <if expr="not is_chromeos and not is_android">
+      <if expr="not is_chromeos">
         <message name="IDS_COULDNT_STARTUP_PROFILE_ERROR" desc="Error displayed when Chrome cannot start because profiles were not opened correctly.">
           Cannot start Chrome because something went wrong when opening your profile. Try to restart Chrome.
         </message>
@@ -711,14 +614,12 @@ Google Chrome is unable to recover your settings.
           Provides system tracing services for <ph name="BROWSER_NAME">$1<ex>Google Chrome</ex></ph>. If this service is disabled, performance traces created by the browser will not include system-wide events such as context switch and ready thread events.
         </message>
       </if>
-      <if expr="not is_android">
         <message name="IDS_PASSWORD_MANAGER_IMPORT_DIALOG_TITLE" desc="The title of the file selection dialog for importing passwords">
           Import Passwords To Chrome
         </message>
         <message name="IDS_PASSWORD_MANAGER_EXPORT_DIALOG_TITLE" desc="The title of the file selection dialog for exporting passwords">
           Export Passwords From Chrome
         </message>
-      </if>
       <!-- Options Dialog -->
       <if expr="is_win">
         <message name="IDS_SHORTCUT_TOOLTIP" desc="Text for the hover-on tooltip for the Google Chrome shortcuts.">
@@ -751,7 +652,7 @@ Google Chrome is unable to recover your settings.
       <message name="IDS_DEFAULT_BROWSER_PIN_INFOBAR_TEXT" desc="Text to show in an infobar when Google Chrome is not the current default browser and can be pinned to the taskbar.">
         Set Google Chrome as your default browser and pin it to your taskbar
       </message>
-      <if expr="not is_android and not is_chromeos">
+      <if expr="not is_chromeos">
         <message name="IDS_DEFAULT_BROWSER_MODAL_TITLE_WITH_SETTINGS_ILLUSTRATION" desc="Title of the default browser modal with settings illustration.">
           Set Google Chrome as your default browser
         </message>
@@ -1009,7 +910,7 @@ Google Chrome is unable to recover your settings.
         &amp;Open in Chrome
       </message>
 
-      <if expr="use_titlecase and not is_chromeos">
+      <if expr="use_titlecase and (not is_chromeos)">
         <message name="IDS_ABOUT" desc="In Title Case: The text label of the About Chrome menu item">
           About &amp;Google Chrome
         </message>
@@ -1017,7 +918,7 @@ Google Chrome is unable to recover your settings.
           Relaunch to Update &amp;Chrome
         </message>
       </if>
-      <if expr="not use_titlecase and not is_chromeos">
+      <if expr="not use_titlecase and (not is_chromeos)">
         <message name="IDS_ABOUT" desc="The text label of the About Chrome menu item">
           About &amp;Google Chrome
         </message>
@@ -1054,7 +955,6 @@ Google Chrome is unable to recover your settings.
       </if>
 
       <!-- Page menu. Android has separate strings for its menu -->
-      <if expr="not is_android">
         <if expr="use_titlecase">
           <then>
             <message name="IDS_CUSTOMIZE_CHROME" desc="In Title Case: The text label of the Customize Chrome menu item">
@@ -1079,7 +979,6 @@ Google Chrome is unable to recover your settings.
             </message>
           </else>
         </if>
-      </if>
 
       <message name="IDS_VIEW_PASSWORDS" desc="Item in the app menu which shows Password Manager page">
         Google P&amp;assword Manager
@@ -1194,7 +1093,7 @@ Google Chrome is unable to recover your settings.
       </if>
 
       <!-- about:browser-switch strings -->
-      <if expr="toolkit_views and not is_chromeos">
+      <if expr="toolkit_views and (not is_chromeos)">
         <message name="IDS_ABOUT_BROWSER_SWITCH_DESCRIPTION_UNKNOWN_BROWSER" desc="Description shown while waiting for an alternative browser to open, when the browser name is not auto-detected">
           Your system administrator has configured Google Chrome to open an alternative browser to access <ph name="TARGET_URL_HOSTNAME">$1<ex>example.com</ex></ph>.
         </message>
@@ -1218,7 +1117,6 @@ Google Chrome is unable to recover your settings.
       </message>
 
       <!-- New Tab Page browser feature promotions. -->
-      <if expr="not is_android">
         <message name="IDS_NTP_CUSTOMIZATION_PROMO" desc="The text shown in the body of the New Tab Page browser customization promotion">
           Customize Chrome to give your browser a new look
         </message>
@@ -1231,7 +1129,6 @@ Google Chrome is unable to recover your settings.
         <message name="IDS_NTP_SIGN_IN_PROMO_WITH_BOOKMARKS" desc="The text shown in the body of the New Tab Page sign in promotion">
           Sign in to Chrome to get your passwords, bookmarks, and more on all your devices
         </message>
-      </if>
 
       <!-- Customize Chrome Auto Promo Strings -->
       <message name="IDS_IPH_CUSTOMIZE_CHROME_AUTO_OPEN_BODY" desc="The description of the IPH to auto open Customize Chrome">
@@ -1279,7 +1176,7 @@ Google Chrome is unable to recover your settings.
           Use Chrome Without an Account
         </message>
       </if>
-      <if expr="not is_chromeos and not is_android">
+      <if expr="not is_chromeos">
         <message name="IDS_SIGNIN_DICE_WEB_INTERCEPT_CREATE_BUBBLE_TITLE_V2" desc="Title of the web signin interception bubble used when Explicit browser Sign in is enabled">
           Sign in to Chrome in a new profile?
         </message>
@@ -1368,7 +1265,7 @@ Google Chrome is unable to recover your settings.
         </message>
       </if>
 
-      <if expr="not is_chromeos and not is_android">
+      <if expr="not is_chromeos">
         <!-- Profile Customization Web UI -->
         <message name="IDS_PROFILE_CUSTOMIZATION_TEXT" desc="Text of the profile customization bubble">
           Customize your new Chrome profile
@@ -1504,7 +1401,6 @@ Google Chrome is unable to recover your settings.
         Google Chrome is using your camera.
       </message>
 
-      <if expr="not is_android">
         <!-- WebHID system tray icon -->
         <message name="IDS_WEBHID_SYSTEM_TRAY_ICON_TITLE" desc="Title for the WebHID system tray icon">
             {NUM_DEVICES, plural,
@@ -1520,7 +1416,6 @@ Google Chrome is unable to recover your settings.
               =1 {1 USB device is being accessed by one or more Chrome extensions}
             other {# USB devices are being accessed by one or more Chrome extensions}}
         </message>
-      </if>
 
       <!-- ProcessSingleton -->
       <if expr="is_posix">
@@ -1537,7 +1432,7 @@ Google Chrome is unable to recover your settings.
       </if>
 
       <!-- Material Design User Manager -->
-      <if expr="not is_android and not is_chromeos">
+      <if expr="not is_chromeos">
         <!-- User pod remove sync warning text -->
         <message name="IDS_LOGIN_POD_USER_REMOVE_WARNING_SYNC" desc="Main text shown as a warning when attempting to remove an user.">
           This person's browsing data will be deleted from this device. To recover the data, sign in to Chrome as <ph name="USER_EMAIL">$2<ex>foo@example.com</ex></ph>.
@@ -1570,7 +1465,6 @@ Google Chrome is unable to recover your settings.
         </message>
       </if>
 
-      <if expr="not is_android">
       <!-- Password Manager Tutorial Strings -->
         <message name="IDS_TUTORIAL_PASSWORD_MANAGER_OPEN_APP_MENU" desc="The description of the 'open add menu' step in password manager tutorial">
           Click the Chrome menu
@@ -1584,7 +1478,6 @@ Google Chrome is unable to recover your settings.
         <message name="IDS_PASSWORD_MANAGER_IPH_CREATE_SHORTCUT_BODY" desc="Body of the in Product Help shown after successfully logging into a website telling user about how to create a shortcut">
           Add a shortcut to Google Password Manager
         </message>
-      </if>
 
       <!-- Quiet Notification IPH -->
       <message name="IDS_QUIET_NOTIFICATION_IPH_TEXT" desc="Text of the blocked notifications indicator promo, that shows under the blocked notifications indicator in the address bar, when a site requests notifications permission. The promo informs the user that as a result of them usually blocking notifications, the request from the site is automatically blocked, and the user can click on the icon to allow notifications.">
@@ -1644,7 +1537,6 @@ Google Chrome is unable to recover your settings.
       </if>
 
       <!-- content area context menus. Android does not use it -->
-      <if expr="not is_android">
         <message name="IDS_CONTENT_CONTEXT_ACCESSIBILITY_LABELS_BUBBLE_TEXT" desc="The text of a bubble that confirms users allows integrating the accessibility labels service of Google to Chromium.">
           If an image doesn’t have a useful description, Chrome will try to provide one for you. To create descriptions, images are sent to Google. You can turn this off in settings at any time.
         </message>
@@ -1670,7 +1562,6 @@ Google Chrome is unable to recover your settings.
             Open Link in Chrome Inco&amp;gnito Window
           </message>
         </if>
-      </if>
 
       <!-- Update Recommended dialog -->
       <if expr="not is_chromeos">
@@ -1820,54 +1711,6 @@ Google Chrome is unable to recover your settings.
       </message>
 
       <!-- Runtime permission strings -->
-      <if expr="is_android">
-        <message name="IDS_INFOBAR_MISSING_AR_CAMERA_PERMISSION_TEXT" desc="Text shown in an infobar when a website has requested access to augmented reality capabilities, but Chrome is missing the Android camera permission.">
-          Chrome needs permission to access your camera to create a 3D map of your surroundings
-        </message>
-        <message name="IDS_INFOBAR_MISSING_CAMERA_PERMISSION_TEXT" desc="Text shown in an infobar when a website has requested access to the camera capabilities, but Chrome is missing the Android camera permission.">
-          Chrome needs permission to access your camera for this site
-        </message>
-        <message name="IDS_INFOBAR_MISSING_HAND_TRACKING_PERMISSION_TEXT" desc="Text shown in an infobar when a website has requested access to hand tracking capabilities, but Chrome is missing the Android hand tracking permission.">
-          Chrome needs permission to track your hands
-        </message>
-        <message name="IDS_INFOBAR_MISSING_MICROPHONE_PERMISSION_TEXT" desc="Text shown in an infobar when a website has requested access to the microphone capabilities, but Chrome is missing the Android microphone permission.">
-          Chrome needs permission to access your microphone for this site
-        </message>
-        <message name="IDS_INFOBAR_MISSING_MICROPHONE_CAMERA_PERMISSIONS_TEXT" desc="Text shown in an infobar when a website has requested access to the microphone and camera capabilities, but Chrome is missing the Android microphone and camera permissions.">
-          Chrome needs permission to access your camera and microphone for this site
-        </message>
-        <message name="IDS_INFOBAR_MISSING_LOCATION_PERMISSION_TEXT" desc="Text shown in an infobar when a website has requested access to the location capabilities, but Chrome is missing the Android location permission.">
-          Chrome needs access to your location to share your location with this site
-        </message>
-        <message name="IDS_MISSING_STORAGE_PERMISSION_DOWNLOAD_EDUCATION_TEXT" desc="Text shown educating the user that Chrome is missing the Android storage permission, which is required to download files.">
-          Chrome needs storage access to download files
-        </message>
-
-        <message name="IDS_MESSAGE_MISSING_AR_CAMERA_PERMISSION_TEXT" desc="Text shown in a prompt ui when a website has requested access to augmented reality capabilities, but Chrome is missing the Android camera permission.">
-          Chrome needs camera permission to create a 3D map of your surroundings
-        </message>
-        <message name="IDS_MESSAGE_MISSING_CAMERA_PERMISSION_TEXT" desc="Text shown in a prompt ui when a website has requested access to the camera capabilities, but Chrome is missing the Android camera permission.">
-          Chrome needs camera permission for this site
-        </message>
-        <message name="IDS_MESSAGE_MISSING_HAND_TRACKING_PERMISSION_TEXT" desc="Text shown in an infobar when a website has requested access to mixed reality capabilities, but Chrome is missing the Android hand tracking permission.">
-          Chrome needs permission to track your hands
-        </message>
-        <message name="IDS_MESSAGE_MISSING_MICROPHONE_PERMISSION_TEXT" desc="Text shown in a prompt ui when a website has requested access to the microphone capabilities, but Chrome is missing the Android microphone permission.">
-          Chrome needs microphone permission for this site
-        </message>
-        <message name="IDS_MESSAGE_MISSING_MICROPHONE_CAMERA_PERMISSIONS_TEXT" desc="Text shown in a prompt ui when a website has requested access to the microphone and camera capabilities, but Chrome is missing the Android microphone and camera permissions.">
-          Chrome needs camera and microphone permissions for this site
-        </message>
-        <message name="IDS_MESSAGE_MISSING_LOCATION_PERMISSION_TEXT" desc="Text shown in a prompt ui when a website has requested access to the location capabilities, but Chrome is missing the Android location permission.">
-          Chrome needs location permission for this site
-        </message>
-        <message name="IDS_MESSAGE_STORAGE_ACCESS_PERMISSION_TEXT" desc="Text shown educating the user that Chrome is missing the Android storage permission, which is required to download files.">
-          Chrome needs storage access permission to download files
-        </message>
-        <message name="IDS_MESSAGE_MISSING_XR_PERMISSION_TEXT" desc="Text shown in an infobar when a website has requested access to mixed reality capabilities, but Chrome is missing the Android scene understanding and hand tracking permission.">
-          Chrome needs permission to map your surroundings and track your hands
-        </message>
-      </if>
 
       <if expr="is_macosx">
         <message name="IDS_RUNTIME_PERMISSION_OS_REASON_TEXT" desc="Text provided to the macOS permission dialog, explaining why Chrome needs to access a protected resource (e.g., camera, microphone).">
@@ -1898,7 +1741,6 @@ Google Chrome is unable to recover your settings.
         Send feedback for search with Lens
       </message>
 
-      <if expr="not is_android">
         <!-- Side Panel Pinnable Entrypoint Strings -->
         <message name="IDS_SIDE_PANEL_LENS_OVERLAY_PINNABLE_IPH"
           desc="The body text of the IPH describing that the Lens Overlay panel is pinnable.">
@@ -2188,14 +2030,12 @@ Google Chrome is unable to recover your settings.
           desc="Label for the Lens overlay command, through which the video will be searched using Google Lens.">
           Search this video with Google Lens
         </message>
-      </if>
 
       <message name="IDS_AI_MODE_ENTRYPOINT_LABEL"
-        desc="The label of the AI mode entrypoint in the omnibox" formatter_data="android_java">
+        desc="The label of the AI mode entrypoint in the omnibox">
         AI Mode
       </message>
 
-      <if expr="not is_android">
         <!-- Lens Side Panel Error Page -->
         <message name="IDS_SIDE_PANEL_LENS_OVERLAY_GENERIC_ERROR_PAGE_FIRST_LINE"
             desc="Text shown on the side panel for the Lens feature when there is a network or other server error. The texts informs the user that an error has occured.">
@@ -2350,7 +2190,6 @@ Google Chrome is unable to recover your settings.
             Sign In to Chrome?
           </message>
         </if>
-      </if>
 
       <!-- OOBE -->
       <if expr="is_chromeos">
@@ -2376,7 +2215,6 @@ Google Chrome is unable to recover your settings.
         </message>
       </if>
       <!-- Relaunch notification bubble and dialog. -->
-      <if expr="not is_android">
         <if expr="not is_chromeos">
           <message name="IDS_RELAUNCH_RECOMMENDED_TITLE" desc="The title of a dialog that tells users that a browser relaunch is recommended for an update available for some number of days.">
             {0, plural,
@@ -2424,10 +2262,9 @@ Google Chrome is unable to recover your settings.
               other {Advanced Protection requires that you relaunch Chrome to apply an update. Your # Incognito windows won't reopen.}}
           </message>
         </if>
-      </if>
 
       <!-- Chrome launch blocking dialog. -->
-      <if expr="not is_android and not is_chromeos">
+      <if expr="not is_chromeos">
         <message name="IDS_ENTERPRISE_STARTUP_CLOUD_POLICY_ENROLLMENT_TOOLTIP" desc="The information message of Chrome launch blocking dialog for machine level user cloud policy enrollment.">
           Launching Chrome...
         </message>
@@ -2457,7 +2294,7 @@ Google Chrome is unable to recover your settings.
       </message>
     </if>
     <!-- Idle timeout dialog. -->
-    <if expr="not is_android and not is_chromeos">
+    <if expr="not is_chromeos">
       <message name="IDS_IDLE_TIMEOUT_CLOSE_TITLE" desc="Title of the Idle Timeout dialog, warning the user that their windows are about to close.">
         Chrome will soon close
       </message>
@@ -2490,18 +2327,11 @@ Google Chrome is unable to recover your settings.
     </if>
 
       <!-- User happiness tracking survey UI -->
-      <if expr="not is_android">
         <message name="IDS_HATS_BUBBLE_TITLE" translateable="false" desc="The title of Happiness Tracking Survey's invitation banner, it invites users to take a survey">
           Take a quick survey
         </message>
-      </if>
 
       <!-- HaTS invitations on Android -->
-      <if expr="is_android">
-        <message name="IDS_MESSAGE_ACT_SURVEY_INVITATION" desc="Survey invitation text that's shown in a pop up. The user can then ignore the invitation or accept it, which will cause the survey to be shown.">
-          Help us improve Incognito by taking this 1 minute survey.
-        </message>
-      </if>
 
       <!-- Chrome parent extension/app install blocking dialog. -->
       <if expr="enable_extensions_core">
@@ -2534,7 +2364,7 @@ Google Chrome is unable to recover your settings.
         </message>
       </if>
 
-      <if expr="not is_chromeos and not is_android">
+      <if expr="not is_chromeos">
         <!-- Enterprise profile welcome screen -->
         <message name="IDS_ENTERPRISE_WELCOME_PROFILE_INFORMATION_DETAILS" desc="Paragraph disclaiming to the user what their organization can do with their profile information.">
           Your organization can see and manage browsing data, such as your bookmarks, history, and passwords. It can't see browsing data in other Chrome profiles
@@ -2956,21 +2786,16 @@ Google Chrome is unable to recover your settings.
       </if>
 
       <!-- Memory Saver Chip strings -->
-      <if expr="not is_android">
         <message name="IDS_MEMORY_SAVER_DIALOG_BODY" desc="Body text for a dialog describing that Memory Saver mode will use less memory.">
           While this tab was inactive, memory was freed up to keep Chrome fast. You can choose to always exclude this site from being inactive.
         </message>
-      </if>
 
       <!-- Memory Saver IPH strings -->
-      <if expr="not is_android">
         <message name="IDS_MEMORY_SAVER_MODE_PROMO_TITLE" desc="The title for the Memory Saver mode in-product promo bubble">
           Make Chrome faster
         </message>
-      </if>
 
       <!-- Performance Intervention Dialog strings -->
-      <if expr="not is_android">
         <message name="IDS_PERFORMANCE_INTERVENTION_DIALOG_BODY_V1" desc="Body text for a dialog suggesting users to deactivate certain tabs to improve performance.">
           These tabs are using extra resources. To improve your performance, let Chrome make them inactive.
         </message>
@@ -2991,7 +2816,6 @@ Google Chrome is unable to recover your settings.
             other {Chrome recommends pausing the tabs slowing your browser}}
           </message>
         </if>
-      </if>
 
       <!-- Delete Browsing Data -->
       <message name="IDS_SETTINGS_CLEAR_BROWSING_DATA_SIGNED_IN" desc="Description in the footer of the Delete Browsing Data dialog when the user is signed.">
@@ -2999,7 +2823,7 @@ Google Chrome is unable to recover your settings.
       </message>
 
       <!-- New Create Shortcut View Strings-->
-      <if expr="not is_android and not is_chromeos">
+      <if expr="not is_chromeos">
         <message name="IDS_CREATE_SHORTCUT_NOT_APPS_DIALOG_SUBTITLE" desc="Subtitle of the updated Create Shortcut dialog about how the site opens for Chrome">
           Shortcuts open in Chrome
         </message>
@@ -3011,11 +2835,9 @@ Google Chrome is unable to recover your settings.
       </if>
 
       <!-- Toast Strings-->
-      <if expr="not is_android">
         <message name="IDS_CLEAR_BROWSING_DATA_TOAST_BODY" desc="Text on a toast notification that is shown when browsing data is successfully cleared.">
           Cleared Chrome data
         </message>
-      </if>
       <message name="IDS_SKILL_SAVED_TOAST_BUTTON" desc="Text on the toast action button after a skill is saved">
         Try with Gemini in Chrome
       </message>
@@ -3147,7 +2969,6 @@ Google Chrome is unable to recover your settings.
       </message>
 
       <!-- Profile menu strings -->
-      <if expr="not is_android">
         <if expr="use_titlecase">
           <message name="IDS_PROFILE_MENU_ACCOUNT_SETTINGS_BUTTON" desc="Button in the avatar menu bubble view for opening Chrome account settings.">
             Your Account in Chrome
@@ -3158,10 +2979,8 @@ Google Chrome is unable to recover your settings.
             Your account in Chrome
           </message>
         </if>
-      </if>
 
       <!--Desktop to iOS promo strings-->
-      <if expr="not is_android">
         <message name="IDS_IOS_DESKTOP_ESB_PROMO_BUBBLE_DESCRIPTION_REMINDER" desc="The description for the iOS desktop ESB promo bubble with a reminder button.">
           Stay safer on the go with Enhanced Safe Browsing on Chrome for iOS
         </message>
@@ -3223,7 +3042,6 @@ Google Chrome is unable to recover your settings.
         <message name="IDS_IOS_DESKTOP_TAB_GROUPS_REMINDER_CONFIRMATION" desc="Body text of the promo bubble that appears after the user chooses to be reminded of tab groups on their iOS device.">
           Next time you open Chrome on your <ph name="DEVICE_TYPE">$1<ex>iPhone</ex></ph>, you'll see a prompt to use tab groups.
         </message>
-      </if>
 
       <!--Default Search Engine Reset Notification-->
       <message name="IDS_DEFAULT_SEARCH_ENGINE_RESET_NOTIFICATION_TITLE"

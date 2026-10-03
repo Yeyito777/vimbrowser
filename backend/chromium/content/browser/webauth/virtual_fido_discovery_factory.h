@@ -49,10 +49,6 @@ class VirtualFidoDiscoveryFactory
   std::vector<std::unique_ptr<::device::FidoDiscoveryBase>> Create(
       device::FidoTransportProtocol transport) override;
   bool IsTestOverride() override;
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<device::FidoDiscoveryBase>
-  MaybeCreateWinWebAuthnApiDiscovery() override;
-#endif
 
  private:
   // VirtualAuthenticatorManagerImpl::Observer:

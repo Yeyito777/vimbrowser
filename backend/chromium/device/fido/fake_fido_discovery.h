@@ -130,10 +130,6 @@ class FakeFidoDiscoveryFactory : public device::FidoDiscoveryFactory {
   std::vector<std::unique_ptr<FidoDiscoveryBase>> Create(
       FidoTransportProtocol transport) override;
 
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<device::FidoDiscoveryBase>
-  MaybeCreateWinWebAuthnApiDiscovery() override;
-#endif
 
  private:
   std::unique_ptr<FakeFidoDiscovery> next_hid_discovery_;

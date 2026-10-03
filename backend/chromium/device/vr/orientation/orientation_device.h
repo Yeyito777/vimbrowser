@@ -30,11 +30,7 @@ class VROrientationSession;
 // TODO(crbug.com/41323676) If RELATIVE_ORIENTATION_QUATERNION is ever
 // implemented on Windows, use that instead.
 static constexpr mojom::SensorType kOrientationSensorType =
-#if BUILDFLAG(IS_WIN)
-    mojom::SensorType::ABSOLUTE_ORIENTATION_QUATERNION;
-#else
     mojom::SensorType::RELATIVE_ORIENTATION_QUATERNION;
-#endif
 
 // This class connects the orientation sensor events to the Web VR apis.
 class COMPONENT_EXPORT(VR_ORIENTATION) VROrientationDevice

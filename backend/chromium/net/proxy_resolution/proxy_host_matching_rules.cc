@@ -262,10 +262,6 @@ bool ProxyHostMatchingRules::MatchesImplicitRules(const GURL& url) {
   //     [FE80::]/10
   return IsLocalhost(url) || IsIPv4MappedLoopback(url) ||
          IsLinkLocalIP(url)
-#if BUILDFLAG(IS_WIN)
-         // See http://crbug.com/904889
-         || (url.host() == "loopback") || (url.host() == "loopback.")
-#endif
       ;
 }
 

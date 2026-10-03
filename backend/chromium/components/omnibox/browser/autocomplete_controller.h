@@ -302,12 +302,6 @@ class AutocompleteController : public AutocompleteProviderListener,
   // match into the result set, currently still needed only by iOS.
   size_t InjectAdHocMatch(AutocompleteMatch match);
 
-#if BUILDFLAG(IS_IOS)
-  // Sets the position of the omnibox when it's in steady state (unfocused).
-  // Only used on iOS for logging purposes.
-  virtual void SetSteadyStateOmniboxPosition(
-      metrics::OmniboxEventProto::OmniboxPosition position);
-#endif
 
  private:
   friend class FakeAutocompleteController;
@@ -320,9 +314,6 @@ class AutocompleteController : public AutocompleteProviderListener,
   friend class OmniboxSearchAggregatorTest;
   friend class extensions::UnscopedOmniboxApiTest;
   friend class SearchPreloadResponseController;
-#if BUILDFLAG(IS_IOS)
-  friend class FakeSuggestionsAutocompleteController;
-#endif
   FRIEND_TEST_ALL_PREFIXES(AutocompleteControllerTest,
                            FilterMatchesForInstantKeywordWithBareAt);
   FRIEND_TEST_ALL_PREFIXES(AutocompleteControllerTest,
@@ -362,9 +353,6 @@ class AutocompleteController : public AutocompleteProviderListener,
   FRIEND_TEST_ALL_PREFIXES(OmniboxViewViewsTest, FriendlyAccessibleLabel);
   FRIEND_TEST_ALL_PREFIXES(OmniboxViewViewsTest, AccessiblePopup);
   FRIEND_TEST_ALL_PREFIXES(OmniboxViewViewsTest, MaintainCursorAfterFocusCycle);
-#if BUILDFLAG(IS_WIN)
-  FRIEND_TEST_ALL_PREFIXES(OmniboxViewViewsUIATest, AccessibleOmnibox);
-#endif
   FRIEND_TEST_ALL_PREFIXES(OmniboxPopupViewViewsTest,
                            EmitSelectedChildrenChangedAccessibilityEvent);
   FRIEND_TEST_ALL_PREFIXES(OmniboxPopupViewViewsTest,

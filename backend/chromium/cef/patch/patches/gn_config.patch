@@ -165,10 +165,10 @@ index cd2b6b933766377a959291da317d38508463e34e..7d1fcae8e1ac50e46f91eabab95301ea
  
  shared_intermediate_dir = rebase_path(root_gen_dir, root_build_dir)
  devtools_grd_path = "$shared_intermediate_dir/$devtools_grd_location"
-@@ -35,6 +37,9 @@ _grit_defines = [
+@@ -35,6 +37,8 @@ _grit_defines = [
    "use_titlecase=${is_mac}",
  
-   "is_desktop_android=${is_desktop_android}",
+-  "is_desktop_android=${is_desktop_android}",
 +
 +  "enable_cef=${enable_cef}",
 +  "enable_pseudolocales=${enable_pseudolocales}",

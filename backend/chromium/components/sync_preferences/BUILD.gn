@@ -39,10 +39,6 @@ static_library("sync_preferences") {
     "//components/signin/public/base",
     "//components/sync",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
-  }
 }
 
 source_set("common_syncable_prefs_database") {
@@ -58,7 +54,6 @@ source_set("common_syncable_prefs_database") {
     "//components/browsing_data/core",
     "//components/commerce/core:pref_names",
     "//components/content_settings/core/common",
-    "//components/desktop_to_mobile_promos",
     "//components/dom_distiller/core",
     "//components/language/core/browser",
     "//components/metrics",
@@ -73,7 +68,6 @@ source_set("common_syncable_prefs_database") {
     "//components/saved_tab_groups/public",
     "//components/sharing_message",
     "//components/sync_preferences/cross_device_pref_tracker/prefs",
-    "//components/translate/core/browser",
     "//components/variations/service",
   ]
 }
@@ -118,10 +112,6 @@ source_set("unit_tests") {
     "//components/sync:test_support",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
-  }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

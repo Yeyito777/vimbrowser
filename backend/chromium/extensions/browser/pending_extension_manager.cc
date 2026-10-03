@@ -255,13 +255,6 @@ bool PendingExtensionManager::AddExtensionImpl(
     bool mark_acknowledged,
     bool remote_install) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-#if BUILDFLAG(IS_CHROMEOS)
-  // Demo mode apps are migrate to SWA. Old extensions are still installed from
-  // policy for old devices. Skip install these apps on devices up-to-date.
-  if (extension_misc::IsDemoModeChromeApp(id)) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   PendingExtensionInfo info(id, install_parameter, update_url, version,
                             should_allow_install, is_from_sync, install_source,
                             creation_flags, mark_acknowledged, remote_install);

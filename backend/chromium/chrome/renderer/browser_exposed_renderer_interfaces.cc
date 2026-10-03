@@ -17,17 +17,8 @@
 #include "components/web_cache/renderer/web_cache_impl.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 
-#if BUILDFLAG(ENABLE_SPELLCHECK)
-#include "components/spellcheck/renderer/spellcheck.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/allocator/buildflags.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/renderer/font_prewarmer.h"
-#endif
 
 namespace {
 
@@ -70,9 +61,4 @@ void ExposeChromeRendererInterfacesToBrowser(
       base::SequencedTaskRunner::GetCurrentDefault());
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  binders->Add<chrome::mojom::FontPrewarmer>(
-      base::BindRepeating(&FontPrewarmer::Bind),
-      base::SequencedTaskRunner::GetCurrentDefault());
-#endif
 }

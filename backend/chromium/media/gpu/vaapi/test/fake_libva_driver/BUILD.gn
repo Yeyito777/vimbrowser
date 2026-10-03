@@ -62,10 +62,6 @@ source_set("fake_libva_driver_internals") {
     "//third_party/openh264:decoder",
     "//ui/gfx/linux:gbm",
   ]
-
-  if (is_chromeos) {
-    public_deps = [ "//third_party/minigbm" ]
-  }
 }
 
 test("fake_libva_driver_unittest") {

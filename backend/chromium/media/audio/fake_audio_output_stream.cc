@@ -75,6 +75,4 @@ void FakeAudioOutputStream::CallOnMoreData(base::TimeTicks ideal_time,
   callback_->OnMoreData(delay, now, {}, audio_bus_.get());
 }
 
-void FakeAudioOutputStream::SetMute(bool muted) {}
-
 }  // namespace media

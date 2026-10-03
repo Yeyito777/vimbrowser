@@ -73,11 +73,6 @@ if (enable_enterprise_companion) {
 
       if (is_linux) {
         sources += [ "chromium_linux64/cipd/enterprise_companion_test" ]
-      } else if (is_win) {
-        sources += [
-          "chromium_win_x86/cipd/enterprise_companion_test.exe",
-          "chromium_win_x86_64/cipd/enterprise_companion_test.exe",
-        ]
       }
     }
   }

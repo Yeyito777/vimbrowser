@@ -173,9 +173,6 @@ class PictureInPictureBrowserFrameView : public BrowserFrameView,
   // Returns true if there's an overlay view that's currently shown.
   bool IsOverlayViewVisible() const;
 
-#if BUILDFLAG(IS_WIN)
-  gfx::Insets GetClientAreaInsets(HMONITOR monitor) const;
-#endif
 
   // Returns true if `content_setting_views_` has any visible views.
   bool HasAnyVisibleContentSettingViews() const;

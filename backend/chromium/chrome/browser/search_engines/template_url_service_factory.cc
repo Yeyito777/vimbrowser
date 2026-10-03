@@ -30,9 +30,6 @@
 #include "components/search_engines/template_url_service.h"
 #include "rlz/buildflags/buildflags.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#endif
 
 #if BUILDFLAG(ENABLE_RLZ)
 #include "components/rlz/rlz_tracker.h"  // nogncheck crbug.com/1125897
@@ -105,20 +102,6 @@ std::unique_ptr<KeyedService>
 TemplateURLServiceFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
   Profile* profile = Profile::FromBrowserContext(context);
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS creates various unusual profiles (login, lock screen...) that do
-  // not need a template URL service and cannot search.  The only non-regular
-  // profile that needs a template URL is the signin profile.  The
-  // signin profile sometimes can detect a "captive portal" (i.e., a network
-  // connection that requires a login before it is usable).  The captive portal
-  // sign-in flow creates a window with a URL bar.  The URL bar code currently
-  // assumes a template URL service exists.  (This is true even though the user
-  // cannot search from the captive portal sign-in window.)
-  if (!ash::ProfileHelper::IsUserProfile(profile) &&
-      !ash::ProfileHelper::IsSigninProfile(profile)) {
-    return nullptr;
-  }
-#endif
 
   return BuildInstanceFor(profile);
 }

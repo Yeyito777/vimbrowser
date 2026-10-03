@@ -64,9 +64,6 @@
 #include "net/base/url_util.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/webauthn/android/webauthn_cred_man_delegate.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 using autofill::FieldDataManager;
 using autofill::FieldRendererId;
@@ -80,9 +77,6 @@ using base::TimeTicks;
 using password_manager_util::IsSingleUsernameType;
 using signin::GaiaIdHash;
 
-#if BUILDFLAG(IS_ANDROID)
-using webauthn::WebAuthnCredManDelegate;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 using Logger = autofill::SavePasswordProgressLogger;
 
@@ -123,38 +117,6 @@ void LogUsingPossibleUsername(PasswordManagerClient* client,
                    message);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-std::optional<PasswordStoreBackendError> GetErrorForErrorMessage(
-    std::optional<PasswordStoreBackendError> profile_store_backend_error,
-    std::optional<PasswordStoreBackendError> account_store_backend_error,
-    PasswordManagerClient* client) {
-  if (!profile_store_backend_error && !account_store_backend_error) {
-    return std::nullopt;
-  }
-
-  base::flat_set<PasswordStoreBackendErrorType> supported_error_types = {
-      PasswordStoreBackendErrorType::kAuthErrorResolvable,
-      PasswordStoreBackendErrorType::kAuthErrorUnresolvable,
-      PasswordStoreBackendErrorType::kKeyRetrievalRequired,
-      PasswordStoreBackendErrorType::kEmptySecurityDomain,
-      PasswordStoreBackendErrorType::kIrretrievableSecurityDomain,
-  };
-
-  if (account_store_backend_error.has_value() &&
-      supported_error_types.contains(
-          account_store_backend_error.value().type)) {
-    return account_store_backend_error;
-  } else if (profile_store_backend_error.has_value() &&
-             supported_error_types.contains(
-                 profile_store_backend_error.value().type)) {
-    // This is possible only before the store split. This needs to be removed
-    // after the profile store starts to be used only for non-syncing passwords.
-    return profile_store_backend_error;
-  }
-
-  return std::nullopt;
-}
-#endif
 
 // Returns true if `form`s username value equals `username_value` (case
 // insensitive).
@@ -749,94 +711,6 @@ const PasswordForm* PasswordFormManager::GetParsedObservedForm() const {
   return parsed_observed_form_.get();
 }
 
-#if BUILDFLAG(IS_IOS)
-void PasswordFormManager::UpdateStateOnUserInput(
-    FormRendererId form_id,
-    FieldRendererId field_id,
-    const std::u16string& field_value) {
-  DCHECK(observed_form()->renderer_id() == form_id);
-  // Update the observed field value.
-  std::vector<FormFieldData> fields = mutable_observed_form()->ExtractFields();
-  auto modified_field =
-      std::ranges::find_if(fields, [&field_id](const FormFieldData& field) {
-        return field.renderer_id() == field_id;
-      });
-  if (modified_field == fields.end()) {
-    mutable_observed_form()->set_fields(std::move(fields));
-    return;
-  }
-  modified_field->set_value(field_value);
-  mutable_observed_form()->set_fields(std::move(fields));
-
-  if (HasGeneratedPassword()) {
-    // Update the presaved password form in the case the username has changed.
-    PresaveGeneratedPasswordInternal(
-        *observed_form(), password_save_manager_->GetGeneratedPassword());
-  }
-}
-
-void PasswordFormManager::SetDriver(
-    const base::WeakPtr<PasswordManagerDriver>& driver) {
-  driver_ = driver;
-}
-
-void PasswordFormManager::ProvisionallySaveFieldDataManagerInfo(
-    const FieldDataManager& field_data_manager,
-    const PasswordManagerDriver* driver,
-    const base::LRUCache<PossibleUsernameFieldIdentifier, PossibleUsernameData>&
-        possible_usernames) {
-  bool data_found = false;
-  std::vector<FormFieldData> fields = mutable_observed_form()->ExtractFields();
-  for (FormFieldData& field : fields) {
-    FieldRendererId field_id = field.renderer_id();
-    if (!field_data_manager.HasFieldData(field_id)) {
-      continue;
-    }
-    field.set_user_input(field_data_manager.GetUserInput(field_id));
-    field.set_properties_mask(
-        field_data_manager.GetFieldPropertiesMask(field_id));
-    data_found = true;
-  }
-  mutable_observed_form()->set_fields(std::move(fields));
-
-  // Provisionally save form and set the manager to be submitted if valid
-  // data was recovered.
-  if (data_found) {
-    ProvisionallySave(*observed_form(), driver, possible_usernames);
-  }
-}
-
-bool PasswordFormManager::AreRemovedUnownedFieldsValidForSubmissionDetection(
-    const std::set<FieldRendererId>& removed_fields,
-    const FieldDataManager& field_data_manager) const {
-  CHECK(observed_form());
-  CHECK(!observed_form()->renderer_id())
-      << "This method should only be called on formless form managers. Removed "
-         "formless fields are only relevant for formless forms submission "
-         "detection.";
-
-  const auto is_removed_password = [&](const FormFieldData& field_data) {
-    return field_data.IsPasswordInputElement() &&
-           removed_fields.find(field_data.renderer_id()) !=
-               removed_fields.end();
-  };
-
-  bool has_removed_passwords =
-      std::ranges::any_of(observed_form()->fields(), is_removed_password);
-  if (!has_removed_passwords) {
-    return false;
-  }
-
-  // The formless form can be considered submitted if all removed password
-  // fields had input and there was at least one removed password field.
-  return std::ranges::all_of(
-      observed_form()->fields(), [&](const FormFieldData& field_data) {
-        return !is_removed_password(field_data) ||
-               field_data_manager.HasFieldData(field_data.renderer_id());
-      });
-}
-
-#endif  // BUILDFLAG(IS_IOS)
 
 void PasswordFormManager::SaveSuggestedUsernameValueToVotesUploader() {
   if (votes_uploader_.has_value()) {
@@ -918,29 +792,7 @@ void PasswordFormManager::OnFetchCompleted() {
   autofills_left_ = kMaxTimesAutofill;
 
   std::optional<PasswordStoreBackendError> error = std::nullopt;
-#if BUILDFLAG(IS_ANDROID)
-  error = GetErrorForErrorMessage(form_fetcher_->GetProfileStoreBackendError(),
-                                  form_fetcher_->GetAccountStoreBackendError(),
-                                  client_);
-
-  // If there is no FormData, this is an http authentication form. We don't
-  // show the message for it because it would be hidden behind a sign in
-  // dialog and the user could miss it.
-  if (observed_form() != nullptr && error.has_value()) {
-    std::unique_ptr<PasswordForm> password_form =
-        parser_.Parse(*observed_form(), FormDataParser::Mode::kFilling,
-                      GetStoredUsernames(), client_->GetUkmSourceId());
-
-    client_->ShowPasswordManagerErrorMessage(
-        password_form && (password_form->IsLikelySignupForm() ||
-                          password_form->IsLikelyChangePasswordForm() ||
-                          password_form->IsLikelyResetPasswordForm())
-            ? password_manager::ErrorMessageFlowType::kSaveFlow
-            : password_manager::ErrorMessageFlowType::kFillFlow,
-        error.value().type);
-  }
-
-#elif BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
   if (ShouldShowKeychainErrorBubble(
           form_fetcher_->GetProfileStoreBackendError())) {
     client_->NotifyKeychainError();
@@ -1004,27 +856,8 @@ bool PasswordFormManager::WebAuthnCredentialsAvailable() const {
 #endif  //! BUILDFLAG(IS_IOS) && !BUILDFLAG(IS_ANDROID)
     return delegate && delegate->GetPasskeys().has_value();
   };
-#if BUILDFLAG(IS_ANDROID)
-  auto check_cred_man_delegate = [=, this]() {
-    WebAuthnCredManDelegate* delegate =
-        client_->GetWebAuthnCredManDelegateForDriver(driver_.get());
-    return delegate &&
-           delegate->HasPasskeys() == WebAuthnCredManDelegate::kHasPasskeys;
-  };
-  switch (WebAuthnCredManDelegate::CredManMode()) {
-    case webauthn::WebAuthnCredManDelegate::kNotEnabled:
-      return check_credentials_delegate();
-    case webauthn::WebAuthnCredManDelegate::kAllCredMan:
-      return check_cred_man_delegate();
-    case webauthn::WebAuthnCredManDelegate::kNonGpmPasskeys:
-      // In this mode, passkeys can exist in WebAuthnCredentialsDelegate or
-      // WebAuthnCredManDelegate.
-      return check_cred_man_delegate() || check_credentials_delegate();
-  }
-#else
 
   return check_credentials_delegate();
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void PasswordFormManager::CreatePendingCredentials() {
@@ -1230,9 +1063,6 @@ void PasswordFormManager::FillNow() {
 
   if (form_parsing_result.is_new_password_reliable && !IsBlocklisted()) {
     driver_->FormEligibleForGenerationFound({
-#if BUILDFLAG(IS_IOS)
-        .form_renderer_id = parsed_observed_form_->form_data.renderer_id(),
-#endif
         .new_password_renderer_id =
             parsed_observed_form_->new_password_element_renderer_id,
         .confirmation_password_renderer_id =
@@ -1837,12 +1667,10 @@ std::unique_ptr<FormFetcher> PasswordFormManager::CreateFormFetcher() {
       observed_digest() ? *observed_digest()
                         : PasswordFormDigest(*observed_form()),
       client_, true /* should_migrate_http_passwords */);
-#if !BUILDFLAG(IS_IOS)
   if (base::FeatureList::IsEnabled(
           password_manager::features::kPasswordFormGroupedAffiliations)) {
     form_fetcher->set_filter_grouped_credentials(false);
   }
-#endif  // !BUILDFLAG(IS_IOS)
   return form_fetcher;
 }
 

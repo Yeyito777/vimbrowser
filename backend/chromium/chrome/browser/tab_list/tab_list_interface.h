@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "base/scoped_observation_traits.h"
-#include "build/android_buildflags.h"
 #include "components/tab_groups/tab_group_id.h"
 #include "components/tabs/public/tab_interface.h"
 #include "ui/base/unowned_user_data/scoped_unowned_user_data.h"

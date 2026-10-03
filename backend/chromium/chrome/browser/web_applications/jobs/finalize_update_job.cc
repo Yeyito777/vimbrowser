@@ -165,13 +165,11 @@ void FinalizeUpdateJob::OnDatabaseCommitCompletedForUpdate(
 
   // OS integration should always be enabled on ChromeOS for manifest updates.
   bool should_skip_os_integration_on_manifest_update = false;
-#if !BUILDFLAG(IS_CHROMEOS)
   // If the app being updated was installed by default and not also manually
   // installed by the user or an enterprise policy, disable os integration.
   should_skip_os_integration_on_manifest_update =
       registrar().GetInstallState(app_id_) ==
       proto::InstallState::INSTALLED_WITHOUT_OS_INTEGRATION;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   if (should_skip_os_integration_on_manifest_update) {
     OnUpdateHooksFinished();

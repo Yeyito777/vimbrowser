@@ -160,8 +160,6 @@ void DevToolsHost::copyText(const String& text) {
 String DevToolsHost::platform() const {
 #if BUILDFLAG(IS_MAC)
   return "mac";
-#elif BUILDFLAG(IS_WIN)
-  return "windows";
 #else  // Unix-like systems
   return "linux";
 #endif

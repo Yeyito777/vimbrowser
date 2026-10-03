@@ -312,14 +312,6 @@ void AutofillWebDataService::ClearLocalCvcsUpToMay2025() {
                      autofill_backend_));
 }
 
-#if BUILDFLAG(IS_IOS)
-void AutofillWebDataService::CleanupForCrbug445879524() {
-  wdbs_->ScheduleDBTask(
-      FROM_HERE,
-      base::BindOnce(&AutofillWebDataBackendImpl::CleanupForCrbug445879524,
-                     autofill_backend_));
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 WebDataServiceBase::Handle AutofillWebDataService::GetCreditCards(
     WebDataServiceRequestCallback consumer) {

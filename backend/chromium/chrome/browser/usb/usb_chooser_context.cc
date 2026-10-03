@@ -28,10 +28,6 @@
 #include "services/device/public/mojom/usb_device.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/settings/cros_settings.h"
-#include "chromeos/ash/components/settings/cros_settings_names.h"
-#endif
 
 namespace {
 
@@ -58,7 +54,6 @@ std::pair<int, int> GetDeviceIds(const base::DictValue& object) {
 }
 
 std::u16string GetDeviceNameFromIds(int vendor_id, int product_id) {
-#if !BUILDFLAG(IS_ANDROID)
   const char* product_name =
       device::UsbIds::GetProductName(vendor_id, product_id);
   if (product_name)
@@ -77,7 +72,6 @@ std::u16string GetDeviceNameFromIds(int vendor_id, int product_id) {
         base::ASCIIToUTF16(base::StringPrintf("0x%04X", product_id)),
         base::UTF8ToUTF16(vendor_name));
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   if (product_id == kDeviceIdWildcard) {
     if (vendor_id == kDeviceIdWildcard)
@@ -107,21 +101,6 @@ base::DictValue DeviceIdsToValue(int vendor_id, int product_id) {
   return device_value;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool IsDetachable(int vid, int pid) {
-  const base::ListValue* policy_list;
-  if (ash::CrosSettings::Get()->GetList(ash::kUsbDetachableAllowlist,
-                                        &policy_list)) {
-    for (const auto& entry : *policy_list) {
-      if (entry.GetDict().FindInt(ash::kUsbDetachableAllowlistKeyVid) == vid &&
-          entry.GetDict().FindInt(ash::kUsbDetachableAllowlistKeyPid) == pid) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool IsMassStorageInterface(const device::mojom::UsbInterfaceInfo& interface) {
   for (auto& alternate : interface.alternates) {
@@ -132,10 +111,6 @@ bool IsMassStorageInterface(const device::mojom::UsbInterfaceInfo& interface) {
 }
 
 bool ShouldExposeDevice(const device::mojom::UsbDeviceInfo& device_info) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (IsDetachable(device_info.vendor_id, device_info.product_id))
-    return true;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // blink::USBDevice::claimInterface() disallows claiming mass storage
   // interfaces, but explicitly prevent access in the browser process as
@@ -244,25 +219,6 @@ void UsbChooserContext::SetUpDeviceManagerConnection() {
                      weak_factory_.GetWeakPtr()));
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void UsbChooserContext::OnDeviceInfoRefreshed(
-    device::mojom::UsbDeviceManager::RefreshDeviceInfoCallback callback,
-    device::mojom::UsbDeviceInfoPtr device_info) {
-  if (!device_info) {
-    std::move(callback).Run(nullptr);
-    return;
-  }
-
-  auto it = devices_.find(device_info->guid);
-  if (it == devices_.end()) {
-    std::move(callback).Run(nullptr);
-    return;
-  }
-
-  it->second = std::move(device_info);
-  std::move(callback).Run(it->second->Clone());
-}
-#endif
 
 UsbChooserContext::~UsbChooserContext() {
   OnDeviceManagerConnectionError();
@@ -560,16 +516,6 @@ const device::mojom::UsbDeviceInfo* UsbChooserContext::GetDeviceInfo(
   return it == devices_.end() ? nullptr : it->second.get();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void UsbChooserContext::RefreshDeviceInfo(
-    const std::string& guid,
-    device::mojom::UsbDeviceManager::RefreshDeviceInfoCallback callback) {
-  EnsureConnectionWithDeviceManager();
-  device_manager_->RefreshDeviceInfo(
-      guid, base::BindOnce(&UsbChooserContext::OnDeviceInfoRefreshed,
-                           weak_factory_.GetWeakPtr(), std::move(callback)));
-}
-#endif
 
 void UsbChooserContext::AddObserver(DeviceObserver* observer) {
   EnsureConnectionWithDeviceManager();

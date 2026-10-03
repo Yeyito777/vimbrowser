@@ -27,18 +27,4 @@ static_library("gpu") {
     "chrome_content_gpu_client.cc",
     "chrome_content_gpu_client.h",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/ash/experiences/arc/mojom:media",
-      "//chromeos/components/cdm_factory_daemon:cdm_factory_daemon_gpu",
-      "//components/viz/service",
-      "//gpu/command_buffer/service",
-      "//services/service_manager/public/cpp",
-      "//ui/ozone",
-    ]
-    if (use_linux_video_acceleration) {
-      deps += [ "//chromeos/ash/experiences/arc/video_accelerator" ]
-    }
-  }
 }

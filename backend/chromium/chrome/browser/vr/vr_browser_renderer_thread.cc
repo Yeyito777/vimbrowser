@@ -13,9 +13,6 @@
 #include "chrome/browser/vr/ui.h"
 #include "ui/gfx/geometry/quaternion.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/vr/graphics_delegate_win.h"
-#endif
 
 // To avoid conflicts with the macro from the Windows SDK...
 #undef DrawState

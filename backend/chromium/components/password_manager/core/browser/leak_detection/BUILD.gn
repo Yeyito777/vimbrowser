@@ -14,13 +14,13 @@ source_set("leak_detection_interface_headers") {
     "leak_detection_check_factory.h",
     "leak_detection_delegate_interface.h",
   ]
-  if (!is_android) {
-    sources += [
-      "bulk_leak_check.h",
-      "bulk_leak_check_service.h",
-      "bulk_leak_check_service_interface.h",
-    ]
-  }
+
+  sources += [
+    "bulk_leak_check.h",
+    "bulk_leak_check_service.h",
+    "bulk_leak_check_service_interface.h",
+  ]
+
   deps = [
     "//base",
     "//components/keyed_service/core",
@@ -48,14 +48,13 @@ source_set("leak_detection") {
     "single_lookup_response.cc",
     "single_lookup_response.h",
   ]
-  if (!is_android) {
-    sources += [
-      "bulk_leak_check_impl.cc",
-      "bulk_leak_check_impl.h",
-      "bulk_leak_check_service.cc",
-      "bulk_leak_check_service_interface.cc",
-    ]
-  }
+
+  sources += [
+    "bulk_leak_check_impl.cc",
+    "bulk_leak_check_impl.h",
+    "bulk_leak_check_service.cc",
+    "bulk_leak_check_service_interface.cc",
+  ]
 
   public_deps = [
     ":leak_detection_interface_headers",
@@ -92,12 +91,12 @@ source_set("test_support") {
     "mock_leak_detection_request_factory.cc",
     "mock_leak_detection_request_factory.h",
   ]
-  if (!is_android) {
-    sources += [
-      "mock_bulk_leak_check_service.cc",
-      "mock_bulk_leak_check_service.h",
-    ]
-  }
+
+  sources += [
+    "mock_bulk_leak_check_service.cc",
+    "mock_bulk_leak_check_service.h",
+  ]
+
   deps = [
     ":leak_detection",
     "//base/test:test_support",
@@ -117,12 +116,11 @@ source_set("unit_tests") {
     "leak_detection_request_unittest.cc",
     "leak_detection_request_utils_unittest.cc",
   ]
-  if (!is_android) {
-    sources += [
-      "bulk_leak_check_impl_unittest.cc",
-      "bulk_leak_check_service_unittest.cc",
-    ]
-  }
+
+  sources += [
+    "bulk_leak_check_impl_unittest.cc",
+    "bulk_leak_check_service_unittest.cc",
+  ]
 
   deps = [
     ":leak_detection",

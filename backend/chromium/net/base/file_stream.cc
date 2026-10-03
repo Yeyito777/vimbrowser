@@ -129,12 +129,5 @@ int FileStream::Flush(ErrorCallback callback) {
   return ERR_IO_PENDING;
 }
 
-#if BUILDFLAG(IS_WIN)
-int FileStream::ConnectNamedPipe(ErrorCallback callback) {
-  return IsOpen() ? context_->ConnectNamedPipe(
-                        base::BindOnce(&RunErrorCallback, std::move(callback)))
-                  : ERR_UNEXPECTED;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace net

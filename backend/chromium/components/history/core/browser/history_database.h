@@ -225,19 +225,12 @@ class HistoryDatabase : public DownloadDatabase,
   // may commit the transaction and start a new one if migration requires it.
   sql::InitStatus EnsureCurrentVersion();
 
-#if !BUILDFLAG(IS_WIN)
   // Converts the time epoch in the database from being 1970-based to being
   // 1601-based which corresponds to the change in Time.internal_value_.
   void MigrateTimeEpoch();
-#endif
 
   bool MigrateRemoveTypedUrlMetadata();
 
-#if BUILDFLAG(IS_ANDROID)
-  // The android_urls table ceased usage in 91.0.4438.0. This method drops the
-  // table if it exists.
-  bool DropAndroidUrlsTable();
-#endif
 
   // ---------------------------------------------------------------------------
 

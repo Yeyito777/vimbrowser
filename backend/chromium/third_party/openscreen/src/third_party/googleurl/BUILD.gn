@@ -26,9 +26,7 @@ if (build_with_chromium) {
 
   source_set("googleurl") {
     sources = googleurl_sources
-    if (is_win) {
-      sources += googleurl_sources_win
-    } else if (is_posix) {
+    if (is_posix) {
       sources += googleurl_sources_posix
     }
 

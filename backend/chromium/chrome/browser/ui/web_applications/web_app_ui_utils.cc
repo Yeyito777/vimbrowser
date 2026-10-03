@@ -13,7 +13,6 @@
 #include "chrome/browser/ui/browser_finder.h"
 #include "chrome/browser/ui/chrome_pages.h"
 #include "chrome/browser/ui/web_applications/web_app_browser_controller.h"
-#include "chrome/browser/ui/webui/ash/settings/app_management/app_management_uma.h"
 #include "chrome/browser/web_applications/proto/web_app_install_state.pb.h"
 #include "chrome/browser/web_applications/web_app_filter.h"
 #include "chrome/browser/web_applications/web_app_provider.h"
@@ -74,16 +73,9 @@ bool HandleAppManagementLinkClickedInPageInfo(
     return false;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  chrome::ShowAppManagementPage(
-      Profile::FromBrowserContext(web_contents->GetBrowserContext()), *app_id,
-      ash::settings::AppManagementEntryPoint::kPageInfoView);
-  return true;
-#else
   chrome::ShowWebAppSettings(chrome::FindBrowserWithTab(web_contents), *app_id,
                              AppSettingsPageEntryPoint::kPageInfoView);
   return true;
-#endif
 }
 
 void OpenAppSettingsForParentApp(const webapps::AppId& parent_app_id,
@@ -91,25 +83,14 @@ void OpenAppSettingsForParentApp(const webapps::AppId& parent_app_id,
   if (!profile) {
     return;
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  chrome::ShowAppManagementPage(
-      profile.get(), parent_app_id,
-      ash::settings::AppManagementEntryPoint::kSubAppsInstallPrompt);
-#else
   chrome::ShowWebAppSettings(profile.get(), parent_app_id,
                              AppSettingsPageEntryPoint::kSubAppsInstallPrompt);
-#endif
 }
 
 void OpenAppSettingsForInstalledRelatedApp(const webapps::AppId& app_id,
                                            Profile* profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-  chrome::ShowAppManagementPage(
-      profile, app_id, ash::settings::AppManagementEntryPoint::kSiteDataDialog);
-#else
   chrome::ShowWebAppSettings(profile, app_id,
                              AppSettingsPageEntryPoint::kSiteDataDialog);
-#endif
 }
 
 }  // namespace web_app

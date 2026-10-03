@@ -16,13 +16,6 @@
 #include "net/base/file_stream.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/profiles/profile.h"
-#include "chrome/common/pref_names.h"
-#include "components/prefs/pref_service.h"
-#include "extensions/common/extension_features.h"
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 namespace extensions {
 
@@ -129,19 +122,6 @@ std::unique_ptr<NativeProcessLauncher> NativeProcessLauncher::CreateDefault(
     Profile* profile) {
   intptr_t window_handle = 0;
   bool native_hosts_executables_launch_directly = false;
-#if BUILDFLAG(IS_WIN)
-  window_handle = reinterpret_cast<intptr_t>(
-      views::HWNDForNativeView(native_view));
-
-  if (profile && profile->GetPrefs()->IsManagedPreference(
-                     prefs::kNativeHostsExecutablesLaunchDirectly)) {
-    native_hosts_executables_launch_directly = profile->GetPrefs()->GetBoolean(
-        prefs::kNativeHostsExecutablesLaunchDirectly);
-  } else {
-    native_hosts_executables_launch_directly = base::FeatureList::IsEnabled(
-        extensions_features::kLaunchWindowsNativeHostsDirectly);
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   return std::make_unique<NativeProcessLauncherImpl>(
       allow_user_level_hosts, require_native_initiated_connections,

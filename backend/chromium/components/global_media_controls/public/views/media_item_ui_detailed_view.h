@@ -16,9 +16,6 @@
 #include "components/media_message_center/notification_theme.h"
 #include "services/media_session/public/mojom/media_session.mojom.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/global_media_controls/public/views/chapter_item_view.h"
-#endif
 
 namespace views {
 class BoxLayoutView;
@@ -127,14 +124,6 @@ class COMPONENT_EXPORT(GLOBAL_MEDIA_CONTROLS) MediaItemUIDetailedView
   MediaItemUIFooter* GetFooterForTesting();
   MediaItemUIDeviceSelector* GetDeviceSelectorForTesting();
   views::View* GetDeviceSelectorSeparatorForTesting();
-#if BUILDFLAG(IS_CHROMEOS)
-  views::Button* GetChapterListButtonForTesting();
-  views::View* GetChapterListViewForTesting();
-  views::Label* GetCurrentTimestampViewForTesting();
-  views::Label* GetTotalDurationViewForTesting();
-  base::flat_map<int, raw_ptr<ChapterItemView, CtnExperimental>>
-  GetChaptersForTesting();
-#endif
 
  private:
   friend class MediaItemUIDetailedViewTest;
@@ -229,33 +218,6 @@ class COMPONENT_EXPORT(GLOBAL_MEDIA_CONTROLS) MediaItemUIDetailedView
   raw_ptr<MediaItemUIDeviceSelector> device_selector_view_ = nullptr;
   raw_ptr<views::BoxLayoutView> device_selector_view_separator_ = nullptr;
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-  // Callback for when the chapter list button is clicked by user.
-  void ToggleChapterListView();
-
-  // The chapter list button, which will be built only for chrome os ash.
-  // Clicking on which will show the chapter list view.
-  raw_ptr<MediaActionButton> chapter_list_button_ = nullptr;
-
-  // The chapter list view, which will be built only for chrome os ash.
-  raw_ptr<views::View> chapter_list_view_ = nullptr;
-
-  // The current duration timestamp. It updates its text when
-  // `OnProgressViewUpdateProgress` so the timestamp can be refreshed every
-  // second.
-  raw_ptr<views::Label> current_timestamp_view_ = nullptr;
-
-  // The total duration timestamp. It updates its text when
-  // `UpdateWithMediaPosition`.
-  raw_ptr<views::Label> total_duration_view_ = nullptr;
-
-  // The current `ChapterItemView` for the chapter at the index of the chapter
-  // list.
-  base::flat_map<int, raw_ptr<ChapterItemView, CtnExperimental>> chapters_;
-
-  base::WeakPtrFactory<MediaItemUIDetailedView> weak_factory_{this};
-#endif
 };
 
 }  // namespace global_media_controls

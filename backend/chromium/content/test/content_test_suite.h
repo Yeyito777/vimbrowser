@@ -10,9 +10,6 @@
 #include "build/build_config.h"
 #include "content/public/test/content_test_suite_base.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_com_initializer.h"
-#endif
 
 namespace content {
 
@@ -32,9 +29,6 @@ class ContentTestSuite : public ContentTestSuiteBase {
   [[maybe_unused]] base::test::ScopedFeatureList revert_field_trial_features_;
   base::TestDiscardableMemoryAllocator discardable_memory_allocator_;
 
-#if BUILDFLAG(IS_WIN)
-  base::win::ScopedCOMInitializer com_initializer_;
-#endif
 };
 
 }  // namespace content

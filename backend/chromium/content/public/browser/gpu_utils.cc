@@ -58,14 +58,6 @@ const gpu::GpuPreferences GetGpuPreferencesFromCommandLine() {
       command_line->HasSwitch(switches::kDisableAcceleratedVideoDecode);
   gpu_preferences.disable_accelerated_video_encode =
       command_line->HasSwitch(switches::kDisableAcceleratedVideoEncode);
-#if BUILDFLAG(IS_WIN)
-  gpu_preferences.enable_low_latency_dxva =
-      !command_line->HasSwitch(switches::kDisableLowLatencyDxva);
-  gpu_preferences.enable_zero_copy_dxgi_video =
-      !command_line->HasSwitch(switches::kDisableZeroCopyDxgiVideo);
-  gpu_preferences.enable_nv12_dxgi_video =
-      !command_line->HasSwitch(switches::kDisableNv12DxgiVideo);
-#endif
   gpu_preferences.disable_software_rasterizer =
       command_line->HasSwitch(switches::kDisableSoftwareRasterizer) ||
       (!features::IsSwiftShaderAllowed(command_line) &&
@@ -93,10 +85,6 @@ const gpu::GpuPreferences GetGpuPreferencesFromCommandLine() {
   gpu_preferences.enable_native_gpu_memory_buffers =
       command_line->HasSwitch(switches::kEnableNativeGpuMemoryBuffers);
 
-#if BUILDFLAG(IS_ANDROID)
-  gpu_preferences.disable_oopr_debug_crash_dump =
-      command_line->HasSwitch(switches::kDisableOoprDebugCrashDump);
-#endif
 
   if (GetUintFromSwitch(command_line, switches::kVulkanHeapMemoryLimitMb,
                         &gpu_preferences.vulkan_heap_memory_limit)) {

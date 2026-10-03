@@ -471,7 +471,6 @@ class LocalCodeCacheHost : public CodeCacheHostImpl {
   base::WeakPtrFactory<LocalCodeCacheHost> weak_ptr_factory_{this};
 };
 
-#if !BUILDFLAG(IS_FUCHSIA)
 // CodeCacheWithPersistentCacheHost --------------------------------------------
 
 // An implementation of CodeCacheHostImpl that uses PersistentCache. Inserts
@@ -648,7 +647,6 @@ class CodeCacheWithPersistentCacheHost : public CodeCacheHostImpl {
     }
   }
 };
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 
 }  // namespace
 
@@ -710,13 +708,9 @@ std::unique_ptr<CodeCacheHostImpl> CodeCacheHostImpl::Create(
         storage_key);
   }
   if (blink::features::IsPersistentCacheForCodeCacheEnabled()) {
-#if !BUILDFLAG(IS_FUCHSIA)
     return std::make_unique<CodeCacheWithPersistentCacheHost>(
         render_process_id, std::move(generated_code_cache_context), nik,
         storage_key);
-#else
-    NOTREACHED();
-#endif  // !BUILDFLAG(IS_FUCHSIA)
   }
   return std::make_unique<LocalCodeCacheHost>(
       render_process_id, std::move(generated_code_cache_context), nik,

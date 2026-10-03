@@ -203,11 +203,7 @@ class StartupWebAppCreator
     CHECK(provider_->on_registry_ready().is_signaled());
     WebAppRegistrar& registrar = provider_->registrar_unsafe();
     for (const auto& arg : args) {
-#if BUILDFLAG(IS_WIN)
-      GURL potential_protocol(base::AsStringPiece16(arg));
-#else
       GURL potential_protocol(arg);
-#endif  // BUILDFLAG(IS_WIN)
       if (potential_protocol.is_valid() &&
           registrar.IsRegisteredLaunchProtocol(
               app_id_, potential_protocol.GetScheme())) {

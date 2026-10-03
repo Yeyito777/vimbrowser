@@ -85,48 +85,46 @@ source_set("unit_tests") {
   ]
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
+source_set("browser_tests") {
+  testonly = true
 
-    sources = [
-      "search_prefetch/search_prefetch_browser_test_base.cc",
-      "search_prefetch/search_prefetch_browser_test_base.h",
-      "search_prefetch/search_prefetch_service_browsertest.cc",
-      "zero_suggest_prefetch/zero_suggest_prefetch_tab_helper_browsertest.cc",
-    ]
+  sources = [
+    "search_prefetch/search_prefetch_browser_test_base.cc",
+    "search_prefetch/search_prefetch_browser_test_base.h",
+    "search_prefetch/search_prefetch_service_browsertest.cc",
+    "zero_suggest_prefetch/zero_suggest_prefetch_tab_helper_browsertest.cc",
+  ]
 
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
 
-    deps = [
-      ":test_support",
-      "//base/test:test_support",
-      "//chrome/browser/browsing_data:constants",
-      "//chrome/browser/content_settings:content_settings_factory",
-      "//chrome/browser/devtools",
-      "//chrome/browser/devtools:test_support",
-      "//chrome/browser/history",
-      "//chrome/browser/preloading",
-      "//chrome/browser/preloading:prefs",
-      "//chrome/browser/preloading:test_support",
-      "//chrome/browser/preloading/prefetch/no_state_prefetch",
-      "//chrome/browser/preloading/prefetch/no_state_prefetch:browser_tests",
-      "//chrome/browser/preloading/prefetch/search_prefetch:field_trial_settings",
-      "//chrome/browser/search_engines",
-      "//chrome/test:test_support",
-      "//components/embedder_support",
-      "//components/no_state_prefetch/browser",
-      "//components/privacy_sandbox:features",
-      "//components/security_state/content",
-      "//components/ukm:test_support",
-    ]
+  deps = [
+    ":test_support",
+    "//base/test:test_support",
+    "//chrome/browser/browsing_data:constants",
+    "//chrome/browser/content_settings:content_settings_factory",
+    "//chrome/browser/devtools",
+    "//chrome/browser/devtools:test_support",
+    "//chrome/browser/history",
+    "//chrome/browser/preloading",
+    "//chrome/browser/preloading:prefs",
+    "//chrome/browser/preloading:test_support",
+    "//chrome/browser/preloading/prefetch/no_state_prefetch",
+    "//chrome/browser/preloading/prefetch/no_state_prefetch:browser_tests",
+    "//chrome/browser/preloading/prefetch/search_prefetch:field_trial_settings",
+    "//chrome/browser/search_engines",
+    "//chrome/test:test_support",
+    "//components/embedder_support",
+    "//components/no_state_prefetch/browser",
+    "//components/privacy_sandbox:features",
+    "//components/security_state/content",
+    "//components/ukm:test_support",
+  ]
 
-    # TODO(crbug.com/408146612): Revisit this when preloading_features.h moves
-    # into this file.
-    deps += [ "//chrome/browser" ]
+  # TODO(crbug.com/408146612): Revisit this when preloading_features.h moves
+  # into this file.
+  deps += [ "//chrome/browser" ]
 
-    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
-    # enable the diagnostic by removing this line.
-    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-  }
+  # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
+  # enable the diagnostic by removing this line.
+  configs += [ "//build/config/compiler:no_exit_time_destructors" ]
 }

@@ -84,17 +84,10 @@
 #include "services/network/public/mojom/network_service_test.mojom.h"
 #include "services/network/public/mojom/socket_broker.mojom.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/background_thread_pool_field_trial.h"
-#else
 #include "content/browser/network_sandbox.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "content/browser/network/network_service_process_tracker_win.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "content/browser/system_dns_resolution/system_dns_resolver.h"
 #include "services/network/public/mojom/system_dns_resolution.mojom-forward.h"
 #endif
@@ -109,20 +102,11 @@ namespace content {
 
 namespace {
 
-#if BUILDFLAG(IS_POSIX)
 // Environment variable pointing to Kerberos credential cache file.
 constexpr char kKrb5CCEnvName[] = "KRB5CCNAME";
 // Environment variable pointing to Kerberos config file.
 constexpr char kKrb5ConfEnvName[] = "KRB5_CONFIG";
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-// File paths to the Kerberos credentials cache and configuration. The `FILE:`
-// prefix describes the type of credentials cache used. The `/home/chronos/user`
-// subpath corresponds to a bind mount of the active user.
-constexpr char kKrb5CCFilePath[] = "FILE:/home/chronos/user/kerberos/krb5cc";
-constexpr char kKrb5ConfFilePath[] = "/home/chronos/user/kerberos/krb5.conf";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool g_force_create_network_service_directly = false;
 bool g_network_service_crashes_on_next_startup = false;
@@ -366,22 +350,6 @@ void CreateNetworkContextInternal(
   // This might recreate g_client if the network service needed to be restarted.
   auto* network_service = GetNetworkService();
 
-#if BUILDFLAG(IS_WIN)
-  // If the browser has started shutting down, it is possible that either a)
-  // `g_client` was never created if shutdown started before the network service
-  // was created, or b) the network service might have crashed meaning
-  // `g_client` is the client for the already-crashed Network Service, and a new
-  // network service never started. It's not safe to bind the socket broker in
-  // either of these cases so skip the binding since the browser is shutting
-  // down anyway.
-  if (!GetContentClient()->browser()->IsShuttingDown() &&
-      GetContentClient()->browser()->ShouldSandboxNetworkService() &&
-      !params->socket_brokers) {
-    params->socket_brokers = network::mojom::SocketBrokerRemotes::New();
-    params->socket_brokers->client = g_client->BindSocketBroker();
-    params->socket_brokers->server = g_client->BindSocketBroker();
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   network_service->CreateNetworkContext(std::move(context), std::move(params));
 }
@@ -401,29 +369,12 @@ void CreateInProcessNetworkService(
             network::features::kNetworkServiceTaskScheduler)) {
       network::ConfigureSequenceManager(options);
     }
-#if BUILDFLAG(IS_ANDROID)
-    // Local testing shows that when priority inheritance (PI) locks are enabled
-    // on Android, the network service thread is frequently queued behind thread
-    // pool worker threads when contending for a PI lock, regressing startup
-    // time. This is because of the Linux kernel enforcing FIFO ordering on
-    // threads of same priority contending on a PI lock. Increase the network
-    // thread's priority when PI locks are enabled to compensate for the shift
-    // from an unfair to a fair lock.
-    if (base::android::BackgroundThreadPoolFieldTrial::
-            ShouldUsePriorityInheritanceLocks()) {
-      options.thread_type = base::ThreadType::kPresentation;
-    }
-#endif  // BUILDFLAG(IS_ANDROID)
     GetNetworkServiceDedicatedThread().StartWithOptions(std::move(options));
     task_runner = GetNetworkServiceDedicatedThread().task_runner();
     task_runner->PostTask(
         FROM_HERE, base::BindOnce([]() {
           mojo::InterfaceEndpointClient::SetThreadNameSuffixForMetrics(
               "NetworkService");
-#if BUILDFLAG(IS_ANDROID)
-          base::PlatformThreadPriorityMonitor::Get().RegisterCurrentThread(
-              "NetworkService");
-#endif  // BUILDFLAG(IS_ANDROID)
         }));
   } else {
     task_runner = GetIOThreadTaskRunner({});
@@ -440,7 +391,7 @@ void CreateInProcessNetworkService(
       }));
 }
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 // Runs a self-owned SystemDnsResolverMojoImpl. This is meant to run on a
 // high-priority thread pool.
 void RunSystemDnsResolverOnThreadPool(
@@ -478,17 +429,6 @@ network::mojom::NetworkServiceParamsPtr CreateNetworkServiceParams() {
   }
 #endif  // BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // On ChromeOS, the network service is always out of process (unless
-  // --single-process is set on the command-line). In any case, we set Kerberos
-  // environment variables during the service initialization.
-  network_service_params->environment.push_back(
-      network::mojom::EnvironmentVariable::New(kKrb5CCEnvName,
-                                               kKrb5CCFilePath));
-  network_service_params->environment.push_back(
-      network::mojom::EnvironmentVariable::New(kKrb5ConfEnvName,
-                                               kKrb5ConfFilePath));
-#elif BUILDFLAG(IS_POSIX)
   // Send Kerberos environment variables to the network service, if it's running
   // in another process.
   if (IsOutOfProcessNetworkService()) {
@@ -504,9 +444,8 @@ network::mojom::NetworkServiceParamsPtr CreateNetworkServiceParams() {
           network::mojom::EnvironmentVariable::New(kKrb5ConfEnvName, *value));
     }
   }
-#endif  // BUILDFLAG(IS_POSIX)
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   if (GetContentClient()
           ->browser()
           ->ShouldRunOutOfProcessSystemDnsResolution() &&
@@ -782,13 +721,7 @@ network::mojom::NetworkService* GetNetworkService() {
         if (env_str.has_value()) {
           UMA_HISTOGRAM_ENUMERATION(kSSLKeyLogFileHistogram,
                                     SSLKeyLogFileAction::kEnvVarFound);
-#if BUILDFLAG(IS_WIN)
-          // base::Environment returns environment variables in UTF-8 on
-          // Windows.
-          ssl_key_log_path = base::FilePath(base::UTF8ToWide(*env_str));
-#else
           ssl_key_log_path = base::FilePath(*env_str);
-#endif
         }
       }
 
@@ -833,11 +766,6 @@ base::CallbackListSubscription RegisterNetworkServiceProcessGoneHandler(
   return GetProcessGoneHandlersList().Add(std::move(handler));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-net::NetworkChangeNotifier* GetNetworkChangeNotifier() {
-  return BrowserMainLoop::GetInstance()->network_change_notifier();
-}
-#endif
 
 void FlushNetworkServiceInstanceForTesting() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
@@ -1066,45 +994,11 @@ void CreateNetworkContextInNetworkService(
             .InitWithNewPipeAndPassReceiver());
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // On Android, if a cookie_manager pending receiver was passed then migration
-  // should not be attempted as the cookie file is already being accessed by the
-  // browser instance.
-  if (params->cookie_manager) {
-    if (params->file_paths) {
-      // No migration should ever be attempted under this configuration.
-      DCHECK(!params->file_paths->unsandboxed_data_path);
-    }
-    CreateNetworkContextInternal(
-        std::move(context), std::move(params),
-        SandboxGrantResult::kDidNotAttemptToGrantSandboxAccess);
-    return;
-  }
-
-  // Note: This logic is duplicated from MaybeGrantAccessToDataPath to this fast
-  // path. This should be kept in sync if there are any changes to the logic.
-  SandboxGrantResult grant_result = SandboxGrantResult::kNoMigrationRequested;
-  if (!params->file_paths) {
-    // No file paths (e.g. in-memory context) so nothing to do.
-    grant_result = SandboxGrantResult::kDidNotAttemptToGrantSandboxAccess;
-  } else {
-    // If no `unsandboxed_data_path` is supplied, it means this is network
-    // context has been created by Android Webview, which does not understand
-    // the concept of `unsandboxed_data_path`. In this case, `data_directory`
-    // should always be used, if present.
-    if (!params->file_paths->unsandboxed_data_path)
-      grant_result = SandboxGrantResult::kDidNotAttemptToGrantSandboxAccess;
-  }
-  // Create network context immediately without thread hops.
-  CreateNetworkContextInternal(std::move(context), std::move(params),
-                               grant_result);
-#else
   // Restrict disk access to a certain path (on another thread) and continue
   // with network context creation.
   GrantSandboxAccessOnThreadPool(
       std::move(params),
       base::BindOnce(&CreateNetworkContextInternal, std::move(context)));
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 }  // namespace content

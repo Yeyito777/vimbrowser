@@ -50,9 +50,6 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_skia_rep_default.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/win/icon_util.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/web_applications/os_integration/mac/app_shim_registry.h"
@@ -70,31 +67,17 @@ const int kDesiredIconSizesForShortcut[] = {16, 32, 128, 256, 512};
 // Linux supports icons of any size. FreeDesktop Icon Theme Specification states
 // that "Minimally you should install a 48x48 icon in the hicolor theme."
 const int kDesiredIconSizesForShortcut[] = {16, 32, 48, 128, 256, 512};
-#elif BUILDFLAG(IS_WIN)
-const int* kDesiredIconSizesForShortcut = IconUtil::kIconDimensions;
 #else
 const int kDesiredIconSizesForShortcut[] = {32};
 #endif
 
-#if BUILDFLAG(IS_WIN)
-base::LazyThreadPoolCOMSTATaskRunner g_shortcuts_task_runner =
-    LAZY_COM_STA_TASK_RUNNER_INITIALIZER(
-        base::TaskTraits({base::MayBlock(), base::TaskPriority::USER_VISIBLE,
-                          base::TaskShutdownBehavior::BLOCK_SHUTDOWN}),
-        base::SingleThreadTaskRunnerThreadMode::SHARED);
-#else
 base::LazyThreadPoolSequencedTaskRunner g_shortcuts_task_runner =
     LAZY_THREAD_POOL_SEQUENCED_TASK_RUNNER_INITIALIZER(
         base::TaskTraits({base::MayBlock(), base::TaskPriority::USER_VISIBLE,
                           base::TaskShutdownBehavior::BLOCK_SHUTDOWN}));
-#endif
 
 size_t GetNumDesiredIconSizesForShortcut() {
-#if BUILDFLAG(IS_WIN)
-  return IconUtil::kNumIconDimensions;
-#else
   return std::size(kDesiredIconSizesForShortcut);
-#endif
 }
 
 void CreatePlatformShortcutsAndPostCallback(
@@ -407,15 +390,8 @@ base::FilePath GetOsIntegrationResourcesDirectoryForApp(
   std::string port(url.has_port() ? url.GetPort() : "80");
   std::string scheme_port(scheme + "_" + port);
 
-#if BUILDFLAG(IS_WIN)
-  base::FilePath::StringType host_path(base::UTF8ToWide(host));
-  base::FilePath::StringType scheme_port_path(base::UTF8ToWide(scheme_port));
-#elif BUILDFLAG(IS_POSIX)
   base::FilePath::StringType host_path(host);
   base::FilePath::StringType scheme_port_path(scheme_port);
-#else
-#error "Unknown platform"
-#endif
 
   return app_data_dir.Append(host_path).Append(scheme_port_path);
 }

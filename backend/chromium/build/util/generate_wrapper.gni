@@ -48,9 +48,6 @@ template("generate_wrapper") {
       script = "//build/util/generate_wrapper.py"
     }
     _wrapper_script = invoker.wrapper_script
-    if (is_win) {
-      _wrapper_script += ".bat"
-    }
 
     data = [
       _wrapper_script,
@@ -64,11 +61,7 @@ template("generate_wrapper") {
     _rebased_executable_to_wrap =
         rebase_path(invoker.executable, root_build_dir)
     _rebased_wrapper_script = rebase_path(_wrapper_script, root_build_dir)
-    if (is_win) {
-      _script_language = "batch"
-    } else {
-      _script_language = "bash"
-    }
+    _script_language = "bash"
     args = [
       "--executable",
       "@WrappedPath(${_rebased_executable_to_wrap})",

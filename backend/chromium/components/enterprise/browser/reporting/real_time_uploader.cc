@@ -63,7 +63,6 @@ void RealTimeUploader::CreateReportQueue(const std::string& dm_token,
                                          reporting::Destination destination) {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
 
-#if !BUILDFLAG(IS_IOS)
   // Not using ReportQueueFactory as we need to provide DM token manually.
   auto config = reporting::ReportQueueConfiguration::Create(
       dm_token, destination,
@@ -86,9 +85,6 @@ void RealTimeUploader::CreateReportQueue(const std::string& dm_token,
     return;
   }
   report_queue_ = std::move(report_queue.value());
-#else
-  NOTREACHED();
-#endif  // !BUILDFLAG(IS_IOS)
 }
 
 void RealTimeUploader::OnReportEnqueued(EnqueueCallback callback,

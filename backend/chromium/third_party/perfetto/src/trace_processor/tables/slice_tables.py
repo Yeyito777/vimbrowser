@@ -176,30 +176,6 @@ SLICE_TABLE = Table(
                 ''',
         }))
 
-ANDROID_NETWORK_PACKETS_TABLE = Table(
-    python_module=__file__,
-    class_name='AndroidNetworkPacketsTable',
-    sql_name='__intrinsic_android_network_packets',
-    columns=[
-        C('id', CppTableId(SLICE_TABLE), flags=ColumnFlag.SORTED),
-        C('iface', CppString()),
-        C('direction', CppString()),
-        C('packet_transport', CppString()),
-        C('packet_length', CppInt64()),
-        C('packet_count', CppInt64()),
-        C('socket_tag', CppUint32()),
-        C('socket_tag_str', CppString()),
-        C('socket_uid', CppUint32()),
-        C('local_port', CppOptional(CppUint32())),
-        C('remote_port', CppOptional(CppUint32())),
-        C('packet_icmp_type', CppOptional(CppUint32())),
-        C('packet_icmp_code', CppOptional(CppUint32())),
-        C('packet_tcp_flags', CppOptional(CppUint32())),
-        C('packet_tcp_flags_str', CppOptional(CppString())),
-    ],
-    add_implicit_column=False,
-)
-
 TRACK_EVENT_CALLSTACKS = Table(
     python_module=__file__,
     class_name='TrackEventCallstacksTable',
@@ -222,7 +198,6 @@ TRACK_EVENT_CALLSTACKS = Table(
 
 # Keep this list sorted.
 ALL_TABLES = [
-    ANDROID_NETWORK_PACKETS_TABLE,
     SLICE_TABLE,
     TRACK_EVENT_CALLSTACKS,
 ]

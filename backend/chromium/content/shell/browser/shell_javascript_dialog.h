@@ -46,15 +46,6 @@ class ShellJavaScriptDialog {
   // This field is not a raw_ptr<> because it is a pointer to Objective-C
   // object.
   RAW_PTR_EXCLUSION ShellJavaScriptDialogHelper* helper_;  // owned
-#elif BUILDFLAG(IS_WIN)
-  JavaScriptDialogManager::DialogClosedCallback callback_;
-  raw_ptr<ShellJavaScriptDialogManager> manager_;
-  JavaScriptDialogType dialog_type_;
-  HWND dialog_win_;
-  std::u16string message_text_;
-  std::u16string default_prompt_text_;
-  static INT_PTR CALLBACK DialogProc(HWND dialog, UINT message, WPARAM wparam,
-                                     LPARAM lparam);
 #endif
 };
 

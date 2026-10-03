@@ -115,19 +115,11 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/frame_view.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#include "ui/gfx/win/hwnd_util.h"
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 #if defined(USE_AURA)
 #include "ui/aura/window.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/boca/on_task/on_task_locked_controller.h"
-#endif
 
 namespace {
 
@@ -1916,15 +1908,6 @@ void TabStrip::MaybeStartDrag(TabSlotView* source,
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Block drag operation if the web app is locked for OnTask. This prevents the
-  // window from moving along with the tab when in locked fullsceeen mode. Only
-  // relevant for non-web browser scenarios.
-  if (ash::boca::OnTaskLockedController::From(GetBrowserWindowInterface())
-          ->is_locked_for_on_task()) {
-    return;
-  }
-#endif
 
   // Check that the source is either a valid tab or a tab group header, which
   // are the only valid drag targets.
@@ -2250,11 +2233,7 @@ bool TabStrip::ShouldHighlightCloseButtonAfterRemove() {
 }
 
 bool TabStrip::TitlebarBackgroundIsTransparent() const {
-#if BUILDFLAG(IS_WIN)
-  return false;
-#else
   return GetWidget()->ShouldWindowContentsBeTransparent();
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 const Tab* TabStrip::GetLastVisibleTab() const {

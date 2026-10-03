@@ -102,16 +102,6 @@ class FakeWebAppUiManager : public WebAppUiManager {
                     Profile& profile,
                     LaunchWebAppDebugValueCallback callback,
                     WithAppResources& lock) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void MigrateLauncherState(const webapps::AppId& from_app_id,
-                            const webapps::AppId& to_app_id,
-                            base::OnceClosure callback) override;
-
-  void DisplayRunOnOsLoginNotification(
-      const base::flat_map<webapps::AppId,
-                           WebAppUiManager::RoolNotificationBehavior>& apps,
-      base::WeakPtr<Profile> profile) override;
-#endif
   void NotifyAppRelaunchState(const webapps::AppId& placeholder_app_id,
                               const webapps::AppId& final_app_id,
                               const std::u16string& final_app_name,

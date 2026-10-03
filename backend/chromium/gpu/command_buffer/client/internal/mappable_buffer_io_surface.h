@@ -87,12 +87,6 @@ class GPU_COMMAND_BUFFER_CLIENT_EXPORT MappableBufferIOSurface
   base::Lock map_lock_;
   uint32_t map_count_ GUARDED_BY(map_lock_) = 0u;
 
-#if BUILDFLAG(IS_IOS)
-  // On iOS, we can't use IOKit to access IOSurfaces in the renderer process, so
-  // we share the memory segment backing the IOSurface as shared memory which is
-  // then mapped in the renderer process.
-  base::WritableSharedMemoryMapping shared_memory_mapping_;
-#endif
 };
 
 }  // namespace gpu

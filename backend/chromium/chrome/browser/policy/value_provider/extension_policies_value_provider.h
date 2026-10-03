@@ -68,16 +68,10 @@ struct base::ScopedObservationTraits<policy::PolicyService,
   static void AddObserver(policy::PolicyService* source,
                           policy::PolicyService::Observer* observer) {
     source->AddObserver(policy::POLICY_DOMAIN_EXTENSIONS, observer);
-#if BUILDFLAG(IS_CHROMEOS)
-    source->AddObserver(policy::POLICY_DOMAIN_SIGNIN_EXTENSIONS, observer);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
   static void RemoveObserver(policy::PolicyService* source,
                              policy::PolicyService::Observer* observer) {
     source->RemoveObserver(policy::POLICY_DOMAIN_EXTENSIONS, observer);
-#if BUILDFLAG(IS_CHROMEOS)
-    source->RemoveObserver(policy::POLICY_DOMAIN_SIGNIN_EXTENSIONS, observer);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
 };
 

@@ -97,13 +97,7 @@ source_set("tests") {
     "//third_party/ipcz/src:ipcz_test_support_chromium",
   ]
 
-  if (is_ios) {
-    deps += [
-      "//mojo/public/interfaces/bindings/tests:validation_unittest_bundle_data",
-    ]
-  } else {
-    data = [ "//mojo/public/interfaces/bindings/tests/data/validation/" ]
-  }
+  data = [ "//mojo/public/interfaces/bindings/tests/data/validation/" ]
 
   if (!use_blink) {
     assert_no_deps = [ "//third_party/blink/*" ]
@@ -273,9 +267,7 @@ source_set("perftests") {
 
   sources = [ "bindings_perftest.cc" ]
 
-  if (!is_ios) {
-    sources += [ "e2e_perftest.cc" ]
-  }
+  sources += [ "e2e_perftest.cc" ]
 
   deps = [
     "//base/test:test_support",

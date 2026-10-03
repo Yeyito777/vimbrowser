@@ -19,27 +19,3 @@ source_set("lib") {
     "//services/test/echo/public/mojom",
   ]
 }
-
-if (is_win) {
-  shared_library("echo_preload_library") {
-    testonly = true
-
-    sources = [
-      "echo_preload_library.def",
-      "echo_preload_library_win.cc",
-    ]
-
-    if (!is_asan && !use_clang_profiling) {
-      no_default_deps = true
-    }
-
-    # Keep this a tiny dll as it does very little.
-    assert_no_deps = [
-      "//third_party/abseil-cpp:absl",
-      "//third_party/perfetto:libperfetto",
-    ]
-
-    libs = [ "winmm.lib" ]
-    ldflags = [ "/delayload:winmm.dll" ]
-  }
-}

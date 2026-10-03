@@ -7,9 +7,7 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include <Carbon/Carbon.h>
 #include "base/apple/scoped_cftyperef.h"
 #elif BUILDFLAG(IS_OZONE)
@@ -20,20 +18,9 @@ namespace ui {
 
 enum KeyboardLayout {
   KEYBOARD_LAYOUT_ENGLISH_US,
-#if BUILDFLAG(IS_WIN)
-  KEYBOARD_LAYOUT_ARABIC,
-  KEYBOARD_LAYOUT_FRENCH,
-  KEYBOARD_LAYOUT_GERMAN,
-  KEYBOARD_LAYOUT_GREEK,
-  KEYBOARD_LAYOUT_JAPANESE,
-  KEYBOARD_LAYOUT_KOREAN,
-  KEYBOARD_LAYOUT_RUSSIAN,
-#endif
 };
 
-#if BUILDFLAG(IS_WIN)
-using PlatformKeyboardLayout = HKL;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 using PlatformKeyboardLayout = base::apple::ScopedCFTypeRef<TISInputSourceRef>;
 #endif
 

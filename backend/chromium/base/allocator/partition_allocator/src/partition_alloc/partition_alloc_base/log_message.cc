@@ -26,11 +26,6 @@
 #include "partition_alloc/partition_alloc_base/strings/string_util.h"
 #include "partition_alloc/partition_alloc_base/strings/stringprintf.h"
 
-#if PA_BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include <io.h>
-#endif
 
 #if PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
 #include <unistd.h>
@@ -153,17 +148,9 @@ void LogMessage::Init(const char* file, int line) {
   message_start_ = strlen(stream_.c_str());
 }
 
-#if PA_BUILDFLAG(IS_WIN)
-// This has already been defined in the header, but defining it again as DWORD
-// ensures that the type used in the header is equivalent to DWORD. If not,
-// the redefinition is a compile error.
-typedef DWORD SystemErrorCode;
-#endif
 
 SystemErrorCode GetLastSystemErrorCode() {
-#if PA_BUILDFLAG(IS_WIN)
-  return ::GetLastError();
-#elif PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
+#if PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
   return errno;
 #endif
 }
@@ -171,49 +158,13 @@ SystemErrorCode GetLastSystemErrorCode() {
 void SystemErrorCodeToStream(base::strings::CStringBuilder& os,
                              SystemErrorCode error_code) {
   char buffer[256];
-#if PA_BUILDFLAG(IS_WIN)
-  const int kErrorMessageBufferSize = 256;
-  char msgbuf[kErrorMessageBufferSize];
-  DWORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
-  DWORD len = FormatMessageA(flags, nullptr, error_code, 0, msgbuf,
-                             std::size(msgbuf), nullptr);
-  if (len) {
-    // Messages returned by system end with line breaks.
-    const char* whitespace_pos = base::strings::FindLastNotOf(msgbuf, "\n\r ");
-    if (whitespace_pos) {
-      size_t whitespace_index = whitespace_pos - msgbuf + 1;
-      PA_UNSAFE_TODO(msgbuf[whitespace_index]) = '\0';
-    }
-    base::strings::SafeSPrintf(buffer, "%s (0x%x)", msgbuf, error_code);
-    os << buffer;
-    return;
-  }
-  base::strings::SafeSPrintf(buffer,
-                             "Error (0x%x) while retrieving error. (0x%x)",
-                             GetLastError(), error_code);
-  os << buffer;
-#elif PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
+#if PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
   base::safe_strerror_r(error_code, buffer, sizeof(buffer));
   os << buffer << " (" << error_code << ")";
 #endif  // PA_BUILDFLAG(IS_WIN)
 }
 
-#if PA_BUILDFLAG(IS_WIN)
-Win32ErrorLogMessage::Win32ErrorLogMessage(const char* file,
-                                           int line,
-                                           LogSeverity severity,
-                                           SystemErrorCode err)
-    : LogMessage(file, line, severity), err_(err) {}
-
-Win32ErrorLogMessage::~Win32ErrorLogMessage() {
-  stream() << ": ";
-  SystemErrorCodeToStream(stream(), err_);
-  // We're about to crash (CHECK). Put |err_| on the stack (by placing it in a
-  // field) and use Alias in hopes that it makes it into crash dumps.
-  DWORD last_error = err_;
-  base::debug::Alias(&last_error);
-}
-#elif PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
+#if PA_BUILDFLAG(IS_POSIX) || PA_BUILDFLAG(IS_FUCHSIA)
 ErrnoLogMessage::ErrnoLogMessage(const char* file,
                                  int line,
                                  LogSeverity severity,

@@ -17,69 +17,14 @@
 #include "components/permissions/permission_request.h"
 #include "components/permissions/permissions_client.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/resources/android/theme_resources.h"
-#else
 #include "components/permissions/vector_icons/vector_icons.h"
 #include "components/vector_icons/vector_icons.h"
 #include "ui/gfx/vector_icon_types.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace permissions {
 
 namespace {
 
-#if BUILDFLAG(IS_ANDROID)
-int GetIconIdAndroid(RequestType type) {
-  switch (type) {
-    case RequestType::kArSession:
-    case RequestType::kVrSession:
-      return IDR_ANDROID_INFOBAR_VR_HEADSET;
-    case RequestType::kCameraStream:
-      return IDR_ANDROID_INFOBAR_MEDIA_STREAM_CAMERA;
-    case RequestType::kClipboard:
-      return IDR_ANDROID_INFOBAR_CLIPBOARD;
-    case RequestType::kDiskQuota:
-      return IDR_ANDROID_INFOBAR_FOLDER;
-    case RequestType::kFileSystemAccess:
-      NOTREACHED();
-    case RequestType::kGeolocation:
-      return IDR_ANDROID_INFOBAR_GEOLOCATION;
-    case RequestType::kHandTracking:
-      return IDR_ANDROID_INFOBAR_HAND_TRACKING;
-    case RequestType::kIdentityProvider:
-      return IDR_ANDROID_INFOBAR_IDENTITY_PROVIDER;
-    case RequestType::kIdleDetection:
-      return IDR_ANDROID_INFOBAR_IDLE_DETECTION;
-    case RequestType::kLocalNetwork:
-      return IDR_ANDROID_INFOBAR_LOCAL_NETWORK;
-    case RequestType::kLocalNetworkAccess:
-      return IDR_ANDROID_INFOBAR_LOCAL_NETWORK_ACCESS;
-    case RequestType::kLoopbackNetwork:
-      return IDR_ANDROID_INFOBAR_LOOPBACK_NETWORK;
-    case RequestType::kMicStream:
-      return IDR_ANDROID_INFOBAR_MEDIA_STREAM_MIC;
-    case RequestType::kMidiSysex:
-      return IDR_ANDROID_INFOBAR_MIDI;
-    case RequestType::kMultipleDownloads:
-      return IDR_ANDROID_INFOBAR_MULTIPLE_DOWNLOADS;
-    case RequestType::kNfcDevice:
-      return IDR_ANDROID_INFOBAR_NFC;
-    case RequestType::kNotifications:
-      return IDR_ANDROID_INFOBAR_NOTIFICATIONS;
-    case RequestType::kSensors:
-      return IDR_ANDROID_INFOBAR_SENSORS;
-    case RequestType::kProtectedMediaIdentifier:
-      return IDR_ANDROID_INFOBAR_PROTECTED_MEDIA_IDENTIFIER;
-    case RequestType::kStorageAccess:
-    case RequestType::kTopLevelStorageAccess:
-      return IDR_ANDROID_STORAGE_ACCESS;
-    case RequestType::kWindowManagement:
-      return IDR_ANDROID_INFOBAR_WINDOW_MANAGEMENT;
-  }
-  NOTREACHED();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 // TODO(crbug.com/335848275): Migrate the icons in 2 steps.
@@ -133,10 +78,6 @@ const gfx::VectorIcon& GetIconIdDesktop(RequestType type) {
       return vector_icons::kProtocolHandlerIcon;
     case RequestType::kSensors:
       return vector_icons::kSensorsChromeRefreshIcon;
-#if BUILDFLAG(IS_CHROMEOS)
-    case RequestType::kSmartCard:
-      return vector_icons::kSmartCardReaderIcon;
-#endif
     case RequestType::kWebAppInstallation:
       return vector_icons::kInstallDesktopIcon;
 #if BUILDFLAG(IS_CHROMEOS) && BUILDFLAG(USE_CUPS)
@@ -276,10 +217,6 @@ std::optional<RequestType> ContentSettingsTypeToRequestTypeIfExists(
       return RequestType::kTopLevelStorageAccess;
     case ContentSettingsType::FILE_SYSTEM_WRITE_GUARD:
       return RequestType::kFileSystemAccess;
-#if BUILDFLAG(IS_CHROMEOS)
-    case ContentSettingsType::SMART_CARD_DATA:
-      return RequestType::kSmartCard;
-#endif
 #if BUILDFLAG(IS_CHROMEOS) && BUILDFLAG(USE_CUPS)
     case ContentSettingsType::WEB_PRINTING:
       return RequestType::kWebPrinting;
@@ -360,10 +297,6 @@ std::optional<ContentSettingsType> RequestTypeToContentSettingsType(
     case RequestType::kProtectedMediaIdentifier:
       return ContentSettingsType::PROTECTED_MEDIA_IDENTIFIER;
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-    case RequestType::kSmartCard:
-      return ContentSettingsType::SMART_CARD_DATA;
-#endif
     case RequestType::kStorageAccess:
       return ContentSettingsType::STORAGE_ACCESS;
     case RequestType::kVrSession:
@@ -401,22 +334,13 @@ bool IsConfirmationChipSupported(RequestType for_request_type) {
   return kRequestsWithChip.contains(for_request_type);
 }
 
-#if !BUILDFLAG(IS_IOS)
 IconId GetIconId(RequestType type) {
   IconId override_id = PermissionsClient::Get()->GetOverrideIconId(type);
-#if BUILDFLAG(IS_ANDROID)
-  if (override_id) {
-    return override_id;
-  }
-  return GetIconIdAndroid(type);
-#else
   if (!override_id.is_empty()) {
     return override_id;
   }
   return GetIconIdDesktop(type);
-#endif
 }
-#endif  // !BUILDFLAG(IS_IOS)
 
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 IconId GetBlockedIconId(RequestType type) {
@@ -488,10 +412,6 @@ const char* PermissionKeyForRequestType(permissions::RequestType request_type) {
     case permissions::RequestType::kRegisterProtocolHandler:
       return "register_protocol_handler";
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
-#if BUILDFLAG(IS_CHROMEOS)
-    case RequestType::kSmartCard:
-      return "smart_card";
-#endif
     case permissions::RequestType::kStorageAccess:
       return "storage_access";
     case permissions::RequestType::kTopLevelStorageAccess:

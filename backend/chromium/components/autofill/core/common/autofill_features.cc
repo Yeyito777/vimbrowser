@@ -387,11 +387,6 @@ BASE_FEATURE(kAutofillConsiderAutocompleteUnrecognizedFieldsInMetrics,
 BASE_FEATURE(kAutofillCreditCardUserPerceptionSurvey,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// If enabled, other apps can open the Autofill Options in Chrome.
-BASE_FEATURE(kAutofillDeepLinkAutofillOptions,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // If enabled, `FormParsingTracker` will wait up to 1 second
 // for Autofill to finish parsing forms pesent on a given tab before capturing
@@ -551,20 +546,7 @@ BASE_FEATURE(kAutofillEnableImportOfUnchangedValuesForCountryAndState,
 BASE_FEATURE(kAutofillEnableImportWhenMultiplePhoneNumbers,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// Controls if Chrome Keyboard Accessory on Android displays 2 line chips.
-// TODO: crbug.com/385172647 - Clean up after the feature is launched.
-BASE_FEATURE(kAutofillEnableKeyboardAccessoryChipRedesign,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_ANDROID)
-// Controls if Chrome Keyboard Accessory limits the width of the first chip or
-// the first 2 chips to display a part of the next one on the screen.
-// TODO: crbug.com/385172647 - Clean up after the feature is launched.
-BASE_FEATURE(kAutofillEnableKeyboardAccessoryChipWidthAdjustment,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 
 // When enabled, Autofill will help users fill in loyalty card details.
@@ -581,12 +563,6 @@ BASE_FEATURE(kAutofillEnableNonAffiliatedLoyaltyCardsFilling,
 BASE_FEATURE(kAutofillEnableSaveToWalletFromSettings,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// Controls if Chrome Autofill UI surfaces ignore touch events if something is
-// fully or partially obscuring the Chrome window.
-BASE_FEATURE(kAutofillEnableSecurityTouchEventFilteringAndroid,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Kill switch: If enabled, `AutofillField` may not suppress suggestions on
 // field that has autocomplete=unrecognized attribute.
@@ -608,11 +584,7 @@ BASE_FEATURE(kAutofillEnableSupportForHomeAndWork,
 // When enabled, chrome will support name and email address profile.
 // TODO(crbug.com/356845298): Clean up when launched.
 BASE_FEATURE(kAutofillEnableSupportForNameAndEmail,
-#if BUILDFLAG(IS_IOS)
-             base::FEATURE_DISABLED_BY_DEFAULT
-#else  // Desktop and Android
              base::FEATURE_ENABLED_BY_DEFAULT
-#endif
 );
 
 // The number of times after which, a never accepted `kAccountNameEmail`
@@ -965,17 +937,6 @@ BASE_FEATURE(kAutofillSupportPhoneticNameForJP,
 // TODO(crbug.com/369503318): Clean up when launched.
 BASE_FEATURE(kAutofillSupportSplitZipCode, base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// If enabled, Autofill Services can query whether Chrome provides forms as
-// virtual view structures to third party providers.
-BASE_FEATURE(kAutofillThirdPartyModeContentProvider,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-
-// If enabled, stores the last used Autofill Service in a pref. This allows to
-// restore the user's preference to use platform Autofill on restart.
-BASE_FEATURE(kAutofillThirdPartyModeRestoredOnStart,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Enables tracking of user edits to <select> fields that were not autofilled.
 BASE_FEATURE(kAutofillTrackSelectFieldEdits, base::FEATURE_DISABLED_BY_DEFAULT);

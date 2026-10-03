@@ -169,10 +169,6 @@ bool TruncateFilename(base::FilePath* path, size_t limit) {
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_APPLE)
   // UTF-8.
   base::TruncateUTF8ToByteSize(name, limit, &truncated);
-#elif BUILDFLAG(IS_WIN)
-  // UTF-16.
-  DCHECK(name.size() > limit);
-  truncated = name.substr(0, CBU16_IS_TRAIL(name[limit]) ? limit - 1 : limit);
 #else
 // We cannot generally assume that the file name encoding is in UTF-8 (see
 // the comment for FilePath::AsUTF8Unsafe), hence no safe way to truncate.

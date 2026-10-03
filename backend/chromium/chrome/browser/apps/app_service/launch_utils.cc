@@ -44,11 +44,6 @@
 #include "ui/events/event_constants.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/public/cpp/new_window_delegate.h"
-#include "chrome/browser/apps/app_service/app_service_proxy_factory.h"
-#include "chromeos/ash/experiences/arc/mojom/app.mojom.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace apps {
 
@@ -73,11 +68,7 @@ std::vector<base::FilePath> GetLaunchFilesFromCommandLine(
 
   launch_files.reserve(command_line.GetArgs().size());
   for (const auto& arg : command_line.GetArgs()) {
-#if BUILDFLAG(IS_WIN)
-    GURL url(base::AsStringPiece16(arg));
-#else
     GURL url(arg);
-#endif
     if (url.is_valid() && !url.SchemeIsFile()) {
       continue;
     }
@@ -150,25 +141,6 @@ AppLaunchParams CreateAppLaunchParamsForIntent(
     params.override_url = intent->url.value();
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!intent->files.empty()) {
-    std::vector<GURL> file_urls;
-    for (const auto& intent_file : intent->files) {
-      if (intent_file->url.SchemeIsFile()) {
-        DCHECK(file_urls.empty());
-        break;
-      }
-      file_urls.push_back(intent_file->url);
-    }
-    if (!file_urls.empty()) {
-      std::vector<storage::FileSystemURL> file_system_urls =
-          GetFileSystemURL(profile, file_urls);
-      for (const auto& file_system_url : file_system_urls) {
-        params.launch_files.push_back(file_system_url.path());
-      }
-    }
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   params.intent = std::move(intent);
 
@@ -281,89 +253,5 @@ int GetSessionIdForRestoreFromWebContents(
   return browser->GetSessionID().id();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-arc::mojom::WindowInfoPtr MakeArcWindowInfo(WindowInfoPtr window_info) {
-  if (!window_info) {
-    return nullptr;
-  }
-
-  arc::mojom::WindowInfoPtr arc_window_info = arc::mojom::WindowInfo::New();
-  arc_window_info->window_id = window_info->window_id;
-  arc_window_info->state = window_info->state;
-  arc_window_info->display_id = window_info->display_id;
-  if (window_info->bounds.has_value()) {
-    arc_window_info->bounds = std::move(window_info->bounds);
-  }
-  return arc_window_info;
-}
-
-AppIdsToLaunchForUrl::AppIdsToLaunchForUrl() = default;
-AppIdsToLaunchForUrl::AppIdsToLaunchForUrl(AppIdsToLaunchForUrl&&) = default;
-AppIdsToLaunchForUrl::~AppIdsToLaunchForUrl() = default;
-
-AppIdsToLaunchForUrl FindAppIdsToLaunchForUrl(AppServiceProxy* proxy,
-                                              const GURL& url) {
-  // Navigation Capturing also enables launching of browser-tab apps.
-  bool exclude_browser_tab_apps = !features::IsNavigationCapturingReimplEnabled();
-  AppIdsToLaunchForUrl result;
-  result.candidates =
-      proxy->GetAppIdsForUrl(url, /*exclude_browsers=*/true, exclude_browser_tab_apps);
-  if (result.candidates.empty()) {
-    return result;
-  }
-
-  std::optional<std::string> preferred =
-      proxy->PreferredAppsList().FindPreferredAppForUrl(url);
-  if (preferred && std::ranges::contains(result.candidates, *preferred)) {
-    result.preferred = std::move(preferred);
-  }
-
-  return result;
-}
-
-void MaybeLaunchPreferredAppForUrl(Profile* profile,
-                                   const GURL& url,
-                                   LaunchSource launch_source) {
-  if (AppServiceProxyFactory::IsAppServiceAvailableForProfile(profile)) {
-    auto* proxy = AppServiceProxyFactory::GetForProfile(profile);
-    AppIdsToLaunchForUrl app_id_to_launch =
-        FindAppIdsToLaunchForUrl(proxy, url);
-    if (app_id_to_launch.preferred) {
-      proxy->LaunchAppWithUrl(*app_id_to_launch.preferred,
-                              /*event_flags=*/0, url, launch_source);
-      return;
-    }
-  }
-  CHECK(ash::NewWindowDelegate::GetInstance());
-
-  ash::NewWindowDelegate::GetInstance()->OpenUrl(
-      url, ash::NewWindowDelegate::OpenUrlFrom::kUserInteraction,
-      ash::NewWindowDelegate::Disposition::kNewForegroundTab);
-}
-
-void LaunchUrlInInstalledAppOrBrowser(Profile* profile,
-                                      const GURL& url,
-                                      LaunchSource launch_source) {
-  if (AppServiceProxyFactory::IsAppServiceAvailableForProfile(profile)) {
-    auto* proxy = AppServiceProxyFactory::GetForProfile(profile);
-    AppIdsToLaunchForUrl candidate_apps = FindAppIdsToLaunchForUrl(proxy, url);
-    std::optional<std::string> app_id = candidate_apps.preferred;
-    if (!app_id && candidate_apps.candidates.size() == 1) {
-      app_id = candidate_apps.candidates[0];
-    }
-    if (app_id) {
-      proxy->LaunchAppWithUrl(*app_id,
-                              /*event_flags=*/0, url, launch_source);
-      return;
-    }
-  }
-
-  CHECK(ash::NewWindowDelegate::GetInstance());
-
-  ash::NewWindowDelegate::GetInstance()->OpenUrl(
-      url, ash::NewWindowDelegate::OpenUrlFrom::kUserInteraction,
-      ash::NewWindowDelegate::Disposition::kNewForegroundTab);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace apps

@@ -28,11 +28,6 @@
 #include "sandbox/mac/seatbelt_extension.h"
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-#include "content/public/browser/gpu_data_manager.h"
-#include "content/public/browser/gpu_data_manager_observer.h"
-#include "media/mojo/mojom/media_foundation_service.mojom.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace content {
 
@@ -100,43 +95,6 @@ class SeatbeltExtensionTokenProviderImpl final
 };
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-// A singleton running in the browser process to notify (multiple) service
-// processes on GpuInfo updates.
-class GpuInfoMonitor : public GpuDataManagerObserver {
- public:
-  static GpuInfoMonitor* GetInstance() {
-    static GpuInfoMonitor* instance = new GpuInfoMonitor();
-    return instance;
-  }
-
-  GpuInfoMonitor() { GpuDataManager::GetInstance()->AddObserver(this); }
-
-  void RegisterGpuInfoObserver(
-      mojo::PendingRemote<media::mojom::GpuInfoObserver> observer) {
-    auto observer_id = gpu_info_observers_.Add(std::move(observer));
-    // Notify upon registration in case there's a GPUInfo change between
-    // `InitializeBroker()` and when this observer is registered.
-    gpu_info_observers_.Get(observer_id)
-        ->OnGpuInfoUpdate(GpuDataManager::GetInstance()->GetGPUInfo());
-  }
-
-  // GpuDataManagerObserver:
-  void OnGpuInfoUpdate() override {
-    for (const auto& observer : gpu_info_observers_) {
-      observer->OnGpuInfoUpdate(GpuDataManager::GetInstance()->GetGPUInfo());
-    }
-  }
-
- private:
-  mojo::RemoteSet<media::mojom::GpuInfoObserver> gpu_info_observers_;
-};
-
-void RegisterGpuInfoObserver(
-    mojo::PendingRemote<media::mojom::GpuInfoObserver> observer) {
-  GpuInfoMonitor::GetInstance()->RegisterGpuInfoObserver(std::move(observer));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 // How long an instance of the service is allowed to sit idle before we
 // disconnect and effectively kill it.
@@ -162,19 +120,6 @@ struct ServiceTraits<media::mojom::CdmService> {
   using BrokerType = media::mojom::CdmServiceBroker;
 };
 
-#if BUILDFLAG(IS_WIN)
-template <>
-struct ServiceTraits<media::mojom::MediaFoundationService> {
-  using BrokerType = media::mojom::MediaFoundationServiceBroker;
-};
-
-template <>
-void InitializeBroker(
-    mojo::Remote<media::mojom::MediaFoundationServiceBroker>& broker_remote) {
-  broker_remote->UpdateGpuInfo(GpuDataManager::GetInstance()->GetGPUInfo(),
-                               base::BindOnce(&RegisterGpuInfoObserver));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 // A map hosts all service remotes, each of which corresponds to one service
 // process. There should be only one instance of this class stored in
@@ -285,15 +230,5 @@ media::mojom::CdmService& GetCdmService(BrowserContext* browser_context,
       cdm_info.type, browser_context, site, cdm_info.name, cdm_info.path);
 }
 
-#if BUILDFLAG(IS_WIN)
-media::mojom::MediaFoundationService& GetMediaFoundationService(
-    const media::CdmType& cdm_type,
-    BrowserContext* browser_context,
-    const GURL& site,
-    const base::FilePath& cdm_path) {
-  return GetService<media::mojom::MediaFoundationService>(
-      cdm_type, browser_context, site, "Media Foundation Service", cdm_path);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace content

@@ -69,10 +69,6 @@
 #include "components/guest_view/browser/guest_view_base.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/permissions/android/android_permission_util.h"
-#include "ui/android/window_android.h"
-#endif
 
 namespace permissions {
 namespace {
@@ -163,12 +159,8 @@ void PermissionContextBase::RequestPermission(
                             result.status == PermissionStatus::DENIED)) {
     static constexpr char kResetInstructions[] =
         " This can be reset in "
-#if BUILDFLAG(IS_ANDROID)
-        "Site Settings"
-#else
         "Page Info which can be accessed by clicking the tune icon next to "
         "the URL"
-#endif
         ". See https://www.chromestatus.com/feature/6443143280984064 for "
         "more information.";
     switch (result.source) {
@@ -439,26 +431,6 @@ content::PermissionResult PermissionContextBase::GetPermissionStatus(
   }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(
-          features::kReturnDeniedForNotificationsWhenNoAppLevelSettings)) {
-    if (content_settings_type_ == ContentSettingsType::NOTIFICATIONS) {
-      bool app_level_settings_allow_site_notifications =
-          enabled_app_level_notification_permission_for_testing_.value_or(
-              DoesAppLevelSettingsAllowSiteNotifications());
-      base::UmaHistogramBoolean(
-          "Permissions.Status.Notifications.EnabledAppLevel",
-          app_level_settings_allow_site_notifications);
-
-      if (!app_level_settings_allow_site_notifications) {
-        // Chrome is not able to send notifications at Android level.
-        return content::PermissionResult(
-            PermissionStatus::DENIED,
-            content::PermissionStatusSource::APP_LEVEL_SETTINGS);
-      }
-    }
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   PermissionSetting retrieved_permission_data = GetPermissionStatusInternal(
       render_frame_host, requesting_origin, embedding_origin);
@@ -544,17 +516,8 @@ PermissionContextBase::UpdatePermissionStatusWithDeviceStatus(
   if (can_request_device_permission_for_test_.has_value()) {
     can_request = can_request_device_permission_for_test_.value();
   } else {
-#if BUILDFLAG(IS_ANDROID)
-    if (!web_contents || !web_contents->GetNativeView() ||
-        !web_contents->GetNativeView()->GetWindowAndroid()) {
-      return result;
-    }
-    can_request =
-        CanRequestSystemPermission(content_settings_type(), web_contents);
-#else
     can_request = PermissionsClient::Get()->CanRequestDevicePermission(
         content_settings_type());
-#endif
   }
   result.status = can_request ? blink::mojom::PermissionStatus::ASK
                               : blink::mojom::PermissionStatus::DENIED;
@@ -727,17 +690,8 @@ void PermissionContextBase::MaybeUpdateCachedHasDevicePermission(
   if (has_device_permission_for_test_.has_value()) {
     has_device_permission = has_device_permission_for_test_.value();
   } else {
-#if BUILDFLAG(IS_ANDROID)
-    if (!web_contents || !web_contents->GetNativeView() ||
-        !web_contents->GetNativeView()->GetWindowAndroid()) {
-      return;
-    }
-    has_device_permission =
-        HasSystemPermission(content_settings_type(), web_contents);
-#else
     has_device_permission =
         PermissionsClient::Get()->HasDevicePermission(content_settings_type());
-#endif
   }
 
   const bool should_notify_observers =

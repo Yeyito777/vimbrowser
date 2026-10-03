@@ -120,7 +120,6 @@ public:
 
     enum class Type {
         kRaster,
-        kRasterPinnable,
         kLazy,
         kLazyPicture,
         kLazyTexture,
@@ -139,7 +138,7 @@ public:
     }
 
     bool isRasterBacked() const {
-        return this->type() == Type::kRaster || this->type() == Type::kRasterPinnable;
+        return this->type() == Type::kRaster;
     }
 
     // True for images instantiated by Ganesh in GPU memory

@@ -85,9 +85,7 @@ class CertificateManagerPageHandler
   void ShowNativeManageCertificates() override;
 #endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
   void SetIncludeSystemTrustStore(bool include) override;
-#endif
 
   static void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry);
 

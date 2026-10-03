@@ -46,34 +46,6 @@ component("backend") {
     "//url",
   ]
 
-  if (is_chromeos) {
-    # PRINT_BACKEND_AVAILABLE disables the default dummy implementation
-    # print backend and enables a custom implementation instead.
-    defines += [ "PRINT_BACKEND_AVAILABLE" ]
-
-    sources += [ "print_backend_chromeos.cc" ]
-  }
-
-  if (is_win) {
-    # PRINT_BACKEND_AVAILABLE disables the default dummy implementation of the
-    # print backend and enables a custom implementation instead.
-    defines += [ "PRINT_BACKEND_AVAILABLE" ]
-    sources += [
-      "print_backend_win.cc",
-      "print_backend_win.h",
-      "printing_info_win.cc",
-      "printing_info_win.h",
-      "spooler_win.cc",
-      "spooler_win.h",
-      "win_helper.cc",
-      "win_helper.h",
-      "xps_utils_win.cc",
-      "xps_utils_win.h",
-    ]
-    public_deps += [ "//printing/mojom" ]
-    deps += [ "//services/data_decoder/public/cpp:safe_xml_parser" ]
-  }
-
   if (use_cups) {
     public_configs += [ "//printing:cups" ]
 
@@ -111,19 +83,6 @@ component("backend") {
         "cups_printer.h",
         "print_backend_cups_ipp.cc",
         "print_backend_cups_ipp.h",
-      ]
-    }
-
-    if (is_chromeos) {
-      deps += [ ":ipp_handlers_generate" ]
-
-      sources += [
-        "cups_connection_pool.cc",
-        "cups_connection_pool.h",
-        "ipp_handler_map.h",
-        "ipp_handlers.cc",
-        "ipp_handlers.h",
-        ipp_handler_map_path,
       ]
     }
 

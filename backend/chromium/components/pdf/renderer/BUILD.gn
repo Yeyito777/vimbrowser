@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import("//pdf/features.gni")
-import("//printing/buildflags/buildflags.gni")
 import("//services/screen_ai/buildflags/features.gni")
 
 assert(enable_pdf)
@@ -46,7 +45,6 @@ static_library("renderer") {
     "//pdf:features",
     "//pdf:pdf_accessibility_constants_helper",
     "//pdf:pdf_view_web_plugin",
-    "//printing/buildflags",
     "//services/screen_ai/buildflags",
     "//services/strings",
     "//skia",
@@ -67,9 +65,6 @@ static_library("renderer") {
     "//ui/gfx/geometry",
   ]
 
-  if (enable_printing) {
-    deps += [ "//components/printing/renderer" ]
-  }
   if (enable_screen_ai_service) {
     deps += [ "//services/screen_ai/public/mojom" ]
   }

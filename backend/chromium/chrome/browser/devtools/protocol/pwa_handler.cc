@@ -698,19 +698,6 @@ void PWAHandler::ChangeAppUserSettings(
     }
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(crbug.com/339453269): Implement changeUserAppSettings/LinkCapturing on
-  // ChromeOS.
-  // TL:DR; the ChromeOS uses apps::AppServiceProxyFactory instead, and the
-  // SetSupportedLinksPreference would associate all the supported links to the
-  // app.
-  if (in_link_capturing) {
-    std::move(callback)->sendFailure(protocol::Response::InvalidRequest(
-        "Changing AppUserSettings/LinkCapturing on ChromeOS is not supported "
-        "yet."));
-    return;
-  }
-#endif
 
   base::ConcurrentCallbacks<std::optional<std::string>> concurrent;
   scheduler->ScheduleCallbackWithResult(

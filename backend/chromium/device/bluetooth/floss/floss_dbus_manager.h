@@ -43,9 +43,6 @@ class FlossManagerClient;
 class FlossBluetoothTelephonyClient;
 class FlossSocketManager;
 
-#if BUILDFLAG(IS_CHROMEOS)
-class FlossAdminClient;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // The bundle of all DBus clients used by FlossDBusManager. The bundle is used
 // to control the correct ordering of creation and deletion of clients before
@@ -75,9 +72,6 @@ class DEVICE_BLUETOOTH_EXPORT FlossClientBundle {
   FlossAdvertiserClient* advertiser_client() {
     return advertiser_client_.get();
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  FlossAdminClient* admin_client() { return admin_client_.get(); }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   FlossBatteryManagerClient* battery_manager_client() {
     return battery_manager_client_.get();
@@ -103,9 +97,6 @@ class DEVICE_BLUETOOTH_EXPORT FlossClientBundle {
   std::unique_ptr<FlossAdvertiserClient> advertiser_client_;
   std::unique_ptr<FlossBatteryManagerClient> battery_manager_client_;
   std::unique_ptr<FlossBluetoothTelephonyClient> bluetooth_telephony_client_;
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<FlossAdminClient> admin_client_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 // FlossDBusManager manages the lifetimes of D-Bus connections and clients. It
@@ -270,9 +261,6 @@ class DEVICE_BLUETOOTH_EXPORT FlossDBusManager
   FlossBluetoothTelephonyClient* GetBluetoothTelephonyClient();
   FlossSocketManager* GetSocketManager();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  FlossAdminClient* GetAdminClient();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  protected:
   friend class FlossDBusManagerTest;
@@ -319,9 +307,6 @@ class DEVICE_BLUETOOTH_EXPORT FlossDBusManager
 
   void InitAdapterClientsIfReady();
   void InitAdapterLoggingClientsIfReady();
-#if BUILDFLAG(IS_CHROMEOS)
-  void InitAdminClientsIfReady();
-#endif  // BUILDFLAG(IS_CHROMEOS)
   void InitBatteryClientsIfReady();
   void InitTelephonyClientsIfReady();
   void InitGattClientsIfReady();
@@ -349,9 +334,6 @@ class DEVICE_BLUETOOTH_EXPORT FlossDBusManager
 
   bool adapter_interface_present_ = false;
   bool adapter_logging_interface_present_ = false;
-#if BUILDFLAG(IS_CHROMEOS)
-  bool admin_interface_present_ = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   bool battery_interface_present_ = false;
   bool telephony_interface_present_ = false;
   bool gatt_interface_present_ = false;
@@ -385,9 +367,6 @@ class DEVICE_BLUETOOTH_EXPORT FlossDBusManagerSetter {
   void SetFlossBluetoothTelephonyClient(
       std::unique_ptr<FlossBluetoothTelephonyClient> client);
   void SetFlossSocketManager(std::unique_ptr<FlossSocketManager> manager);
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetFlossAdminClient(std::unique_ptr<FlossAdminClient> client);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 // FlossDBusThreadManager manages the D-Bus thread, the thread dedicated to

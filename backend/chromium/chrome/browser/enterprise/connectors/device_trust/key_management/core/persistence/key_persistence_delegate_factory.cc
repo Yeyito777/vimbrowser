@@ -9,9 +9,7 @@
 #include "build/build_config.h"
 #include "chrome/browser/enterprise/connectors/device_trust/key_management/core/persistence/key_persistence_delegate.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/enterprise/connectors/device_trust/key_management/core/persistence/win_key_persistence_delegate.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "chrome/browser/enterprise/connectors/device_trust/key_management/core/persistence/mac_key_persistence_delegate.h"
 #elif BUILDFLAG(IS_LINUX)
 #include "chrome/browser/enterprise/connectors/device_trust/key_management/core/persistence/linux_key_persistence_delegate.h"
@@ -41,9 +39,7 @@ KeyPersistenceDelegateFactory* KeyPersistenceDelegateFactory::GetInstance() {
 
 std::unique_ptr<KeyPersistenceDelegate>
 KeyPersistenceDelegateFactory::CreateKeyPersistenceDelegate() {
-#if BUILDFLAG(IS_WIN)
-  return std::make_unique<WinKeyPersistenceDelegate>();
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return std::make_unique<MacKeyPersistenceDelegate>();
 #elif BUILDFLAG(IS_LINUX)
   return std::make_unique<LinuxKeyPersistenceDelegate>();

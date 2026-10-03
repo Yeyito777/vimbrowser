@@ -667,14 +667,6 @@ class MockCdmContext : public CdmContext {
                std::unique_ptr<CallbackRegistration>(EventCB event_cb));
   MOCK_METHOD0(GetDecryptor, Decryptor*());
 
-#if BUILDFLAG(IS_WIN)
-  MOCK_METHOD0(RequiresMediaFoundationRenderer, bool());
-  MOCK_METHOD0(GetMediaFoundationCdmProxy,
-               scoped_refptr<MediaFoundationCdmProxy>());
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-  MOCK_METHOD0(GetChromeOsCdmContext, chromeos::ChromeOsCdmContext*());
-#endif  // BUILDFLAG(IS_CHROMEOS)
   std::optional<base::UnguessableToken> GetCdmId() const override;
 
   void set_cdm_id(const base::UnguessableToken& cdm_id);

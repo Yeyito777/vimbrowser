@@ -16,11 +16,9 @@ namespace updater {
 
 scoped_refptr<update_client::ActionHandler> MakeActionHandler();
 
-#if !BUILDFLAG(IS_WIN)
 inline scoped_refptr<update_client::ActionHandler> MakeActionHandler() {
   return nullptr;
 }
-#endif
 
 }  // namespace updater
 

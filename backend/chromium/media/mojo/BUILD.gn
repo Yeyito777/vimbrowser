@@ -24,9 +24,7 @@ buildflag_header("buildflags") {
     } else if (service == "cdm") {
       # Fuchsia communicates directly with the platform CDM via FIDL instead of
       # the mojo service.
-      if (!is_fuchsia) {
-        enable_mojo_cdm = true
-      }
+      enable_mojo_cdm = true
     } else if (service == "audio_decoder") {
       enable_mojo_audio_decoder = true
     } else if (service == "audio_encoder") {

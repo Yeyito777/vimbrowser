@@ -14,10 +14,6 @@
 #if defined(SUPPORT_PEDALS_VECTOR_ICONS)
 #include "components/omnibox/browser/vector_icons.h"  // nogncheck
 #endif
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_android.h"
-#include "components/omnibox/browser/jni_headers/OmniboxAction_jni.h"
-#endif
 
 OmniboxAction::LabelStrings::LabelStrings(int id_hint,
                                           int id_suggestion_contents,
@@ -85,13 +81,6 @@ OmniboxAction::OmniboxAction(LabelStrings strings,
       show_as_action_button_(show_as_action_button) {}
 
 OmniboxAction::~OmniboxAction() {
-#if BUILDFLAG(IS_ANDROID)
-  if (j_omnibox_action_) {
-    Java_OmniboxAction_destroy(base::android::AttachCurrentThread(),
-                               j_omnibox_action_);
-    j_omnibox_action_.Reset();
-  }
-#endif
 }
 
 const OmniboxAction::LabelStrings& OmniboxAction::GetLabelStrings() const {
@@ -131,12 +120,6 @@ OmniboxActionId OmniboxAction::ActionId() const {
   return OmniboxActionId::UNKNOWN;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-base::android::ScopedJavaLocalRef<jobject> OmniboxAction::GetOrCreateJavaObject(
-    JNIEnv* env) const {
-  NOTREACHED() << "This implementation does not have a java counterpart";
-}
-#endif
 
 void OmniboxAction::OpenURL(OmniboxAction::ExecutionContext& context,
                             const GURL& url) const {
@@ -153,7 +136,3 @@ void OmniboxAction::OpenURL(OmniboxAction::ExecutionContext& context,
            /*destination_url_entered_with_http_scheme=*/false, u"",
            AutocompleteMatch(), AutocompleteMatch());
 }
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(OmniboxAction)
-#endif

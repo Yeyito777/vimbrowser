@@ -27,11 +27,6 @@
 #include "ui/gfx/geometry/size.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "printing/printing_features.h"
-#endif
 
 namespace printing {
 
@@ -125,58 +120,6 @@ bool SizesEqualWithinEpsilon(const gfx::Size& lhs,
 }
 #endif  // BUILDFLAG(USE_CUPS)
 
-#if BUILDFLAG(IS_WIN)
-gfx::Rect GetCenteredPageContentRect(const gfx::Size& paper_size,
-                                     const gfx::Size& page_size,
-                                     const gfx::Rect& page_content_rect) {
-  gfx::Rect content_rect = page_content_rect;
-  if (paper_size.width() > page_size.width()) {
-    int diff = paper_size.width() - page_size.width();
-    content_rect.set_x(content_rect.x() + diff / 2);
-  }
-  if (paper_size.height() > page_size.height()) {
-    int diff = paper_size.height() - page_size.height();
-    content_rect.set_y(content_rect.y() + diff / 2);
-  }
-  return content_rect;
-}
-
-gfx::Rect GetPrintableAreaDeviceUnits(HDC hdc) {
-  DCHECK(hdc);
-
-  gfx::Size physical_size_device_units(GetDeviceCaps(hdc, PHYSICALWIDTH),
-                                       GetDeviceCaps(hdc, PHYSICALHEIGHT));
-  gfx::Rect printable_area_device_units(
-      GetDeviceCaps(hdc, PHYSICALOFFSETX), GetDeviceCaps(hdc, PHYSICALOFFSETY),
-      GetDeviceCaps(hdc, HORZRES), GetDeviceCaps(hdc, VERTRES));
-
-  // Sanity check the printable_area: we've seen crashes caused by a printable
-  // area rect of 0, 0, 0, 0, so it seems some drivers don't set it.
-  if (printable_area_device_units.IsEmpty() ||
-      !gfx::Rect(physical_size_device_units)
-           .Contains(printable_area_device_units)) {
-    printable_area_device_units = gfx::Rect(physical_size_device_units);
-  }
-
-  return printable_area_device_units;
-}
-
-DocumentDataType DetermineDocumentDataType(base::span<const uint8_t> data) {
-  if (LooksLikePdf(data)) {
-    return DocumentDataType::kPdf;
-  }
-  if (LooksLikeXps(data)) {
-    return DocumentDataType::kXps;
-  }
-  return DocumentDataType::kUnknown;
-}
-
-bool LooksLikeXps(base::span<const uint8_t> maybe_xps_data) {
-  constexpr auto kXpsStartsWith = base::span_from_cstring("PK\x03\x04");
-  return maybe_xps_data.size() >= 2000u &&
-         maybe_xps_data.first(kXpsStartsWith.size()) == kXpsStartsWith;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 bool LooksLikePdf(base::span<const uint8_t> maybe_pdf_data) {
   constexpr auto kPdfStartsWith = base::span_from_cstring("%PDF-");

@@ -9,7 +9,7 @@
 #include <string>
 #include <utility>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/check.h"
 #include "base/feature_list.h"
 #include "base/functional/bind.h"
@@ -59,7 +59,6 @@
 #include "chrome/common/extensions/api/passwords_private.h"
 #include "chrome/grit/branded_strings.h"
 #include "chrome/grit/generated_resources.h"
-#include "chromeos/constants/chromeos_features.h"
 #include "components/affiliations/core/browser/affiliation_utils.h"
 #include "components/feature_engagement/public/feature_constants.h"
 #include "components/keyed_service/core/service_access_type.h"
@@ -98,9 +97,6 @@
 #include "chrome/browser/device_reauth/chrome_device_authenticator_factory.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/extensions/api/passwords_private/passwords_private_utils_chromeos.h"
-#endif
 
 namespace {
 
@@ -154,31 +150,6 @@ std::u16string GetReauthPurpose(
     case extensions::api::passwords_private::PlaintextReason::kEdit:
       return l10n_util::GetStringUTF16(
           IDS_PASSWORDS_PAGE_EDIT_AUTHENTICATION_PROMPT_BIOMETRIC_SUFFIX);
-    case extensions::api::passwords_private::PlaintextReason::kNone:
-      NOTREACHED();
-  }
-#elif BUILDFLAG(IS_WIN)
-  switch (reason) {
-    case extensions::api::passwords_private::PlaintextReason::kView:
-      return l10n_util::GetStringUTF16(
-          IDS_PASSWORDS_PAGE_AUTHENTICATION_PROMPT);
-    case extensions::api::passwords_private::PlaintextReason::kCopy:
-      return l10n_util::GetStringUTF16(
-          IDS_PASSWORDS_PAGE_COPY_AUTHENTICATION_PROMPT);
-    case extensions::api::passwords_private::PlaintextReason::kEdit:
-      return l10n_util::GetStringUTF16(
-          IDS_PASSWORDS_PAGE_EDIT_AUTHENTICATION_PROMPT);
-    case extensions::api::passwords_private::PlaintextReason::kNone:
-      NOTREACHED();
-  }
-#elif BUILDFLAG(IS_CHROMEOS)
-  switch (reason) {
-    case extensions::api::passwords_private::PlaintextReason::kView:
-      return l10n_util::GetStringUTF16(
-          IDS_PASSWORDS_PAGE_AUTHENTICATION_PROMPT_CHROMEOS);
-    case extensions::api::passwords_private::PlaintextReason::kCopy:
-    case extensions::api::passwords_private::PlaintextReason::kEdit:
-      return std::u16string();
     case extensions::api::passwords_private::PlaintextReason::kNone:
       NOTREACHED();
   }
@@ -278,18 +249,6 @@ std::u16string GetMessageForBiometricAuthenticationBeforeFillingSetting(
   message = l10n_util::GetStringUTF16(
       pref_enabled ? IDS_PASSWORD_MANAGER_TURN_OFF_FILLING_REAUTH_MAC
                    : IDS_PASSWORD_MANAGER_TURN_ON_FILLING_REAUTH_MAC);
-#elif BUILDFLAG(IS_WIN)
-  const bool pref_enabled =
-      prefs->GetBoolean(kBiometricAuthenticationBeforeFilling);
-  message = l10n_util::GetStringUTF16(
-      pref_enabled ? IDS_PASSWORD_MANAGER_TURN_OFF_FILLING_REAUTH_WIN
-                   : IDS_PASSWORD_MANAGER_TURN_ON_FILLING_REAUTH_WIN);
-#elif BUILDFLAG(IS_CHROMEOS)
-  const bool pref_enabled =
-      prefs->GetBoolean(kBiometricAuthenticationBeforeFilling);
-  message = l10n_util::GetStringUTF16(
-      pref_enabled ? IDS_PASSWORD_MANAGER_TURN_OFF_FILLING_REAUTH_CHROMEOS
-                   : IDS_PASSWORD_MANAGER_TURN_ON_FILLING_REAUTH_CHROMEOS);
 #endif
   return message;
 }
@@ -297,7 +256,6 @@ std::u16string GetMessageForBiometricAuthenticationBeforeFillingSetting(
 #endif
 
 void MaybeShowProfileSwitchIPH(Profile* profile) {
-#if !BUILDFLAG(IS_CHROMEOS)
   BrowserWindowInterface* launched_app =
       web_app::AppBrowserController::FindForWebApp(*profile,
                                                    ash::kPasswordManagerAppId);
@@ -312,7 +270,6 @@ void MaybeShowProfileSwitchIPH(Profile* profile) {
         ->window()
         ->MaybeShowProfileSwitchIPH();
   }
-#endif
 }
 
 // Returns a passkey model instance if the feature is enabled.
@@ -358,20 +315,16 @@ PasswordsPrivateDelegateImpl::PasswordsPrivateDelegateImpl(Profile* profile)
     sync_service_observation_.Observe(service);
   }
 
-#if !BUILDFLAG(IS_CHROMEOS)
   auto* provider = web_app::WebAppProvider::GetForWebApps(profile);
   install_manager_observation_.Observe(&provider->install_manager());
-#endif
 }
 
 PasswordsPrivateDelegateImpl::~PasswordsPrivateDelegateImpl() {
   saved_passwords_presenter_.RemoveObserver(this);
   install_manager_observation_.Reset();
-#if !BUILDFLAG(IS_WIN)
   if (device_authenticator_) {
     device_authenticator_->Cancel();
   }
-#endif
   device_authenticator_.reset();
 }
 
@@ -790,9 +743,6 @@ void PasswordsPrivateDelegateImpl::ContinueImport(
 #if BUILDFLAG(IS_MAC)
   message = l10n_util::GetStringUTF16(
       IDS_PASSWORDS_PAGE_IMPORT_AUTHENTICATION_PROMPT_BIOMETRIC_SUFFIX);
-#elif BUILDFLAG(IS_WIN)
-  message = l10n_util::GetStringUTF16(
-      IDS_PASSWORDS_PAGE_IMPORT_AUTHENTICATION_PROMPT);
 #endif
 
   AuthenticateUser(
@@ -813,9 +763,6 @@ void PasswordsPrivateDelegateImpl::ExportPasswords(
 #if BUILDFLAG(IS_MAC)
   message = l10n_util::GetStringUTF16(
       IDS_PASSWORDS_PAGE_EXPORT_AUTHENTICATION_PROMPT_BIOMETRIC_SUFFIX);
-#elif BUILDFLAG(IS_WIN)
-  message = l10n_util::GetStringUTF16(
-      IDS_PASSWORDS_PAGE_EXPORT_AUTHENTICATION_PROMPT);
 #endif
 
   AuthenticateUser(
@@ -949,11 +896,7 @@ void PasswordsPrivateDelegateImpl::ShowExportedFileInShell(
     std::string file_path) {
   Browser* browser = chrome::FindBrowserWithTab(web_contents);
   DCHECK(browser);
-#if !BUILDFLAG(IS_WIN)
   base::FilePath path(file_path);
-#else
-  base::FilePath path(base::UTF8ToWide(file_path));
-#endif
   platform_util::ShowItemInFolder(browser->profile(), path);
 }
 
@@ -1012,9 +955,6 @@ void PasswordsPrivateDelegateImpl::DeleteAllPasswordManagerData(
       IDS_PASSWORDS_PAGE_DELETE_ALL_DATA_AUTHENTICATION_PROMPT_BIOMETRIC_SUFFIX,
       l10n_util::GetStringUTF16(
           IDS_PASSWORD_BUBBLES_PASSWORD_MANAGER_LINK_TEXT_SAVING_ON_DEVICE));
-#elif BUILDFLAG(IS_WIN)
-  message = l10n_util::GetStringUTF16(
-      IDS_PASSWORDS_PAGE_DELETE_ALL_DATA_AUTHENTICATION_PROMPT);
 #endif
 
   AuthenticateUser(
@@ -1298,16 +1238,7 @@ void PasswordsPrivateDelegateImpl::AuthenticateUser(
   // TODO(crbug.com/40241199): Remove Cancel and instead simply destroy
   // |device_authenticator_|.
   if (device_authenticator_) {
-#if BUILDFLAG(IS_WIN)
-    // `device_authenticator_` lives as long as the authentication is in
-    // progress. Since there is currently no way of canceling authentication
-    // if the new one wants to start, new authentications will be resolved as if
-    // they failed until the pending authentication gets resolved by the user.
-    std::move(callback).Run(false);
-    return;
-#else
     device_authenticator_->Cancel();
-#endif
   }
   device_authenticator_ =
       GetDeviceAuthenticator(web_contents, auth_validity_period);

@@ -49,11 +49,6 @@ std::map<std::string, std::string> GetCommonNames() {
   common_names.insert(std::make_pair("UK", "GB"));
   // For some reason this is not provided by ICU:
   common_names.insert(std::make_pair("CZECH REPUBLIC", "CZ"));
-#if BUILDFLAG(IS_IOS)
-  // iOS uses the Foundation API to get the localized display name, in which
-  // "China" is named "Chine mainland".
-  common_names.insert(std::make_pair("CHINA", "CN"));
-#endif
   return common_names;
 }
 

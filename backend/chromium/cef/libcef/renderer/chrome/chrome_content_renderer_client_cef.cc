@@ -9,7 +9,6 @@
 #include "cef/libcef/renderer/render_frame_observer.h"
 #include "cef/libcef/renderer/render_manager.h"
 #include "cef/libcef/renderer/thread_util.h"
-#include "chrome/renderer/printing/chrome_print_render_frame_helper_delegate.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_thread.h"
 #include "third_party/blink/public/web/web_view.h"
@@ -53,13 +52,6 @@ void ChromeContentRendererClientCef::RenderFrameCreated(
   if (browser_created) {
     CHECK(config.has_value());
     OnBrowserCreated(render_frame->GetWebView(), *config);
-  }
-
-  if (config.has_value()) {
-    // This value will be used when the ChromeContentRendererClient
-    // creates the new ChromePrintRenderFrameHelperDelegate below.
-    ChromePrintRenderFrameHelperDelegate::SetNextPrintPreviewEnabled(
-        (*config).print_preview_enabled);
   }
 
   ChromeContentRendererClient::RenderFrameCreated(render_frame);

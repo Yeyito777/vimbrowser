@@ -37,18 +37,6 @@
 
 namespace settings {
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace {
-// Generates a Google Help URL which includes a "board type" parameter. Some
-// help pages need to be adjusted depending on the type of CrOS device that is
-// accessing the page.
-std::u16string GetHelpUrlWithBoard(const std::u16string& original_url) {
-  return base::StrCat(
-      {original_url, u"&b=",
-       base::ASCIIToUTF16(base::SysInfo::GetLsbReleaseBoard())});
-}
-}  // namespace
-#endif
 
 void AddAxAnnotationsSectionStrings(content::WebUIDataSource* html_source) {
   static constexpr webui::LocalizedString kLocalizedStrings[] = {
@@ -104,10 +92,6 @@ void AddCaptionSubpageStrings(content::WebUIDataSource* html_source) {
       {"captionsLanguage", IDS_SETTINGS_CAPTIONS_LANGUAGE},
       {"captionsManageLanguagesTitle",
        IDS_SETTINGS_CAPTIONS_MANAGE_LANGUAGES_TITLE},
-      {"captionsLiveTranslateTargetLanguage",
-       IDS_SETTINGS_CAPTIONS_LIVE_TRANSLATE_TARGET_LANGUAGE},
-      {"captionsLiveTranslateTargetLanguageSubtitle",
-       IDS_SETTINGS_CAPTIONS_LIVE_TRANSLATE_TARGET_LANGUAGE_SUBTITLE},
       {"removeLanguageLabel", IDS_SETTINGS_CAPTIONS_REMOVE_LANGUAGE_LABEL},
       {"makeDefaultLanguageLabel",
        IDS_SETTINGS_CAPTIONS_MAKE_DEFAULT_LANGUAGE_LABEL},
@@ -115,19 +99,9 @@ void AddCaptionSubpageStrings(content::WebUIDataSource* html_source) {
       {"defaultLanguageLabel", IDS_SETTINGS_CAPTIONS_DEFAULT_LANGUAGE_LABEL},
   };
   html_source->AddLocalizedStrings(kLocalizedStrings);
-  // Add the caption subtitle string conditionally so that non-cbx chromebooks
-  // do not show live translate information.
-#if BUILDFLAG(IS_CHROMEOS)
   html_source->AddLocalizedString(
       "captionsManageLanguagesSubtitle",
-      base::FeatureList::IsEnabled(media::kFeatureManagementLiveTranslateCrOS)
-          ? IDS_SETTINGS_CAPTIONS_MANAGE_LANGUAGES_SUBTITLE
-          : IDS_SETTINGS_CAPTIONS_MANAGE_LANGUAGES_SUBTITLE_LIVE_CAPTION_ONLY);
-#else
-  html_source->AddLocalizedString(
-      "captionsManageLanguagesSubtitle",
-      IDS_SETTINGS_CAPTIONS_MANAGE_LANGUAGES_SUBTITLE);
-#endif
+      IDS_SETTINGS_CAPTIONS_MANAGE_LANGUAGES_SUBTITLE_LIVE_CAPTION_ONLY);
 
   AddLiveCaptionSectionStrings(html_source);
 }
@@ -138,16 +112,8 @@ void AddLiveCaptionSectionStrings(content::WebUIDataSource* html_source) {
       "captionsEnableLiveCaptionTitle",
       IDS_SETTINGS_CAPTIONS_ENABLE_LIVE_CAPTION_TITLE);
   html_source->AddLocalizedString(
-      "captionsEnableLiveTranslateTitle",
-      IDS_SETTINGS_CAPTIONS_ENABLE_LIVE_TRANSLATE_TITLE);
-  html_source->AddLocalizedString(
-      "captionsEnableLiveTranslateSubtitle",
-      IDS_SETTINGS_CAPTIONS_ENABLE_LIVE_TRANSLATE_SUBTITLE);
-  html_source->AddLocalizedString(
       "captionsMaskOffensiveWordsTitle",
       IDS_SETTINGS_CAPTIONS_MASK_OFFENSIVE_WORDS_TITLE);
-
-  const bool liveTranslateEnabled = media::IsLiveTranslateEnabled();
 
   html_source->AddLocalizedString(
       "captionsEnableLiveCaptionSubtitle",
@@ -156,21 +122,8 @@ void AddLiveCaptionSectionStrings(content::WebUIDataSource* html_source) {
                           captions::IsLiveCaptionFeatureSupported());
   html_source->AddBoolean("enableLiveCaptionMultiLanguage", true);
 
-  html_source->AddBoolean("enableLiveTranslate", liveTranslateEnabled);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void AddPasswordPromptDialogStrings(content::WebUIDataSource* html_source) {
-  static constexpr webui::LocalizedString kLocalizedStrings[] = {
-      {"passwordPromptTitle", IDS_SETTINGS_PEOPLE_PASSWORD_PROMPT_TITLE},
-      {"passwordPromptInvalidPassword",
-       IDS_SETTINGS_PEOPLE_PASSWORD_PROMPT_INVALID_PASSWORD},
-      {"passwordPromptPasswordLabel",
-       IDS_SETTINGS_PEOPLE_PASSWORD_PROMPT_PASSWORD_LABEL},
-  };
-  html_source->AddLocalizedStrings(kLocalizedStrings);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void AddSharedSyncPageStrings(content::WebUIDataSource* html_source) {
   static constexpr webui::LocalizedString kLocalizedStrings[] = {
@@ -214,11 +167,7 @@ void AddSharedSyncPageStrings(content::WebUIDataSource* html_source) {
   html_source->AddString("syncErrorsHelpUrl", chrome::kSyncErrorsHelpURL);
 
   const bool updateAccountSettingsStrings =
-#if BUILDFLAG(IS_CHROMEOS)
-      false;
-#else
       base::FeatureList::IsEnabled(syncer::kReplaceSyncPromosWithSignInPromos);
-#endif
 
   html_source->AddLocalizedString(
       "encryptWithGoogleCredentialsLabel",
@@ -264,11 +213,7 @@ void AddSharedSyncPageStrings(content::WebUIDataSource* html_source) {
                 plus_addresses::features::kPlusAddressesEnabled)
               ? IDS_SETTINGS_ENCRYPT_WITH_SYNC_PASSPHRASE_INCLUDING_PLUS_ADDRESS_LABEL
               : IDS_SETTINGS_ENCRYPT_WITH_SYNC_PASSPHRASE_LABEL,
-#if BUILDFLAG(IS_CHROMEOS)
-          GetHelpUrlWithBoard(chrome::kSyncEncryptionHelpURL)));
-#else
           chrome::kSyncEncryptionHelpURL));
-#endif
 }
 
 void AddSecureDnsStrings(content::WebUIDataSource* html_source) {

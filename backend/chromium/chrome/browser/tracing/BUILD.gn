@@ -15,21 +15,7 @@ source_set("tracing") {
     "//content/public/browser",
   ]
 
-  if (is_win) {
-    sources += [
-      "windows_system_tracing_client_impl_win.h",
-      "windows_system_tracing_client_win.h",
-    ]
-    public_deps += [
-      "//chrome/windows_services/elevated_tracing_service:tracing_service_idl",
-    ]
-  }
-
-  if (!is_android) {
-    public_deps += [ "//chrome/browser/ui:browser_list" ]
-  } else {
-    public_deps += [ "//chrome/browser/ui/android/tab_model" ]
-  }
+  public_deps += [ "//chrome/browser/ui:browser_list" ]
 }
 
 source_set("impl") {
@@ -55,14 +41,6 @@ source_set("impl") {
     "//components/version_info",
   ]
 
-  if (is_win) {
-    sources += [ "windows_system_tracing_client_impl_win.cc" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
-  }
-
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 }
 
@@ -82,42 +60,24 @@ source_set("unit_tests") {
     "//third_party/metrics_proto",
     "//third_party/zlib/google:compression_utils",
   ]
-
-  if (is_win) {
-    sources += [ "windows_system_tracing_client_impl_unittest_win.cc" ]
-    deps += [
-      "//chrome/windows_services/elevated_tracing_service:tracing_service_idl",
-    ]
-  }
-
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/login/demo_mode",
-      "//chromeos/ash/components/login/login_state",
-      "//chromeos/ash/components/system",
-      "//chromeos/dbus/power",
-    ]
-  }
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [ "chrome_tracing_delegate_browsertest.cc" ]
-    deps = [
-      ":tracing",
-      "//base/test:proto_test_support",
-      "//base/test:test_support",
-      "//chrome/app:command_ids",
-      "//chrome/browser:browser_process",
-      "//chrome/browser/profiles:profile",
-      "//chrome/browser/ui",
-      "//chrome/common:constants",
-      "//chrome/test:test_support_ui",
-      "//components/metrics:metrics_pref_names",
-      "//components/prefs",
-      "//content/test:test_support",
-    ]
-  }
+source_set("browser_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = [ "chrome_tracing_delegate_browsertest.cc" ]
+  deps = [
+    ":tracing",
+    "//base/test:proto_test_support",
+    "//base/test:test_support",
+    "//chrome/app:command_ids",
+    "//chrome/browser:browser_process",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/ui",
+    "//chrome/common:constants",
+    "//chrome/test:test_support_ui",
+    "//components/metrics:metrics_pref_names",
+    "//components/prefs",
+    "//content/test:test_support",
+  ]
 }

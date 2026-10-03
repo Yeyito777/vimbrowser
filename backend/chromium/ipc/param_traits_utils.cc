@@ -35,26 +35,12 @@
 #include "ipc/mach_port_mac.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <tchar.h>
-
-#include "ipc/handle_win.h"
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #include "base/file_descriptor_posix.h"
 #include "ipc/ipc_platform_file_attachment_posix.h"
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "base/fuchsia/fuchsia_logging.h"
-#include "ipc/handle_attachment_fuchsia.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_hardware_buffer_handle.h"
-#include "ipc/ipc_mojo_handle_attachment.h"
-#include "mojo/public/cpp/system/message_pipe.h"
-#include "mojo/public/cpp/system/scope_to_message_pipe.h"
-#endif
 
 namespace IPC {
 
@@ -330,19 +316,6 @@ bool ParamTraits<double>::Read(const base::Pickle* m,
   return true;
 }
 
-#if BUILDFLAG(IS_WIN)
-bool ParamTraits<std::wstring>::Read(const base::Pickle* m,
-                                     base::PickleIterator* iter,
-                                     param_type* r) {
-  std::u16string_view piece16;
-  if (!iter->ReadStringPiece16(&piece16)) {
-    return false;
-  }
-
-  *r = base::AsWString(piece16);
-  return true;
-}
-#endif
 
 void ParamTraits<std::vector<char>>::Write(base::Pickle* m,
                                            const param_type& p) {
@@ -507,206 +480,8 @@ bool ParamTraits<base::ScopedFD>::Read(const base::Pickle* m,
 }
 #endif  // BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 
-#if BUILDFLAG(IS_WIN)
-void ParamTraits<base::win::ScopedHandle>::Write(base::Pickle* m,
-                                                 const param_type& p) {
-  const bool valid = p.is_valid();
-  WriteParam(m, valid);
-  if (!valid) {
-    return;
-  }
 
-  HandleWin handle(p.Get());
-  WriteParam(m, handle);
-}
 
-bool ParamTraits<base::win::ScopedHandle>::Read(const base::Pickle* m,
-                                                base::PickleIterator* iter,
-                                                param_type* r) {
-  r->Close();
-
-  bool valid;
-  if (!ReadParam(m, iter, &valid)) {
-    return false;
-  }
-  if (!valid) {
-    return true;
-  }
-
-  HandleWin handle;
-  if (!ReadParam(m, iter, &handle)) {
-    return false;
-  }
-
-  r->Set(handle.get_handle());
-  return true;
-}
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_FUCHSIA)
-void ParamTraits<zx::vmo>::Write(base::Pickle* m, const param_type& p) {
-  // This serialization must be kept in sync with
-  // nacl_message_scanner.cc:WriteHandle().
-  const bool valid = p.is_valid();
-  WriteParam(m, valid);
-
-  if (!valid) {
-    return;
-  }
-
-  if (!m->WriteAttachment(new internal::HandleAttachmentFuchsia(
-          std::move(const_cast<param_type&>(p))))) {
-    NOTREACHED();
-  }
-}
-
-bool ParamTraits<zx::vmo>::Read(const base::Pickle* m,
-                                base::PickleIterator* iter,
-                                param_type* r) {
-  r->reset();
-
-  bool valid;
-  if (!ReadParam(m, iter, &valid)) {
-    return false;
-  }
-
-  if (!valid) {
-    return true;
-  }
-
-  scoped_refptr<base::Pickle::Attachment> attachment;
-  if (!m->ReadAttachment(iter, &attachment)) {
-    return false;
-  }
-
-  if (static_cast<MessageAttachment*>(attachment.get())->GetType() !=
-      MessageAttachment::Type::FUCHSIA_HANDLE) {
-    return false;
-  }
-
-  *r = zx::vmo(static_cast<internal::HandleAttachmentFuchsia*>(attachment.get())
-                   ->Take());
-  return true;
-}
-
-void ParamTraits<zx::channel>::Write(base::Pickle* m, const param_type& p) {
-  // This serialization must be kept in sync with
-  // nacl_message_scanner.cc:WriteHandle().
-  const bool valid = p.is_valid();
-  WriteParam(m, valid);
-
-  if (!valid) {
-    return;
-  }
-
-  if (!m->WriteAttachment(new internal::HandleAttachmentFuchsia(
-          std::move(const_cast<param_type&>(p))))) {
-    NOTREACHED();
-  }
-}
-
-bool ParamTraits<zx::channel>::Read(const base::Pickle* m,
-                                    base::PickleIterator* iter,
-                                    param_type* r) {
-  r->reset();
-
-  bool valid;
-  if (!ReadParam(m, iter, &valid)) {
-    return false;
-  }
-
-  if (!valid) {
-    return true;
-  }
-
-  scoped_refptr<base::Pickle::Attachment> attachment;
-  if (!m->ReadAttachment(iter, &attachment)) {
-    return false;
-  }
-
-  if (static_cast<MessageAttachment*>(attachment.get())->GetType() !=
-      MessageAttachment::Type::FUCHSIA_HANDLE) {
-    return false;
-  }
-
-  *r = zx::channel(
-      static_cast<internal::HandleAttachmentFuchsia*>(attachment.get())
-          ->Take());
-  return true;
-}
-#endif  // BUILDFLAG(IS_FUCHSIA)
-
-#if BUILDFLAG(IS_ANDROID)
-void ParamTraits<base::android::ScopedHardwareBufferHandle>::Write(
-    base::Pickle* m,
-    const param_type& p) {
-  const bool is_valid = p.is_valid();
-  WriteParam(m, is_valid);
-  if (!is_valid) {
-    return;
-  }
-
-  // We must keep a ref to the AHardwareBuffer alive until the receiver has
-  // acquired its own reference. We do this by sending a message pipe handle
-  // along with the buffer. When the receiver deserializes (or even if they
-  // die without ever reading the message) their end of the pipe will be
-  // closed. We will eventually detect this and release the AHB reference.
-  mojo::MessagePipe tracking_pipe;
-  m->WriteAttachment(new internal::MojoHandleAttachment(
-      mojo::ScopedHandle::From(std::move(tracking_pipe.handle0))));
-  WriteParam(m, base::FileDescriptor(p.SerializeAsFileDescriptor().release(),
-                                     true /* auto_close */));
-
-  // Pass ownership of the input handle to our tracking pipe to keep the AHB
-  // alive long enough to be deserialized by the receiver.
-  mojo::ScopeToMessagePipe(std::move(const_cast<param_type&>(p)),
-                           std::move(tracking_pipe.handle1));
-}
-
-bool ParamTraits<base::android::ScopedHardwareBufferHandle>::Read(
-    const base::Pickle* m,
-    base::PickleIterator* iter,
-    param_type* r) {
-  *r = base::android::ScopedHardwareBufferHandle();
-
-  bool is_valid;
-  if (!ReadParam(m, iter, &is_valid)) {
-    return false;
-  }
-  if (!is_valid) {
-    return true;
-  }
-
-  scoped_refptr<base::Pickle::Attachment> tracking_pipe_attachment;
-  if (!m->ReadAttachment(iter, &tracking_pipe_attachment)) {
-    return false;
-  }
-
-  // We keep this alive until the AHB is safely deserialized below. When this
-  // goes out of scope, the sender holding the other end of this pipe will treat
-  // this handle closure as a signal that it's safe to release their AHB
-  // keepalive ref.
-  mojo::ScopedHandle tracking_pipe =
-      static_cast<MessageAttachment*>(tracking_pipe_attachment.get())
-          ->TakeMojoHandle();
-
-  base::FileDescriptor descriptor;
-  if (!ReadParam(m, iter, &descriptor)) {
-    return false;
-  }
-
-  // NOTE: It is valid to deserialize an invalid FileDescriptor, so the success
-  // of |ReadParam()| above does not imply that |descriptor| is valid.
-  base::ScopedFD scoped_fd(descriptor.fd);
-  if (!scoped_fd.is_valid()) {
-    return false;
-  }
-
-  *r = base::android::ScopedHardwareBufferHandle::DeserializeFromFileDescriptor(
-      std::move(scoped_fd));
-  return true;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void ParamTraits<base::ReadOnlySharedMemoryRegion>::Write(base::Pickle* m,
                                                           const param_type& p) {
@@ -787,22 +562,12 @@ void ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Write(
   WriteParam(m, static_cast<uint64_t>(p.GetSize()));
   WriteParam(m, p.GetGUID());
 
-#if BUILDFLAG(IS_WIN)
-  base::win::ScopedHandle h = const_cast<param_type&>(p).PassPlatformHandle();
-  HandleWin handle_win(h.Get());
-  WriteParam(m, handle_win);
-#elif BUILDFLAG(IS_FUCHSIA)
-  zx::vmo vmo = const_cast<param_type&>(p).PassPlatformHandle();
-  WriteParam(m, vmo);
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   base::apple::ScopedMachSendRight h =
       const_cast<param_type&>(p).PassPlatformHandle();
   MachPortMac mach_port_mac(h.get());
   WriteParam(m, mach_port_mac);
-#elif BUILDFLAG(IS_ANDROID)
-  m->WriteAttachment(new internal::PlatformFileAttachment(
-      base::ScopedFD(const_cast<param_type&>(p).PassPlatformHandle())));
-#elif BUILDFLAG(IS_POSIX)
+#else
   base::subtle::ScopedFDPair h =
       const_cast<param_type&>(p).PassPlatformHandle();
   m->WriteAttachment(new internal::PlatformFileAttachment(std::move(h.fd)));
@@ -837,21 +602,7 @@ bool ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Read(
   }
   size_t size = static_cast<size_t>(shm_size);
 
-#if BUILDFLAG(IS_WIN)
-  HandleWin handle_win;
-  if (!ReadParam(m, iter, &handle_win)) {
-    return false;
-  }
-  *r = base::subtle::PlatformSharedMemoryRegion::Take(
-      base::win::ScopedHandle(handle_win.get_handle()), mode, size, guid);
-#elif BUILDFLAG(IS_FUCHSIA)
-  zx::vmo vmo;
-  if (!ReadParam(m, iter, &vmo)) {
-    return false;
-  }
-  *r = base::subtle::PlatformSharedMemoryRegion::Take(std::move(vmo), mode,
-                                                      size, guid);
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   MachPortMac mach_port_mac;
   if (!ReadParam(m, iter, &mach_port_mac)) {
     return false;
@@ -859,7 +610,7 @@ bool ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Read(
   *r = base::subtle::PlatformSharedMemoryRegion::Take(
       base::apple::ScopedMachSendRight(mach_port_mac.get_mach_port()), mode,
       size, guid);
-#elif BUILDFLAG(IS_POSIX)
+#else
   scoped_refptr<base::Pickle::Attachment> attachment;
   if (!m->ReadAttachment(iter, &attachment)) {
     return false;
@@ -869,13 +620,6 @@ bool ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Read(
     return false;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  *r = base::subtle::PlatformSharedMemoryRegion::Take(
-      base::ScopedFD(
-          static_cast<internal::PlatformFileAttachment*>(attachment.get())
-              ->TakePlatformFile()),
-      mode, size, guid);
-#else
   scoped_refptr<base::Pickle::Attachment> readonly_attachment;
   if (mode == base::subtle::PlatformSharedMemoryRegion::Mode::kWritable) {
     if (!m->ReadAttachment(iter, &readonly_attachment)) {
@@ -898,7 +642,6 @@ bool ParamTraits<base::subtle::PlatformSharedMemoryRegion>::Read(
                                    ->TakePlatformFile())
               : base::ScopedFD()),
       mode, size, guid);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #endif
 
@@ -1099,41 +842,5 @@ bool ParamTraits<Message>::Read(const base::Pickle* m,
   return true;
 }
 
-#if BUILDFLAG(IS_WIN)
-// Note that HWNDs/HANDLE/HCURSOR/HACCEL etc are always 32 bits, even on 64
-// bit systems. That's why we use the Windows macros to convert to 32 bits.
-void ParamTraits<HANDLE>::Write(base::Pickle* m, const param_type& p) {
-  m->WriteInt(HandleToLong(p));
-}
-
-bool ParamTraits<HANDLE>::Read(const base::Pickle* m,
-                               base::PickleIterator* iter,
-                               param_type* r) {
-  int32_t temp;
-  if (!iter->ReadInt(&temp)) {
-    return false;
-  }
-  *r = LongToHandle(temp);
-  return true;
-}
-
-void ParamTraits<MSG>::Write(base::Pickle* m, const param_type& p) {
-  m->WriteData(reinterpret_cast<const char*>(&p), sizeof(MSG));
-}
-
-bool ParamTraits<MSG>::Read(const base::Pickle* m,
-                            base::PickleIterator* iter,
-                            param_type* r) {
-  std::string_view data;
-  bool result = iter->ReadStringPiece(&data);
-  if (result && data.size() == sizeof(MSG)) {
-    UNSAFE_TODO(memcpy(r, data.data(), data.size()));
-  } else {
-    NOTREACHED();
-  }
-
-  return result;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace IPC

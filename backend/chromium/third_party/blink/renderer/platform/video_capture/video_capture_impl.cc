@@ -53,9 +53,6 @@
 #include "media/base/mac/video_frame_mac.h"
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-#include "gpu/command_buffer/common/shared_image_capabilities.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace blink {
 
@@ -375,43 +372,6 @@ bool VideoCaptureImpl::ProcessBuffer(
         break;
       }
 #endif
-#if BUILDFLAG(IS_WIN)
-      // On Windows it might happen that the Renderer process loses GPU
-      // connection, while the capturer process will continue to produce
-      // GPU backed frames.
-      if (!gpu_factories_ || !media_task_runner_ ||
-          mappable_buffers_not_supported_) {
-        // The associated shared memory region is mapped only once.
-        if (video_frame_init_data.ready_buffer->info->is_premapped &&
-            !buffer_context->data().data()) {
-          auto gmb_handle = buffer_context->CloneGpuMemoryBufferHandle();
-          buffer_context->InitializeFromUnsafeShmemRegion(
-              std::move(gmb_handle).dxgi_handle().TakeRegion());
-          DCHECK(buffer_context->data().data());
-        }
-        RequirePremappedFrames();
-        if (!video_frame_init_data.ready_buffer->info->is_premapped ||
-            !buffer_context->data().data()) {
-          // If the frame isn't premapped, can't do anything here.
-          return false;
-        }
-
-        scoped_refptr<media::VideoFrame> frame =
-            media::VideoFrame::WrapExternalData(
-                video_frame_init_data.ready_buffer->info->pixel_format,
-                gfx::Size(video_frame_init_data.ready_buffer->info->coded_size),
-                gfx::Rect(
-                    video_frame_init_data.ready_buffer->info->visible_rect),
-                video_frame_init_data.ready_buffer->info->visible_rect.size(),
-                buffer_context->data(),
-                video_frame_init_data.ready_buffer->info->timestamp);
-        if (!frame) {
-          return false;
-        }
-        video_frame_init_data.frame = frame;
-        break;
-      }
-#endif
 
       // Premapping of |gmb_handle.region| occurs in |buffer_context| when there
       // is no GPU connection and inside MappableBufferDXGI when there is a
@@ -426,16 +386,9 @@ bool VideoCaptureImpl::ProcessBuffer(
       auto gmb_handle = buffer_context->CloneGpuMemoryBufferHandle();
       CHECK(!gmb_handle.is_null());
 
-#if BUILDFLAG(IS_CHROMEOS)
-      video_frame_init_data.is_webgpu_compatible =
-          gmb_handle.type == gfx::NATIVE_PIXMAP &&
-          gmb_handle.native_pixmap_handle().supports_zero_copy_webgpu_import;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
       video_frame_init_data.is_webgpu_compatible =
           media::IOSurfaceIsWebGPUCompatible(gmb_handle.io_surface().get());
-#elif BUILDFLAG(IS_WIN)
-      video_frame_init_data.is_webgpu_compatible =
-          gmb_handle.type == gfx::GpuMemoryBufferType::DXGI_SHARED_HANDLE;
 #endif
 
       // Convert the GpuMemoryBufferHandle to a VideoFrame by posting a task on
@@ -503,19 +456,6 @@ bool VideoCaptureImpl::BindVideoFrameOnMediaTaskRunner(
     video_frame_init_data.buffer_context->SetGpuFactories(gpu_factories);
     should_recreate_shared_image = true;
   }
-#if BUILDFLAG(IS_WIN)
-  // If the renderer is running in d3d9 mode due to e.g. driver bugs
-  // workarounds, DXGI D3D11 textures won't be supported.
-  // Can't check this from the ::Initialize() since media context provider can
-  // be accessed only on the Media thread.
-  gpu::SharedImageInterface* shared_image_interface =
-      gpu_factories->SharedImageInterface();
-  if (!shared_image_interface ||
-      !shared_image_interface->GetCapabilities().shared_image_d3d) {
-    std::move(on_gmb_not_supported).Run();
-    return false;
-  }
-#endif
 
   // Create GPU texture and bind GpuMemoryBufferHandle to the texture.
   auto* sii = video_frame_init_data.buffer_context->gpu_factories()
@@ -581,11 +521,6 @@ bool VideoCaptureImpl::BindVideoFrameOnMediaTaskRunner(
                                ->shared_image->mailbox());
   }
 
-#if BUILDFLAG(IS_WIN)
-  video_frame_init_data.buffer_context->gmb_resources()
-      ->shared_image->SetUsePreMappedMemory(
-          video_frame_init_data.ready_buffer->info->is_premapped);
-#endif
 
   const gpu::SyncToken sync_token = sii->GenVerifiedSyncToken();
   CHECK(shared_image);

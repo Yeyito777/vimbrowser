@@ -25,9 +25,6 @@
 #error Cannot compile v8 with wasm.
 #endif  // PDF_ENABLE_V8
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,19 +48,6 @@ extern "C" {
 #define FXSYS_sprintf DO_NOT_USE_SPRINTF_DIE_DIE_DIE
 #define FXSYS_vsprintf DO_NOT_USE_VSPRINTF_DIE_DIE_DIE
 
-#if BUILDFLAG(IS_WIN)
-#define FXSYS_itoa _itoa
-#define FXSYS_strlwr _strlwr
-#define FXSYS_strupr _strupr
-#define FXSYS_wcslwr _wcslwr
-#define FXSYS_wcsupr _wcsupr
-#define FXSYS_SetLastError SetLastError
-#define FXSYS_GetLastError GetLastError
-UNSAFE_BUFFER_USAGE size_t FXSYS_wcsftime(wchar_t* strDest,
-                                          size_t maxsize,
-                                          const wchar_t* format,
-                                          const struct tm* timeptr);
-#else  // BUILDFLAG(IS_WIN)
 char* FXSYS_itoa(int value, char* str, int radix);
 char* FXSYS_strlwr(char* str);
 char* FXSYS_strupr(char* str);
@@ -72,7 +56,6 @@ wchar_t* FXSYS_wcsupr(wchar_t* str);
 void FXSYS_SetLastError(uint32_t err);
 uint32_t FXSYS_GetLastError();
 #define FXSYS_wcsftime wcsftime
-#endif  // BUILDFLAG(IS_WIN)
 
 const char* FXSYS_i64toa(int64_t value, char* str, int radix);
 int FXSYS_roundf(float f);

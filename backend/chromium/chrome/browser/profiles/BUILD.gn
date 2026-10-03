@@ -6,7 +6,6 @@ import("//build/config/chromeos/ui_mode.gni")
 import("//chrome/common/features.gni")
 import("//components/captive_portal/core/features.gni")
 import("//components/enterprise/buildflags/buildflags.gni")
-import("//components/on_device_translation/buildflags/features.gni")
 import("//components/signin/features.gni")
 import("//extensions/buildflags/buildflags.gni")
 
@@ -24,27 +23,12 @@ source_set("profiles") {
     "sql_init_error_message_ids.h",
   ]
 
-  if (is_android) {
-    sources += [
-      "profile_android.cc",
-      "profile_key_android.cc",
-      "profile_key_android.h",
-    ]
-  }
-
   # Cannot depend on //chrome/browser:browser.
   deps = [
     "//chrome/app:branded_strings",
     "//chrome/app:generated_resources",
     "//sql",
   ]
-  if (is_android) {
-    deps += [
-      "//chrome/browser/profiles/android:jni_headers",
-      "//chrome/common:constants",
-      "//content/public/browser",
-    ]
-  }
 
   if (enable_bound_session_credentials) {
     deps += [ "//components/unexportable_keys/mojom:mojo_service" ]
@@ -98,16 +82,6 @@ source_set("profile") {
   ]
   if (enable_extensions) {
     deps += [ "//extensions/browser" ]
-  }
-  if (is_chromeos) {
-    deps += [
-      "//ash/constants",
-      "//chromeos/ash/components/browser_context_helper",
-      "//chromeos/constants",
-    ]
-  }
-  if (is_android) {
-    deps += [ "//chrome/browser/profiles/android:jni_headers" ]
   }
 }
 
@@ -243,24 +217,10 @@ source_set("profile_util_impl") {
     "//url",
   ]
 
-  if (!is_android) {
-    deps += [
-      "//chrome/browser/ui:browser_list",
-      "//chrome/browser/ui/browser_window",
-    ]
-  }
-
-  if (is_android) {
-    deps += [ "//components/supervised_user/core/browser/android" ]
-  }
-
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ash/login/users",
-      "//chrome/browser/ash/policy/core",
-      "//chrome/browser/ash/profiles",
-    ]
-  }
+  deps += [
+    "//chrome/browser/ui:browser_list",
+    "//chrome/browser/ui/browser_window",
+  ]
 }
 
 source_set("profiles_extra_parts") {
@@ -321,7 +281,6 @@ source_set("profiles_extra_parts_impl") {
     "//chrome/browser/history_clusters",
     "//chrome/browser/history_embeddings",
     "//chrome/browser/k_anonymity_service",
-    "//chrome/browser/language_detection",
     "//chrome/browser/lookalikes",
     "//chrome/browser/media/router",
     "//chrome/browser/media/webrtc",
@@ -372,7 +331,6 @@ source_set("profiles_extra_parts_impl") {
     "//chrome/browser/ui/startup",
     "//chrome/browser/ui/toolbar",
     "//chrome/browser/ui/toolbar/pinned_toolbar",
-    "//chrome/browser/updates/announcement_notification",
     "//chrome/browser/usb",
     "//chrome/browser/webauthn",
     "//chrome/browser/webdata_services",
@@ -408,75 +366,39 @@ source_set("profiles_extra_parts_impl") {
     "//chrome/browser/search/background",
   ]
 
-  if (is_android) {
-    deps += [
-      "//chrome/browser/auxiliary_search",
-      "//chrome/browser/commerce/merchant_viewer:merchant_viewer_data_manager",
-      "//chrome/browser/tab",
-      "//components/commerce/core:merchant_signal_db_proto",
-    ]
-  } else {
-    deps += [
-      "//chrome/browser/accessibility/tree_fixing:service",
-      "//chrome/browser/accessibility_annotator/content_annotator",
-      "//chrome/browser/apps/app_service",
-      "//chrome/browser/autofill",
-      "//chrome/browser/badging",
-      "//chrome/browser/device_api",
-      "//chrome/browser/devtools",
-      "//chrome/browser/feedback",
-      "//chrome/browser/hid",
-      "//chrome/browser/media/router/discovery/access_code:access_code_sink_service",
-      "//chrome/browser/private_ai",
-      "//chrome/browser/record_replay",
-      "//chrome/browser/screen_ai:screen_ai_service_router_factory",
-      "//chrome/browser/search",
-      "//chrome/browser/search_engine_choice",
-      "//chrome/browser/themes",
-      "//chrome/browser/ui/desktop_to_mobile_promos:service",
-      "//chrome/browser/ui/global_error",
-      "//chrome/browser/ui/global_media_controls",
-      "//chrome/browser/ui/lens",
-      "//chrome/browser/ui/media_router",
-      "//chrome/browser/ui/performance_controls",
-      "//chrome/browser/ui/read_anything",
-      "//chrome/browser/ui/tabs/organization",
-      "//chrome/browser/ui/tabs/saved_tab_groups",
-      "//chrome/browser/ui/views/side_panel",
-      "//chrome/browser/ui/waap",
-      "//chrome/browser/ui/webui/signin",
-      "//chrome/browser/ui/webui/signin:login_ui_service",
-      "//chrome/browser/user_education",
-    ]
-  }
+  deps += [
+    "//chrome/browser/accessibility/tree_fixing:service",
+    "//chrome/browser/accessibility_annotator/content_annotator",
+    "//chrome/browser/apps/app_service",
+    "//chrome/browser/autofill",
+    "//chrome/browser/badging",
+    "//chrome/browser/device_api",
+    "//chrome/browser/devtools",
+    "//chrome/browser/feedback",
+    "//chrome/browser/hid",
+    "//chrome/browser/media/router/discovery/access_code:access_code_sink_service",
+    "//chrome/browser/private_ai",
+    "//chrome/browser/record_replay",
+    "//chrome/browser/screen_ai:screen_ai_service_router_factory",
+    "//chrome/browser/search",
+    "//chrome/browser/search_engine_choice",
+    "//chrome/browser/themes",
+    "//chrome/browser/ui/global_error",
+    "//chrome/browser/ui/global_media_controls",
+    "//chrome/browser/ui/lens",
+    "//chrome/browser/ui/media_router",
+    "//chrome/browser/ui/performance_controls",
+    "//chrome/browser/ui/read_anything",
+    "//chrome/browser/ui/tabs/organization",
+    "//chrome/browser/ui/tabs/saved_tab_groups",
+    "//chrome/browser/ui/views/side_panel",
+    "//chrome/browser/ui/waap",
+    "//chrome/browser/ui/webui/signin",
+    "//chrome/browser/ui/webui/signin:login_ui_service",
+    "//chrome/browser/user_education",
+  ]
 
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/apps/almanac_api_client",
-      "//chrome/browser/apps/app_preload_service",
-      "//chrome/browser/ash/app_list",
-      "//chrome/browser/ash/certificate_provider",
-      "//chrome/browser/ash/file_manager",
-      "//chrome/browser/ash/floating_sso",
-      "//chrome/browser/ash/input_method",
-      "//chrome/browser/ash/keyed_service",
-      "//chrome/browser/ash/language_packs",
-      "//chrome/browser/ash/lobster",
-      "//chrome/browser/ash/policy/dlp",
-      "//chrome/browser/ash/policy/skyvault",
-      "//chrome/browser/ash/scanner",
-      "//chrome/browser/chromeos/cros_apps",
-      "//chrome/browser/chromeos/enterprise/cloud_storage",
-      "//chrome/browser/chromeos/extensions/telemetry/api:keyed_service_factory",
-      "//chrome/browser/chromeos/policy/dlp",
-      "//chrome/browser/policy:onc",
-      "//chrome/browser/smart_card",
-    ]
-  }
-
-  if (!is_chromeos && !is_android) {
-    deps += [ ":profile_util" ]
-  }
+  deps += [ ":profile_util" ]
 
   if (is_win || is_mac || is_linux || is_chromeos) {
     deps += [ "//chrome/browser/multistep_filter" ]
@@ -513,10 +435,6 @@ source_set("profiles_extra_parts_impl") {
     deps += [ "//chrome/browser/enterprise/data_controls" ]
   }
 
-  if (enable_on_device_translation) {
-    deps += [ "//chrome/browser/on_device_translation" ]
-  }
-
   if (enable_dice_support) {
     deps += [
       "//chrome/browser/profiles/batch_upload",
@@ -528,12 +446,10 @@ source_set("profiles_extra_parts_impl") {
     deps += [ "//chrome/browser/captive_portal" ]
   }
 
-  if (!is_android) {
-    deps += [
-      "//chrome/browser/password_manager:startup_import",
-      "//chrome/browser/ui/tabs:glic",
-    ]
-  }
+  deps += [
+    "//chrome/browser/password_manager:startup_import",
+    "//chrome/browser/ui/tabs:glic",
+  ]
 }
 
 source_set("profile_downloader") {
@@ -585,14 +501,6 @@ source_set("unit_tests") {
     "//testing/gtest",
   ]
 
-  if (is_chromeos) {
-    sources += [ "profile_os_sync_unittest.cc" ]
-    deps += [
-      "//ash/constants",
-      "//components/live_caption:constants",
-    ]
-  }
-
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -610,8 +518,4 @@ source_set("test_support") {
     "//content/test:test_support",
   ]
   deps = [ "//testing/gtest" ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/browser_context_helper" ]
-  }
 }

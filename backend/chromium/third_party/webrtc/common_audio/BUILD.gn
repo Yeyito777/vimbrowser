@@ -266,14 +266,10 @@ if (current_cpu == "x86" || current_cpu == "x64") {
       "resampler/sinc_resampler_avx2.cc",
     ]
 
-    if (is_win) {
-      cflags = [ "/arch:AVX2" ]
-    } else {
-      cflags = [
-        "-mavx2",
-        "-mfma",
-      ]
-    }
+    cflags = [
+      "-mavx2",
+      "-mfma",
+    ]
 
     deps = [
       ":fir_filter",
@@ -390,9 +386,5 @@ if (rtc_include_tests && !build_with_chromium) {
       "//testing/gtest",
       "//third_party/abseil-cpp/absl/base:core_headers",
     ]
-
-    if (is_android) {
-      shard_timeout = 900
-    }
   }
 }

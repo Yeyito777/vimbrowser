@@ -31,12 +31,6 @@
 #include "net/dns/public/util.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/memory/raw_ptr.h"
-#include "chrome/browser/ash/net/ash_dns_over_https_config_source.h"
-#include "chrome/browser/ash/net/secure_dns_manager.h"
-#include "chrome/browser/profiles/profile.h"
-#endif
 
 namespace secure_dns = chrome_browser_net::secure_dns;
 
@@ -58,20 +52,6 @@ base::DictValue CreateSecureDnsSettingDict(
   base::DictValue dict;
   dict.Set("mode", SecureDnsConfig::ModeToString(config.mode()));
   dict.Set("config", config.doh_servers().ToString());
-#if BUILDFLAG(IS_CHROMEOS)
-  ash::SecureDnsManager* secure_dns_manager =
-      g_browser_process->platform_part()->secure_dns_manager();
-  dict.Set("osMode",
-           SecureDnsConfig::ModeToString(secure_dns_manager->GetOsDohMode()));
-  dict.Set("osConfig", secure_dns_manager->GetOsDohConfig().ToString());
-  std::optional<std::string> doh_with_identifiers_servers_for_display =
-      secure_dns_manager->GetDohWithIdentifiersDisplayServers();
-  dict.Set("dohWithIdentifiersActive",
-           doh_with_identifiers_servers_for_display.has_value());
-  dict.Set("configForDisplay",
-           doh_with_identifiers_servers_for_display.value_or(std::string()));
-  dict.Set("dohDomainConfigSet", secure_dns_manager->IsDohDomainConfigSet());
-#endif
   dict.Set("managementMode", static_cast<int>(config.management_mode()));
   return dict;
 }
@@ -106,14 +86,8 @@ void SecureDnsHandler::OnJavascriptAllowed() {
   // Register for updates to the underlying secure DNS prefs so that the
   // secure DNS setting can be updated to reflect the current host resolver
   // configuration.
-#if BUILDFLAG(IS_CHROMEOS)
-  doh_source_ = std::make_unique<ash::AshDnsOverHttpsConfigSource>(
-      g_browser_process->platform_part()->secure_dns_manager(),
-      g_browser_process->local_state());
-#else
   doh_source_ = std::make_unique<DefaultDnsOverHttpsConfigSource>(
       g_browser_process->local_state(), /*set_up_pref_defaults=*/false);
-#endif
   doh_source_->SetDohChangeCallback(base::BindRepeating(
       &SecureDnsHandler::SendSecureDnsSettingUpdatesToJavascript,
       base::Unretained(this)));

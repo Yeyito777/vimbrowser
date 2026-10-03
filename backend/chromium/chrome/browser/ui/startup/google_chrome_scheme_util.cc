@@ -20,19 +20,12 @@
 #include "url/gurl.h"
 #include "url/url_constants.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/common/webui_url_constants.h"
-#else
 #include "chrome/common/chrome_constants.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
 #include "chrome/browser/headless/headless_mode_util.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/utf_string_conversions.h"
-#endif
 
 namespace startup {
 
@@ -93,22 +86,13 @@ bool StripGoogleChromeScheme(base::FilePath::StringViewType& arg) {
 
 std::optional<GURL> ExtractGoogleChromeSchemeInnerUrl(const GURL& url) {
   const std::string& spec = url.spec();
-#if BUILDFLAG(IS_WIN)
-  std::wstring url_view_storage = base::UTF8ToWide(spec);
-  base::FilePath::StringViewType url_view = url_view_storage;
-#else
   base::FilePath::StringViewType url_view = spec;
-#endif
 
   // Use strict checking to ensure we only handle the scheme registered for this
   // browser instance (e.g. "google-chrome" for Stable). This matches
   // administrator expectations.
   if (StripGoogleChromeScheme(url_view)) {
-#if BUILDFLAG(IS_WIN)
-    return GURL(base::WideToUTF8(url_view));
-#else
     return GURL(url_view);
-#endif
   }
   return std::nullopt;
 }
@@ -120,17 +104,11 @@ bool ValidateUrl(const GURL& url) {
 
   const GURL settings_url(chrome::kChromeUISettingsURL);
   bool url_points_to_an_approved_settings_page = false;
-#if BUILDFLAG(IS_CHROMEOS)
-  // In ChromeOS, allow any settings page to be specified on the command line.
-  url_points_to_an_approved_settings_page =
-      url.DeprecatedGetOriginAsURL() == settings_url.DeprecatedGetOriginAsURL();
-#else
   // Exposed for external cleaners to offer a settings reset to the
   // user. The allowed URLs must match exactly.
   const GURL reset_settings_url =
       settings_url.Resolve(chrome::kResetProfileSettingsSubPage);
   url_points_to_an_approved_settings_page = url == reset_settings_url;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   bool url_scheme_is_chrome = false;
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)

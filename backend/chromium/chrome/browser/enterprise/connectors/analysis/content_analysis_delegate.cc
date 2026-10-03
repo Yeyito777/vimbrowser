@@ -699,11 +699,7 @@ bool ContentAnalysisDelegate::ShouldFailOpenWithoutLocalClient(
     bool should_allow_by_default) {
 // Fail-closed settings should only be applied to Windows, otherwise it should
 // fail open.
-#if BUILDFLAG(IS_WIN)
-  return should_allow_by_default;
-#else
   return true;
-#endif
 }
 
 void ContentAnalysisDelegate::PrepareTextRequest() {

@@ -28,7 +28,6 @@
 #include "gpu/ipc/service/gpu_channel_manager_delegate.h"
 #include "gpu/ipc/service/gpu_config.h"
 #include "gpu/ipc/service/x_util.h"
-#include "media/base/android_overlay_mojo_factory.h"
 
 namespace content {
 class GpuServiceFactory;
@@ -75,13 +74,6 @@ class GpuChildThread : public ChildThreadImpl,
   static base::RepeatingClosure MakeQuitSafelyClosure();
   static void QuitSafelyHelper(
       scoped_refptr<base::SingleThreadTaskRunner> task_runner);
-
-#if BUILDFLAG(IS_ANDROID)
-  static std::unique_ptr<media::AndroidOverlay> CreateAndroidOverlay(
-      scoped_refptr<base::SingleThreadTaskRunner> main_task_runner,
-      const base::UnguessableToken& routing_token,
-      media::AndroidOverlayConfig);
-#endif
 
   viz::VizMainImpl viz_main_;
 

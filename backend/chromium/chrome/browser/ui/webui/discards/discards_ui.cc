@@ -16,7 +16,6 @@
 #include "base/notreached.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "build/android_buildflags.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/performance_manager/policies/discard_eligibility_policy.h"
@@ -60,12 +59,10 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if !BUILDFLAG(IS_DESKTOP_ANDROID)
 #include "chrome/browser/resource_coordinator/lifecycle_unit.h"
 #include "chrome/browser/resource_coordinator/lifecycle_unit_state.mojom.h"
 #include "chrome/browser/resource_coordinator/tab_lifecycle_unit.h"
 #include "chrome/browser/resource_coordinator/tab_lifecycle_unit_external.h"
-#endif  // !BUILDFLAG(IS_DESKTOP_ANDROID)
 
 using performance_manager::PageNode;
 using performance_manager::policies::DiscardEligibilityPolicy;
@@ -240,7 +237,6 @@ class DiscardsDetailsProviderImpl
       info->site_engagement_score = GetSiteEngagementScore(contents);
       info->has_focus = page_node->IsFocused();
 
-#if !BUILDFLAG(IS_DESKTOP_ANDROID)
       auto* lifecycle_unit_external = resource_coordinator::
           TabLifecycleUnitSource::GetTabLifecycleUnitExternal(contents);
       // A TabLifecycleUnitExternal object is always a TabLifecycleUnit object.
@@ -263,7 +259,6 @@ class DiscardsDetailsProviderImpl
         info->state_change_time =
             lifecycle_unit->GetStateChangeTime() - base::TimeTicks::UnixEpoch();
       }
-#endif  // !BUILDFLAG(IS_DESKTOP_ANDROID)
 
       infos.push_back(std::move(info));
     }
@@ -353,10 +348,8 @@ class DiscardsDetailsProviderImpl
   }
 
   void RefreshPerformanceTabCpuMeasurements() override {
-#if !BUILDFLAG(IS_DESKTOP_ANDROID)
     performance_manager::user_tuning::PerformanceDetectionManager::GetInstance()
         ->ForceTabCpuDataRefresh();
-#endif  // !BUILDFLAG(IS_DESKTOP_ANDROID)
   }
 
  private:
@@ -375,10 +368,8 @@ DiscardsUI::DiscardsUI(content::WebUI* web_ui)
       profile, chrome::kChromeUIDiscardsHost);
 
   bool demoModeEnabled = false;
-#if !BUILDFLAG(IS_DESKTOP_ANDROID)
   demoModeEnabled = base::FeatureList::IsEnabled(
       performance_manager::features::kPerformanceInterventionDemoMode);
-#endif  // !BUILDFLAG(IS_DESKTOP_ANDROID)
   source->AddBoolean("isPerformanceInterventionDemoModeEnabled",
                      demoModeEnabled);
 

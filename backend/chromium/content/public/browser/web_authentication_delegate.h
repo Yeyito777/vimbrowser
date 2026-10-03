@@ -160,19 +160,6 @@ class CONTENT_EXPORT WebAuthenticationDelegate {
   GetTouchIdAuthenticatorConfig(BrowserContext* browser_context);
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Callback that should generate and return a unique request id.
-  using ChromeOSGenerateRequestIdCallback =
-      base::RepeatingCallback<std::string()>;
-
-  // Returns a callback to generate a request id for a WebAuthn request
-  // originating from |RenderFrameHost|. The request id has two purposes: 1.
-  // ChromeOS UI will use the request id to find the source window and show a
-  // dialog accordingly; 2. The authenticator will include the request id when
-  // asking ChromeOS platform to cancel the request.
-  virtual ChromeOSGenerateRequestIdCallback GetGenerateRequestIdCallback(
-      RenderFrameHost* render_frame_host);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace content

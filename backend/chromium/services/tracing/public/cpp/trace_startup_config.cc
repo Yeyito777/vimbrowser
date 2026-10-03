@@ -28,9 +28,6 @@
 #include "third_party/perfetto/protos/perfetto/config/track_event/track_event_config.gen.h"
 #include "third_party/snappy/src/snappy.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/early_trace_event_binding.h"
-#endif
 
 namespace tracing {
 
@@ -42,10 +39,6 @@ const size_t kTraceConfigFileSizeLimit = 64 * 1024;
 // Trace config file path:
 // - Android: /data/local/chrome-trace-config.json
 // - Others: specified by --trace-config-file flag.
-#if BUILDFLAG(IS_ANDROID)
-const base::FilePath::CharType kAndroidTraceConfigFile[] =
-    FILE_PATH_LITERAL("/data/local/chrome-trace-config.json");
-#endif
 
 // String parameters that can be used to parse the trace config file content.
 const char kTraceConfigParam[] = "trace_config";
@@ -55,26 +48,8 @@ const char kResultDirectoryParam[] = "result_directory";
 
 constexpr std::string_view kDefaultStartupCategories[] = {
     "__metadata",
-#if BUILDFLAG(IS_ANDROID)
-    "startup",
-    "browser",
-    "toplevel",
-    "toplevel.flow",
-    "ipc",
-    "EarlyJava",
-    "cc",
-    "Java",
-    "navigation",
-    "loading",
-    "gpu",
-    "ui",
-    "download_service",
-    "disabled-by-default-histogram_samples",
-    "disabled-by-default-user_action_samples",
-#else
     "benchmark",     "toplevel",         "startup", "disabled-by-default-file",
     "toplevel.flow", "download_service",
-#endif
 };
 
 }  // namespace
@@ -116,10 +91,6 @@ perfetto::TraceConfig TraceStartupConfig::GetDefaultBackgroundStartupConfig() {
     source_config->set_target_buffer(1);
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  config.add_data_sources()->mutable_config()->set_name(
-      tracing::mojom::kSamplerProfilerSourceName);
-#endif
   tracing::AdaptPerfettoConfigForChrome(&config, true, true);
   return config;
 }
@@ -175,9 +146,6 @@ base::FilePath TraceStartupConfig::GetResultFile() const {
 }
 
 void TraceStartupConfig::SetBackgroundStartupTracingEnabled(bool enabled) {
-#if BUILDFLAG(IS_ANDROID)
-  base::android::SetBackgroundStartupTracingFlag(enabled);
-#endif
 }
 
 TraceStartupConfig::SessionOwner TraceStartupConfig::GetSessionOwner() const {
@@ -303,16 +271,12 @@ bool TraceStartupConfig::EnableFromConfigHandle() {
 }
 
 bool TraceStartupConfig::EnableFromJsonConfigFile() {
-#if BUILDFLAG(IS_ANDROID)
-  base::FilePath trace_config_file(kAndroidTraceConfigFile);
-#else
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (!command_line->HasSwitch(switches::kTraceConfigFile)) {
     return false;
   }
   base::FilePath trace_config_file =
       command_line->GetSwitchValuePath(switches::kTraceConfigFile);
-#endif
 
   if (trace_config_file.empty()) {
     is_enabled_ = true;
@@ -391,19 +355,7 @@ bool TraceStartupConfig::EnableFromPerfettoConfigFile() {
 
 bool TraceStartupConfig::EnableFromBackgroundTracing() {
   bool enabled = false;
-#if BUILDFLAG(IS_ANDROID)
-  // We only enable background startup tracing in the browser process. We must
-  // avoid calling JNI in the renderer process - see crbug.com/391360180.
-  // kProcessType is hardcoded ("type") as we cannot depend on content/.
-  if (base::CommandLine::ForCurrentProcess()
-          ->GetSwitchValueASCII("type")
-          .empty()) {
-    // Tests can enable this value.
-    enabled |= base::android::GetBackgroundStartupTracingFlagFromJava();
-  }
-#else
   // TODO(ssid): Implement saving setting to preference for next startup.
-#endif
   // Do not set the flag to false if it's not enabled unnecessarily.
   if (!enabled) {
     return false;

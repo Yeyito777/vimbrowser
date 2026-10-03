@@ -41,7 +41,6 @@ gfx::NativeCursor WebCursor::GetNativeCursor() {
   return cursor_.type();
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Ash has its own UpdateDisplayInfoForWindow that takes rotation into account.
 void WebCursor::UpdateDisplayInfoForWindow(aura::Window* window) {
   float preferred_scale =
@@ -61,6 +60,5 @@ float WebCursor::GetCursorScaleFactor(SkBitmap* bitmap) {
   DCHECK_NE(0, cursor_.image_scale_factor());
   return device_scale_factor_ / cursor_.image_scale_factor();
 }
-#endif
 
 }  // namespace content

@@ -190,13 +190,6 @@ ipcz_source_set("reference_drivers") {
   public_configs = [ ":ipcz_include_src_dir" ]
 
   deps = []
-  if (is_fuchsia) {
-    public_deps += [ "//third_party/fuchsia-sdk/sdk/pkg/zx" ]
-  }
-
-  if (is_android) {
-    deps += [ "//base/android/linker:ashmem" ]
-  }
 }
 
 ipcz_source_set("util") {

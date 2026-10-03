@@ -33,9 +33,6 @@
 #include "chrome/browser/ui/scoped_tabbed_browser_displayer.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/download/download_target_determiner.h"
-#endif
 
 namespace {
 

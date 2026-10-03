@@ -9,13 +9,6 @@ import("//testing/test.gni")
 config("common_config") {
   cflags = [ "-Wno-shadow" ]
 
-  if (is_win) {
-    defines = [
-      # Required to use math constants from math.h.
-      "_USE_MATH_DEFINES",
-    ]
-  }
-
   # PFFFT doesn't support SIMD on some cpus, so build a scalar version.
   if (current_cpu == "mipsel" || current_cpu == "mips64el" ||
       current_cpu == "ppc64" || current_cpu == "riscv64" ||

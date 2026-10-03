@@ -81,10 +81,6 @@ class AppUninstallDialogView : public ProfileObserver,
   void GetSubAppsInfo(const std::string& short_app_name,
                       const std::vector<std::string>& sub_app_ids);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void InitializeViewForArcApp(Profile* profile, const std::string& app_id);
-  void InitializeViewWithMessage(const std::u16string& message);
-#endif
 
   void OnDialogCancelled();
   void OnDialogAccepted();

@@ -84,22 +84,11 @@
 
 #endif  // BUILDFLAG(ENABLE_GUEST_VIEW)
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/extensions/api/feedback_private/chrome_feedback_private_delegate.h"
 #include "chrome/browser/extensions/api/file_system/chrome_file_system_delegate.h"
 #include "chrome/browser/search/instant_service.h"
 #include "chrome/browser/search/instant_service_factory.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/extensions/api/file_handlers/non_native_file_system_delegate_chromeos.h"
-#include "chrome/browser/extensions/api/file_system/chrome_file_system_delegate_ash.h"
-#include "chrome/browser/extensions/api/file_system/consent_provider_impl.h"
-#include "chrome/browser/extensions/api/media_perception_private/media_perception_api_delegate_chromeos.h"
-#include "chrome/browser/extensions/api/virtual_keyboard_private/chrome_virtual_keyboard_delegate.h"
-#include "chrome/browser/extensions/clipboard_extension_helper_chromeos.h"
-#include "chromeos/ash/components/settings/cros_settings.h"
-#endif
 
 #if BUILDFLAG(ENABLE_CEF)
 #include "cef/libcef/browser/chrome/extensions/chrome_mime_handler_view_guest_delegate_cef.h"
@@ -180,7 +169,6 @@ bool ChromeExtensionsAPIClient::ShouldHideBrowserNetworkRequest(
           url::Origin::Create(GURL(chrome::kChromeUINewTabPageURL));
 
   // Android does not support instant.
-#if !BUILDFLAG(IS_ANDROID)
   // Hide requests made by the NTP Instant renderer.
   auto* instant_service =
       context
@@ -190,7 +178,6 @@ bool ChromeExtensionsAPIClient::ShouldHideBrowserNetworkRequest(
     is_sensitive_request |=
         instant_service->IsInstantProcess(request.render_process_id);
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   return is_sensitive_request;
 }
@@ -380,17 +367,6 @@ ChromeExtensionsAPIClient::CreateWebViewPermissionHelperDelegate(
 }
 #endif  // BUILDFLAG(ENABLE_GUEST_VIEW)
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::unique_ptr<ConsentProvider>
-ChromeExtensionsAPIClient::CreateConsentProvider(
-    content::BrowserContext* browser_context) const {
-  auto consent_provider_delegate =
-      std::make_unique<file_system_api::ConsentProviderDelegate>(
-          Profile::FromBrowserContext(browser_context));
-  return std::make_unique<file_system_api::ConsentProviderImpl>(
-      std::move(consent_provider_delegate));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 scoped_refptr<ContentRulesRegistry>
 ChromeExtensionsAPIClient::CreateContentRulesRegistry(
@@ -402,34 +378,11 @@ ChromeExtensionsAPIClient::CreateContentRulesRegistry(
                      base::Unretained(browser_context)));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool ChromeExtensionsAPIClient::ShouldAllowDetachingUsb(int vid,
-                                                        int pid) const {
-  const base::ListValue* policy_list;
-  if (ash::CrosSettings::Get()->GetList(ash::kUsbDetachableAllowlist,
-                                        &policy_list)) {
-    for (const auto& entry : *policy_list) {
-      const base::DictValue* entry_dict = entry.GetIfDict();
-      if (entry_dict &&
-          entry_dict->FindInt(ash::kUsbDetachableAllowlistKeyVid) == vid &&
-          entry_dict->FindInt(ash::kUsbDetachableAllowlistKeyPid) == pid) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 std::unique_ptr<VirtualKeyboardDelegate>
 ChromeExtensionsAPIClient::CreateVirtualKeyboardDelegate(
     content::BrowserContext* browser_context) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  return std::make_unique<ChromeVirtualKeyboardDelegate>(browser_context);
-#else
   return nullptr;
-#endif
 }
 
 ManagementAPIDelegate* ChromeExtensionsAPIClient::CreateManagementAPIDelegate()
@@ -460,14 +413,9 @@ MessagingDelegate* ChromeExtensionsAPIClient::GetMessagingDelegate() {
 }
 
 // The APIs that require these methods are not supported on Android.
-#if !BUILDFLAG(IS_ANDROID)
 FileSystemDelegate* ChromeExtensionsAPIClient::GetFileSystemDelegate() {
   if (!file_system_delegate_) {
-#if BUILDFLAG(IS_CHROMEOS)
-    file_system_delegate_ = std::make_unique<ChromeFileSystemDelegateAsh>();
-#else
     file_system_delegate_ = std::make_unique<ChromeFileSystemDelegate>();
-#endif
   }
   return file_system_delegate_.get();
 }
@@ -489,41 +437,7 @@ ChromeExtensionsAPIClient::GetAutomationInternalApiDelegate() {
   }
   return extensions_automation_api_delegate_.get();
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-MediaPerceptionAPIDelegate*
-ChromeExtensionsAPIClient::GetMediaPerceptionAPIDelegate() {
-  if (!media_perception_api_delegate_) {
-    media_perception_api_delegate_ =
-        std::make_unique<MediaPerceptionAPIDelegateChromeOS>();
-  }
-  return media_perception_api_delegate_.get();
-}
-
-NonNativeFileSystemDelegate*
-ChromeExtensionsAPIClient::GetNonNativeFileSystemDelegate() {
-  if (!non_native_file_system_delegate_) {
-    non_native_file_system_delegate_ =
-        std::make_unique<NonNativeFileSystemDelegateChromeOS>();
-  }
-  return non_native_file_system_delegate_.get();
-}
-
-void ChromeExtensionsAPIClient::SaveImageDataToClipboard(
-    std::vector<uint8_t> image_data,
-    api::clipboard::ImageType type,
-    AdditionalDataItemList additional_items,
-    base::OnceClosure success_callback,
-    base::OnceCallback<void(const std::string&)> error_callback) {
-  if (!clipboard_extension_helper_) {
-    clipboard_extension_helper_ = std::make_unique<ClipboardExtensionHelper>();
-  }
-  clipboard_extension_helper_->DecodeAndSaveImageData(
-      std::move(image_data), type, std::move(additional_items),
-      std::move(success_callback), std::move(error_callback));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 std::unique_ptr<NativeMessagePortDispatcher>
 ChromeExtensionsAPIClient::CreateNativeMessagePortDispatcher(

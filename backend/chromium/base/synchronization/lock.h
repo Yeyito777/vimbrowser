@@ -74,15 +74,7 @@ class LOCKABLE BASE_EXPORT Lock {
   // Whether Lock mitigates priority inversion when used from different thread
   // priorities.
   static bool HandlesMultipleThreadPriorities() {
-#if BUILDFLAG(IS_WIN)
-    // Prior to Windows 11, Windows mitigated priority inversion by randomly
-    // boosting the priority of ready threads. From Windows 11 onwards, priority
-    // inversion mitigation works similar to POSIX through a facility called
-    // AutoBoost which sets the priority floor of the thread holding the lock to
-    // the maximum priority of its waiters.
-    // https://github.com/MicrosoftDocs/win32/commit/a43cb3b5039c5cfc53642bfcea174003a2f1168f
-    return true;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
     // POSIX mitigates priority inversion by setting the priority of a thread
     // holding a Lock to the maximum priority of any other thread waiting on it.
     return internal::LockImpl::PriorityInheritanceAvailable();

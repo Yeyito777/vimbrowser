@@ -60,9 +60,6 @@
 #include "cef/libcef/browser/chrome/browser_delegate.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#error This file should only be included on desktop.
-#endif
 
 #if BUILDFLAG(IS_OZONE)
 #include "ui/ozone/public/platform_session_manager.h"
@@ -257,11 +254,6 @@ class Browser : public TabStripModelObserver,
 
     CreationSource creation_source = CreationSource::kUnknown;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // If set, the browser should be created on the display given by
-    // `display_id`.
-    std::optional<int64_t> display_id;
-#endif
 
 #if BUILDFLAG(IS_LINUX)
     // When the browser window is shown, the desktop environment is notified
@@ -986,14 +978,12 @@ class Browser : public TabStripModelObserver,
                           scoped_refptr<content::FileSelectListener> listener,
                           const base::FilePath& path) override;
   bool GetCanResize() override;
-#if !BUILDFLAG(IS_ANDROID)
   bool CanUseWindowingControls(
       content::RenderFrameHost* requesting_frame) override;
   void MinimizeFromWebAPI() override;
   void MaximizeFromWebAPI() override;
   void RestoreFromWebAPI() override;
   void SetResizableFromWebAPI(bool resizable) override;
-#endif
   ui::mojom::WindowShowState GetWindowShowState() const override;
   bool CanEnterFullscreenModeForTab(
       content::RenderFrameHost* requesting_frame) override;
@@ -1054,14 +1044,6 @@ class Browser : public TabStripModelObserver,
       content::WebContents* web_contents,
       bool include_actionable_elements,
       base::OnceCallback<void(const std::string&)> callback) override;
-
-#if BUILDFLAG(ENABLE_PRINTING)
-  void PrintCrossProcessSubframe(
-      content::WebContents* web_contents,
-      const gfx::Rect& rect,
-      int document_cookie,
-      content::RenderFrameHost* subframe_host) const override;
-#endif
 
 #if BUILDFLAG(ENABLE_PAINT_PREVIEW)
   void CapturePaintPreviewOfSubframe(

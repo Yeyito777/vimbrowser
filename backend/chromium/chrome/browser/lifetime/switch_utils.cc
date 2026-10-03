@@ -9,9 +9,6 @@
 #include "build/build_config.h"
 #include "chrome/common/chrome_switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/string_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace switches {
 
@@ -25,9 +22,6 @@ constexpr const char* kSwitchesToRemoveOnAutorestart[] = {
     switches::kApp,
     switches::kAppId,
     switches::kForceFirstRun,
-#if BUILDFLAG(IS_WIN)
-    switches::kFromInstaller,
-#endif
     switches::kGuest,
     switches::kIncognito,
     switches::kMakeDefaultBrowser,
@@ -42,18 +36,6 @@ void RemoveSwitchesForAutostart(base::CommandLine::SwitchMap* switch_list) {
     switch_list->erase(switch_to_remove);
   }
 
-#if BUILDFLAG(IS_WIN)
-  // The relaunched browser process shouldn't reuse the /prefetch:# switch of
-  // the current process because the process type can change (e.g. a process
-  // initially launched in background can be relaunched in foreground).
-  static const char kPrefetchSwitchPrefix[] = "prefetch:";
-  auto it = switch_list->lower_bound(kPrefetchSwitchPrefix);
-  if (it != switch_list->end() &&
-      base::StartsWith(it->first, kPrefetchSwitchPrefix,
-                       base::CompareCase::SENSITIVE)) {
-    switch_list->erase(it);
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 }  // namespace switches

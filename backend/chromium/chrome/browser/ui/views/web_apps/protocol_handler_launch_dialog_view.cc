@@ -84,11 +84,6 @@ void ShowWebAppProtocolLaunchDialog(
       views::DialogDelegate::CreateDialogWidget(std::move(view),
                                                 /*context=*/gfx::NativeWindow(),
                                                 /*parent=*/gfx::NativeView());
-#if BUILDFLAG(IS_CHROMEOS)
-  // On ChromeOS this dialog will be hidden underneath an existing Chrome
-  // instance unless kFloatingWindow is specified.
-  widget->SetZOrderLevel(ui::ZOrderLevel::kFloatingWindow);
-#endif
   widget->Show();
 }
 

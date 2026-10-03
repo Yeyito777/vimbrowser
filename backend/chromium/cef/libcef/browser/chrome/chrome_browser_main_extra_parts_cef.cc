@@ -18,12 +18,8 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/linux_util.h"
-#include "cef/libcef/browser/printing/print_dialog_linux.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/win/app_icon.h"
-#endif
 
 ChromeBrowserMainExtraPartsCef::ChromeBrowserMainExtraPartsCef() = default;
 
@@ -77,23 +73,10 @@ void ChromeBrowserMainExtraPartsCef::PreMainMessageLoopRun() {
   file_dialog_runner::RegisterFactory();
   permission_prompt::RegisterCreateCallback();
 
-#if BUILDFLAG(IS_WIN)
-  const auto& settings = CefContext::Get()->settings();
-  if (settings.chrome_app_icon_id > 0) {
-    SetExeAppIconResourceId(settings.chrome_app_icon_id);
-  }
-#endif
 }
 
 void ChromeBrowserMainExtraPartsCef::ToolkitInitialized() {
   // Override the default Chrome client.
   SetConstrainedWindowViewsClient(CreateAlloyConstrainedWindowViewsClient(
       CreateChromeConstrainedWindowViewsClient()));
-
-#if BUILDFLAG(IS_LINUX)
-  auto printing_delegate = new CefPrintingContextLinuxDelegate();
-  auto default_delegate =
-      ui::PrintingContextLinuxDelegate::SetInstance(printing_delegate);
-  printing_delegate->SetDefaultDelegate(default_delegate);
-#endif  // BUILDFLAG(IS_LINUX)
 }

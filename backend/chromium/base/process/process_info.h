@@ -11,32 +11,6 @@
 
 namespace base {
 
-#if BUILDFLAG(IS_WIN)
-enum IntegrityLevel {
-  INTEGRITY_UNKNOWN,
-  UNTRUSTED_INTEGRITY,
-  LOW_INTEGRITY,
-  MEDIUM_INTEGRITY,
-  HIGH_INTEGRITY,
-};
-
-// Returns the integrity level of the process with PID `process_id`. Returns
-// INTEGRITY_UNKNOWN in the case of an underlying system failure.
-BASE_EXPORT IntegrityLevel GetProcessIntegrityLevel(ProcessId process_id);
-
-// Returns the integrity level of the process. Returns INTEGRITY_UNKNOWN in the
-// case of an underlying system failure.
-BASE_EXPORT IntegrityLevel GetCurrentProcessIntegrityLevel();
-
-// Determines whether the current process is elevated. Note: in some
-// configurations this may be true for processes launched without using
-// LaunchOptions::elevated.
-BASE_EXPORT bool IsCurrentProcessElevated();
-
-// Determines whether the current process is running within an App Container.
-BASE_EXPORT bool IsCurrentProcessInAppContainer();
-
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
 // Checks if the responsible process has Bluetooth metadata in its Info.plist

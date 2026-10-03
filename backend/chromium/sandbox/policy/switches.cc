@@ -46,15 +46,6 @@ const char kNoSandbox[] = "no-sandbox";
 const char kNoZygoteSandbox[] = "no-zygote-sandbox";
 #endif
 
-#if BUILDFLAG(IS_WIN)
-// Allows third party modules to inject by disabling the BINARY_SIGNATURE
-// mitigation policy on Win10+. Also has other effects in ELF.
-const char kAllowThirdPartyModules[] = "allow-third-party-modules";
-
-// Add additional capabilities to the AppContainer sandbox used for XR
-// compositing.
-const char kAddXrAppContainerCaps[] = "add-xr-appcontainer-caps";
-#endif
 
 #if BUILDFLAG(IS_MAC)
 // Cause the OS X sandbox write to syslog every time an access to a resource

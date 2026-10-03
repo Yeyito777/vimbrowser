@@ -54,9 +54,6 @@
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_string.h"
-#endif
 
 namespace {
 bool scoped_revocation_reporter_in_scope = false;

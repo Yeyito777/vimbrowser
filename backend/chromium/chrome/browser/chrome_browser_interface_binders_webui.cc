@@ -4,7 +4,6 @@
 
 #include "chrome/browser/chrome_browser_interface_binders_webui.h"
 
-#include "build/android_buildflags.h"
 #include "chrome/browser/chrome_browser_interface_binders_webui_parts.h"
 #include "chrome/browser/media/media_engagement_score_details.mojom.h"
 #include "chrome/browser/optimization_guide/optimization_guide_internals_ui.h"
@@ -26,11 +25,9 @@
 #include "chrome/browser/ui/webui/omnibox/omnibox_internals.mojom.h"
 #include "chrome/browser/ui/webui/omnibox/omnibox_ui.h"
 #include "components/enterprise/connectors/connectors_internals.mojom.h"
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/ui/webui/omnibox_popup/mojom/omnibox_popup.mojom.h"
 #include "chrome/browser/ui/webui/omnibox_popup/mojom/omnibox_popup_aim.mojom.h"
 #include "chrome/browser/ui/webui/omnibox_popup/omnibox_popup_ui.h"
-#endif
 #include "chrome/browser/ui/webui/privacy_sandbox/privacy_sandbox_internals_ui.h"
 #include "chrome/browser/ui/webui/segmentation_internals/segmentation_internals_ui.h"
 #include "chrome/browser/ui/webui/usb_internals/usb_internals.mojom.h"
@@ -47,8 +44,7 @@
 #include "content/public/browser/web_ui_controller_interface_binder.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
-    BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_DESKTOP_ANDROID)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/ui/webui/discards/discards.mojom.h"
 #include "chrome/browser/ui/webui/discards/discards_ui.h"
 #include "chrome/browser/ui/webui/discards/site_data.mojom.h"
@@ -82,12 +78,10 @@ void PopulateChromeWebUIFrameBindersPartsAllPlatforms(
 
   RegisterWebUIControllerInterfaceBinder<browsing_topics::mojom::PageHandler,
                                          BrowsingTopicsInternalsUI>(map);
-#if !BUILDFLAG(IS_ANDROID)
   RegisterWebUIControllerInterfaceBinder<
       omnibox_popup_aim::mojom::PageHandlerFactory, OmniboxPopupUI>(map);
   RegisterWebUIControllerInterfaceBinder<
       omnibox_popup::mojom::PageHandlerFactory, OmniboxPopupUI>(map);
-#endif
   RegisterWebUIControllerInterfaceBinder<::mojom::OmniboxPageHandler,
                                          OmniboxUI>(map);
 
@@ -154,18 +148,10 @@ void PopulateChromeWebUIFrameBinders(
   PopulateChromeWebUIFrameBindersPartsAllPlatforms(map, render_frame_host);
   PopulateChromeWebUIFrameBindersPartsFeatures(map, render_frame_host);
 
-#if BUILDFLAG(IS_ANDROID)
-  PopulateChromeWebUIFrameBindersPartsAndroid(map, render_frame_host);
-#else
   PopulateChromeWebUIFrameBindersPartsDesktop(map, render_frame_host);
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  PopulateChromeWebUIFrameBindersPartsCros(map, render_frame_host);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || \
-    BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_DESKTOP_ANDROID)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   RegisterWebUIControllerInterfaceBinder<discards::mojom::DetailsProvider,
                                          DiscardsUI>(map);
 
@@ -190,13 +176,8 @@ void PopulateTrustedChromeWebUIFrameInterfaceBrokers(
     content::WebUIBrowserInterfaceBrokerRegistry& registry) {
   // This function is broken up into sections based on WebUI types.
 
-#if BUILDFLAG(IS_CHROMEOS)
-  PopulateChromeWebUIFrameInterfaceBrokersTrustedPartsCros(registry);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_ANDROID)
   PopulateChromeWebUIFrameInterfaceBrokersTrustedPartsDesktop(registry);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // When possible, please use one of the Parts functions above and avoid making
   // this function longer.
@@ -206,13 +187,8 @@ void PopulateUntrustedChromeWebUIFrameInterfaceBrokers(
     content::WebUIBrowserInterfaceBrokerRegistry& registry) {
   PopulateChromeWebUIFrameInterfaceBrokersUntrustedPartsFeatures(registry);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  PopulateChromeWebUIFrameInterfaceBrokersUntrustedPartsCros(registry);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_ANDROID)
   PopulateChromeWebUIFrameInterfaceBrokersUntrustedPartsDesktop(registry);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // When possible, please use one of the Parts functions above and avoid making
   // this function longer.

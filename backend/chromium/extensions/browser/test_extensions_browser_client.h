@@ -91,11 +91,6 @@ class TestExtensionsBrowserClient : public ExtensionsBrowserClient {
       content::BrowserContext* context) override;
   bool AreExtensionsDisabledForContext(
       content::BrowserContext* context) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  bool IsActiveContext(content::BrowserContext* browser_context) const override;
-  std::string GetUserIdHashFromContext(
-      content::BrowserContext* context) override;
-#endif
   bool IsGuestSession(content::BrowserContext* context) const override;
   bool IsExtensionIncognitoEnabled(
       const ExtensionId& extension_id,

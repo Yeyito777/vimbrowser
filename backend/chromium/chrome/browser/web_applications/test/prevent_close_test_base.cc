@@ -6,7 +6,7 @@
 
 #include <string_view>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/json/json_reader.h"
 #include "base/values.h"
 #include "chrome/browser/policy/policy_test_utils.h"

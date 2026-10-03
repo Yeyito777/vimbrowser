@@ -29,9 +29,6 @@ struct VectorIcon;
 }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#endif
 
 class AutocompleteInput;
 class AutocompleteProviderClient;
@@ -196,10 +193,6 @@ class OmniboxAction : public base::RefCountedThreadSafe<OmniboxAction> {
   // Returns an ID used to identify the action.
   virtual OmniboxActionId ActionId() const;
 
-#if BUILDFLAG(IS_ANDROID)
-  virtual base::android::ScopedJavaLocalRef<jobject> GetOrCreateJavaObject(
-      JNIEnv* env) const;
-#endif
 
  protected:
   friend class base::RefCountedThreadSafe<OmniboxAction>;
@@ -216,9 +209,6 @@ class OmniboxAction : public base::RefCountedThreadSafe<OmniboxAction> {
   // Whether to show as action button.
   bool show_as_action_button_;
 
-#if BUILDFLAG(IS_ANDROID)
-  mutable base::android::ScopedJavaGlobalRef<jobject> j_omnibox_action_;
-#endif
 };
 
 #endif  // COMPONENTS_OMNIBOX_BROWSER_ACTIONS_OMNIBOX_ACTION_H_

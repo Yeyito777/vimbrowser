@@ -123,7 +123,6 @@ bool VulkanMemory::Initialize(VulkanDeviceQueue* device_queue,
   return true;
 }
 
-#if BUILDFLAG(IS_POSIX)
 base::ScopedFD VulkanMemory::GetMemoryFd(
     VkExternalMemoryHandleTypeFlagBits handle_type) {
   VkMemoryGetFdInfoKHR get_fd_info = {
@@ -143,49 +142,7 @@ base::ScopedFD VulkanMemory::GetMemoryFd(
 
   return base::ScopedFD(memory_fd);
 }
-#endif  // BUILDFLAG(IS_POSIX)
 
-#if BUILDFLAG(IS_WIN)
-base::win::ScopedHandle VulkanMemory::GetMemoryHandle(
-    VkExternalMemoryHandleTypeFlagBits handle_type) {
-  VkMemoryGetWin32HandleInfoKHR get_handle_info = {
-      .sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR,
-      .memory = device_memory(),
-      .handleType = handle_type,
-  };
 
-  VkDevice device = device_queue_->GetVulkanDevice();
-
-  HANDLE handle = nullptr;
-  vkGetMemoryWin32HandleKHR(device, &get_handle_info, &handle);
-  if (handle == nullptr) {
-    DLOG(ERROR) << "Unable to extract file handle out of external VkImage";
-    return base::win::ScopedHandle();
-  }
-
-  return base::win::ScopedHandle(handle);
-}
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_FUCHSIA)
-zx::vmo VulkanMemory::GetMemoryZirconHandle() {
-  VkMemoryGetZirconHandleInfoFUCHSIA get_handle_info = {
-      .sType = VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA,
-      .memory = device_memory(),
-      .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA,
-  };
-
-  VkDevice device = device_queue_->GetVulkanDevice();
-  zx::vmo vmo;
-  VkResult result = vkGetMemoryZirconHandleFUCHSIA(device, &get_handle_info,
-                                                   vmo.reset_and_get_address());
-  if (result != VK_SUCCESS) {
-    DLOG(ERROR) << "vkGetMemoryFuchsiaHandleKHR failed: " << result;
-    vmo.reset();
-  }
-
-  return vmo;
-}
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 }  // namespace gpu

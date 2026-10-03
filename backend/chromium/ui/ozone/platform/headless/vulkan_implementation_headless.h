@@ -48,16 +48,6 @@ class VulkanImplementationHeadless : public gpu::VulkanImplementation {
       VkFormat vk_format,
       const gfx::ColorSpace& color_space) override;
 
-#if BUILDFLAG(IS_FUCHSIA)
-  void RegisterSysmemBufferCollection(VkDevice device,
-                                      zx::eventpair service_handle,
-                                      zx::channel sysmem_token,
-                                      viz::SharedImageFormat format,
-                                      gfx::BufferUsage usage,
-                                      gfx::Size size,
-                                      size_t min_buffer_count,
-                                      bool register_with_image_pipe) override;
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
  private:
   bool using_surface_ = true;

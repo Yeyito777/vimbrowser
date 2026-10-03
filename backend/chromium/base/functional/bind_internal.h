@@ -57,14 +57,6 @@
 //  `BindState<>` -- Stores the curried parameters, and is the main entry point
 //                   into the `Bind()` system.
 
-#if BUILDFLAG(IS_WIN)
-namespace Microsoft {
-namespace WRL {
-template <typename>
-class ComPtr;
-}  // namespace WRL
-}  // namespace Microsoft
-#endif
 
 namespace base {
 
@@ -1964,12 +1956,6 @@ struct BindUnwrapTraits<internal::PassedWrapper<T>> {
   static T Unwrap(const internal::PassedWrapper<T>& o) { return o.Take(); }
 };
 
-#if BUILDFLAG(IS_WIN)
-template <typename T>
-struct BindUnwrapTraits<Microsoft::WRL::ComPtr<T>> {
-  static T* Unwrap(const Microsoft::WRL::ComPtr<T>& ptr) { return ptr.Get(); }
-};
-#endif
 
 // `CallbackCancellationTraits` allows customization of `Callback`'s
 // cancellation semantics. By default, callbacks are not cancellable. A

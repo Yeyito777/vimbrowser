@@ -39,13 +39,7 @@
 #include <atomic>
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/thread.h>
-
-#include "base/fuchsia/koid.h"
-#else
 #include <sys/resource.h>
-#endif
 
 #if PA_BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
 #include "partition_alloc/stack/stack.h"  // nogncheck
@@ -104,9 +98,6 @@ void* ThreadFunc(void* params) {
   ThreadIdNameManager::GetInstance()->RemoveName(
       PlatformThread::CurrentHandle().platform_handle(),
       PlatformThread::CurrentId());
-#if BUILDFLAG(IS_ANDROID)
-  PlatformThreadPriorityMonitor::Get().UnregisterCurrentThread();
-#endif
 
 #if PA_BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
   partition_alloc::internal::StackTopRegistry::Get().NotifyThreadDestroyed();
@@ -254,17 +245,6 @@ PlatformThreadId PlatformThreadBase::CurrentId() {
 #endif
   }
   return PlatformThreadId(g_thread_id);
-#elif BUILDFLAG(IS_ANDROID)
-  // Note: do not cache the return value inside a thread_local variable on
-  // Android (as above). The reasons are:
-  // - thread_local is slow on Android (goes through emutls)
-  // - gettid() is fast, since its return value is cached in pthread (in the
-  //   thread control block of pthread). See gettid.c in bionic.
-  return PlatformThreadId(gettid());
-#elif BUILDFLAG(IS_FUCHSIA)
-  thread_local static zx_koid_t id =
-      GetKoid(*zx::thread::self()).value_or(ZX_KOID_INVALID);
-  return PlatformThreadId(id);
 #elif BUILDFLAG(IS_SOLARIS) || BUILDFLAG(IS_QNX)
   return PlatformThreadId(pthread_self());
 

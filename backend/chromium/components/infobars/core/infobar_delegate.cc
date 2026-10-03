@@ -116,19 +116,7 @@ InfoBarDelegate::AsThemePreviewInfobarDelegate() {
   return nullptr;
 }
 
-#if BUILDFLAG(IS_IOS)
-translate::TranslateInfoBarDelegate*
-InfoBarDelegate::AsTranslateInfoBarDelegate() {
-  return nullptr;
-}
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-offline_pages::OfflinePageInfoBarDelegate*
-InfoBarDelegate::AsOfflinePageInfoBarDelegate() {
-  return nullptr;
-}
-#endif
 
 InfoBarDelegate::InfoBarDelegate() = default;
 

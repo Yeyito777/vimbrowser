@@ -18,15 +18,9 @@
 #include "base/strings/cstring_view.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include <signal.h>
 #include <unistd.h>
-#endif
 
-#if BUILDFLAG(IS_WIN)
-struct _EXCEPTION_POINTERS;
-struct _CONTEXT;
-#endif
 
 namespace base::debug {
 
@@ -41,16 +35,7 @@ namespace base::debug {
 // done in official builds because it has security implications).
 BASE_EXPORT bool EnableInProcessStackDumping();
 
-#if BUILDFLAG(IS_WIN)
-// Returns `true` if EnableInProcessStackDumping() was called and succeeded.
-// Only supported on Windows.
-BASE_EXPORT bool InProcessStackDumpingEnabledForTesting();
 
-// Allows tests to exercise code that runs when symbolization is not available.
-BASE_EXPORT bool DisableInProcessStackDumpingForTesting();
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_POSIX)
 // Sets a first-chance callback for the stack dump signal handler. This callback
 // is called at the beginning of the signal handler to handle special kinds of
 // signals, like out-of-bounds memory accesses in WebAssembly (WebAssembly Trap
@@ -61,7 +46,6 @@ BASE_EXPORT bool DisableInProcessStackDumpingForTesting();
 BASE_EXPORT bool SetStackDumpFirstChanceCallback(bool (*handler)(int,
                                                                  siginfo_t*,
                                                                  void*));
-#endif
 
 // Returns end of the stack, or 0 if we couldn't get it.
 #if BUILDFLAG(CAN_UNWIND_WITH_FRAME_POINTERS)
@@ -74,15 +58,9 @@ BASE_EXPORT uintptr_t GetStackEnd();
 class BASE_EXPORT StackTrace {
  public:
   // LINT.IfChange(max_stack_frames)
-#if BUILDFLAG(IS_ANDROID)
-  // TODO(crbug.com/41437515): Testing indicates that Android has issues
-  // with a larger value here, so leave Android at 62.
-  static constexpr size_t kMaxTraces = 62;
-#else
   // For other platforms, use 250. This seems reasonable without
   // being huge.
   static constexpr size_t kMaxTraces = 250;
-#endif
   // LINT.ThenChange(dwarf_line_no.cc:max_stack_frames)
 
   // Creates a stacktrace from the current location.
@@ -97,13 +75,6 @@ class BASE_EXPORT StackTrace {
   // be used.
   explicit StackTrace(span<const void* const> trace);
 
-#if BUILDFLAG(IS_WIN)
-  // Creates a stacktrace for an exception.
-  // Note: this function will throw an import not found (StackWalk64) exception
-  // on system without dbghelp 5.1.
-  StackTrace(_EXCEPTION_POINTERS* exception_pointers);
-  StackTrace(const _CONTEXT* context);
-#endif
 
   // Returns true if this current test environment is expected to have
   // symbolized frames when printing a stack trace.
@@ -164,9 +135,6 @@ class BASE_EXPORT StackTrace {
   // Returns true if generation of symbolized stack traces is to be suppressed.
   static bool ShouldSuppressOutput();
 
-#if BUILDFLAG(IS_WIN)
-  void InitTrace(const _CONTEXT* context_record);
-#endif
 
   std::array<const void*, kMaxTraces> trace_;
 

@@ -19,9 +19,6 @@
 #include "gpu/command_buffer/service/shared_image/shared_image_representation.h"
 #include "third_party/skia/include/core/SkColorSpace.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/win/d3d_shared_fence.h"
-#endif
 
 namespace gpu {
 namespace {
@@ -162,9 +159,6 @@ base::trace_event::MemoryAllocatorDump* SharedImageBacking::OnMemoryDump(
   dump->AddString("usage", "", CreateLabelForSharedImageUsage(usage()));
   dump->AddString("debug label", "", debug_label_);
   dump->AddScalar("purgeable", "bool", IsPurgeable());
-#if BUILDFLAG(IS_CHROMEOS)
-  dump->AddScalar("non_exo_size", "bool", IsImportedFromExo() ? 0 : byte_size);
-#endif
 
   // Add ownership edge to `client_guid` which expresses shared ownership with
   // the client process.
@@ -294,20 +288,7 @@ std::unique_ptr<VulkanImageRepresentation> SharedImageBacking::ProduceVulkan(
 }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-std::unique_ptr<LegacyOverlayImageRepresentation>
-SharedImageBacking::ProduceLegacyOverlay(SharedImageManager* manager,
-                                         MemoryTypeTracker* tracker) {
-  return nullptr;
-}
-#endif
 
-#if BUILDFLAG(IS_WIN)
-void SharedImageBacking::UpdateExternalFence(
-    scoped_refptr<gfx::D3DSharedFence> external_fence) {
-  NOTIMPLEMENTED_LOG_ONCE();
-}
-#endif
 
 void SharedImageBacking::UpdateEstimatedSize(size_t estimated_size_bytes) {
   if (estimated_size_bytes == estimated_size_)

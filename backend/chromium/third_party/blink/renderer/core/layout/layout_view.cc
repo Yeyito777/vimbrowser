@@ -686,18 +686,6 @@ void LayoutView::CalculateScrollbarModes(
     // that page content will not be shifted during the paint preview capture.
     bool disable_scrollbars =
         !GetDocument().AreScrollbarsAllowedInPaintPreview();
-#if BUILDFLAG(IS_ANDROID)
-    // However, Android WebView has a setting recordFullDocument. When it's set
-    // to true, ClipsContent() is false here, while WebView still expects blink
-    // to provide scrolling mechanism. The flag can be set through WebView API,
-    // or is forced if the app's target SDK version < LOLLIPOP.
-    // Synchronous compositing indicates Android WebView.
-    if (Platform::Current()
-            ->IsSynchronousCompositingEnabledForAndroidWebView() &&
-        !GetDocument().IsPrintingOrPaintingPreview()) {
-      disable_scrollbars = false;
-    }
-#endif
     if (disable_scrollbars) {
       RETURN_SCROLLBAR_MODE(mojom::blink::ScrollbarMode::kAlwaysOff);
     }

@@ -24,9 +24,6 @@
 #include "components/user_education/common/session/user_education_session_manager.h"
 #include "content/public/browser/browser_context.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/components/mgs/managed_guest_session_utils.h"
-#endif
 
 namespace {
 
@@ -125,11 +122,6 @@ bool UserEducationServiceFactory::ProfileAllowsUserEducation(Profile* profile) {
     return false;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (chromeos::IsManagedGuestSession()) {
-    return false;
-  }
-#endif
 
   if (headless::IsHeadlessMode()) {
     return false;

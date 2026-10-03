@@ -55,10 +55,6 @@ OOPVideoDecoderService::OOPVideoDecoderService(
       media_log_receiver_(this),
       dst_video_decoder_(std::move(dst_video_decoder)),
       dst_video_decoder_receiver_(dst_video_decoder_.get())
-#if BUILDFLAG(IS_CHROMEOS)
-      ,
-      cdm_service_context_(cdm_service_context)
-#endif  // BUILDFLAG(IS_CHROMEOS)
 {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   CHECK(!!dst_video_decoder_);
@@ -69,11 +65,6 @@ OOPVideoDecoderService::OOPVideoDecoderService(
 OOPVideoDecoderService::~OOPVideoDecoderService() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (cdm_id_) {
-    cdm_service_context_->UnregisterRemoteCdmContext(cdm_id_.value());
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void OOPVideoDecoderService::GetSupportedConfigs(
@@ -148,36 +139,12 @@ void OOPVideoDecoderService::Initialize(const VideoDecoderConfig& config,
   // The |config| should have been validated at deserialization time.
   DCHECK(config.IsValidConfig());
   if (config.is_encrypted()) {
-#if BUILDFLAG(IS_CHROMEOS)
-    if (!cdm_id_) {
-      if (!cdm) {
-        std::move(callback).Run(DecoderStatus::Codes::kMissingCDM,
-                                /*needs_bitstream_conversion=*/false,
-                                /*max_decode_requests=*/1,
-                                VideoDecoderType::kUnknown,
-                                /*needs_transcryption=*/false);
-        return;
-      }
-      // We have already validated above that if a |cdm| is  provided, it must
-      // be a cdm context.
-      CHECK(cdm->is_cdm_context());
-      mojo::PendingRemote<mojom::CdmContextForOOPVD> cdm_context =
-          std::move(cdm->get_cdm_context());
-      // The cdm context is non-nullable inside the |cdm| union.
-      CHECK(!!cdm_context);
-      remote_cdm_context_ = base::WrapRefCounted(
-          new chromeos::RemoteCdmContext(std::move(cdm_context)));
-      cdm_id_ = cdm_service_context_->RegisterRemoteCdmContext(
-          remote_cdm_context_.get());
-    }
-#else
     std::move(callback).Run(DecoderStatus::Codes::kUnsupportedConfig,
                             /*needs_bitstream_conversion=*/false,
                             /*max_decode_requests=*/1,
                             VideoDecoderType::kUnknown,
                             /*needs_transcryption=*/false);
     return;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
 
   // Even though this is in-process, we still need to pass a |cdm_id_|

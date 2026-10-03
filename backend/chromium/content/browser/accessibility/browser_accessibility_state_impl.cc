@@ -339,14 +339,8 @@ BrowserAccessibilityStateImpl::BrowserAccessibilityStateImpl()
   if (command_line.HasSwitch(switches::kDisableRendererAccessibility)) {
     disallow_changes = true;
   } else if (command_line.HasSwitch(switches::kForceRendererAccessibility)) {
-#if BUILDFLAG(IS_WIN)
-    std::string ax_mode_bundle =
-        base::WideToUTF8(command_line.GetSwitchValueNative(
-            switches::kForceRendererAccessibility));
-#else
     std::string ax_mode_bundle = command_line.GetSwitchValueNative(
         switches::kForceRendererAccessibility);
-#endif
 
     if (ax_mode_bundle.empty()) {
       // For backwards compatibility, when --force-renderer-accessibility has no

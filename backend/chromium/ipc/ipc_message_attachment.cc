@@ -22,13 +22,7 @@
 #include "ipc/mach_port_attachment_mac.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ipc/handle_attachment_win.h"
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "ipc/handle_attachment_fuchsia.h"
-#endif
 
 namespace IPC {
 
@@ -82,23 +76,6 @@ mojo::ScopedHandle MessageAttachment::TakeMojoHandle() {
       attachment->reset_mach_port_ownership();
       return mojo::MakeScopedHandle(mojo::Handle(wrapped_handle));
     }
-#elif BUILDFLAG(IS_FUCHSIA)
-    case Type::FUCHSIA_HANDLE: {
-      auto* attachment = static_cast<internal::HandleAttachmentFuchsia*>(this);
-      MojoPlatformHandle platform_handle = {
-          sizeof(platform_handle), MOJO_PLATFORM_HANDLE_TYPE_FUCHSIA_HANDLE,
-          static_cast<uint64_t>(attachment->Take())};
-      MojoHandle wrapped_handle;
-      if (MojoWrapPlatformHandle(&platform_handle, nullptr, &wrapped_handle) !=
-          MOJO_RESULT_OK) {
-        return mojo::ScopedHandle();
-      }
-      return mojo::MakeScopedHandle(mojo::Handle(wrapped_handle));
-    }
-#elif BUILDFLAG(IS_WIN)
-    case Type::WIN_HANDLE:
-      return mojo::WrapPlatformFile(base::win::ScopedHandle(
-          static_cast<internal::HandleAttachmentWin*>(this)->Take()));
 #endif
     default:
       break;
@@ -135,23 +112,6 @@ scoped_refptr<MessageAttachment> MessageAttachment::CreateFromMojoHandle(
       mach_port = static_cast<mach_port_t>(platform_handle.value);
     return new internal::MachPortAttachmentMac(
         mach_port, internal::MachPortAttachmentMac::FROM_WIRE);
-  }
-#elif BUILDFLAG(IS_FUCHSIA)
-  if (type == Type::FUCHSIA_HANDLE) {
-    zx::handle zx_handle;
-    if (platform_handle.type == MOJO_PLATFORM_HANDLE_TYPE_FUCHSIA_HANDLE)
-      zx_handle.reset(static_cast<zx_handle_t>(platform_handle.value));
-    return new internal::HandleAttachmentFuchsia(std::move(zx_handle));
-  }
-#elif BUILDFLAG(IS_WIN)
-  if (type == Type::WIN_HANDLE) {
-    base::PlatformFile platform_file = base::kInvalidPlatformFile;
-    if (platform_handle.type == MOJO_PLATFORM_HANDLE_TYPE_WINDOWS_HANDLE) {
-      platform_file =
-          reinterpret_cast<base::PlatformFile>(platform_handle.value);
-    }
-    return new internal::HandleAttachmentWin(
-        platform_file, internal::HandleAttachmentWin::FROM_WIRE);
   }
 #endif
   NOTREACHED();

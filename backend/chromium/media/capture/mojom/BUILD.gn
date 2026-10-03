@@ -5,7 +5,6 @@
 import("//mojo/public/tools/bindings/mojom.gni")
 
 mojom("video_capture") {
-  generate_java = true
   sources = [ "video_capture.mojom" ]
 
   public_deps = [
@@ -23,7 +22,6 @@ mojom("video_capture") {
 }
 
 mojom("video_capture_buffer") {
-  generate_java = true
   sources = [ "video_capture_buffer.mojom" ]
 
   public_deps = [
@@ -41,7 +39,6 @@ mojom("video_capture_buffer") {
 }
 
 mojom("video_capture_types") {
-  generate_java = true
   sources = [ "video_capture_types.mojom" ]
 
   public_deps = [

@@ -134,9 +134,6 @@
     <message name="IDS_PDF_TOOLTIP_DOWNLOAD" desc="Button tooltip for the button to download a PDF document">
       Download
     </message>
-    <message name="IDS_PDF_TOOLTIP_PRINT" desc="Button tooltip for the button to print a PDF document">
-      Print
-    </message>
     <message name="IDS_PDF_TOOLTIP_FIT_PAGE" desc="Button tooltip for the button which zooms a PDF so that a single page is visible on screen">
       Fit to page
     </message>

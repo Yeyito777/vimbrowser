@@ -26,11 +26,7 @@ namespace blink {
     BUILDFLAG(IS_ANDROID)
 // Enables H.264 CBP encode acceleration.
 BASE_FEATURE(kPlatformH264CbpEncoding,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#else
              base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_WIN)
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) ||
         // BUILDFLAG(IS_ANDROID)
 
@@ -131,18 +127,10 @@ IsH264ConstrainedBaselineProfileAvailableForAcceleratedEncoder() {
 }
 
 bool PLATFORM_EXPORT UseH264AcceleratedEncoderForWebRTC() {
-#if !BUILDFLAG(IS_ANDROID)
   // On non-Android, H264 HW encoder cannot be used unless SW encoder is also
   // available because of assumptions that SW fallback is always possible. This
   // check should be removed when SW implementation is always available.
   return ::features::IsOpenH264SoftwareEncoderEnabledForWebRTC();
-#elif BUILDFLAG(RTC_USE_H264)
-  // On Android, H264 HW encoder can be used without SW encoder because the SW
-  // fallback logic has been explicitly disabled.
-  return true;
-#else
-  return false;
-#endif
 }
 
 }  // namespace blink

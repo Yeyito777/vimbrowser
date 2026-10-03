@@ -53,7 +53,4 @@ source_set("tests") {
 group("media_session_unittests") {
   testonly = true
   deps = [ ":tests" ]
-  if (is_android) {
-    deps += [ "//services/media_session/public/cpp/android/junit:media_session_junit_tests" ]
-  }
 }

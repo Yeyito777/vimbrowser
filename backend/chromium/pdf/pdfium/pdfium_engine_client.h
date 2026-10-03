@@ -133,9 +133,6 @@ class PDFiumEngineClient {
                      const std::string& subject,
                      const std::string& body) {}
 
-  // Put up the print dialog.
-  virtual void Print() {}
-
   // Submit the data using HTTP POST.
   virtual void SubmitForm(const std::string& url,
                           const void* data,
@@ -172,9 +169,6 @@ class PDFiumEngineClient {
 
   // Notifies the client about focus changes for form fields.
   virtual void FormFieldFocusChange(FocusFieldType type) {}
-
-  // Returns true if the plugin has been opened within print preview.
-  virtual bool IsPrintPreview() const = 0;
 
   // Get the background color of the PDF.
   virtual SkColor GetBackgroundColor() const = 0;

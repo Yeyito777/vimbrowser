@@ -39,12 +39,8 @@
 namespace {
 #if BUILDFLAG(IS_LINUX)
 constexpr char kPlatform[] = "LINUX";
-#elif BUILDFLAG(IS_WIN)
-constexpr char kPlatform[] = "WINDOWS";
 #elif BUILDFLAG(IS_MAC)
 constexpr char kPlatform[] = "MAC_OS";
-#elif BUILDFLAG(IS_CHROMEOS)
-constexpr char kPlatform[] = "CHROME_OS";
 #else
 constexpr char kPlatform[] = "UNSPECIFIED_PLATFORM";
 #endif

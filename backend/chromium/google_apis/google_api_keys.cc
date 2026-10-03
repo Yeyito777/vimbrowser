@@ -92,36 +92,10 @@ const std::string& GetSodaAPIKey() {
   return GetApiKeyCacheInstance().api_key_soda();
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 const std::string& GetHatsAPIKey() {
   return GetApiKeyCacheInstance().api_key_hats();
 }
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-const std::string& GetSharingAPIKey() {
-  return GetApiKeyCacheInstance().api_key_sharing();
-}
-
-const std::string& GetReadAloudAPIKey() {
-  return GetApiKeyCacheInstance().api_key_read_aloud();
-}
-
-const std::string& GetFresnelAPIKey() {
-  return GetApiKeyCacheInstance().api_key_fresnel();
-}
-
-const std::string& GetBocaAPIKey() {
-  return GetApiKeyCacheInstance().api_key_boca();
-}
-
-const std::string& GetCrosSystemGeoAPIKey() {
-  return GetApiKeyCacheInstance().api_key_cros_system_geo();
-}
-const std::string& GetCrosChromeGeoAPIKey() {
-  return GetApiKeyCacheInstance().api_key_cros_chrome_geo();
-}
-#endif
 
 const std::string& GetMetricsKey() {
   return GetApiKeyCacheInstance().metrics_key();

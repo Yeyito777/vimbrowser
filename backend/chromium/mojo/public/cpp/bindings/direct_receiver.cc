@@ -49,44 +49,6 @@ TransportPair CreateTransportPair() {
   return transports;
 }
 
-#if BUILDFLAG(IS_WIN)
-
-bool g_use_precreated_transport = false;
-
-class TransportPairStorage {
- public:
-  static TransportPairStorage& Get();
-
-  // Creates a TransportPair and stores it to be used inside the sandbox.
-  void CreateTransportPairBeforeSandbox();
-
-  // Returns a TransportPair that was created outside the sandbox. Asserts if
-  // there are none available.
-  TransportPair TakeTransportPair();
-
- private:
-  base::Lock lock_;
-  std::optional<TransportPair> transport_pair_ GUARDED_BY(lock_);
-};
-
-// static
-TransportPairStorage& TransportPairStorage::Get() {
-  static base::NoDestructor<TransportPairStorage> instance;
-  return *instance;
-}
-
-void TransportPairStorage::CreateTransportPairBeforeSandbox() {
-  base::AutoLock lock(lock_);
-  CHECK(!transport_pair_.has_value());
-  transport_pair_ = CreateTransportPair();
-}
-
-TransportPair TransportPairStorage::TakeTransportPair() {
-  base::AutoLock lock(lock_);
-  return std::exchange(transport_pair_, std::nullopt).value();
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 // These values are persisted to logs. Entries should not be renumbered and
 // numeric values should never be reused.
@@ -132,19 +94,7 @@ ThreadLocalNode::ThreadLocalNode(base::PassKey<ThreadLocalNode>) {
 
   scoped_refptr<Transport> global_transport;
   scoped_refptr<Transport> local_transport;
-#if BUILDFLAG(IS_WIN)
-  if (g_use_precreated_transport) {
-    std::tie(global_transport, local_transport) =
-        TransportPairStorage::Get().TakeTransportPair();
-    // Leak the node in case it needs to outlive the last DirectReceiver,
-    // since in a sandboxed process it can't be recreated.
-    AddRef();
-  } else {
-    std::tie(global_transport, local_transport) = CreateTransportPair();
-  }
-#else
   std::tie(global_transport, local_transport) = CreateTransportPair();
-#endif
   // Create a new (non-broker) node which we will connect below to the global
   // Mojo ipcz node in this process.
   const IpczAPI& ipcz = core::GetIpczAPI();
@@ -375,16 +325,5 @@ bool IsAsyncIOSupported() {
          base::CurrentThread::Get()->IsAsyncIOSupported();
 }
 
-#if BUILDFLAG(IS_WIN)
-
-void CreateDirectReceiverTransportBeforeSandbox() {
-  CHECK(!internal::g_use_precreated_transport);
-  internal::g_use_precreated_transport = true;
-  if (IsDirectReceiverSupported()) {
-    internal::TransportPairStorage::Get().CreateTransportPairBeforeSandbox();
-  }
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace mojo

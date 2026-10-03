@@ -41,9 +41,6 @@ base::FilePath GetProfilePath(const base::DictValue& root,
   else
     return base::FilePath();
 
-#if BUILDFLAG(IS_WIN)
-  base::ReplaceSubstringsAfterOffset(&path_str, 0, "/", "\\");
-#endif
   base::FilePath path = base::FilePath::FromUTF8Unsafe(path_str);
 
   // IsRelative=1 means the folder path would be relative to the

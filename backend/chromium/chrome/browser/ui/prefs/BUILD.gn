@@ -4,7 +4,7 @@
 
 import("//extensions/buildflags/buildflags.gni")
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 source_set("prefs") {
   sources = [
@@ -25,9 +25,7 @@ source_set("prefs") {
     "//ui/native_theme",
   ]
 
-  if (!is_android) {
-    public_deps += [ "//chrome/browser/themes" ]
-  }
+  public_deps += [ "//chrome/browser/themes" ]
 }
 
 source_set("impl") {
@@ -51,42 +49,29 @@ source_set("impl") {
     "//components/proxy_config",
   ]
 
-  if (is_android) {
-    deps += [
-      "//chrome/browser/flags:flags_android",
-      "//components/browser_ui/accessibility/android",
-    ]
-  } else {
-    deps += [ "//chrome/browser/themes" ]
-  }
+  deps += [ "//chrome/browser/themes" ]
 
   if (is_linux) {
     deps += [ "//ui/linux:linux_ui" ]
   }
 }
 
-if (!is_android || enable_desktop_android_extensions) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [ "prefs_tab_helper_browsertest.cc" ]
+source_set("browser_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = [ "prefs_tab_helper_browsertest.cc" ]
 
-    deps = [
-      "//base",
-      "//chrome/browser/profiles:profile",
-      "//chrome/browser/ui",
-      "//chrome/common:constants",
-      "//chrome/common:non_code_constants",
-      "//chrome/test:test_support",
-      "//components/prefs",
-      "//content/test:test_support",
-      "//third_party/blink/public/common:headers",
-    ]
+  deps = [
+    "//base",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/ui",
+    "//chrome/common:constants",
+    "//chrome/common:non_code_constants",
+    "//chrome/test:test_support",
+    "//components/prefs",
+    "//content/test:test_support",
+    "//third_party/blink/public/common:headers",
+  ]
 
-    if (enable_desktop_android_extensions) {
-      deps += [ "//chrome/test:test_support_ui_android" ]
-    } else {
-      deps += [ "//chrome/test:test_support_ui" ]
-    }
-  }
+  deps += [ "//chrome/test:test_support_ui" ]
 }

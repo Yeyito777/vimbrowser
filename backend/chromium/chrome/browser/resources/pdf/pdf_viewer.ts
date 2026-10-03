@@ -103,7 +103,6 @@ type SaveRequestType = chrome.pdfViewerPrivate.SaveRequestType;
  */
 enum PostMessageDataType {
   GET_SELECTED_TEXT = 0,
-  PRINT = 1,
   SELECT_ALL = 2,
 }
 
@@ -1255,10 +1254,6 @@ export class PdfViewerElement extends PdfViewerBaseElement {
         this.pluginController_.getSelectedText().then(
             this.handleSelectedTextReply.bind(this));
         break;
-      case 'print':
-        messageType = PostMessageDataType.PRINT;
-        this.pluginController_.print();
-        break;
       case 'selectAll':
         messageType = PostMessageDataType.SELECT_ALL;
         this.pluginController_.selectAll();
@@ -2172,12 +2167,6 @@ export class PdfViewerElement extends PdfViewerBaseElement {
 
   protected onGlicSummarize_() {
     PdfViewerPrivateProxyImpl.getInstance().glicSummarize();
-  }
-
-  protected onPrint_() {
-    record(UserAction.PRINT);
-    assert(this.currentController);
-    this.currentController.print();
   }
 
   /**

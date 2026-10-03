@@ -27,9 +27,6 @@
 #include "components/update_client/update_query_params.h"
 #include "components/update_client/utils.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 #if defined(ARCH_CPU_X86_FAMILY)
 #include "base/cpu.h"
@@ -45,13 +42,7 @@ int GetPhysicalMemoryGB() {
 }
 
 std::string GetOSVersion() {
-#if BUILDFLAG(IS_WIN)
-  const auto ver = base::win::OSInfo::GetInstance()->version_number();
-  return base::StringPrintf("%u.%u.%u.%u", ver.major, ver.minor, ver.build,
-                            ver.patch);
-#else
   return base::SysInfo().OperatingSystemVersion();
-#endif
 }
 
 std::string GetServicePack() {
@@ -131,11 +122,6 @@ protocol_request::Request MakeProtocolRequest(
   request.domain_joined = domain_joined;
   request.additional_attributes = additional_attributes;
 
-#if BUILDFLAG(IS_WIN)
-  if (base::win::OSInfo::GetInstance()->IsWowX86OnAMD64()) {
-    request.is_wow64 = true;
-  }
-#endif
 
   // HW platform information.
   request.hw.physmemory = GetPhysicalMemoryGB();

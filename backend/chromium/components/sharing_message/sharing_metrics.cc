@@ -156,23 +156,6 @@ sharing_message::MessageType SharingPayloadCaseToMessageType(
   return sharing_message::UNKNOWN_MESSAGE;
 }
 
-sharing_message::MessageType SharingPayloadCaseToMessageType(
-    sync_pb::UnencryptedSharingMessage::PayloadCase payload_case) {
-  switch (payload_case) {
-    case sync_pb::UnencryptedSharingMessage::PAYLOAD_NOT_SET:
-      return sharing_message::UNKNOWN_MESSAGE;
-    case sync_pb::UnencryptedSharingMessage::kSendTabMessage:
-      return sharing_message::SEND_TAB_TO_SELF_PUSH_NOTIFICATION;
-    case sync_pb::UnencryptedSharingMessage::kDesktopToMobilePromoMessage:
-      return sharing_message::DESKTOP_TO_MOBILE_PROMO_PUSH_NOTIFICATION;
-  }
-  // For proto3 enums unrecognized enum values are kept when parsing, and a new
-  // payload case received over the network would not default to
-  // PAYLOAD_NOT_SET. Explicitly return UNKNOWN_MESSAGE here to handle this
-  // case.
-  return sharing_message::UNKNOWN_MESSAGE;
-}
-
 const std::string& SharingMessageTypeToString(
     sharing_message::MessageType message_type) {
   // For proto3 enums unrecognized enum values are kept when parsing and their

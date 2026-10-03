@@ -23,10 +23,6 @@ component("webview") {
     sources += [ "unhandled_keyboard_event_handler_mac.mm" ]
   }
 
-  if (is_win) {
-    sources += [ "unhandled_keyboard_event_handler_win.cc" ]
-  }
-
   defines = [ "WEBVIEW_IMPLEMENTATION" ]
 
   if (is_mac) {
@@ -56,7 +52,7 @@ component("webview") {
     "//ui/views",
   ]
 
-  if (is_linux || is_chromeos || is_android || is_fuchsia) {
+  if (is_linux || is_chromeos || is_fuchsia) {
     if (use_ozone) {
       sources += [ "unhandled_keyboard_event_handler_ozone.cc" ]
       deps += [ "//ui/ozone" ]

@@ -22,12 +22,6 @@
 #include "chrome/browser/ui/webui/tab_search/tab_search_prefs.h"
 #include "components/signin/public/identity_manager/identity_manager.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/system/sys_info.h"
-#include "chrome/browser/ash/ownership/owner_settings_service_ash.h"
-#include "chrome/browser/ash/ownership/owner_settings_service_ash_factory.h"
-#include "chrome/browser/ash/settings/about_flags.h"
-#endif
 
 TabOrganizationService::TabOrganizationService(
     content::BrowserContext* browser_context)
@@ -125,14 +119,10 @@ bool TabOrganizationService::CanStartRequest() const {
   CHECK(TabOrganizationUtils::GetInstance()->IsEnabled(profile_));
 
 // The signin flow is not used on ChromeOS.
-#if !BUILDFLAG(IS_CHROMEOS)
   const signin::IdentityManager* const identity_manager =
       IdentityManagerFactory::GetInstance()->GetForProfile(profile_);
   return identity_manager->HasPrimaryAccountWithRefreshToken(
       signin::ConsentLevel::kSignin);
-#else
-  return true;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }
 
 void TabOrganizationService::StartRequestIfNotFRE(const Browser* browser) {

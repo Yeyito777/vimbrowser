@@ -23,25 +23,10 @@
 #include "media/media_buildflags.h"
 #include "ui/gl/gl_switches.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/device_info.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace features {
 
-#if BUILDFLAG(IS_ANDROID)
-// If this flag is enabled, a DumpWithoutCrashing() is captured when a bad
-// state is detected when moving the composited UI. For example, this could
-// mean scrolling without a resource, or OffsetTagValues trying to position
-// the UI outside of their valid constraints.
-BASE_FEATURE(kAndroidDumpForBadCompositedUiState,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // When there is a screenshot request against a surface, issue the copy request
 // into a shared image.
@@ -51,24 +36,12 @@ BASE_FEATURE(kBackForwardTransitionsSameDocSharedImage,
 BASE_FEATURE(kBackdropFilterMirrorEdgeMode, base::FEATURE_ENABLED_BY_DEFAULT);
 
 BASE_FEATURE(kUseDrmBlackFullscreenOptimization,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kUseFrameIntervalDeciderAdaptiveFrameRate,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kUseMultipleOverlays,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 const char kMaxOverlaysParam[] = "max_overlays";
 
@@ -83,52 +56,20 @@ BASE_FEATURE(kDrawQuadSplitLimit, base::FEATURE_DISABLED_BY_DEFAULT);
 constexpr base::FeatureParam<DelegatedCompositingMode>::Option
     kDelegatedCompositingModeOption[] = {
         {DelegatedCompositingMode::kFull, "full"},
-#if BUILDFLAG(IS_WIN)
-        {DelegatedCompositingMode::kLimitToUi, "limit_to_ui"},
-#endif
 };
 const base::FeatureParam<DelegatedCompositingMode>
     kDelegatedCompositingModeParam = {
         &kDelegatedCompositing,
         "mode",
-#if BUILDFLAG(IS_WIN)
-        // TODO(crbug.com/324460866): Windows does not fully support full
-        // delegated compositing.
-        DelegatedCompositingMode::kLimitToUi,
-#else
         DelegatedCompositingMode::kFull,
-#endif
         &kDelegatedCompositingModeOption,
 };
 
-#if BUILDFLAG(IS_WIN)
-// If enabled, the overlay processor will force the use of dcomp surfaces as the
-// render pass backing while delegated ink is being employed. This will avoid
-// the need for finding what surface to synchronize ink updates with by making
-// all surfaces synchronize with dcomp commit
-BASE_FEATURE(kDCompSurfacesForDelegatedInk, base::FEATURE_ENABLED_BY_DEFAULT);
-
-// If enabled, Chromium will utilize DXGI SwapChains and DComp visuals as the
-// software output device rather than GDI bit block transfer to the redirection
-// bitmap. Additionally, the redirection bitmap will be removed and replaced
-// with the native acrylic background effect on Win11. Since the browser window
-// appears before the GPU process is able to draw content into it, the acrylic
-// effect gives the user feedback that a window is present and content is
-// coming. Without the acrylic effect a transparent window will appear with a 1
-// pixel border that eats all mouse clicks; not a good user experience. Further,
-// the acylic effect will appear in uncovered regions of the window when the
-// user resizes the window.
-BASE_FEATURE(kRemoveRedirectionBitmap, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 // Submit CompositorFrame from SynchronousLayerTreeFrameSink directly to viz in
 // WebView.
 BASE_FEATURE(kVizFrameSubmissionForWebView, base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_FUCHSIA)
-// Enables SkiaOutputDeviceBufferQueue instead of Vulkan swapchain on Fuchsia.
-BASE_FEATURE(kUseSkiaOutputDeviceBufferQueue, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 // Whether we should log extra debug information to webrtc native log.
 BASE_FEATURE(kWebRtcLogCapturePipeline, base::FEATURE_DISABLED_BY_DEFAULT);
@@ -138,27 +79,6 @@ BASE_FEATURE(kWebRtcLogCapturePipeline, base::FEATURE_DISABLED_BY_DEFAULT);
 BASE_FEATURE(kWebViewVulkanIntermediateBuffer,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-// Hardcoded as disabled for WebView to have a different default for
-// UseSurfaceLayerForVideo from chrome.
-BASE_FEATURE(kUseSurfaceLayerForVideoDefault, base::FEATURE_ENABLED_BY_DEFAULT);
-
-BASE_FEATURE(kWebViewNewInvalidateHeuristic, base::FEATURE_ENABLED_BY_DEFAULT);
-
-BASE_FEATURE(kWebViewNewInvalidateHeuristicForTV,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-// If enabled and the device's SOC manufacturer is in the allowlist, WebView
-// reports the set of threads involved in frame production to HWUI, and they're
-// included in the HWUI ADPF session.
-// If disabled, WebView never uses ADPF.
-BASE_FEATURE(kWebViewEnableADPF, base::FEATURE_ENABLED_BY_DEFAULT);
-
-// The allowlist format is a "|" separated string, e.g. "A|B|XY" for allowing
-// SoC manufacturers A, B, and XY.
-const base::FeatureParam<std::string> kWebViewADPFSocManufacturerAllowlist{
-    &kWebViewEnableADPF, "webview_soc_manufacturer_allowlist", "Google"};
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 // Increase the max CALayer number allowed for CoreAnimation.
@@ -311,11 +231,7 @@ BASE_FEATURE(kSelectFutureFrameDeadline, base::FEATURE_DISABLED_BY_DEFAULT);
 // preferred on Windows, to avoid flicker when entering/leaving overlays
 // (https://crbug.com/40285630) but otherwise is undesirable behavior
 // (https://crbug.com/40266959 and https://crbug.com/486121442).
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kUseDisplaySDRMaxLuminanceNits, base::FEATURE_ENABLED_BY_DEFAULT);
-#else
 BASE_FEATURE(kUseDisplaySDRMaxLuminanceNits, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 // On mac, when the RenderWidgetHostViewMac is hidden, also hide the
 // DelegatedFrameHost. Among other things, it unlocks the compositor frames,
@@ -361,11 +277,7 @@ BASE_FEATURE(kVizDirectCompositorThreadIpcNonRoot,
 // messages and, in turn, all interfaces associated with it e.g. root compositor
 // frame sink, display private - skipping the IO thread hop.
 BASE_FEATURE(kVizDirectCompositorThreadIpcFrameSinkManager,
-#if BUILDFLAG(IS_ANDROID)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 // Switches the message pump to base::MessagePumpType::IO on the Viz thread.
@@ -375,12 +287,6 @@ BASE_FEATURE(kVizWithIoMessagePump, base::FEATURE_DISABLED_BY_DEFAULT);
 // judge finch variation.
 BASE_FEATURE(kVizNullHypothesis, base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Allows the display to seamlessly adjust the refresh rate in order to match
-// content preferences. ChromeOS only.
-BASE_FEATURE(kCrosContentAdjustedRefreshRate,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 BASE_FEATURE(kNoCompositorFrameAcks, base::FEATURE_DISABLED_BY_DEFAULT);
 const base::FeatureParam<int> kNumberPendingFramesUntilThrottle{
@@ -398,11 +304,6 @@ BASE_FEATURE(kFlingSchedulingImprovements, base::FEATURE_DISABLED_BY_DEFAULT);
 // should be removed as soon as we confirm that the optimization is stable.
 BASE_FEATURE(kRpdqFilterLookupOptimizations, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-// Use BufferQueue for the primary plane instead of a DXGI swap chain or DComp
-// surface.
-BASE_FEATURE(kBufferQueue, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 int DrawQuadSplitLimit() {
   constexpr int kDefaultDrawQuadSplitLimit = 5;
@@ -445,32 +346,9 @@ bool ShouldWebRtcLogCapturePipeline() {
   return base::FeatureList::IsEnabled(kWebRtcLogCapturePipeline);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool UseWebViewNewInvalidateHeuristic() {
-  // For Android TVs we bundle this with WebViewSurfaceControlForTV.
-  if (base::android::device_info::is_tv()) {
-    return base::FeatureList::IsEnabled(kWebViewNewInvalidateHeuristicForTV);
-  }
-
-  return base::FeatureList::IsEnabled(kWebViewNewInvalidateHeuristic);
-}
-#endif
 
 bool UseSurfaceLayerForVideo() {
-#if BUILDFLAG(IS_ANDROID)
-  // SurfaceLayer video should work fine with new heuristic.
-  if (UseWebViewNewInvalidateHeuristic()) {
-    return true;
-  }
-
-  // Allow enabling UseSurfaceLayerForVideo if webview is using surface control.
-  if (::features::IsAndroidSurfaceControlEnabled()) {
-    return true;
-  }
-  return base::FeatureList::IsEnabled(kUseSurfaceLayerForVideoDefault);
-#else
   return true;
-#endif
 }
 
 int MaxOverlaysConsidered() {
@@ -514,55 +392,8 @@ bool IsVSyncAlignedPresentEnabled() {
 }
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool IsCrosContentAdjustedRefreshRateEnabled() {
-  return base::FeatureList::IsEnabled(kCrosContentAdjustedRefreshRate);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-bool ShouldRemoveRedirectionBitmap() {
-  // Limit to Win11 because there are a high number of D3D9 users on Win10;
-  // which requires the redirection bitmap. 22H2 is specified because it is the
-  // lowest version supporting DWM system backdrop.
-  if (base::win::GetVersion() < base::win::Version::WIN11_22H2) {
-    return false;
-  }
 
-  const auto* command_line = base::CommandLine::ForCurrentProcess();
-
-  // If direct composition is disabled say for testing, we will use an ANGLE
-  // EGLSurface which uses a BitBlt swap chain that needs a redirection surface.
-  if (command_line->HasSwitch(switches::kDisableDirectComposition)) {
-    return false;
-  }
-
-  // When using swiftshader for testing, we will also use an ANGLE EGLSurface.
-  if (command_line->HasSwitch(switches::kOverrideUseSoftwareGLForTests)) {
-    return false;
-  }
-
-  // Some users set ANGLE backend to D3D9 or OpenGL via chrome://flags and in
-  // that case too we would also use an ANGLE EGLSurface.
-  const std::string angle_backend =
-      command_line->GetSwitchValueASCII(switches::kUseANGLE);
-  if (angle_backend == gl::kANGLEImplementationD3D9Name ||
-      angle_backend == gl::kANGLEImplementationOpenGLName) {
-    return false;
-  }
-
-  return base::FeatureList::IsEnabled(kRemoveRedirectionBitmap);
-}
-#endif
-
-#if BUILDFLAG(IS_ANDROID)
-bool ShouldUseAdpfForSoc(std::string_view soc_allowlist,
-                         std::string_view soc) {
-  std::vector<std::string_view> allowlist = base::SplitStringPiece(
-      soc_allowlist, "|", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-  return std::ranges::contains(allowlist, soc);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 bool ShouldAckCOREarlyForViewTransition() {
   return base::FeatureList::IsEnabled(

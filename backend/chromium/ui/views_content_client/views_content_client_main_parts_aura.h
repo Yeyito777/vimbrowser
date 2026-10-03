@@ -9,11 +9,9 @@
 
 #include "ui/views_content_client/views_content_client_main_parts.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 namespace wm {
 class WMState;
 }
-#endif
 
 namespace ui {
 
@@ -34,9 +32,7 @@ class ViewsContentClientMainPartsAura : public ViewsContentClientMainParts {
   void PostMainMessageLoopRun() override;
 
  private:
-#if !BUILDFLAG(IS_CHROMEOS)
   std::unique_ptr<::wm::WMState> wm_state_;
-#endif
 };
 
 }  // namespace ui

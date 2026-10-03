@@ -71,14 +71,6 @@ void ClickToCallUiController::OnDeviceSelected(
   SendNumberToDevice(device, phone_number, entry_point);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-void ClickToCallUiController::OnIntentPickerShown(bool has_devices,
-                                                  bool has_apps) {
-  OnDialogShown(has_devices, has_apps);
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void ClickToCallUiController::OnDialogClosed(SharingDialog* dialog) {
   if (ukm_recorder_ && this->dialog() == dialog)

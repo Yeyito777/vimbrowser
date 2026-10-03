@@ -10,7 +10,6 @@ import("//components/guest_view/buildflags/buildflags.gni")
 import("//components/offline_pages/buildflags/features.gni")
 import("//components/optimization_guide/features.gni")
 import("//components/signin/features.gni")
-import("//components/spellcheck/spellcheck_build_features.gni")
 import("//components/surface_embed/buildflags/buildflags.gni")
 import("//content/public/common/features.gni")
 import("//extensions/buildflags/buildflags.gni")
@@ -42,16 +41,6 @@ grit("resources") {
     "//url/mojom:url_mojom_gurl_js",
     "//url/mojom:url_mojom_origin_js",
   ]
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/ui/webui/ash/lobster:lobster_mojom_js",
-      "//chromeos/ash/components/enhanced_network_tts/mojom:mojom_js",
-      "//chromeos/ash/services/ime/public/mojom:mojom_js",
-      "//chromeos/ash/services/orca/public/mojom:mojom_js",
-      "//chromeos/components/remote_apps/mojom:mojom_js",
-      "//chromeos/services/tts/public/mojom:mojom_js",
-    ]
-  }
 }
 
 static_library("process_state") {
@@ -201,9 +190,6 @@ static_library("renderer") {
     "//components/subresource_filter/core/common",
     "//components/supervised_user/core/common:buildflags",
     "//components/surface_embed/buildflags",
-    "//components/translate/content/renderer",
-    "//components/translate/core/common",
-    "//components/translate/core/language_detection",
     "//components/visitedlink/renderer",
     "//components/wallet/content/renderer",
     "//components/wallet/core/common:features",
@@ -285,7 +271,7 @@ static_library("renderer") {
     deps += [ "//third_party/widevine/cdm:headers" ]
   }
 
-  if (enable_library_cdms || is_win || is_android) {
+  if (enable_library_cdms || is_win) {
     sources += [
       "media/chrome_key_systems.cc",
       "media/chrome_key_systems.h",
@@ -310,21 +296,6 @@ static_library("renderer") {
     deps += [ "//chrome/renderer/controlled_frame" ]
   }
 
-  if (enable_spellcheck) {
-    deps += [ "//components/spellcheck/renderer" ]
-  }
-
-  if (enable_printing) {
-    deps += [
-      "//components/printing/renderer",
-      "//printing",
-    ]
-    sources += [
-      "printing/chrome_print_render_frame_helper_delegate.cc",
-      "printing/chrome_print_render_frame_helper_delegate.h",
-    ]
-  }
-
   if (enable_paint_preview) {
     deps += [ "//components/paint_preview/renderer" ]
   }
@@ -336,107 +307,68 @@ static_library("renderer") {
     ]
   }
 
-  if (is_win) {
-    deps += [ "//third_party/wtl" ]
+  sources += [
+    "accessibility/ax_tree_distiller.cc",
+    "accessibility/ax_tree_distiller.h",
+    "accessibility/read_anything/read_aloud_app_model.cc",
+    "accessibility/read_anything/read_aloud_app_model.h",
+    "accessibility/read_anything/read_aloud_traversal_utils.cc",
+    "accessibility/read_anything/read_aloud_traversal_utils.h",
+    "accessibility/read_anything/read_anything_app_controller.cc",
+    "accessibility/read_anything/read_anything_app_controller.h",
+    "accessibility/read_anything/read_anything_app_model.cc",
+    "accessibility/read_anything/read_anything_app_model.h",
+    "accessibility/read_anything/read_anything_node_utils.cc",
+    "accessibility/read_anything/read_anything_node_utils.h",
+    "media/chrome_speech_recognition_client.cc",
+    "media/chrome_speech_recognition_client.h",
+    "searchbox/searchbox.cc",
+    "searchbox/searchbox.h",
+    "searchbox/searchbox_extension.cc",
+    "searchbox/searchbox_extension.h",
+  ]
+
+  deps += [
+    "//chrome/common/read_anything:mojo_bindings",
+    "//chrome/common/record_replay",
+    "//chrome/renderer/record_replay",
+    "//chrome/renderer/webui_browser",
+    "//components/crx_file",
+    "//components/trusted_vault",
+    "//services/screen_ai/buildflags",
+    "//services/screen_ai/public/mojom",
+    "//services/strings",
+    "//third_party/re2",
+  ]
+
+  if (build_with_tflite_lib) {
     sources += [
-      "font_prewarmer.cc",
-      "font_prewarmer.h",
-      "render_frame_font_family_accessor.cc",
-      "render_frame_font_family_accessor.h",
-    ]
-  }
-
-  if (is_android) {
-    sources += [
-      "net/page_auto_fetcher_helper_android.cc",
-      "net/page_auto_fetcher_helper_android.h",
-      "sandbox_status_extension_android.cc",
-      "sandbox_status_extension_android.h",
-      "wallet/boarding_pass_extractor.cc",
-      "wallet/boarding_pass_extractor.h",
-    ]
-    deps += [
-      "//chrome/common/wallet:mojo_bindings",
-      "//components/feed/content/renderer:feed_renderer",
-    ]
-  } else {
-    sources += [
-      "accessibility/ax_tree_distiller.cc",
-      "accessibility/ax_tree_distiller.h",
-      "accessibility/read_anything/read_aloud_app_model.cc",
-      "accessibility/read_anything/read_aloud_app_model.h",
-      "accessibility/read_anything/read_aloud_traversal_utils.cc",
-      "accessibility/read_anything/read_aloud_traversal_utils.h",
-      "accessibility/read_anything/read_anything_app_controller.cc",
-      "accessibility/read_anything/read_anything_app_controller.h",
-      "accessibility/read_anything/read_anything_app_model.cc",
-      "accessibility/read_anything/read_anything_app_model.h",
-      "accessibility/read_anything/read_anything_node_utils.cc",
-      "accessibility/read_anything/read_anything_node_utils.h",
-      "media/chrome_speech_recognition_client.cc",
-      "media/chrome_speech_recognition_client.h",
-      "searchbox/searchbox.cc",
-      "searchbox/searchbox.h",
-      "searchbox/searchbox_extension.cc",
-      "searchbox/searchbox_extension.h",
-    ]
-
-    deps += [
-      "//chrome/common/read_anything:mojo_bindings",
-      "//chrome/common/record_replay",
-      "//chrome/renderer/record_replay",
-      "//chrome/renderer/webui_browser",
-      "//components/crx_file",
-      "//components/trusted_vault",
-      "//services/screen_ai/buildflags",
-      "//services/screen_ai/public/mojom",
-      "//services/strings",
-      "//third_party/re2",
-    ]
-
-    if (build_with_tflite_lib) {
-      sources += [
-        "accessibility/phrase_segmentation/base_phrase_segmenter.cc",
-        "accessibility/phrase_segmentation/base_phrase_segmenter.h",
-        "accessibility/phrase_segmentation/dependency_parser_model.cc",
-        "accessibility/phrase_segmentation/dependency_parser_model.h",
-        "accessibility/phrase_segmentation/dependency_parser_op_resolver.cc",
-        "accessibility/phrase_segmentation/dependency_parser_op_resolver.h",
-        "accessibility/phrase_segmentation/dependency_tree.cc",
-        "accessibility/phrase_segmentation/dependency_tree.h",
-        "accessibility/phrase_segmentation/phrase_segmenter.cc",
-        "accessibility/phrase_segmentation/phrase_segmenter.h",
-        "accessibility/phrase_segmentation/token_boundaries.cc",
-        "accessibility/phrase_segmentation/token_boundaries.h",
-        "accessibility/phrase_segmentation/tokenized_sentence.cc",
-        "accessibility/phrase_segmentation/tokenized_sentence.h",
-        "accessibility/phrase_segmentation/tokenizer.cc",
-        "accessibility/phrase_segmentation/tokenizer.h",
-      ]
-
-      deps += [
-        "//third_party/tensorflow-text",
-        "//third_party/tensorflow_models:tflite_custom_ops",
-        "//third_party/tflite",
-        "//third_party/tflite:buildflags",
-        "//third_party/tflite:tflite_public_headers",
-        "//third_party/tflite_support",
-        "//third_party/tflite_support:tflite_support_proto",
-      ]
-    }
-  }
-
-  if (is_chromeos) {
-    sources += [
-      "ash_merge_session_loader_throttle.cc",
-      "ash_merge_session_loader_throttle.h",
-      "chromeos_delayed_callback_group.cc",
-      "chromeos_delayed_callback_group.h",
+      "accessibility/phrase_segmentation/base_phrase_segmenter.cc",
+      "accessibility/phrase_segmentation/base_phrase_segmenter.h",
+      "accessibility/phrase_segmentation/dependency_parser_model.cc",
+      "accessibility/phrase_segmentation/dependency_parser_model.h",
+      "accessibility/phrase_segmentation/dependency_parser_op_resolver.cc",
+      "accessibility/phrase_segmentation/dependency_parser_op_resolver.h",
+      "accessibility/phrase_segmentation/dependency_tree.cc",
+      "accessibility/phrase_segmentation/dependency_tree.h",
+      "accessibility/phrase_segmentation/phrase_segmenter.cc",
+      "accessibility/phrase_segmentation/phrase_segmenter.h",
+      "accessibility/phrase_segmentation/token_boundaries.cc",
+      "accessibility/phrase_segmentation/token_boundaries.h",
+      "accessibility/phrase_segmentation/tokenized_sentence.cc",
+      "accessibility/phrase_segmentation/tokenized_sentence.h",
+      "accessibility/phrase_segmentation/tokenizer.cc",
+      "accessibility/phrase_segmentation/tokenizer.h",
     ]
 
     deps += [
-      "//ash/constants",
-      "//ash/webui/file_manager:constants",
+      "//third_party/tensorflow-text",
+      "//third_party/tensorflow_models:tflite_custom_ops",
+      "//third_party/tflite",
+      "//third_party/tflite:buildflags",
+      "//third_party/tflite:tflite_public_headers",
+      "//third_party/tflite_support",
+      "//third_party/tflite_support:tflite_support_proto",
     ]
   }
 }

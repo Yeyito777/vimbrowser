@@ -27,16 +27,8 @@ if (!build_with_chromium && is_component_build) {
   assert(!is_component_build, "Component builds are not supported in WebRTC.")
 }
 
-if (is_ios) {
-  import("//build/config/ios/rules.gni")
-}
-
 if (is_mac) {
   import("//build/config/mac/rules.gni")
-}
-
-if (is_fuchsia) {
-  import("//build/config/fuchsia/config.gni")
 }
 
 if (build_with_chromium) {
@@ -165,8 +157,7 @@ declare_args() {
   if (build_with_chromium) {
     rtc_use_h264 = media_use_openh264
   } else {
-    rtc_use_h264 =
-        proprietary_codecs && !is_android && !is_ios && !(is_win && !is_clang)
+    rtc_use_h264 = proprietary_codecs && !is_ios && !(is_win && !is_clang)
   }
 
   # Use system OpenH264
@@ -191,12 +182,6 @@ declare_args() {
   # audio samples from NetEQ, a sinus tone will be generated and replace the
   # real audio samples.
   rtc_audio_device_plays_sinus_tone = false
-
-  if (is_ios) {
-    # Build broadcast extension in AppRTCMobile for iOS. This results in the
-    # binary only running on iOS 11+, which is why it is disabled by default.
-    rtc_apprtcmobile_broadcast_extension = false
-  }
 
   # Determines whether OpenGL is available on iOS.
   rtc_ios_use_opengl_rendering = is_ios && target_environment != "catalyst"
@@ -514,21 +499,6 @@ template("rtc_test") {
     if (defined(invoker.public_configs)) {
       public_configs += invoker.public_configs
     }
-    if (!build_with_chromium && is_android) {
-      use_default_launcher = false
-      android_manifest = webrtc_root + "test/android/AndroidManifest.xml"
-      use_raw_android_executable = false
-      min_sdk_version = 23
-      target_sdk_version = 24
-      deps += [
-        "//build/android/gtest_apk:native_test_instrumentation_test_runner_java",
-        webrtc_root + "sdk/android:native_test_jni_onload",
-        webrtc_root + "sdk/android:base_java",
-        webrtc_root + "test:native_test_java",
-        webrtc_root + "test:native_test_support",
-        "//third_party/jni_zero:jni_zero_java",
-      ]
-    }
 
     # TODO: bugs.webrtc.org/467294026 - Support iOS too.
     if (!defined(invoker.is_xctest) || !invoker.is_xctest) {
@@ -562,12 +532,6 @@ template("rtc_test") {
     # TODO(crbug.com/webrtc/13556): Adding the .app folder in the runtime_deps
     # shoulnd't be necessary. this code should be removed and the same solution
     # as Chromium should be used.
-    if (is_ios) {
-      if (!defined(invoker.data)) {
-        data = []
-      }
-      data += [ "${root_out_dir}/${target_name}.app" ]
-    }
   }
 }
 
@@ -949,12 +913,6 @@ template("rtc_executable") {
     if (defined(invoker.public_configs)) {
       public_configs += invoker.public_configs
     }
-    if (is_win) {
-      deps += [
-        # Give executables the default manifest on Windows (a no-op elsewhere).
-        "//build/win:default_exe_manifest",
-      ]
-    }
 
     # Convert abseil dependencies to //third_party/abseil-cpp:absl_full when
     # build_with_chromium=true so that webrtc targets won't need exceptions to
@@ -1137,67 +1095,6 @@ if (is_mac || is_ios) {
         ]
       }
     }
-    if (is_ios) {
-      ios_framework_bundle(target_name) {
-        if (defined(invoker.testonly)) {
-          testonly = invoker.testonly
-        }
-        if (defined(invoker.visibility)) {
-          visibility = invoker.visibility
-        }
-        if (defined(invoker.sources)) {
-          sources = invoker.sources
-        }
-        if (defined(invoker.deps)) {
-          deps = invoker.deps
-        }
-        if (defined(invoker.defines)) {
-          defines = invoker.defines
-        }
-        if (defined(invoker.include_dirs)) {
-          include_dirs = invoker.include_dirs
-        }
-        if (defined(invoker.public_configs)) {
-          public_configs = invoker.public_configs
-        }
-        if (defined(invoker.all_dependent_configs)) {
-          all_dependent_configs = invoker.all_dependent_configs
-        }
-        if (defined(invoker.ldflags)) {
-          ldflags = invoker.ldflags
-        }
-        if (defined(invoker.libs)) {
-          libs = invoker.libs
-        }
-        if (defined(invoker.frameworks)) {
-          frameworks = invoker.frameworks
-        }
-        if (defined(invoker.info_plist)) {
-          info_plist = invoker.info_plist
-        }
-        if (defined(invoker.configs)) {
-          configs += invoker.configs
-        }
-
-        public_headers = get_target_outputs(
-                ":create_bracket_include_headers_$this_target_name")
-        public_headers +=
-            get_target_outputs(":umbrella_header_$this_target_name")
-
-        deps += [
-          ":create_bracket_include_headers_$this_target_name",
-          ":create_privacy_manifest_$this_target_name",
-          ":umbrella_header_$this_target_name",
-        ]
-
-        if (defined(invoker.bundle_deps)) {
-          bundle_deps = invoker.bundle_deps
-        } else {
-          bundle_deps = []
-        }
-        bundle_deps += [ ":privacy_manifest_bundle_data_$this_target_name" ]
-      }
-    }
 
     action("modulemap_$this_target_name") {
       script = "//tools_webrtc/ios/generate_modulemap.py"
@@ -1225,55 +1122,6 @@ if (is_mac || is_ios) {
         ]
         deps = [ ":umbrella_header_$this_target_name" ]
       }
-    }
-  }
-}
-
-if (is_android) {
-  template("rtc_android_library") {
-    android_library(target_name) {
-      forward_variables_from(invoker,
-                             "*",
-                             [
-                               "configs",
-                               "public_configs",
-                               "suppressed_configs",
-                               "visibility",
-                             ])
-
-      # Add any arguments defined by the invoker.
-      if (defined(invoker.errorprone_args)) {
-        errorprone_args = invoker.errorprone_args
-      }
-
-      not_needed([ "android_manifest" ])
-    }
-  }
-
-  template("rtc_android_apk") {
-    android_apk(target_name) {
-      forward_variables_from(invoker,
-                             "*",
-                             [
-                               "configs",
-                               "public_configs",
-                               "suppressed_configs",
-                               "visibility",
-                             ])
-    }
-  }
-
-  template("rtc_instrumentation_test_apk") {
-    instrumentation_test_apk(target_name) {
-      forward_variables_from(invoker,
-                             "*",
-                             [
-                               "configs",
-                               "public_configs",
-                               "suppressed_configs",
-                               "visibility",
-                             ])
-      deps += [ "//third_party/jni_zero:jni_zero_java" ]
     }
   }
 }

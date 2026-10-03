@@ -15,45 +15,9 @@
 #include "content/public/common/url_constants.h"
 #include "url/url_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/web_applications/app_service/publisher_helper.h"
-#include "chromeos/constants/chromeos_features.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-// Must come after other includes, because FromJniType() uses Profile.
-#include "chrome/browser/ui/android/omnibox/jni_headers/ChromeAutocompleteSchemeClassifier_jni.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-static int64_t
-JNI_ChromeAutocompleteSchemeClassifier_CreateAutocompleteClassifier(
-    JNIEnv* env,
-    Profile* profile) {
-  DCHECK(profile);
 
-  return reinterpret_cast<intptr_t>(
-      new ChromeAutocompleteSchemeClassifier(profile));
-}
-
-static void JNI_ChromeAutocompleteSchemeClassifier_DeleteAutocompleteClassifier(
-    JNIEnv* env,
-    int64_t chrome_autocomplete_scheme_classifier) {
-  delete reinterpret_cast<ChromeAutocompleteSchemeClassifier*>(
-      chrome_autocomplete_scheme_classifier);
-}
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS)
-namespace {
-bool IsCustomSchemeHandledByWebApp(Profile* profile,
-                                   const std::string& scheme) {
-  return !web_app::GetWebAppIdsForProtocolUrl(
-              profile, GURL(scheme + url::kStandardSchemeSeparator))
-              .empty();
-}
-}  // namespace
-#endif
 
 ChromeAutocompleteSchemeClassifier::ChromeAutocompleteSchemeClassifier(
     Profile* profile)
@@ -108,10 +72,6 @@ ChromeAutocompleteSchemeClassifier::GetInputTypeForScheme(
       // between URL schemes with handers and those without. This will
       // make the default behaviour be search on Linux.
       return metrics::OmniboxInputType::EMPTY;
-#elif BUILDFLAG(IS_CHROMEOS)
-      return IsCustomSchemeHandledByWebApp(profile_, scheme)
-                 ? metrics::OmniboxInputType::URL
-                 : metrics::OmniboxInputType::EMPTY;
 #else
       // If block state is unknown, check if there is an application registered
       // for the url scheme.
@@ -125,7 +85,3 @@ ChromeAutocompleteSchemeClassifier::GetInputTypeForScheme(
   }
   NOTREACHED();
 }
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(ChromeAutocompleteSchemeClassifier)
-#endif

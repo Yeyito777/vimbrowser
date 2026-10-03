@@ -38,10 +38,6 @@ class SharedImageCopyManager;
 struct GpuFeatureInfo;
 struct GpuPreferences;
 
-#if BUILDFLAG(IS_ANDROID)
-class AHardwareBufferImageBackingFactory;
-#endif
-
 class GPU_GLES2_EXPORT SharedImageFactory {
  public:
   // All objects passed are expected to outlive this class.
@@ -102,13 +98,6 @@ class GPU_GLES2_EXPORT SharedImageFactory {
   bool HasImages() const { return !shared_images_.empty(); }
   void DestroyAllSharedImages(bool have_context);
 
-#if BUILDFLAG(IS_FUCHSIA)
-  void RegisterSysmemBufferCollection(zx::eventpair service_handle,
-                                      zx::channel sysmem_token,
-                                      const viz::SharedImageFormat& format,
-                                      gfx::BufferUsage usage,
-                                      bool register_with_image_pipe);
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
   bool RegisterBacking(std::unique_ptr<SharedImageBacking> backing,
                        std::optional<SharedImagePoolId> pool_id = std::nullopt);
@@ -122,26 +111,17 @@ class GPU_GLES2_EXPORT SharedImageFactory {
 
   bool CopyToGpuMemoryBuffer(const Mailbox& mailbox);
 
-  // Creation of native buffer handles is not supported on Android (the
-  // only way that a non-null GpuMemoryBufferHandle can be created on
-  // Android is by importing an external AHB).
-#if !BUILDFLAG(IS_ANDROID)
   // Creates a native GpuMemoryBufferHandle for MappableSI.
   gfx::GpuMemoryBufferHandle CreateNativeGpuMemoryBufferHandle(
       const gfx::Size& size,
       viz::SharedImageFormat format,
       gfx::BufferUsage usage);
-#endif
 
   // Fills |shared_memory| with the contents of the provided
   // |buffer_handle|. Returns whether the operation succeeded.
   bool CopyNativeBufferToSharedMemoryAsync(
       gfx::GpuMemoryBufferHandle buffer_handle,
       base::UnsafeSharedMemoryRegion shared_memory);
-#if BUILDFLAG(IS_WIN)
-  bool CopyToGpuMemoryBufferAsync(const Mailbox& mailbox,
-                                  base::OnceCallback<void(bool)> callback);
-#endif
 
   void SetGpuExtraInfo(const gfx::GpuExtraInfo& gpu_info);
   bool GetGpuMemoryBufferHandleInfo(const Mailbox& mailbox,
@@ -188,9 +168,6 @@ class GPU_GLES2_EXPORT SharedImageFactory {
                            gfx::GpuMemoryBufferType gmb_type,
                            const gfx::Size& size,
                            const std::string& debug_label);
-#if BUILDFLAG(IS_WIN)
-  bool IsD3DSharedImageSupported() const;
-#endif
 
   raw_ptr<SharedImageManager> shared_image_manager_;
   const scoped_refptr<SharedContextState> context_state_;
@@ -227,10 +204,6 @@ class GPU_GLES2_EXPORT SharedImageFactory {
   uint32_t texture_target_for_io_surfaces_;
 #endif
   gpu::GpuDriverBugWorkarounds workarounds_;
-
-#if BUILDFLAG(IS_ANDROID)
-  raw_ptr<AHardwareBufferImageBackingFactory> ahb_factory_ = nullptr;
-#endif
 
   raw_ptr<SharedImageBackingFactory> backing_factory_for_testing_ = nullptr;
   base::WeakPtrFactory<SharedImageFactory> weak_ptr_factory_{this};
@@ -274,11 +247,6 @@ class GPU_GLES2_EXPORT SharedImageRepresentationFactory {
       const Mailbox& mailbox);
   std::unique_ptr<RasterImageRepresentation> ProduceRaster(
       const Mailbox& mailbox);
-
-#if BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<LegacyOverlayImageRepresentation> ProduceLegacyOverlay(
-      const Mailbox& mailbox);
-#endif
 
 #if BUILDFLAG(ENABLE_VULKAN) && BUILDFLAG(IS_OZONE)
   std::unique_ptr<VulkanImageRepresentation> ProduceVulkan(

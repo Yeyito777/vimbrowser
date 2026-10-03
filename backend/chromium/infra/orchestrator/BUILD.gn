@@ -20,10 +20,6 @@ group("orchestrator_all") {
     ":standard_isolated_script_merge_py",
   ]
 
-  if (is_android) {
-    data_deps += [ "//build/android:test_result_presentations_py" ]
-  }
-
   data = [
     # Various merge/collect scripts will likely need a venv specified in
     # the root vpython spec files.

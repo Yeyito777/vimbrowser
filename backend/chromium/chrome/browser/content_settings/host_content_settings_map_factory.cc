@@ -32,18 +32,7 @@
 #include "extensions/browser/api/content_settings/content_settings_service.h"  // nogncheck
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/content_settings/javascript_optimizer_provider_android.h"
-#include "chrome/browser/flags/android/chrome_feature_list.h"
-#include "chrome/browser/notifications/notification_channels_provider_android.h"
-#include "chrome/browser/safe_browsing/advanced_protection_status_manager_factory.h"
-#include "chrome/browser/webapps/installable/installed_webapp_provider.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/chromeos/extensions/component_extension_content_settings/component_extension_content_settings_allowlist_factory.h"
-#include "chrome/browser/chromeos/extensions/component_extension_content_settings/component_extension_content_settings_provider.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_SESSION_SERVICE)
 #include "chrome/browser/sessions/exit_type_service_factory.h"
@@ -64,19 +53,10 @@ HostContentSettingsMapFactory::HostContentSettingsMapFactory()
               .WithAshInternals(ProfileSelection::kOwnInstance)
               .Build()) {
   DependsOn(supervised_user::FamilyLinkSettingsServiceFactory::GetInstance());
-#if BUILDFLAG(IS_ANDROID)
-  DependsOn(
-      safe_browsing::AdvancedProtectionStatusManagerFactory::GetInstance());
-  DependsOn(TemplateURLServiceFactory::GetInstance());
-#endif
   DependsOn(OneTimePermissionsTrackerFactory::GetInstance());
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
   DependsOn(extensions::ContentSettingsService::GetFactoryInstance());
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-  DependsOn(extensions::ComponentExtensionContentSettingsAllowlistFactory::
-                GetInstance());
-#endif  // BUILDFLAG(IS_CHROMEOS)
   // Used by way of ShouldRestoreOldSessionCookies().
 #if BUILDFLAG(ENABLE_SESSION_SERVICE)
   DependsOn(ExitTypeServiceFactory::GetInstance());
@@ -128,14 +108,6 @@ scoped_refptr<RefcountedKeyedService>
   settings_map->RegisterProvider(ProviderType::kWebuiAllowlistProvider,
                                  std::move(allowlist_provider));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  auto component_extension_provider =
-      std::make_unique<extensions::ComponentExtensionContentSettingsProvider>(
-          extensions::ComponentExtensionContentSettingsAllowlistFactory::
-              GetForBrowserContext(profile));
-  settings_map->RegisterProvider(ProviderType::kComponentExtensionProvider,
-                                 std::move(component_extension_provider));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
   // These must be registered before before the HostSettings are passed over to
@@ -165,30 +137,6 @@ scoped_refptr<RefcountedKeyedService>
                                    std::move(supervised_provider));
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (!profile->IsOffTheRecord()) {
-    auto channels_provider =
-        std::make_unique<NotificationChannelsProviderAndroid>(
-            profile->GetPrefs());
-
-    channels_provider->Initialize(
-        settings_map->GetPrefProvider(),
-        TemplateURLServiceFactory::GetForProfile(profile));
-
-    settings_map->RegisterUserModifiableProvider(
-        ProviderType::kNotificationAndroidProvider,
-        std::move(channels_provider));
-
-    auto webapp_provider = std::make_unique<InstalledWebappProvider>();
-    settings_map->RegisterProvider(ProviderType::kInstalledWebappProvider,
-                                   std::move(webapp_provider));
-  }
-
-  settings_map->RegisterProvider(
-      ProviderType::kJavascriptOptimizerAndroidProvider,
-      std::make_unique<JavascriptOptimizerProviderAndroid>(
-          profile, should_record_metrics));
-#endif  // defined (OS_ANDROID)
   auto one_time_permission_provider =
       std::make_unique<OneTimePermissionProvider>(
           OneTimePermissionsTrackerFactory::GetForBrowserContext(context));

@@ -10,19 +10,11 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/base_paths_win.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "base/base_paths_mac.h"
-#elif BUILDFLAG(IS_IOS)
-#include "base/base_paths_ios.h"
-#elif BUILDFLAG(IS_ANDROID)
-#include "base/base_paths_android.h"
 #endif
 
-#if BUILDFLAG(IS_POSIX)
 #include "base/base_paths_posix.h"
-#endif
 
 namespace base {
 
@@ -56,9 +48,7 @@ enum BasePathKey {
   DIR_HOME,  // User's root home directory. On Windows this will look
              // like "C:\Users\<user>"  which isn't necessarily a great
              // place to put files.
-#if !BUILDFLAG(IS_IOS)
   DIR_USER_DESKTOP,  // The current user's Desktop.
-#endif
 
   // The following refer to the applications current environment.
   DIR_CURRENT,  // Current directory.

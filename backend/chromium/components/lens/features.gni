@@ -5,10 +5,7 @@
 import("//build/config/ui.gni")
 
 # iOS cannot depend on files in //chrome
-if (!is_ios) {
-  import("//chrome/common/features.gni")
-}
-
+import("//chrome/common/features.gni")
 declare_args() {
   # Includes Lens features in the build. toolkit_views is used to ensure Lens
   # features are only included on Desktop devices running Chromium

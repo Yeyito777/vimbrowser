@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_EXTENSIONS_API_IDENTITY_WEB_AUTH_FLOW_H_
+#if !defined(CHROME_BROWSER_EXTENSIONS_API_IDENTITY_WEB_AUTH_FLOW_H_)
 #define CHROME_BROWSER_EXTENSIONS_API_IDENTITY_WEB_AUTH_FLOW_H_
 
 #include <optional>
@@ -149,9 +149,6 @@ class WebAuthFlow : public content::WebContentsObserver,
   void MaybeStartTimeout();
   void OnTimeout();
 
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-  void OnBrowserWindowInterfaceInitialized(BrowserWindowInterface* browser);
-#endif
 
   // Displays the auth page in a popup window if that is possible.
   //
@@ -195,9 +192,6 @@ class WebAuthFlow : public content::WebContentsObserver,
   // the error code when the flow times out.
   bool initial_url_loaded_ = false;
   base::ScopedObservation<Profile, ProfileObserver> profile_observation_{this};
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-  base::WeakPtrFactory<WebAuthFlow> weak_factory_{this};
-#endif
 };
 
 }  // namespace extensions

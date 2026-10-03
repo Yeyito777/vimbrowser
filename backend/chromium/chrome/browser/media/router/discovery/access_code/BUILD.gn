@@ -30,55 +30,53 @@ static_library("access_code_cast_feature") {
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
 }
 
-if (!is_android) {
-  static_library("access_code_sink_service") {
-    sources = [
-      "access_code_cast_discovery_interface.cc",
-      "access_code_cast_discovery_interface.h",
-      "access_code_cast_pref_updater.cc",
-      "access_code_cast_pref_updater.h",
-      "access_code_cast_pref_updater_impl.cc",
-      "access_code_cast_pref_updater_impl.h",
-      "access_code_cast_sink_service.cc",
-      "access_code_cast_sink_service.h",
-      "access_code_cast_sink_service_factory.cc",
-      "access_code_cast_sink_service_factory.h",
-      "access_code_media_sink_util.cc",
-      "access_code_media_sink_util.h",
-    ]
-    public_deps = [
-      "//base",
-      "//chrome/browser:browser_public_dependencies",
-      "//chrome/browser/profiles:profile",
-      "//components/media_router/browser",
-      "//components/media_router/common",
-      "//components/media_router/common/mojom:logger",
-      "//components/media_router/common/mojom:media_router",
-      "//components/media_router/common/providers/cast/channel:capability",
-    ]
-    deps = [
-      ":access_code_cast_feature",
-      ":discovery_resources_proto",
-      "//chrome/browser/media/router",
-      "//chrome/browser/media/router/discovery",
-      "//chrome/browser/profiles:profile",
-      "//chrome/browser/signin",
-      "//chrome/browser/signin:identity_manager_provider",
-      "//chrome/browser/ui/webui/access_code_cast:mojo_bindings",
-      "//components/access_code_cast/common:metrics",
-      "//components/endpoint_fetcher",
-      "//components/keyed_service/content",
-      "//components/leveldb_proto",
-      "//components/media_router/common/providers/cast/channel",
-      "//components/pref_registry",
-      "//components/prefs",
-      "//components/signin/public/base",
-      "//components/signin/public/identity_manager",
-      "//components/user_manager",
-      "//content/public/browser",
-      "//google_apis",
-      "//services/preferences/public/cpp",
-    ]
-    configs += [ "//build/config/compiler:wexit_time_destructors" ]
-  }
+static_library("access_code_sink_service") {
+  sources = [
+    "access_code_cast_discovery_interface.cc",
+    "access_code_cast_discovery_interface.h",
+    "access_code_cast_pref_updater.cc",
+    "access_code_cast_pref_updater.h",
+    "access_code_cast_pref_updater_impl.cc",
+    "access_code_cast_pref_updater_impl.h",
+    "access_code_cast_sink_service.cc",
+    "access_code_cast_sink_service.h",
+    "access_code_cast_sink_service_factory.cc",
+    "access_code_cast_sink_service_factory.h",
+    "access_code_media_sink_util.cc",
+    "access_code_media_sink_util.h",
+  ]
+  public_deps = [
+    "//base",
+    "//chrome/browser:browser_public_dependencies",
+    "//chrome/browser/profiles:profile",
+    "//components/media_router/browser",
+    "//components/media_router/common",
+    "//components/media_router/common/mojom:logger",
+    "//components/media_router/common/mojom:media_router",
+    "//components/media_router/common/providers/cast/channel:capability",
+  ]
+  deps = [
+    ":access_code_cast_feature",
+    ":discovery_resources_proto",
+    "//chrome/browser/media/router",
+    "//chrome/browser/media/router/discovery",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/signin",
+    "//chrome/browser/signin:identity_manager_provider",
+    "//chrome/browser/ui/webui/access_code_cast:mojo_bindings",
+    "//components/access_code_cast/common:metrics",
+    "//components/endpoint_fetcher",
+    "//components/keyed_service/content",
+    "//components/leveldb_proto",
+    "//components/media_router/common/providers/cast/channel",
+    "//components/pref_registry",
+    "//components/prefs",
+    "//components/signin/public/base",
+    "//components/signin/public/identity_manager",
+    "//components/user_manager",
+    "//content/public/browser",
+    "//google_apis",
+    "//services/preferences/public/cpp",
+  ]
+  configs += [ "//build/config/compiler:wexit_time_destructors" ]
 }

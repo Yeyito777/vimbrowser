@@ -94,7 +94,6 @@ std::optional<DeviceInfo::SharingInfo> SpecificsToSharingInfo(
       {specifics.sharing_fields().sender_id_fcm_token_v2(),
        specifics.sharing_fields().sender_id_p256dh_v2(),
        specifics.sharing_fields().sender_id_auth_secret_v2()},
-      specifics.sharing_fields().chime_representative_target_id(),
       std::move(enabled_features));
 }
 
@@ -129,20 +128,6 @@ SpecificsToPhoneAsASecurityKeyInfo(const DeviceInfoSpecifics& specifics) {
                      to.peer_public_key_x962.size()));
 
   return to;
-}
-
-MobilePromoOnDesktopPromoTypeSet SpecificsToDesktopToIOSPromoReceivingTypes(
-    const DeviceInfoSpecifics& specifics) {
-  MobilePromoOnDesktopPromoTypeSet types;
-  for (const auto& type_int :
-       specifics.feature_fields().desktop_to_ios_promo_receiving_types()) {
-    auto type = static_cast<MobilePromoOnDesktopPromoType>(type_int);
-    if (type >= MobilePromoOnDesktopPromoType::kMinValue &&
-        type <= MobilePromoOnDesktopPromoType::kMaxValue) {
-      types.Put(type);
-    }
-  }
-  return types;
 }
 
 std::optional<base::Time> SpecificsToAutoSignOutLastSigninTimestamp(
@@ -199,9 +184,7 @@ DeviceInfo SpecificsToModel(const DeviceInfoSpecifics& specifics) {
       specifics.invalidation_fields().instance_id_token(),
       GetDataTypeSetFromSpecificsFieldNumberList(
           specifics.invalidation_fields().interested_data_type_ids()),
-      SpecificsToAutoSignOutLastSigninTimestamp(specifics),
-      specifics.feature_fields().desktop_to_ios_promo_receiving_enabled(),
-      SpecificsToDesktopToIOSPromoReceivingTypes(specifics));
+      SpecificsToAutoSignOutLastSigninTimestamp(specifics));
 }
 
 // Allocate a EntityData and copies |specifics| into it.
@@ -261,22 +244,6 @@ std::unique_ptr<DeviceInfoSpecifics> MakeLocalDeviceSpecifics(
   feature_fields->set_send_tab_to_self_receiving_type(
       info.send_tab_to_self_receiving_type());
 
-  // The `desktop_to_ios_promo_receiving_enabled` boolean is a legacy field.
-  // Older Desktop clients (e.g. M145) only check this boolean and assume it
-  // applies to the original promos (ESB and Autofill/Passwords).
-  // To avoid breaking the feature on old Desktop clients, we set this legacy
-  // boolean to true if any of those original promos (or kAllPromos) are
-  // enabled.
-  bool legacy_enabled = info.desktop_to_ios_promo_receiving_enabled() ||
-                        info.desktop_to_ios_promo_receiving_types().HasAny(
-                            {MobilePromoOnDesktopPromoType::kAllPromos,
-                             MobilePromoOnDesktopPromoType::kAutofillPromo,
-                             MobilePromoOnDesktopPromoType::kESBPromo});
-  feature_fields->set_desktop_to_ios_promo_receiving_enabled(legacy_enabled);
-  for (const auto type : info.desktop_to_ios_promo_receiving_types()) {
-    feature_fields->add_desktop_to_ios_promo_receiving_types(
-        static_cast<sync_pb::SyncEnums_MobilePromoOnDesktopPromoType>(type));
-  }
   if (info.auto_sign_out_last_signin_timestamp().has_value()) {
     feature_fields
         ->set_auto_sign_out_last_signin_timestamp_windows_epoch_micros(
@@ -295,8 +262,6 @@ std::unique_ptr<DeviceInfoSpecifics> MakeLocalDeviceSpecifics(
         sharing_info->sender_id_target_info.p256dh);
     sharing_fields->set_sender_id_auth_secret_v2(
         sharing_info->sender_id_target_info.auth_secret);
-    sharing_fields->set_chime_representative_target_id(
-        sharing_info->chime_representative_target_id);
     for (sync_pb::SharingSpecificFields::EnabledFeatures feature :
          sharing_info->enabled_features) {
       sharing_fields->add_enabled_features(feature);
@@ -355,10 +320,6 @@ bool StoredDeviceInfoStillAccurate(const DeviceInfo* stored,
              stored->send_tab_to_self_receiving_enabled() &&
          current->send_tab_to_self_receiving_type() ==
              stored->send_tab_to_self_receiving_type() &&
-         current->desktop_to_ios_promo_receiving_enabled() ==
-             stored->desktop_to_ios_promo_receiving_enabled() &&
-         current->desktop_to_ios_promo_receiving_types() ==
-             stored->desktop_to_ios_promo_receiving_types() &&
          current->sharing_info() == stored->sharing_info() &&
          ArePaaskInfosEqual(current->paask_info(), stored->paask_info()) &&
          current->fcm_registration_token() ==

@@ -55,12 +55,7 @@ constinit thread_local bool g_is_main_thread = false;
 
 base::PlatformThreadId g_main_thread_identifier;
 
-#if BUILDFLAG(IS_ANDROID)
-// On Android going through libc (gettid) is faster than runtime-lib emulation.
-bool IsMainThread() {
-  return CurrentThread() == g_main_thread_identifier;
-}
-#elif defined(COMPONENT_BUILD) && BUILDFLAG(IS_WIN)
+#if defined(COMPONENT_BUILD) && BUILDFLAG(IS_WIN)
 bool IsMainThread() {
   return g_is_main_thread;
 }
@@ -73,9 +68,7 @@ void InitializeWtf() {
   // Make that explicit here.
   CHECK(!g_initialized);
   g_initialized = true;
-#if !BUILDFLAG(IS_ANDROID)
   g_is_main_thread = true;
-#endif
   g_main_thread_identifier = CurrentThread();
 
   Threading::Initialize();

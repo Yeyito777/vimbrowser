@@ -174,9 +174,6 @@
 #include "ui/gfx/geometry/mojom/geometry.mojom-forward.h"
 #include "ui/gfx/geometry/point_conversions.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/stylus_handwriting/win/features.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
 #include "third_party/blink/renderer/core/editing/substring_util.h"
@@ -304,37 +301,6 @@ Element* GetStylusHandwritingControlFromNode(const Node* node) {
   return nullptr;
 }
 
-#if BUILDFLAG(IS_WIN)
-// Compute a PlainTextRange contained by `scope` relative to `pivot_position`
-// that at most contains 2x `proximate_character_half_limit` characters.
-// The range will be clamped, but may conceptually be represented with the
-// following range notation:
-//   [pivot_position - proximate_character_half_limit,
-//    pivot_position + proximate_character_half_limit)
-PlainTextRange ShellHandwritingProximateTextRange(
-    const ContainerNode& scope,
-    const Position& pivot_position,
-    wtf_size_t proximate_character_half_limit) {
-  CHECK(!pivot_position.IsNull());
-  CHECK(proximate_character_half_limit);
-  const EphemeralRange scope_range = EphemeralRange::RangeOfContents(scope);
-  if (scope_range.IsCollapsed()) {
-    return PlainTextRange();
-  }
-
-  const PlainTextRange pivot_to_end_text_range = PlainTextRange::Create(
-      scope, EphemeralRange(pivot_position, scope_range.EndPosition()));
-
-  const PlainTextRange result(
-      base::ClampSub(pivot_to_end_text_range.Start(),
-                     proximate_character_half_limit),
-      base::ClampMin(base::ClampAdd(pivot_to_end_text_range.Start(),
-                                    proximate_character_half_limit),
-                     pivot_to_end_text_range.End()));
-  CHECK_LE(result.length(), proximate_character_half_limit * 2);
-  return result;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -453,12 +419,6 @@ void WebFrameWidgetImpl::Close(DetachReason detach_reason) {
   // prevent delaying the navigation commit, as releasing the LayerTreeView
   // resources blocks on the compositor thread.
   bool delay_release =
-#if BUILDFLAG(IS_ANDROID)
-      // Don't delay if synchronous compositing is enabled, since it doesn't
-      // expect async deletion.
-      !Platform::Current()
-           ->IsSynchronousCompositingEnabledForAndroidWebView() &&
-#endif
       (base::FeatureList::IsEnabled(
            blink::features::kDelayLayerTreeViewDeletionOnLocalSwap) &&
        detach_reason == DetachReason::kNavigation);
@@ -693,9 +653,6 @@ gfx::Rect WebFrameWidgetImpl::GetAbsoluteCaretBounds() {
 }
 
 void WebFrameWidgetImpl::OnStartStylusWriting(
-#if BUILDFLAG(IS_WIN)
-    const gfx::Rect& focus_widget_rect_in_dips,
-#endif  // BUILDFLAG(IS_WIN)
     OnStartStylusWritingCallback callback) {
   mojom::blink::StylusWritingFocusResultPtr focus_result;
   // Focus the stylus writable element for current touch sequence as we have
@@ -707,21 +664,6 @@ void WebFrameWidgetImpl::OnStartStylusWriting(
   }
 
   Element* stylus_writable_container = nullptr;
-#if BUILDFLAG(IS_WIN)
-  PositionWithAffinity proximate_pivot_position;
-  if (!focus_widget_rect_in_dips.IsEmpty()) {
-    // TODO(crbug.com/355578906): Hit test using `focus_widget_rect_in_dips`
-    // rather than its CenterPoint(). The size of the rect will include the
-    // "target screen area" inflated with "distance threshold" from
-    // ITfFocusHandwritingTargetArgs::GetPointerTargetInfo.
-    const gfx::PointF frame_point = ViewportToRootFrame(
-        DIPsToBlinkSpace(gfx::PointF(focus_widget_rect_in_dips.CenterPoint())));
-    proximate_pivot_position =
-        frame->PositionForPoint(PhysicalOffset::FromPointFFloor(frame_point));
-    stylus_writable_container = GetStylusHandwritingControlFromNode(
-        proximate_pivot_position.AnchorNode());
-  }
-#endif  // BUILDFLAG(IS_WIN)
   if (!stylus_writable_container) {
     stylus_writable_container = GetStylusHandwritingControlFromNode(
         frame->GetEventHandler().CurrentTouchDownElement());
@@ -744,25 +686,11 @@ void WebFrameWidgetImpl::OnStartStylusWriting(
     focus_result->focused_edit_bounds = focused_element->BoundsInWidget();
     focus_result->caret_bounds =
         frame->View()->FrameToViewport(GetAbsoluteCaretBounds());
-#if BUILDFLAG(IS_WIN)
-    focus_result->proximate_bounds =
-        ComputeProximateCharacterBounds(proximate_pivot_position);
-#endif  // BUILDFLAG(IS_WIN)
   }
 
   std::move(callback).Run(std::move(focus_result));
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void WebFrameWidgetImpl::PassImeRenderWidgetHost(
-    mojo::PendingRemote<mojom::blink::ImeRenderWidgetHost> pending_remote) {
-  ime_render_widget_host_ =
-      HeapMojoRemote<mojom::blink::ImeRenderWidgetHost>(nullptr);
-  ime_render_widget_host_.Bind(
-      std::move(pending_remote),
-      local_root_->GetTaskRunner(TaskType::kInternalDefault));
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void WebFrameWidgetImpl::NotifyClearedDisplayedGraphics() {
   if (!LocalRootImpl() || !LocalRootImpl()->GetFrame() ||
@@ -1003,11 +931,7 @@ WebInputEventResult WebFrameWidgetImpl::HandleKeyEvent(
   }
 
   const WebInputEvent::Type kContextMenuKeyTriggeringEventType =
-#if BUILDFLAG(IS_WIN)
-      WebInputEvent::Type::kKeyUp;
-#else
       WebInputEvent::Type::kRawKeyDown;
-#endif
 
   const WebInputEvent::Type kShiftF10TriggeringEventType =
       WebInputEvent::Type::kRawKeyDown;
@@ -2378,15 +2302,6 @@ void WebFrameWidgetImpl::SetZoomInternal(double zoom_level,
         // Set the layout shift exclusion window for the zoom level change.
         if (LocalFrameView* view = document->View()) {
           view->GetLayoutShiftTracker().NotifyZoomLevelChanged();
-#if BUILDFLAG(IS_ANDROID)
-          if (ForTopMostMainFrame()) {
-            // Zoom levels are the exponent in the calculation of zoom. The zoom
-            // factor is the value shown to the user (e.g. 50% to 300%).
-            UMA_HISTOGRAM_CUSTOM_EXACT_LINEAR(
-                "Accessibility.Android.PageZoom.MainFrameZoomFactor",
-                layout_zoom_factor * 100, 50, 300, 52);
-          }
-#endif
         }
       }
 
@@ -4144,52 +4059,6 @@ void WebFrameWidgetImpl::GetCompositionCharacterBoundsInWindow(
   }
 }
 
-#if BUILDFLAG(IS_ANDROID)
-namespace {
-
-void GetLineBounds(Vector<gfx::QuadF>& line_quads,
-                   TextControlInnerEditorElement* inner_editor) {
-  for (const Node& node : NodeTraversal::DescendantsOf(*inner_editor)) {
-    if (!node.GetLayoutObject() || !node.GetLayoutObject()->IsText()) {
-      continue;
-    }
-    node.GetLayoutObject()->AbsoluteQuads(line_quads,
-                                          kApplyRemoteMainFrameTransform);
-  }
-}
-
-}  // namespace
-
-Vector<gfx::Rect> WebFrameWidgetImpl::CalculateVisibleLineBoundsOnScreen() {
-  Vector<gfx::Rect> bounds_in_dips;
-  Element* focused_element = FocusedElement();
-  if (!focused_element) {
-    return bounds_in_dips;
-  }
-  TextControlElement* text_control = ToTextControlOrNull(focused_element);
-  if (!text_control || text_control->IsDisabledOrReadOnly() ||
-      text_control->Value().empty() || !text_control->GetLayoutObject()) {
-    return bounds_in_dips;
-  }
-
-  Vector<gfx::QuadF> bounds_from_blink;
-  GetLineBounds(bounds_from_blink, text_control->InnerEditorElement());
-
-  gfx::Rect screen = LocalRootImpl()->GetFrameView()->FrameToScreen(
-      GetPage()->GetVisualViewport().VisibleContentRect());
-  for (auto& quad : bounds_from_blink) {
-    gfx::Rect bounding_box =
-        focused_element->GetLayoutObject()->GetFrameView()->FrameToScreen(
-            gfx::ToRoundedRect(quad.BoundingBox()));
-    bounding_box.Intersect(screen);
-    if (bounding_box.IsEmpty()) {
-      continue;
-    }
-    bounds_in_dips.push_back(bounding_box);
-  }
-  return bounds_in_dips;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 mojom::blink::InputCursorAnchorInfoPtr&
 WebFrameWidgetImpl::GetLastCursorAnchorInfoForTesting() {
@@ -4197,67 +4066,6 @@ WebFrameWidgetImpl::GetLastCursorAnchorInfoForTesting() {
 }
 
 void WebFrameWidgetImpl::UpdateCursorAnchorInfo(bool update_requested) {
-#if BUILDFLAG(IS_ANDROID)
-  Element* focused_element = FocusedElement();
-  if (!focused_element) {
-    return;
-  }
-  TextControlElement* text_control = ToTextControlOrNull(focused_element);
-  if (!text_control || text_control->IsDisabledOrReadOnly() ||
-      !text_control->GetLayoutObject()) {
-    return;
-  }
-
-  Vector<gfx::Rect> character_bounds;
-  GetCompositionCharacterBoundsInWindow(&character_bounds);
-  Vector<gfx::Rect> line_bounds = CalculateVisibleLineBoundsOnScreen();
-
-  gfx::RectF editor_bounds =
-      gfx::RectF(LocalRootImpl()->GetFrameView()->FrameToScreen(
-          focused_element->VisibleBoundsInLocalRoot()));
-  float device_scale_factor = widget_base_->GetScreenInfo().device_scale_factor;
-  gfx::RectF handwriting_bounds(editor_bounds);
-  // See kStylusWritableAdjustmentSizeDip in
-  // third_party/blink/renderer/core/input/pointer_event_manager.cc
-  handwriting_bounds.Outset(30 / device_scale_factor);
-  mojom::blink::EditorBoundsInfoPtr editor_bounds_info =
-      mojom::blink::EditorBoundsInfo::New(editor_bounds, handwriting_bounds);
-
-  mojom::blink::TextAppearanceInfoPtr text_appearance_info =
-      mojom::blink::TextAppearanceInfo::New(
-          text_control->GetLayoutObject()
-              ->StyleRef()
-              .VisitedDependentColor(GetCSSPropertyColor())
-              .Rgb());
-
-  // Calculate the caret location.
-  std::optional<gfx::Rect> insertion_marker_info = std::nullopt;
-  gfx::Rect focus_caret = {};
-  gfx::Rect anchor_caret = {};
-  CalculateSelectionBounds(anchor_caret, focus_caret);
-  if (focus_caret != gfx::Rect{}) {
-    insertion_marker_info = widget_base_->BlinkSpaceToEnclosedDIPs(focus_caret);
-  }
-
-  mojom::blink::InputCursorAnchorInfoPtr cursor_anchor_info =
-      mojom::blink::InputCursorAnchorInfo::New(
-          character_bounds, std::move(editor_bounds_info),
-          std::move(text_appearance_info), line_bounds,
-          std::move(insertion_marker_info), update_requested);
-
-  if (!update_requested && last_cursor_anchor_info_ == cursor_anchor_info) {
-    return;
-  }
-
-  last_cursor_anchor_info_ = cursor_anchor_info.Clone();
-
-  // Since the IME pushes this endpoint to the renderer, it may not be bound
-  // yet.
-  if (ime_render_widget_host_) {
-    ime_render_widget_host_->UpdateCursorAnchorInfo(
-        std::move(cursor_anchor_info));
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void WebFrameWidgetImpl::AddImeTextSpansToExistingText(
@@ -4616,40 +4424,6 @@ void WebFrameWidgetImpl::MoveCaret(const gfx::Point& point_in_dips) {
       widget_base_->DIPsToRoundedBlinkSpace(point_in_dips));
 }
 
-#if BUILDFLAG(IS_IOS)
-void WebFrameWidgetImpl::StartAutoscrollForSelectionToPoint(
-    const gfx::PointF& point_in_dips) {
-  WebLocalFrameImpl* focused_frame = FocusedWebLocalFrameInWidget();
-  if (!focused_frame) {
-    return;
-  }
-  focused_frame->StartAutoscrollForSelectionToPoint(
-      widget_base_->DIPsToBlinkSpace(point_in_dips));
-}
-
-void WebFrameWidgetImpl::StopAutoscroll() {
-  WebLocalFrameImpl* focused_frame = FocusedWebLocalFrameInWidget();
-  if (!focused_frame) {
-    return;
-  }
-  focused_frame->StopAutoscroll();
-}
-
-void WebFrameWidgetImpl::RectForEditFieldChars(
-    const gfx::Range& range,
-    RectForEditFieldCharsCallback callback) {
-  WebLocalFrameImpl* focused_frame = FocusedWebLocalFrameInWidget();
-  if (!focused_frame) {
-    std::move(callback).Run(gfx::Rect());
-    return;
-  }
-  gfx::Rect rect;
-  focused_frame->FirstRectForCharacterRange(
-      base::checked_cast<wtf_size_t>(range.start()),
-      base::checked_cast<wtf_size_t>(range.length()), rect);
-  std::move(callback).Run(widget_base_->BlinkSpaceToEnclosedDIPs(rect));
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 void WebFrameWidgetImpl::SelectAroundCaret(
     mojom::blink::SelectionGranularity granularity,
@@ -4924,61 +4698,6 @@ void WebFrameWidgetImpl::EnqueueMoveEvent() {
   document->EnqueueMoveEvent();
 }
 
-#if BUILDFLAG(IS_WIN)
-mojom::blink::ProximateCharacterRangeBoundsPtr
-WebFrameWidgetImpl::ComputeProximateCharacterBounds(
-    const PositionWithAffinity& pivot_position) const {
-  TRACE_EVENT("ime", "WebFrameWidgetImpl::ComputeProximateCharacterBounds");
-  if (pivot_position.IsNull() ||
-      !stylus_handwriting::win::IsStylusHandwritingWinEnabled()) {
-    return nullptr;
-  }
-  // The amount of text to collect in each direction relative to the character
-  // offset pivot position `x` derived by `point_in_widget`. Collects character
-  // bounds for offsets [x - half_limit, x + half_limit).
-  const wtf_size_t half_limit =
-      stylus_handwriting::win::ProximateBoundsCollectionHalfLimit();
-  if (!half_limit) {
-    return nullptr;
-  }
-  Element* root_editable_element =
-      RootEditableElement(*pivot_position.AnchorNode());
-  if (!root_editable_element) {
-    return nullptr;
-  }
-
-  // `CreateVisiblePosition` and `FirstRectForRange` requires clean layout.
-  root_editable_element->GetDocument().UpdateStyleAndLayout(
-      DocumentUpdateReason::kEditing);
-
-  // Compute a PlainTextRange for a subset of text around `pivot_position`.
-  const PlainTextRange text_range = ShellHandwritingProximateTextRange(
-      *root_editable_element, pivot_position.GetPosition(), half_limit);
-  if (text_range.IsNull()) {
-    return nullptr;
-  }
-
-  // Compute the DIP space bounding box for each character in `text_range`
-  // relative to the root editable Element containing `pivot_position`.
-  Vector<gfx::Rect> character_bounds;
-  character_bounds.reserve(text_range.length());
-  for (wtf_size_t i = text_range.Start(); i < text_range.End(); ++i) {
-    gfx::Rect rect = FirstRectForRange(
-        PlainTextRange(i, i + 1U).CreateRange(*root_editable_element));
-    // Convert rect coordinates to be relative to the root editable frame.
-    LocalFrame* editable_frame =
-        root_editable_element->GetDocument().GetFrame();
-    rect = editable_frame->View()->ConvertToRootFrame(rect);
-    rect = gfx::ScaleToRoundedRect(
-        rect, editable_frame->GetPage()->PageScaleFactor());
-    character_bounds.emplace_back(widget_base_->BlinkSpaceToEnclosedDIPs(rect));
-  }
-
-  return mojom::blink::ProximateCharacterRangeBounds::New(
-      gfx::Range(text_range.Start(), text_range.End()),
-      std::move(character_bounds));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void WebFrameWidgetImpl::OrientationChanged() {
   local_root_->SendOrientationChangeEvent();

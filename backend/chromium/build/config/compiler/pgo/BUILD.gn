@@ -37,12 +37,10 @@ config("pgo_instrumentation_flags") {
       ]
     }
 
-    if (!is_win) {
-      # Windows directly calls link.exe instead of the compiler driver when
-      # linking, and embeds the path to the profile runtime library as
-      # dependent library into each object file.
-      ldflags = [ "-fprofile-generate" ]
-    }
+    # Windows directly calls link.exe instead of the compiler driver when
+    # linking, and embeds the path to the profile runtime library as
+    # dependent library into each object file.
+    ldflags = [ "-fprofile-generate" ]
   }
 }
 
@@ -60,15 +58,7 @@ config("pgo_optimization_flags") {
     # dependencies.
     inputs = []
 
-    if (is_win) {
-      if (target_cpu == "arm64") {
-        _pgo_target = "win-arm64"
-      } else if (target_cpu == "x64") {
-        _pgo_target = "win64"
-      } else {
-        _pgo_target = "win32"
-      }
-    } else if (is_mac) {
+    if (is_mac) {
       if (target_cpu == "arm64") {
         _pgo_target = "mac-arm"
       } else {
@@ -76,21 +66,6 @@ config("pgo_optimization_flags") {
       }
     } else if (is_linux) {
       _pgo_target = "linux"
-    } else if (is_android) {
-      # Use |current_cpu| and not |target_cpu|; for Android we may built both.
-      if (is_desktop_android && current_cpu == "x64") {
-        _pgo_target = "android-desktop-x64"
-      } else if (current_cpu == "arm64") {
-        _pgo_target = "android-arm64"
-      } else {
-        _pgo_target = "android-arm32"
-      }
-    } else if (is_fuchsia) {
-      if (target_cpu == "arm64") {
-        _pgo_target = "mac-arm"
-      } else {
-        _pgo_target = "mac"
-      }
     } else if (is_ios && use_blink) {
       if (target_cpu == "arm64") {
         _pgo_target = "mac-arm"
@@ -177,11 +152,7 @@ config("pgo_optimization_flags") {
     # Enable basic block layout based on the extended TSP problem. This aims to
     # improve icache utilization and reduce the binary size.
     if (use_thin_lto) {
-      if (is_win) {
-        ldflags = [ "-mllvm:-enable-ext-tsp-block-placement=1" ]
-      } else {
-        ldflags = [ "-Wl,-mllvm,-enable-ext-tsp-block-placement=1" ]
-      }
+      ldflags = [ "-Wl,-mllvm,-enable-ext-tsp-block-placement=1" ]
     } else {
       cflags += [
         "-mllvm",

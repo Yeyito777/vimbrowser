@@ -288,13 +288,6 @@ void FlossManagerClient::Init(dbus::Bus* bus,
       service_name, dbus::ObjectPath(kObjectManagerPath));
   object_manager_->RegisterInterface(kManagerInterface, this);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Enable Floss and retry a few times until it is set.
-  SetFlossEnabled(floss::features::IsFlossEnabled(), kSetFlossRetryCount,
-                  kSetFlossRetryDelayMs,
-                  base::BindOnce(&FlossManagerClient::CompleteSetFlossEnabled,
-                                 weak_ptr_factory_.GetWeakPtr()));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void FlossManagerClient::HandleGetDefaultAdapter(DBusResult<int32_t> response) {

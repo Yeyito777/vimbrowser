@@ -51,11 +51,6 @@ class DeviceInfoSyncClientImpl : public syncer::DeviceInfoSyncClient {
   // syncer::DeviceInfoSyncClient:
   bool IsUmaEnabledOnCrOSDevice() const override;
 
-  // syncer::DeviceInfoSyncClient:
-  bool GetDesktopToIOSPromoReceivingEnabled() const override;
-  MobilePromoOnDesktopPromoTypeSet GetDesktopToIOSPromoReceivingTypes()
-      const override;
-
  private:
   const raw_ptr<Profile> profile_;
 };

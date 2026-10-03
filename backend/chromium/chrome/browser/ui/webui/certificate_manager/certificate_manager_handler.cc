@@ -27,9 +27,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/web_contents.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/ui/webui/certificate_manager/platform_cert_sources.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 #include "chrome/browser/ui/webui/settings/settings_utils.h"
@@ -49,20 +47,16 @@ void GetCertManagementMetadataAsync(
     ProfileNetworkContextService::CertificatePoliciesForView policies,
     CertificateManagerPageHandler::GetCertManagementMetadataCallback callback,
     base::WeakPtr<Profile> profile
-#if !BUILDFLAG(IS_CHROMEOS)
     ,
     cert_verifier::mojom::PlatformRootStoreInfoPtr info
-#endif
 ) {
   certificate_manager::mojom::CertManagementMetadataPtr metadata =
       certificate_manager::mojom::CertManagementMetadata::New();
-#if !BUILDFLAG(IS_CHROMEOS)
   metadata->include_system_trust_store =
       policies.certificate_policies->include_system_trust_store;
   metadata->is_include_system_trust_store_managed =
       policies.is_include_system_trust_store_managed;
   metadata->num_user_added_system_certs = info->user_added_certs.size();
-#endif
 
   metadata->num_policy_certs =
       policies.full_distrusted_certs.size() +
@@ -175,7 +169,6 @@ CertificateManagerPageHandler::GetCertSource(
           kEnterpriseDistrustedCerts:
         source_ptr = std::make_unique<EnterpriseDistrustedCertSource>(profile_);
         break;
-#if !BUILDFLAG(IS_CHROMEOS)
       case certificate_manager::mojom::CertificateSource::
           kPlatformUserTrustedCerts:
         source_ptr = std::make_unique<PlatformCertSource>(
@@ -193,7 +186,6 @@ CertificateManagerPageHandler::GetCertSource(
             "distrusted_certs",
             cert_verifier::mojom::CertificateTrust::kDistrusted);
         break;
-#endif
       case certificate_manager::mojom::CertificateSource::kUserTrustedCerts:
         source_ptr = std::make_unique<UserCertSource>(
             "trusted_certs",
@@ -222,11 +214,6 @@ CertificateManagerPageHandler::GetCertSource(
         source_ptr = CreateProvisionedClientCertSource(profile_);
         break;
 #endif
-#if BUILDFLAG(IS_CHROMEOS)
-      case certificate_manager::mojom::CertificateSource::kExtensionsClientCert:
-        source_ptr = CreateExtensionsClientCertSource(profile_);
-        break;
-#endif
     }
   }
   return *source_ptr;
@@ -238,15 +225,9 @@ void CertificateManagerPageHandler::GetCertManagementMetadata(
       ProfileNetworkContextServiceFactory::GetForContext(profile_);
   ProfileNetworkContextService::CertificatePoliciesForView policies =
       service->GetCertificatePolicyForView();
-#if !BUILDFLAG(IS_CHROMEOS)
   content::GetCertVerifierServiceFactory()->GetPlatformRootStoreInfo(
       base::BindOnce(&GetCertManagementMetadataAsync, std::move(policies),
                      std::move(callback), profile_->GetWeakPtr()));
-#else
-  GetCertManagementMetadataAsync(std::move(policies), std::move(callback),
-                                 profile_->GetWeakPtr());
-
-#endif
 }
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
@@ -255,12 +236,10 @@ void CertificateManagerPageHandler::ShowNativeManageCertificates() {
 }
 #endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void CertificateManagerPageHandler::SetIncludeSystemTrustStore(bool include) {
   auto* prefs = profile_->GetPrefs();
   prefs->SetBoolean(prefs::kCAPlatformIntegrationEnabled, include);
 }
-#endif
 
 void CertificateManagerPageHandler::RegisterProfilePrefs(
     user_prefs::PrefRegistrySyncable* registry) {

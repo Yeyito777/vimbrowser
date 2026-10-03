@@ -27,9 +27,6 @@
 #include "ui/gfx/codec/png_codec.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ui/settings_window_manager_chromeos.h"
-#endif
 
 struct CustomHomePagesTableModel::Entry {
   Entry() : task_id(base::CancelableTaskTracker::kBadTaskId) {}
@@ -163,13 +160,6 @@ bool CustomHomePagesTableModel::ShouldIncludeBrowser(
   if (browser->GetProfile() != profile_) {
     return false;
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  // Do not include the Settings window.
-  if (chrome::SettingsWindowManager::GetInstance()->IsSettingsBrowser(
-          browser)) {
-    return false;
-  }
-#endif
   return true;
 }
 

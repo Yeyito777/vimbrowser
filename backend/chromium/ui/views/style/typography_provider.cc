@@ -22,9 +22,6 @@
 #include "base/mac/mac_util.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/system_fonts_win.h"
-#endif
 
 namespace views {
 namespace {
@@ -110,11 +107,7 @@ int TypographyProvider::GetLineHeight(int context, int style) const {
 }
 
 gfx::FontList TypographyProvider::GetWindowTitleFontList() const {
-#if BUILDFLAG(IS_WIN)
-  return gfx::FontList(gfx::win::GetSystemFont(gfx::win::SystemFont::kCaption));
-#else
   return gfx::FontList();
-#endif
 }
 
 // static

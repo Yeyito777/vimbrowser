@@ -31,9 +31,6 @@
 #include "ui/gfx/native_pixmap_handle.h"
 #include "ui/gl/gl_context.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/win/d3d_shared_fence.h"
-#endif
 
 namespace {
 
@@ -155,24 +152,6 @@ void SharedImageStub::ExecuteDeferredRequest(
           std::move(request->get_destroy_shared_image_pool()));
       break;
 
-#if BUILDFLAG(IS_WIN)
-    case mojom::DeferredSharedImageRequest::Tag::kRegisterDxgiFence: {
-      auto& reg = *request->get_register_dxgi_fence();
-      OnRegisterDxgiFence(reg.mailbox, reg.dxgi_token,
-                          std::move(reg.fence_handle));
-      break;
-    }
-    case mojom::DeferredSharedImageRequest::Tag::kUpdateDxgiFence: {
-      auto& update = *request->get_update_dxgi_fence();
-      OnUpdateDxgiFence(update.mailbox, update.dxgi_token, update.fence_value);
-      break;
-    }
-    case mojom::DeferredSharedImageRequest::Tag::kUnregisterDxgiFence: {
-      auto& unregister = *request->get_unregister_dxgi_fence();
-      OnUnregisterDxgiFence(unregister.mailbox, unregister.dxgi_token);
-      break;
-    }
-#endif  // BUILDFLAG(IS_WIN)
   }
 }
 
@@ -416,9 +395,6 @@ void SharedImageStub::OnDestroySharedImage(const Mailbox& mailbox) {
     return;
   }
 
-#if BUILDFLAG(IS_WIN)
-  registered_dxgi_fences_.erase(mailbox);
-#endif
 }
 
 void SharedImageStub::OnCopyToGpuMemoryBuffer(const Mailbox& mailbox) {
@@ -434,127 +410,7 @@ void SharedImageStub::OnCopyToGpuMemoryBuffer(const Mailbox& mailbox) {
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-void SharedImageStub::CopyToGpuMemoryBufferAsync(
-    const Mailbox& mailbox,
-    base::OnceCallback<void(bool)> callback) {
-  TRACE_EVENT0("gpu", "SharedImageStub::CopyToGpuMemoryBufferAsync");
-  auto split_cb = base::SplitOnceCallback(std::move(callback));
-  if (!factory_->CopyToGpuMemoryBufferAsync(mailbox,
-                                            std::move(split_cb.first))) {
-    DLOG(ERROR) << "SharedImageStub: Unable to update shared GMB";
-    std::move(split_cb.second).Run(false);
-    OnError();
-    return;
-  }
-}
 
-void SharedImageStub::OnRegisterDxgiFence(const Mailbox& mailbox,
-                                          gfx::DXGIHandleToken dxgi_token,
-                                          gfx::GpuFenceHandle fence_handle) {
-  TRACE_EVENT0("gpu", "SharedImageStub::OnRegisterDxgiFence");
-  if (!factory_->HasSharedImage(mailbox)) {
-    LOG(ERROR) << "SharedImageStub: Trying to register a fence handle to a "
-                  "invalid SharedImage.";
-    OnError();
-    return;
-  }
-
-  auto& mailbox_fences = registered_dxgi_fences_[mailbox];
-  auto it = mailbox_fences.find(dxgi_token);
-  if (it != mailbox_fences.end()) {
-    LOG(ERROR) << "SharedImageStub: Trying to register the same fence handle "
-                  "multiple times in SharedImage.";
-    OnError();
-    return;
-  }
-
-  mailbox_fences.emplace(dxgi_token,
-                         gfx::D3DSharedFence::CreateFromScopedHandle(
-                             fence_handle.Release(), dxgi_token));
-}
-
-void SharedImageStub::OnUpdateDxgiFence(const Mailbox& mailbox,
-                                        gfx::DXGIHandleToken dxgi_token,
-                                        uint64_t fence_value) {
-  TRACE_EVENT0("gpu", "SharedImageStub::OnUpdateDxgiFence");
-  if (!factory_->HasSharedImage(mailbox)) {
-    LOG(ERROR) << "SharedImageStub: Trying to register a fence handle to a "
-                  "invalid SharedImage.";
-    OnError();
-    return;
-  }
-
-  auto mailbox_fences_it = registered_dxgi_fences_.find(mailbox);
-  if (mailbox_fences_it == registered_dxgi_fences_.end()) {
-    LOG(ERROR) << "Trying to update a fence on shared image with no registered "
-                  "fences.";
-    OnError();
-    return;
-  }
-
-  auto& mailbox_fences = mailbox_fences_it->second;
-  auto fence_it = mailbox_fences.find(dxgi_token);
-  if (fence_it == mailbox_fences.end()) {
-    LOG(ERROR) << "Trying to update a fence that has not been registered with "
-                  "shared image.";
-    OnError();
-    return;
-  }
-
-  scoped_refptr<gfx::D3DSharedFence> fence = fence_it->second;
-  fence->Update(fence_value);
-
-  channel_->gpu_channel_manager()->shared_image_manager()->UpdateExternalFence(
-      mailbox, std::move(fence));
-}
-
-void SharedImageStub::OnUnregisterDxgiFence(const Mailbox& mailbox,
-                                            gfx::DXGIHandleToken dxgi_token) {
-  TRACE_EVENT0("gpu", "SharedImageStub::OnUnregisterDxgiFence");
-  auto mailbox_fences_it = registered_dxgi_fences_.find(mailbox);
-  if (mailbox_fences_it == registered_dxgi_fences_.end()) {
-    LOG(ERROR) << "Trying to unregister a fence on shared image with no "
-                  "registered fences.";
-    OnError();
-    return;
-  }
-
-  auto& mailbox_fences = mailbox_fences_it->second;
-  auto fence_it = mailbox_fences.find(dxgi_token);
-  if (fence_it == mailbox_fences.end()) {
-    LOG(ERROR) << "Trying to unregister a fence that has not been registered "
-                  "with shared image.";
-    OnError();
-    return;
-  }
-
-  mailbox_fences.erase(fence_it);
-
-  if (mailbox_fences.empty()) {
-    registered_dxgi_fences_.erase(mailbox_fences_it);
-  }
-}
-
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_FUCHSIA)
-void SharedImageStub::RegisterSysmemBufferCollection(
-    zx::eventpair service_handle,
-    zx::channel sysmem_token,
-    const viz::SharedImageFormat& format,
-    gfx::BufferUsage usage,
-    bool register_with_image_pipe) {
-  if (!service_handle || !sysmem_token) {
-    OnError();
-    return;
-  }
-
-  factory_->RegisterSysmemBufferCollection(std::move(service_handle),
-                                           std::move(sysmem_token), format,
-                                           usage, register_with_image_pipe);
-}
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 void SharedImageStub::OnRegisterSharedImageUploadBuffer(
     base::ReadOnlySharedMemoryRegion shm) {

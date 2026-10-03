@@ -21,12 +21,10 @@ class SyncUserSettingsMock : public SyncUserSettings {
   SyncUserSettingsMock();
   ~SyncUserSettingsMock() override;
   MOCK_METHOD(bool, IsInitialSyncFeatureSetupComplete, (), (const override));
-#if !BUILDFLAG(IS_CHROMEOS)
   MOCK_METHOD(void,
               SetInitialSyncFeatureSetupComplete,
               (SyncFirstSetupCompleteSource),
               (override));
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   MOCK_METHOD(bool, IsSyncEverythingEnabled, (), (const override));
   MOCK_METHOD(UserSelectableTypeSet, GetSelectedTypes, (), (const override));
   MOCK_METHOD(bool,
@@ -56,27 +54,6 @@ class SyncUserSettingsMock : public SyncUserSettings {
               (),
               (const override));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  MOCK_METHOD(bool, IsSyncFeatureDisabledViaDashboard, (), (const override));
-  MOCK_METHOD(void, ClearSyncFeatureDisabledViaDashboard, (), (override));
-  MOCK_METHOD(bool, IsSyncAllOsTypesEnabled, (), (const override));
-  MOCK_METHOD(UserSelectableOsTypeSet,
-              GetSelectedOsTypes,
-              (),
-              (const override));
-  MOCK_METHOD(bool,
-              IsOsTypeManagedByPolicy,
-              (UserSelectableOsType),
-              (const override));
-  MOCK_METHOD(void,
-              SetSelectedOsTypes,
-              (bool, UserSelectableOsTypeSet),
-              (override));
-  MOCK_METHOD(UserSelectableOsTypeSet,
-              GetRegisteredSelectableOsTypes,
-              (),
-              (const override));
-#endif
 
   MOCK_METHOD(bool, IsCustomPassphraseAllowed, (), (const override));
   MOCK_METHOD(bool, IsEncryptEverythingEnabled, (), (const override));

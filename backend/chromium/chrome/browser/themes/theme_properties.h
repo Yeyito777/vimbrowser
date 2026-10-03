@@ -159,11 +159,6 @@ class ThemeProperties {
     COLOR_NTP_SECTION_BORDER,
     COLOR_NTP_TEXT_LIGHT,
 
-#if BUILDFLAG(IS_WIN)
-    // The colors of the 1px border around the window on Windows 10.
-    COLOR_ACCENT_BORDER_ACTIVE,
-    COLOR_ACCENT_BORDER_INACTIVE,
-#endif  // BUILDFLAG(IS_WIN)
 
     SHOULD_FILL_BACKGROUND_TAB_COLOR,
 

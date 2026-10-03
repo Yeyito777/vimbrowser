@@ -22,13 +22,6 @@
 #include "components/network_session_configurator/common/network_switches.h"
 #include "ui/base/ui_base_switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/utf_string_conversions.h"
-#include "cef/include/internal/cef_win.h"
-#include "cef/libcef/browser/preferred_stack_size_win.inc"
-#include "chrome/chrome_elf/chrome_elf_main.h"
-#include "chrome/install_static/initialize_from_primary_module.h"
-#endif
 
 namespace {
 
@@ -48,31 +41,6 @@ class CefShutdownChecker {
 #pragma clang diagnostic pop
 #endif  // DCHECK_IS_ON()
 
-#if BUILDFLAG(IS_WIN)
-
-// Transfer state from chrome_elf.dll to the libcef.dll. Accessed when
-// loading chrome://system.
-void InitInstallDetails() {
-  static bool initialized = false;
-  if (initialized) {
-    return;
-  }
-  initialized = true;
-  install_static::InitializeFromPrimaryModule();
-}
-
-// Signal chrome_elf to initialize crash reporting, rather than doing it in
-// DllMain. See https://crbug.com/656800 for details.
-void InitCrashReporter() {
-  static bool initialized = false;
-  if (initialized) {
-    return;
-  }
-  initialized = true;
-  SignalInitializeCrashReporting();
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 bool GetColor(const cef_color_t cef_in, bool is_windowless, SkColor* sk_out) {
   // Windowed browser colors must be fully opaque.
@@ -117,7 +85,6 @@ base::FilePath NormalizePath(const cef_string_t& path_str,
       return base::FilePath();
     }
 
-#if BUILDFLAG(IS_POSIX)
     // Always resolve symlinks to absolute paths. This avoids issues with
     // mismatched paths when mixing Chromium and OS filesystem functions.
     // See https://crbug.com/40229712.
@@ -128,18 +95,13 @@ base::FilePath NormalizePath(const cef_string_t& path_str,
     } else if (errno != 0 && errno != ENOENT) {
       PLOG(ERROR) << "realpath(" << path.value() << ") failed";
     }
-#endif  // BUILDFLAG(IS_POSIX)
   }
 
   return path;
 }
 
 void SetPath(cef_string_t& path_str, const base::FilePath& path) {
-#if BUILDFLAG(IS_WIN)
-  CefString(&path_str).FromWString(path.value());
-#else
   CefString(&path_str).FromString(path.value());
-#endif
 }
 
 // Convert |path_str| to a normalized FilePath and update the |path_str| value.
@@ -195,10 +157,6 @@ NO_STACK_PROTECTOR
 int CefExecuteProcess(const CefMainArgs& args,
                       CefRefPtr<CefApp> application,
                       void* windows_sandbox_info) {
-#if BUILDFLAG(IS_WIN)
-  InitInstallDetails();
-  InitCrashReporter();
-#endif
 
   return CefMainRunner::RunAsHelperProcess(args, application,
                                            windows_sandbox_info);
@@ -208,10 +166,6 @@ bool CefInitialize(const CefMainArgs& args,
                    const CefSettings& settings,
                    CefRefPtr<CefApp> application,
                    void* windows_sandbox_info) {
-#if BUILDFLAG(IS_WIN)
-  InitInstallDetails();
-  InitCrashReporter();
-#endif
 
   // Return true if the global context already exists.
   if (g_context) {
@@ -316,24 +270,6 @@ void CefQuitMessageLoop() {
   g_context->QuitMessageLoop();
 }
 
-#if BUILDFLAG(IS_WIN)
-
-void CefSetOSModalLoop(bool osModalLoop) {
-  // Verify that the context is in a valid state.
-  if (!CONTEXT_STATE_VALID()) {
-    DCHECK(false) << "context not valid";
-    return;
-  }
-
-  if (!CEF_CURRENTLY_ON_UIT()) {
-    CEF_POST_TASK(CEF_UIT, base::BindOnce(CefSetOSModalLoop, osModalLoop));
-    return;
-  }
-
-  base::CurrentThread::Get()->set_os_modal_loop(osModalLoop);
-}
-
-#endif  // BUILDFLAG(IS_WIN)
 
 void CefSetNestableTasksAllowed(bool allowed) {
   if (!CONTEXT_STATE_VALID()) {
@@ -370,10 +306,6 @@ bool CefContext::Initialize(const CefMainArgs& args,
   }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // Signal Chrome Elf that Chrome has begun to start.
-  SignalChromeElf();
-#endif
 
   const base::FilePath& root_cache_path =
       NormalizePathAndSet(settings_.root_cache_path, "root_cache_path");

@@ -8,5 +8,5 @@ declare_args() {
   dawn_enable_d3d12 = is_win
   dawn_enable_opengles = false
   dawn_enable_metal = is_mac || is_ios
-  dawn_enable_vulkan = is_linux || is_android
+  dawn_enable_vulkan = is_linux
 }

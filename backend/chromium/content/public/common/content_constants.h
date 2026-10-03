@@ -70,11 +70,6 @@ CONTENT_EXPORT extern const int kPluginOomScore;
 
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-// Minimum screen size in dp to be considered a tablet. Matches the value used
-// by res/ directories. E.g.: res/values-sw600dp/values.xml
-CONTENT_EXPORT extern const int kAndroidMinimumTabletWidthDp;
-#endif
 
 // The name of the well-known file in the user data directory that contains the
 // port number of the remote debugging server for automation tools

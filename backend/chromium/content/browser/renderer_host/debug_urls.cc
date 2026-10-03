@@ -28,9 +28,6 @@
 #include "third_party/blink/public/common/chrome_debug_urls.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/debug/invalid_access_win.h"
-#endif
 
 namespace content {
 
@@ -47,10 +44,6 @@ const char kAsanHeapOverflow[] = "/browser-heap-overflow";
 const char kAsanHeapUnderflow[] = "/browser-heap-underflow";
 const char kAsanUseAfterFree[] = "/browser-use-after-free";
 
-#if BUILDFLAG(IS_WIN)
-const char kAsanCorruptHeapBlock[] = "/browser-corrupt-heap-block";
-const char kAsanCorruptHeap[] = "/browser-corrupt-heap";
-#endif
 
 // The conditions here must stay in sync with |HandleAsanDebugURL|.
 bool IsAsanDebugURL(const GURL& url) {
@@ -64,11 +57,6 @@ bool IsAsanDebugURL(const GURL& url) {
     return true;
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (url.path() == kAsanCorruptHeapBlock || url.path() == kAsanCorruptHeap) {
-    return true;
-  }
-#endif
 
   return false;
 }
@@ -78,16 +66,6 @@ bool IsAsanDebugURL(const GURL& url) {
 void HandleAsanDebugURL(const GURL& url) {
   CHECK(IsAsanDebugURL(url));
 #if defined(ADDRESS_SANITIZER) || BUILDFLAG(IS_HWASAN)
-#if BUILDFLAG(IS_WIN)
-  if (url.path() == kAsanCorruptHeapBlock) {
-    base::debug::AsanCorruptHeapBlock();
-    return;
-  }
-  if (url.path() == kAsanCorruptHeap) {
-    base::debug::AsanCorruptHeap();
-    return;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   if (url.path() == kAsanHeapOverflow) {
     base::debug::AsanHeapOverflow();
@@ -133,16 +111,10 @@ bool IsDebugURL(const GURL& url) {
 
   if (url == blink::kChromeUIBrowserCrashURL ||
       url == blink::kChromeUIBrowserDcheckURL ||
-#if BUILDFLAG(IS_WIN)
-      url == blink::kChromeUIBrowserHeapCorruptionURL ||
-#endif
       url == blink::kChromeUIBrowserUIHang ||
       url == blink::kChromeUIDelayedBrowserUIHang ||
       url == blink::kChromeUIGpuCleanURL ||
       url == blink::kChromeUIGpuCrashURL ||
-#if BUILDFLAG(IS_ANDROID)
-      url == blink::kChromeUIGpuJavaCrashURL ||
-#endif
       url == blink::kChromeUIGpuHangURL ||
       url == blink::kChromeUIMemoryPressureCriticalURL ||
       url == blink::kChromeUIMemoryPressureModerateURL) {
@@ -182,12 +154,6 @@ void HandleDebugURL(const GURL& url,
     DCHECK(false);
     return;
   }
-#if BUILDFLAG(IS_WIN)
-  if (url == blink::kChromeUIBrowserHeapCorruptionURL) {
-    // Induce an intentional heap corruption in the browser process.
-    base::debug::win::TerminateWithHeapCorruption();
-  }
-#endif
   if (url == blink::kChromeUIBrowserUIHang) {
     HangCurrentThread();
     return;
@@ -213,15 +179,6 @@ void HandleDebugURL(const GURL& url,
     }
     return;
   }
-#if BUILDFLAG(IS_ANDROID)
-  if (url == blink::kChromeUIGpuJavaCrashURL) {
-    auto* host = GpuProcessHost::Get();
-    if (host) {
-      host->gpu_service()->ThrowJavaException();
-    }
-    return;
-  }
-#endif
   if (url == blink::kChromeUIGpuHangURL) {
     auto* host = GpuProcessHost::Get();
     if (host) {

@@ -18,14 +18,6 @@ base::flat_map<std::string,
                base::RepeatingCallback<bool(const base::DictValue&)>>
 GetSignalsContract();
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Returns a map from a signal name to a predicate which evaluates an
-// expectation based on a given signals dictionary.
-// This represents the inline flow contract for unmanaged devices (crOS).
-base::flat_map<std::string,
-               base::RepeatingCallback<bool(const base::DictValue&)>>
-GetSignalsContractForUnmanagedDevices();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace device_signals::test
 

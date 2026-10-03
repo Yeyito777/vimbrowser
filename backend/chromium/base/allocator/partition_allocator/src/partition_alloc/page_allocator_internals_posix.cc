@@ -12,9 +12,7 @@
 
 #if PA_BUILDFLAG(IS_APPLE)
 #include "partition_alloc/partition_alloc_base/apple/foundation_util.h"
-#if PA_BUILDFLAG(IS_IOS)
-#include "partition_alloc/partition_alloc_base/ios/ios_util.h"
-#elif PA_BUILDFLAG(IS_MAC)
+#if PA_BUILDFLAG(IS_MAC)
 #include "partition_alloc/partition_alloc_base/mac/mac_util.h"
 #else
 #error "Unknown platform"
@@ -199,10 +197,6 @@ bool UseMapJit() {
 
   return base::apple::CFCast<CFBooleanRef>(jit_entitlement.get()) ==
          kCFBooleanTrue;
-}
-#elif PA_BUILDFLAG(IS_IOS)
-bool UseMapJit() {
-  return true;
 }
 #endif  // PA_BUILDFLAG(IS_IOS)
 

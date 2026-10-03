@@ -148,12 +148,7 @@ bool IsPMAFile(const base::FilePath& file_path,
 bool ShouldKeepSourceWhenMetricsDisabled(
     const FileMetricsProvider::Params& params,
     bool is_fre) {
-#if BUILDFLAG(IS_IOS)
-  return params.type == FileMetricsProvider::SOURCE_HISTOGRAMS_ATOMIC_DIR &&
-         is_fre;
-#else
   return false;
-#endif
 }
 
 // Ensures that a given directory path has at most max_source_files amount

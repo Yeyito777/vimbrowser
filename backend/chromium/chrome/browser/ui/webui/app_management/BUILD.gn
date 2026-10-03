@@ -38,30 +38,14 @@ source_set("app_management") {
     "//url",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "app_management_page_handler_chromeos.cc",
-      "app_management_page_handler_chromeos.h",
-      "app_management_shelf_delegate_chromeos.cc",
-      "app_management_shelf_delegate_chromeos.h",
-    ]
-    deps += [
-      "//chrome/browser:browser_process",
-      "//chrome/browser/ash/app_list/arc",
-      "//chrome/browser/ash/apps",
-      "//chrome/browser/ui/ash/shelf",
-      "//chromeos/ash/experiences/arc:arc_app_constants",
-    ]
-  } else {
-    sources += [
-      "web_app_settings_page_handler.cc",
-      "web_app_settings_page_handler.h",
-    ]
-    deps += [
-      "//chrome/browser/web_applications:features",
-      "//chrome/browser/web_applications/app_service",
-    ]
-  }
+  sources += [
+    "web_app_settings_page_handler.cc",
+    "web_app_settings_page_handler.h",
+  ]
+  deps += [
+    "//chrome/browser/web_applications:features",
+    "//chrome/browser/web_applications/app_service",
+  ]
 }
 
 source_set("unit_tests") {
@@ -85,17 +69,4 @@ source_set("unit_tests") {
     "//ui/gfx",
     "//ui/webui/resources/cr_components/app_management:mojo_bindings",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//chrome/browser/apps/app_service",
-      "//chrome/browser/apps/app_service:test_support",
-      "//chrome/browser/ash/app_list/arc",
-      "//chrome/browser/ash/app_list/arc:test_support",
-      "//chrome/browser/ash/apps",
-      "//chromeos/ash/experiences/arc:arc_app_constants",
-      "//chromeos/ash/experiences/arc:arc_features",
-      "//chromeos/ash/experiences/arc:arc_test_support",
-    ]
-  }
 }

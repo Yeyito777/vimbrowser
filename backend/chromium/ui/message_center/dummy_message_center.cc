@@ -2,16 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "build/build_config.h"
 #include "ui/message_center/message_center.h"
 
-// This file contains dummy implementation of MessageCenter and used to compile
-// and link with Android implementations of Chrome which do not have
-// notification systems yet. This is to avoid spreading compile-time flags
-// everywhere in the code.
-#if !(BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_FUCHSIA))
-#error This file should only be used in Android and Fuchsia.
-#endif
+// Null implementation used when the browser-facing notification system is not
+// part of the product. Keeping this narrow interface avoids notification
+// feature checks throughout consumers that still share notification data types.
 
 namespace message_center {
 
@@ -21,7 +16,7 @@ void MessageCenter::Initialize() {
 
 // static
 MessageCenter* MessageCenter::Get() {
-  return NULL;
+  return nullptr;
 }
 
 // static

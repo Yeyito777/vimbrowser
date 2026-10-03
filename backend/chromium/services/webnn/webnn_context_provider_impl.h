@@ -26,9 +26,6 @@
 #include "services/webnn/public/mojom/webnn_context_provider.mojom.h"
 #include "services/webnn/webnn_context_impl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/types/expected.h"
-#endif
 
 namespace gpu {
 class Scheduler;
@@ -38,11 +35,6 @@ namespace webnn {
 
 class ScopedGpuSequence;
 
-#if BUILDFLAG(IS_WIN)
-namespace ort {
-class Environment;
-}
-#endif
 
 // Maintain a set of WebNNContextImpl instances that are created by the context
 // provider.
@@ -95,10 +87,6 @@ class COMPONENT_EXPORT(WEBNN_SERVICE) WebNNContextProviderImpl
   // this call, it is no longer safe to use the WebNNContextImpl.
   void RemoveWebNNContextImpl(const blink::WebNNContextToken& handle);
 
-#if BUILDFLAG(IS_WIN)
-  // Kill the GPU process to destroy all contexts.
-  void DestroyAllContextsAndKillGpuProcess();
-#endif  // BUILDFLAG(IS_WIN)
 
   using WebNNContextImplPtr =
       std::unique_ptr<WebNNContextImpl, OnTaskRunnerDeleter>;
@@ -190,41 +178,6 @@ class COMPONENT_EXPORT(WEBNN_SERVICE) WebNNContextProviderImpl
       scoped_refptr<gpu::MemoryTracker> memory_tracker);
 #endif  // BUILDFLAG(WEBNN_USE_LITERT)
 
-#if BUILDFLAG(IS_WIN)
-  void OnOrtEnvCreated(ScopedTrace scoped_trace,
-                       mojom::CreateContextOptionsPtr options,
-                       mojo::ScopedDataPipeProducerHandle write_tensor_producer,
-                       mojo::ScopedDataPipeConsumerHandle write_tensor_consumer,
-                       mojo::ScopedDataPipeProducerHandle read_tensor_producer,
-                       mojo::ScopedDataPipeConsumerHandle read_tensor_consumer,
-                       gpu::CommandBufferId command_buffer_id,
-                       std::unique_ptr<ScopedGpuSequence> gpu_sequence,
-                       scoped_refptr<base::SingleThreadTaskRunner> task_runner,
-                       mojo::PendingReceiver<mojom::WebNNContext> receiver,
-                       mojo::PendingRemote<mojom::WebNNContext> remote,
-                       CreateWebNNContextCallback callback,
-                       bool is_incognito,
-                       scoped_refptr<gpu::MemoryTracker> memory_tracker,
-                       base::expected<scoped_refptr<ort::Environment>,
-                                      std::string> env_creation_results);
-
-  void DidEnsureWebNNExecutionProvidersReady(
-      ScopedTrace scoped_trace,
-      mojom::CreateContextOptionsPtr options,
-      mojo::ScopedDataPipeProducerHandle write_tensor_producer,
-      mojo::ScopedDataPipeConsumerHandle write_tensor_consumer,
-      mojo::ScopedDataPipeProducerHandle read_tensor_producer,
-      mojo::ScopedDataPipeConsumerHandle read_tensor_consumer,
-      gpu::CommandBufferId command_buffer_id,
-      std::unique_ptr<ScopedGpuSequence> gpu_sequence,
-      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
-      mojo::PendingReceiver<mojom::WebNNContext> receiver,
-      mojo::PendingRemote<mojom::WebNNContext> remote,
-      CreateWebNNContextCallback callback,
-      bool is_incognito,
-      scoped_refptr<gpu::MemoryTracker> memory_tracker,
-      base::flat_map<std::string, mojom::EpPackageInfoPtr> ep_package_info);
-#endif  // BUILDFLAG(IS_WIN)
 
   scoped_refptr<gpu::SharedContextState> shared_context_state_
       GUARDED_BY_CONTEXT(main_sequence_checker_);

@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=0eeb828f5fcb8ad169734d567c9ad1ef422a4443$
+// $hash=d0d24aea0a9aa04a477c3301b8e7cdaed5d62ea4$
 //
 
 #include "libcef_dll/cpptoc/views/view_delegate_cpptoc.h"
@@ -622,55 +622,6 @@ NO_SANITIZE("cfi-icall") CefWindowHandle CefWindowCToCpp::GetWindowHandle() {
 
   // Return type: simple
   return _retval;
-}
-
-NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SendKeyPress(int key_code, uint32_t event_flags) {
-  shutdown_checker::AssertNotShutdown();
-
-  auto* _struct = GetStruct();
-  if (!_struct->send_key_press) {
-    return;
-  }
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  _struct->send_key_press(_struct,
-      key_code,
-      event_flags);
-}
-
-NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SendMouseMove(int screen_x, int screen_y) {
-  shutdown_checker::AssertNotShutdown();
-
-  auto* _struct = GetStruct();
-  if (!_struct->send_mouse_move) {
-    return;
-  }
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  _struct->send_mouse_move(_struct,
-      screen_x,
-      screen_y);
-}
-
-NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SendMouseEvents(cef_mouse_button_type_t button, bool mouse_down, bool mouse_up) {
-  shutdown_checker::AssertNotShutdown();
-
-  auto* _struct = GetStruct();
-  if (!_struct->send_mouse_events) {
-    return;
-  }
-
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  _struct->send_mouse_events(_struct,
-      button,
-      mouse_down,
-      mouse_up);
 }
 
 NO_SANITIZE("cfi-icall") void CefWindowCToCpp::SetAccelerator(int command_id, int key_code, bool shift_pressed, bool ctrl_pressed, bool alt_pressed, bool high_priority) {

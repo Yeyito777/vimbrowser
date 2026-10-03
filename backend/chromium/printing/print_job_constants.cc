@@ -231,30 +231,5 @@ const char kSettingOpenPDFInPreview[] = "openPDFInPreview";
 const uint32_t kInvalidPageIndex = std::numeric_limits<int>::max();
 const uint32_t kMaxPageCount = std::numeric_limits<int>::max();
 
-#if BUILDFLAG(IS_CHROMEOS)
-// If set, contains OAuth token that must be used during communication with the
-// printer.
-const char kSettingChromeOSAccessOAuthToken[] = "chromeos-access-oauth-token";
-
-// These correspond to IPP 'client-info' attribute and member attributes. If
-// set, 'client-info' will be sent in the IPP print job.
-const char kSettingIppClientInfo[] = "ipp-client-info";
-const char kSettingIppClientName[] = "ipp-client-name";
-const char kSettingIppClientPatches[] = "ipp-client-patches";
-const char kSettingIppClientStringVersion[] = "ipp-client-string-version";
-const char kSettingIppClientType[] = "ipp-client-type";
-const char kSettingIppClientVersion[] = "ipp-client-version";
-
-// Whether the source page content is from ARC or not.
-const char kSettingPreviewIsFromArc[] = "previewIsFromArc";
-
-// True if the user selects to print to a different printer than the original
-// destination shown when Print Preview opens.
-const char kSettingPrinterManuallySelected[] = "printerManuallySelected";
-
-// The printer status reason shown for the selected printer at the time print
-// is requested. Only local CrOS printers set printer statuses.
-const char kSettingPrinterStatusReason[] = "printerStatusReason";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace printing

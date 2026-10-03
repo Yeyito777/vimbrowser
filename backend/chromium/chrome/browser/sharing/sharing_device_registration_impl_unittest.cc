@@ -279,7 +279,7 @@ TEST_F(SharingDeviceRegistrationImplTest, RegisterDeviceTest_Success) {
       GetExpectedEnabledFeatures();
   syncer::DeviceInfo::SharingInfo expected_sharing_info(
       {kSenderIdFCMToken, kSenderIdP256dh, kSenderIdAuthSecret},
-      /*chime_representative_target_id=*/std::string(), enabled_features);
+      enabled_features);
 
   EXPECT_EQ(SharingDeviceRegistrationResult::kSuccess, result_);
   EXPECT_EQ(expected_sharing_info, local_sharing_info_);
@@ -301,7 +301,7 @@ TEST_F(SharingDeviceRegistrationImplTest, RegisterDeviceTest_SenderIDOnly) {
       GetExpectedEnabledFeatures();
   syncer::DeviceInfo::SharingInfo expected_sharing_info(
       {kSenderIdFCMToken, kSenderIdP256dh, kSenderIdAuthSecret},
-      /*chime_representative_target_id=*/std::string(), enabled_features);
+      enabled_features);
 
   EXPECT_EQ(SharingDeviceRegistrationResult::kSuccess, result_);
   EXPECT_EQ(expected_sharing_info, local_sharing_info_);
@@ -376,7 +376,7 @@ TEST_F(SharingDeviceRegistrationImplTest, UnregisterDeviceTest_Success) {
       GetExpectedEnabledFeatures();
   syncer::DeviceInfo::SharingInfo expected_sharing_info(
       {kSenderIdFCMToken, kSenderIdP256dh, kSenderIdAuthSecret},
-      /*chime_representative_target_id=*/std::string(), enabled_features);
+      enabled_features);
 
   EXPECT_EQ(SharingDeviceRegistrationResult::kSuccess, result_);
   EXPECT_EQ(expected_sharing_info, local_sharing_info_);

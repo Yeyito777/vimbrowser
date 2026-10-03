@@ -104,18 +104,6 @@ class BASE_EXPORT StackSampler {
       RepeatingClosure record_sample_callback = RepeatingClosure(),
       StackSamplerTestDelegate* test_delegate = nullptr);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // How often to record the "Memory.StackSamplingProfiler.StackSampleSize2" UMA
-  // histogram. Specifically, only 1 in kUMAHistogramDownsampleAmount calls to
-  // RecordStackFrames will add a sample to the histogram. RecordStackFrames is
-  // called many times a second. We don't need multiple samples per second to
-  // get a good understanding of average stack sizes, and it's a lot of data to
-  // record. kUMAHistogramDownsampleAmount should give us about 1 sample per 10
-  // seconds per process, which is plenty. 199 is prime which should avoid any
-  // aliasing issues (e.g. if stacks are larger on second boundaries or some
-  // such weirdness).
-  static constexpr uint32_t kUMAHistogramDownsampleAmount = 199;
-#endif
 
  private:
   FRIEND_TEST_ALL_PREFIXES(StackSamplerTest,
@@ -144,12 +132,6 @@ class BASE_EXPORT StackSampler {
   const RepeatingClosure record_sample_callback_;
   const raw_ptr<StackSamplerTestDelegate> test_delegate_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Counter for "Memory.StackSamplingProfiler.StackSampleSize2" UMA histogram.
-  // See comments above kUMAHistogramDownsampleAmount. Unsigned so that overflow
-  // isn't undefined behavior.
-  uint32_t stack_size_histogram_sampling_counter_ = 0;
-#endif
 
   scoped_refptr<SequencedTaskRunner> thread_pool_runner_;
 

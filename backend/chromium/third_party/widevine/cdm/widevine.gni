@@ -12,8 +12,8 @@ declare_args() {
   # Google Chrome for Testing and Android. For Fuchsia, see crbug.com/1354347.
   # Can be optionally enabled in Chromium on non-Android platforms. Please see
   # //src/third_party/widevine/LICENSE file for details.
-  enable_widevine = ((is_chrome_branded || is_chrome_for_testing_branded) &&
-                     !is_fuchsia) || is_android
+  enable_widevine =
+      (is_chrome_branded || is_chrome_for_testing_branded) && !is_fuchsia
 }
 
 # Disable Widevine when running linux-chromeos.

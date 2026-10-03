@@ -44,12 +44,6 @@
 #include "ui/views/layout/box_layout.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/certificate_provider/certificate_provider_service.h"
-#include "chrome/browser/ash/certificate_provider/certificate_provider_service_factory.h"
-#include "extensions/browser/extension_registry.h"
-#include "extensions/browser/extension_registry_factory.h"
-#endif
 
 namespace {
 
@@ -161,43 +155,8 @@ CertificateSelector::CertificateSelector(net::ClientCertIdentityList identities,
   // |provider_names| and |identities_| are parallel arrays.
   // The entry at index |i| is the provider name for |identities_[i]|.
   std::vector<std::string> provider_names;
-#if BUILDFLAG(IS_CHROMEOS)
-  chromeos::CertificateProviderService* service =
-      chromeos::CertificateProviderServiceFactory::GetForBrowserContext(
-          web_contents->GetBrowserContext());
-  extensions::ExtensionRegistry* extension_registry =
-      extensions::ExtensionRegistryFactory::GetForBrowserContext(
-          web_contents->GetBrowserContext());
-
-  for (auto& identity : identities) {
-    std::string provider_name;
-    bool has_extension = false;
-    std::string extension_id;
-    if (service->LookUpCertificate(*identity->certificate(), &has_extension,
-                                   &extension_id)) {
-      if (!has_extension) {
-        // This certificate was provided by an extension but isn't provided by
-        // any extension currently. Don't expose it to the user.
-        continue;
-      }
-      const auto* extension = extension_registry->GetExtensionById(
-          extension_id, extensions::ExtensionRegistry::ENABLED);
-      if (!extension) {
-        // This extension was unloaded in the meantime. Don't show the
-        // certificate.
-        continue;
-      }
-      provider_name = extension->short_name();
-      show_provider_column_ = true;
-    }  // Otherwise the certificate is provided by the platform.
-
-    identities_.push_back(std::move(identity));
-    provider_names.push_back(provider_name);
-  }
-#else
   provider_names.assign(identities.size(), std::string());
   identities_ = std::move(identities);
-#endif
 
   model_ = std::make_unique<CertificateTableModel>(identities_, provider_names);
 }

@@ -557,26 +557,6 @@ class BLINK_PLATFORM_EXPORT Platform {
   // called by platform/graphics/ is fine.
   virtual bool IsGpuCompositingDisabled() const { return true; }
 
-#if BUILDFLAG(IS_ANDROID)
-  // Returns if synchronous compositing is enabled. Only used for Android
-  // webview.
-  virtual bool IsSynchronousCompositingEnabledForAndroidWebView() {
-    return false;
-  }
-
-  // Returns if zero copy synchronouse software draw is enabled. Only used
-  // when SynchronousCompositing is enabled and only when in single process
-  // mode.
-  virtual bool IsZeroCopySynchronousSwDrawEnabledForAndroidWebView() {
-    return false;
-  }
-
-  // Return the SkCanvas that is to be used if
-  // ZeroCopySynchronousSwDrawEnabled returns true.
-  virtual SkCanvas* SynchronousCompositorGetSkCanvasForAndroidWebView() {
-    return nullptr;
-  }
-#endif
 
   // Whether LCD text is enabled.
   virtual bool IsLcdTextEnabled() { return false; }
@@ -861,13 +841,6 @@ class BLINK_PLATFORM_EXPORT Platform {
     return false;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // User Level Memory Pressure Signal Generator ------------------
-  virtual void SetPrivateMemoryFootprint(
-      uint64_t private_memory_footprint_bytes) {}
-
-  virtual bool IsUserLevelMemoryPressureSignalEnabled() { return false; }
-#endif
 
   // Memory Coordinator -------------------------------
   // Invoked when the garbage collector is about to run its last GC before

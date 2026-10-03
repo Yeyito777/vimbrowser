@@ -20,23 +20,6 @@
 #include "chrome/browser/feedback/system_logs/log_sources/chrome_root_store_log_source.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "build/chromeos_buildflags.h"
-#include "chrome/browser/ash/system_logs/bluetooth_log_source.h"
-#include "chrome/browser/ash/system_logs/command_line_log_source.h"
-#include "chrome/browser/ash/system_logs/connected_input_devices_log_source.h"
-#include "chrome/browser/ash/system_logs/dbus_log_source.h"
-#include "chrome/browser/ash/system_logs/debug_daemon_log_source.h"
-#include "chrome/browser/ash/system_logs/device_data_manager_input_devices_log_source.h"
-#include "chrome/browser/ash/system_logs/input_event_converter_log_source.h"
-#include "chrome/browser/ash/system_logs/keyboard_info_log_source.h"
-#include "chrome/browser/ash/system_logs/network_health_source.h"
-#include "chrome/browser/ash/system_logs/reven_log_source.h"
-#include "chrome/browser/ash/system_logs/shill_log_source.h"
-#include "chrome/browser/ash/system_logs/touch_log_source.h"
-#include "chrome/browser/ash/system_logs/traffic_counters_log_source.h"
-#include "chrome/browser/ash/system_logs/ui_hierarchy_log_source.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "chrome/browser/feedback/system_logs/log_sources/ozone_platform_state_dump_source.h"
@@ -60,30 +43,6 @@ SystemLogsFetcher* BuildAboutSystemLogsFetcher(content::WebUI* web_ui) {
   fetcher->AddSource(std::make_unique<ChromeRootStoreLogSource>());
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // These sources rely on scrubbing in SystemLogsFetcher.
-  fetcher->AddSource(std::make_unique<BluetoothLogSource>());
-  fetcher->AddSource(std::make_unique<CommandLineLogSource>());
-  fetcher->AddSource(std::make_unique<DBusLogSource>());
-#if BUILDFLAG(IS_CHROMEOS_WITH_HW_DETAILS)
-  fetcher->AddSource(std::make_unique<RevenLogSource>());
-#endif
-
-  fetcher->AddSource(std::make_unique<TouchLogSource>());
-  fetcher->AddSource(std::make_unique<InputEventConverterLogSource>());
-  fetcher->AddSource(std::make_unique<ConnectedInputDevicesLogSource>());
-  fetcher->AddSource(
-      std::make_unique<DeviceDataManagerInputDevicesLogSource>());
-  fetcher->AddSource(std::make_unique<TrafficCountersLogSource>());
-
-  // Data sources that directly scrub itentifiable information.
-  fetcher->AddSource(std::make_unique<DebugDaemonLogSource>(scrub_data));
-  fetcher->AddSource(std::make_unique<NetworkHealthSource>(
-      scrub_data, /*include_guid_when_not_scrub=*/false));
-  fetcher->AddSource(std::make_unique<ShillLogSource>(scrub_data));
-  fetcher->AddSource(std::make_unique<UiHierarchyLogSource>(scrub_data));
-  fetcher->AddSource(std::make_unique<KeyboardInfoLogSource>());
-#endif
 
 #if BUILDFLAG(IS_LINUX)
   fetcher->AddSource(std::make_unique<OzonePlatformStateDumpSource>());

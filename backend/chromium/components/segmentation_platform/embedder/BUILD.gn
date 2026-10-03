@@ -4,11 +4,6 @@
 
 import("//components/optimization_guide/features.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
-
 source_set("embedder") {
   sources = [
     "input_delegate/shopping_service_input_delegate.cc",

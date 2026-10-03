@@ -188,13 +188,6 @@ VideoCaptureBufferPoolImpl::ReserveIdForExternalBuffer(
     tracker = buffer_tracker_factory_->CreateTrackerForExternalBuffer(
         std::move(factory_buffer));
 
-#if BUILDFLAG(IS_WIN)
-    // Windows needs to create buffer from external handle, but mac doesn't.
-    if (tracker &&
-        tracker->Init(dimensions, buffer.format.pixel_format, nullptr)) {
-      tracker->UpdateExternalData(std::move(buffer));
-    }
-#endif
   }
 
   if (!tracker) {

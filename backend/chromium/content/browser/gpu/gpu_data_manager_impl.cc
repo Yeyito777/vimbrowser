@@ -173,60 +173,6 @@ void GpuDataManagerImpl::UpdateGpuInfo(
   private_->UpdateGpuInfo(gpu_info, gpu_info_for_hardware_gpu);
 }
 
-#if BUILDFLAG(IS_WIN)
-
-void GpuDataManagerImpl::UpdateDirectXInfo(uint32_t d3d12_feature_level,
-                                           uint32_t directml_feature_level) {
-  base::AutoLock auto_lock(lock_);
-  private_->UpdateDirectXInfo(d3d12_feature_level, directml_feature_level);
-}
-
-void GpuDataManagerImpl::UpdateVulkanInfo(uint32_t vulkan_version) {
-  base::AutoLock auto_lock(lock_);
-  private_->UpdateVulkanInfo(vulkan_version);
-}
-
-void GpuDataManagerImpl::UpdateDevicePerfInfo(
-    const gpu::DevicePerfInfo& device_perf_info) {
-  base::AutoLock auto_lock(lock_);
-  private_->UpdateDevicePerfInfo(device_perf_info);
-}
-
-void GpuDataManagerImpl::UpdateOverlayInfo(
-    const gpu::OverlayInfo& overlay_info) {
-  base::AutoLock auto_lock(lock_);
-  private_->UpdateOverlayInfo(overlay_info);
-}
-void GpuDataManagerImpl::UpdateDXGIInfo(gfx::mojom::DXGIInfoPtr dxgi_info) {
-  base::AutoLock auto_lock(lock_);
-  private_->UpdateDXGIInfo(std::move(dxgi_info));
-}
-
-void GpuDataManagerImpl::UpdateDirectXRequestStatus(bool request_continues) {
-  base::AutoLock auto_lock(lock_);
-  private_->UpdateDirectXRequestStatus(request_continues);
-}
-
-void GpuDataManagerImpl::UpdateVulkanRequestStatus(bool request_continues) {
-  base::AutoLock auto_lock(lock_);
-  private_->UpdateVulkanRequestStatus(request_continues);
-}
-
-bool GpuDataManagerImpl::DirectXRequested() const {
-  base::AutoLock auto_lock(lock_);
-  return private_->DirectXRequested();
-}
-
-bool GpuDataManagerImpl::VulkanRequested() const {
-  base::AutoLock auto_lock(lock_);
-  return private_->VulkanRequested();
-}
-
-void GpuDataManagerImpl::TerminateInfoCollectionGpuProcess() {
-  base::AutoLock auto_lock(lock_);
-  private_->TerminateInfoCollectionGpuProcess();
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void GpuDataManagerImpl::PostCreateThreads() {
   base::AutoLock auto_lock(lock_);

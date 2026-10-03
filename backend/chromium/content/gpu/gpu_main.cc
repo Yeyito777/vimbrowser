@@ -82,31 +82,8 @@
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/gl/init/gl_factory.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
 
-#include <dwmapi.h>
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/meminfo_dump_provider.h"
-#include "base/posix/eintr_wrapper.h"
-#include "base/trace_event/memory_dump_manager.h"
-#include "components/tracing/common/graphics_memory_dump_provider_android.h"
-#include "sandbox/linux/services/thread_helpers.h" // nogncheck
-#include "sandbox/policy/features.h"
-#include "sandbox/policy/linux/landlock_gpu_policy_android.h"
-#include "sandbox/policy/sandbox_type.h"
-#endif
-
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_com_initializer.h"
-#include "base/win/win_util.h"
-#include "base/win/windows_version.h"
-#include "media/base/win/mf_initializer.h"
-#include "sandbox/policy/win/sandbox_warmup.h"
-#include "sandbox/win/src/sandbox.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "content/child/sandboxed_process_thread_type_handler.h"
@@ -133,10 +110,6 @@ namespace {
 bool StartSandboxLinux(gpu::GpuWatchdogThread*,
                        const gpu::GPUInfo*,
                        const gpu::GpuPreferences&);
-#elif BUILDFLAG(IS_ANDROID)
-bool StartSandboxAndroid(gpu::GpuWatchdogThread*);
-#elif BUILDFLAG(IS_WIN)
-bool StartSandboxWindows(const sandbox::SandboxInterfaceInfo*);
 #endif
 
 class ContentSandboxHelper : public gpu::GpuSandboxHelper {
@@ -148,11 +121,6 @@ class ContentSandboxHelper : public gpu::GpuSandboxHelper {
 
   ~ContentSandboxHelper() override {}
 
-#if BUILDFLAG(IS_WIN)
-  void set_sandbox_info(const sandbox::SandboxInterfaceInfo* info) {
-    sandbox_info_ = info;
-  }
-#endif
 
  private:
   // SandboxHelper:
@@ -163,24 +131,13 @@ class ContentSandboxHelper : public gpu::GpuSandboxHelper {
       TRACE_EVENT0("gpu", "Warm up rand");
       // Warm up the random subsystem, which needs to be done pre-sandbox on all
       // platforms.
-#if BUILDFLAG(IS_WIN)
-      sandbox::policy::WarmupRandomnessInfrastructure();
-#else
       std::ignore = base::RandUint64();
-#endif  // BUILDFLAG(IS_WIN)
     }
 
 #if BUILDFLAG(USE_VAAPI)
-#if BUILDFLAG(IS_CHROMEOS)
-    media::VaapiWrapper::PreSandboxInitialization();
-#else  // For Linux with VA-API support.
     if (!gpu_prefs.disable_accelerated_video_decode)
       media::VaapiWrapper::PreSandboxInitialization();
-#endif
 #endif  // BUILDFLAG(USE_VAAPI)
-#if BUILDFLAG(IS_WIN)
-    media::PreSandboxMediaFoundationInitialization();
-#endif
 
     // On Linux, reading system memory doesn't work through the GPU sandbox.
     // This value is cached, so access it here to populate the cache.
@@ -193,24 +150,13 @@ class ContentSandboxHelper : public gpu::GpuSandboxHelper {
     TRACE_EVENT("gpu,startup", "gpu_main::EnsureSandboxInitialized");
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
     return StartSandboxLinux(watchdog_thread, gpu_info, gpu_prefs);
-#elif BUILDFLAG(IS_WIN)
-    return StartSandboxWindows(sandbox_info_);
 #elif BUILDFLAG(IS_MAC)
     return sandbox::Seatbelt::IsSandboxed();
-#elif BUILDFLAG(IS_ANDROID)
-    if (base::FeatureList::IsEnabled(
-            sandbox::policy::features::kAndroidGpuSandbox)) {
-      return StartSandboxAndroid(watchdog_thread);
-    }
-    return false;
 #else
     return false;
 #endif
   }
 
-#if BUILDFLAG(IS_WIN)
-  raw_ptr<const sandbox::SandboxInterfaceInfo> sandbox_info_ = nullptr;
-#endif
 };
 
 }  // namespace
@@ -244,29 +190,6 @@ int GpuMain(MainFunctionParams parameters) {
 
   base::TimeTicks start_time = base::TimeTicks::Now();
 
-#if BUILDFLAG(IS_WIN)
-  base::win::EnableHighDPISupport();
-
-  // Prevent Windows from displaying a modal dialog on failures like not being
-  // able to load a DLL.
-  SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX |
-               SEM_NOOPENFILEERRORBOX);
-
-  // Disable high resolution timer throttling to prevent the OS from degrading
-  // performance.
-  base::win::SetProcessTimerThrottleState(
-      base::GetCurrentProcessHandle(), base::win::ProcessPowerState::kDisabled);
-
-  // COM is used by some Windows Media Foundation calls made on this thread and
-  // must be MTA so we don't have to worry about pumping messages to handle
-  // COM callbacks.
-  base::win::ScopedCOMInitializer com_initializer(
-      base::win::ScopedCOMInitializer::kMTA);
-
-  // A higher priority class is used for the GPU process so that it remains at
-  // a higher priority than renderer processes.
-  ::SetPriorityClass(::GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
-#endif
 
   // Installs a base::LogMessageHandlerFunction which ensures messages are sent
   // to the GpuProcessHost once the GpuServiceImpl has started.
@@ -293,13 +216,7 @@ int GpuMain(MainFunctionParams parameters) {
             base::MessagePumpType::DEFAULT, /*is_main_thread=*/true);
 #endif
   } else {
-#if BUILDFLAG(IS_WIN)
-    // The GpuMain thread should not be pumping Windows messages because no UI
-    // is expected to run on this thread.
-    main_thread_task_executor =
-        std::make_unique<base::SingleThreadTaskExecutor>(
-            base::MessagePumpType::DEFAULT, /*is_main_thread=*/true);
-#elif BUILDFLAG(IS_OZONE)
+#if BUILDFLAG(IS_OZONE)
     // The MessagePump type required depends on the Ozone platform selected at
     // runtime.
     if (!main_thread_task_executor) {
@@ -346,9 +263,6 @@ int GpuMain(MainFunctionParams parameters) {
 
   auto gpu_init = std::make_unique<gpu::GpuInit>();
   ContentSandboxHelper sandbox_helper;
-#if BUILDFLAG(IS_WIN)
-  sandbox_helper.set_sandbox_info(parameters.sandbox_info);
-#endif
 
   gpu_init->set_sandbox_helper(&sandbox_helper);
 
@@ -375,9 +289,6 @@ int GpuMain(MainFunctionParams parameters) {
   // message from the browser (through mojom::VizMain::CreateGpuService()).
   const bool init_success = gpu_init->InitializeAndStartSandbox(
       const_cast<base::CommandLine*>(&command_line), gpu_preferences);
-#if BUILDFLAG(IS_CHROMEOS)
-  LOG(WARNING) << "gpu initialization completed init_success:" << init_success;
-#endif
   const bool dead_on_arrival = !init_success;
 
   auto* client = GetContentClient()->gpu();
@@ -398,10 +309,6 @@ int GpuMain(MainFunctionParams parameters) {
     base::HangWatcher::GetInstance()->Start();
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  base::PlatformThreadPriorityMonitor::Get().RegisterCurrentThread("GpuMain");
-  base::PlatformThreadPriorityMonitor::Get().Start();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Startup tracing creates a tracing thread, which is incompatible on
   // platforms that require single-threaded sandbox initialization. In these
@@ -450,13 +357,6 @@ int GpuMain(MainFunctionParams parameters) {
   metal::RegisterGracefulExitOnDeviceRemoval();
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  base::trace_event::MemoryDumpManager::GetInstance()->RegisterDumpProvider(
-      tracing::GraphicsMemoryDumpProvider::GetInstance(), "AndroidGraphics",
-      nullptr);
-
-  base::android::MeminfoDumpProvider::Initialize();
-#endif
 
   base::allocator::PartitionAllocSupport::Get()->ReconfigureAfterTaskRunnerInit(
       switches::kGpuProcess);
@@ -563,54 +463,7 @@ bool StartSandboxLinux(gpu::GpuWatchdogThread* watchdog_thread,
 }
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-bool StartSandboxAndroid(gpu::GpuWatchdogThread* watchdog_thread) {
-  if (watchdog_thread) {
-    // Stop the watchdog thread temporarily.
-    base::ScopedFD proc_fd(
-        HANDLE_EINTR(open("/proc", O_DIRECTORY | O_RDONLY | O_CLOEXEC)));
 
-    sandbox::ThreadHelpers::StopThreadAndWatchProcFS(proc_fd.get(),
-                                                     watchdog_thread);
-  }
-
-  bool res = sandbox::landlock::ApplyLandlock(
-      sandbox::policy::SandboxTypeFromCommandLine(
-          *base::CommandLine::ForCurrentProcess()));
-
-  if (watchdog_thread) {
-    watchdog_thread->Start();
-  }
-
-  return res;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
-
-#if BUILDFLAG(IS_WIN)
-bool StartSandboxWindows(const sandbox::SandboxInterfaceInfo* sandbox_info) {
-  TRACE_EVENT("gpu,startup", "Lower token");
-
-  // Set up DirectReceiver before the sandbox is enabled.
-  const bool should_init_transport =
-      features::IsVizDirectCompositorThreadIpcNonRootEnabled() ||
-      features::IsVizDirectCompositorThreadIpcFrameSinkManagerEnabled();
-  if (should_init_transport) {
-    // This pre-initializes a transport to be used for direct receiver since a
-    // feature that will use it is enabled.
-    mojo::CreateDirectReceiverTransportBeforeSandbox();
-  }
-  // For Windows, if the target_services interface is not zero, the process
-  // is sandboxed and we must call LowerToken() before rendering untrusted
-  // content.
-  sandbox::TargetServices* target_services = sandbox_info->target_services;
-  if (target_services) {
-    target_services->LowerToken();
-    return true;
-  }
-
-  return false;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace.
 

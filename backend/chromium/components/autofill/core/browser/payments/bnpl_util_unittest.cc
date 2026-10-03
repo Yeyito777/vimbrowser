@@ -41,18 +41,6 @@ class BnplUtilEligibleTest
 INSTANTIATE_TEST_SUITE_P(
     All,
     BnplUtilEligibleTest,
-#if BUILDFLAG(IS_ANDROID)
-    testing::Values(
-        EligibleBnplIssuerParams{
-            BnplIssuer::IssuerId::kBnplAffirm,
-            IDS_AUTOFILL_BNPL_ISSUER_SELECTION_TEXT_AFFIRM_BOTTOM_SHEET},
-        EligibleBnplIssuerParams{
-            BnplIssuer::IssuerId::kBnplKlarna,
-            IDS_AUTOFILL_BNPL_ISSUER_SELECTION_TEXT_KLARNA_BOTTOM_SHEET},
-        EligibleBnplIssuerParams{
-            BnplIssuer::IssuerId::kBnplZip,
-            IDS_AUTOFILL_BNPL_ISSUER_SELECTION_TEXT_ZIP_BOTTOM_SHEET}));
-#else
     testing::Values(
         EligibleBnplIssuerParams{
             BnplIssuer::IssuerId::kBnplAffirm,
@@ -66,7 +54,6 @@ INSTANTIATE_TEST_SUITE_P(
         EligibleBnplIssuerParams{
             BnplIssuer::IssuerId::kBnplZip,
             IDS_AUTOFILL_CARD_BNPL_SELECT_PROVIDER_PAYMENT_OPTION_ZIP}));
-#endif  // BUILDFLAG(IS_ANDROID)
 
 TEST_P(BnplUtilEligibleTest, GetBnplIssuerSelectionOptionText) {
   const EligibleBnplIssuerParams& params = GetParam();

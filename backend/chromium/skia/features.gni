@@ -10,9 +10,7 @@ declare_args() {
   # the team has verified that at least basic rendering to the screen is
   # working.
   skia_use_dawn =
-      is_mac || is_win ||
-      (is_android && target_cpu != "x86" && target_cpu != "x64") ||
-      (is_ios && use_blink) || (is_linux && !is_castos) || is_desktop_android
+      is_mac || is_win || (is_ios && use_blink) || (is_linux && !is_castos)
 }
 
 # Skia only needs to support GPU rasterization if we use the full Chromium
@@ -29,7 +27,7 @@ skia_support_pdf = use_blink && (enable_printing || enable_printing_tests)
 # Skottie is not used on Android. To keep apk size small the skottie library is
 # excluded from the binary. At the time this comment was written, it adds ~200KB
 # to the APK.
-skia_support_skottie = !is_android
+skia_support_skottie = true
 
 # Skia needs XMP support for gainmap HDR image decoding in blink.
 skia_support_xmp = use_blink

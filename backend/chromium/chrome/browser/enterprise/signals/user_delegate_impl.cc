@@ -15,9 +15,6 @@
 #include "components/signin/public/base/consent_level.h"
 #include "components/signin/public/identity_manager/identity_manager.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace enterprise_signals {
 
@@ -48,11 +45,6 @@ UserDelegateImpl::UserDelegateImpl(
 
 UserDelegateImpl::~UserDelegateImpl() = default;
 
-#if BUILDFLAG(IS_CHROMEOS)
-bool UserDelegateImpl::IsSigninContext() const {
-  return ash::ProfileHelper::IsSigninProfile(profile_);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool UserDelegateImpl::IsAffiliated() const {
   return enterprise_util::IsProfileAffiliated(profile_);

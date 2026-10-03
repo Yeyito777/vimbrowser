@@ -5,7 +5,7 @@
 import("//build/config/chrome_build.gni")
 import("//build/config/ui.gni")
 
-assert(toolkit_views || is_android)
+assert(toolkit_views)
 
 source_set("plus_addresses") {
   public = [
@@ -34,22 +34,6 @@ source_set("plus_addresses") {
       "//components/plus_addresses/core/common:prefs",
       "//ui/menus",
       "//ui/views",
-    ]
-  }
-
-  if (is_android) {
-    public += [
-      "android/all_plus_addresses_bottom_sheet_controller.h",
-      "android/all_plus_addresses_bottom_sheet_view.h",
-    ]
-    public_deps += [
-      "//base",
-      "//components/autofill/core/browser",
-      "//components/autofill/core/common",
-      "//components/plus_addresses/core/browser:hats_utils",
-      "//components/plus_addresses/core/browser:plus_address_java_enums",
-      "//components/plus_addresses/core/browser/metrics",
-      "//ui/gfx",
     ]
   }
 }
@@ -90,34 +74,13 @@ source_set("impl") {
           [ "//components/plus_addresses/core/browser/resources:vector_icons" ]
     }
   }
-
-  if (is_android) {
-    sources = [
-      "android/all_plus_addresses_bottom_sheet_controller.cc",
-      "android/all_plus_addresses_bottom_sheet_view.cc",
-    ]
-    deps = [
-      ":plus_addresses",
-      "//chrome/browser/plus_addresses",
-      "//chrome/browser/profiles",
-      "//chrome/browser/ui/android/tab_model",
-      "//chrome/browser/ui/plus_addresses/android:jni_headers",
-      "//components/autofill/content/browser",
-      "//components/plus_addresses/core/browser",
-      "//components/plus_addresses/core/browser/resources/strings",
-      "//components/plus_addresses/core/browser/settings",
-      "//components/plus_addresses/core/common:features",
-      "//components/plus_addresses/core/common:prefs",
-      "//ui/android",
-    ]
-  }
 }
 
 source_set("interactive_ui_tests") {
   testonly = true
   sources = []
 
-  if (!is_android && !is_chromeos_device) {
+  if (!is_chromeos_device) {
     sources += [ "views/plus_address_creation_dialog_interactive_uitest.cc" ]
     defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
     deps = [
@@ -158,42 +121,17 @@ source_set("unit_tests") {
     "//testing/gtest",
   ]
 
-  if (!is_android) {
-    sources = [
-      "plus_address_creation_controller_desktop_unittest.cc",
-      "plus_address_menu_model_unittest.cc",
-    ]
-    deps += [
-      "//chrome/browser/ui/hats",
-      "//components/autofill/core/common",
-      "//components/signin/public/identity_manager:test_support",
-    ]
-  }
+  sources = [
+    "plus_address_creation_controller_desktop_unittest.cc",
+    "plus_address_menu_model_unittest.cc",
+  ]
+  deps += [
+    "//chrome/browser/ui/hats",
+    "//components/autofill/core/common",
+    "//components/signin/public/identity_manager:test_support",
+  ]
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-}
-
-if (is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [ "android/all_plus_addresses_bottom_sheet_view_browsertest.cc" ]
-    deps = [
-      ":plus_addresses",
-      "//base",
-      "//base/test:test_support",
-      "//chrome/browser/plus_addresses",
-      "//chrome/browser/profiles:profile",
-      "//chrome/test:test_support",
-      "//chrome/test:test_support_ui_android",
-      "//components/plus_addresses/core/browser",
-      "//components/plus_addresses/core/browser:plus_address_java_enums",
-      "//components/plus_addresses/core/browser:test_support",
-      "//components/plus_addresses/core/common:features",
-      "//content/test:test_support",
-      "//testing/gtest",
-    ]
-  }
 }

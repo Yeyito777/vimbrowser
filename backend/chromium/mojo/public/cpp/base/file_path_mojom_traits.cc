@@ -18,30 +18,14 @@ bool StructTraits<mojo_base::mojom::FilePathDataView, base::FilePath>::Read(
     mojo_base::mojom::FilePathDataView data,
     base::FilePath* out) {
   base::FilePath::StringViewType path_view;
-#if BUILDFLAG(IS_WIN)
-  ArrayDataView<uint16_t> view;
-  data.GetPathDataView(&view);
-  path_view = {reinterpret_cast<const wchar_t*>(view.data()), view.size()};
-#else
   if (!data.ReadPath(&path_view)) {
     return false;
   }
-#endif
   *out = base::FilePath(path_view);
   return true;
 }
 
 // static
-#if BUILDFLAG(IS_WIN)
-base::span<const uint16_t>
-StructTraits<mojo_base::mojom::RelativeFilePathDataView, base::FilePath>::path(
-    const base::FilePath& path) {
-  CHECK(!path.IsAbsolute());
-  CHECK(!path.ReferencesParent());
-  return base::span(reinterpret_cast<const uint16_t*>(path.value().data()),
-                    path.value().size());
-}
-#else
 // static
 const base::FilePath::StringType&
 StructTraits<mojo_base::mojom::RelativeFilePathDataView, base::FilePath>::path(
@@ -50,21 +34,14 @@ StructTraits<mojo_base::mojom::RelativeFilePathDataView, base::FilePath>::path(
   CHECK(!path.ReferencesParent());
   return path.value();
 }
-#endif
 
 // static
 bool StructTraits<mojo_base::mojom::RelativeFilePathDataView, base::FilePath>::
     Read(mojo_base::mojom::RelativeFilePathDataView data, base::FilePath* out) {
   base::FilePath::StringViewType path_view;
-#if BUILDFLAG(IS_WIN)
-  ArrayDataView<uint16_t> view;
-  data.GetPathDataView(&view);
-  path_view = {reinterpret_cast<const wchar_t*>(view.data()), view.size()};
-#else
   if (!data.ReadPath(&path_view)) {
     return false;
   }
-#endif
   *out = base::FilePath(path_view);
 
   if (out->IsAbsolute()) {

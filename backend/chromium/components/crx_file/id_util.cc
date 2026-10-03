@@ -70,20 +70,7 @@ std::string HashedIdInHex(const std::string& id) {
 }
 
 base::FilePath MaybeNormalizePath(const base::FilePath& path) {
-#if BUILDFLAG(IS_WIN)
-  // Normalize any drive letter to upper-case. We do this for consistency with
-  // net_utils::FilePathToFileURL(), which does the same thing, to make string
-  // comparisons simpler.
-  base::FilePath::StringType path_str = path.value();
-  if (path_str.size() >= 2 && path_str[0] >= L'a' && path_str[0] <= L'z' &&
-      path_str[1] == L':') {
-    path_str[0] = absl::ascii_toupper(static_cast<unsigned char>(path_str[0]));
-  }
-
-  return base::FilePath(path_str);
-#else
   return path;
-#endif
 }
 
 bool IdIsValid(std::string_view id) {

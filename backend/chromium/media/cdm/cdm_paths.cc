@@ -27,13 +27,5 @@ base::FilePath GetPlatformSpecificDirectory(const std::string& cdm_base_path) {
       base::FilePath::FromUTF8Unsafe(cdm_base_path));
 }
 
-#if BUILDFLAG(IS_WIN)
-base::FilePath GetCdmStorePath(const base::FilePath& cdm_store_path_root,
-                               const base::UnguessableToken& cdm_origin_id,
-                               const std::string& key_system) {
-  return cdm_store_path_root.AppendASCII(cdm_origin_id.ToString())
-      .AppendASCII(key_system);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace media

@@ -15,9 +15,6 @@
 #include "third_party/perfetto/include/perfetto/tracing/core/forward_decls.h"
 #include "third_party/perfetto/include/perfetto/tracing/data_source.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/system_cpu/cpu_freq_android.h"
-#endif
 
 namespace tracing {
 
@@ -52,15 +49,9 @@ class COMPONENT_EXPORT(TRACING_CPP) SystemMetricsSampler final
     void SampleSystemMetrics();
     void OnCpuProbeResult(std::optional<system_cpu::CpuSample> cpu_sample);
 
-#if BUILDFLAG(IS_WIN)
-    void SampleMemoryMetrics();
-#endif
 
     base::RepeatingTimer sample_timer_;
     std::unique_ptr<system_cpu::CpuProbe> cpu_probe_;
-#if BUILDFLAG(IS_ANDROID)
-    system_cpu::CPUFreqMonitor cpu_frequency_monitor_;
-#endif
   };
   // Samples process metrics on the sampling thread.
   class ProcessSampler {

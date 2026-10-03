@@ -492,12 +492,6 @@ class EchoCancellationContainer {
     // TODO(crbug.com/1481032): Consider extending to other platforms. It is not
     // known at the moment what OSes support this behavior.
     const bool is_aec_reconfiguration_supported =
-#if BUILDFLAG(IS_CHROMEOS)
-        // ChromeOS is currently the only platform where we have confirmed
-        // support for simultaneous streams with and without hardware AEC on the
-        // same device.
-        true;
-#else
         // Allowing it when the system echo cancellation is enforced via flag,
         // for evaluation purposes.
         media::IsSystemEchoCancellationEnforced() ||
@@ -506,7 +500,6 @@ class EchoCancellationContainer {
          !EchoCanceller::From(source_info->properties(),
                               device_parameters.effects())
               .IsPlatformProvided());
-#endif
     if (is_reconfiguration_allowed && is_aec_reconfiguration_supported) {
       return;
     }

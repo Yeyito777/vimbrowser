@@ -38,13 +38,7 @@
 #include "third_party/openxr/src/include/openxr/openxr.h"
 #include "ui/gfx/geometry/rect_f.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/threading/thread.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/java_handler_thread.h"
-#endif
 
 namespace gpu::gles2 {
 class GLES2Interface;
@@ -58,22 +52,7 @@ namespace device {
 
 class OpenXrApiWrapper;
 
-#if BUILDFLAG(IS_ANDROID)
-class XRThread : public base::android::JavaHandlerThread {
- public:
-  explicit XRThread(const char* name)
-      : base::android::JavaHandlerThread(name) {}
-  ~XRThread() override = default;
-};
-#elif BUILDFLAG(IS_WIN)
-class XRThread : public base::Thread {
- public:
-  explicit XRThread(const char* name) : base::Thread(name) {}
-  ~XRThread() override = default;
-};
-#else
 #error "Trying to build OpenXR for an unsupported platform"
-#endif
 
 class OpenXrRenderLoop : public XRThread,
                          public mojom::XRPresentationProvider,
@@ -143,11 +122,6 @@ class OpenXrRenderLoop : public XRThread,
   bool MarkFrameSubmitted(int16_t frame_index);
 
   // XRPresentationProvider overrides:
-#if BUILDFLAG(IS_WIN)
-  void SubmitFrameWithTextureHandle(int16_t frame_index,
-                                    mojo::PlatformHandle texture_handle,
-                                    const gpu::SyncToken& sync_token) override;
-#endif
   void SubmitFrameMissing(int16_t frame_index, const gpu::SyncToken&) override;
   void SubmitFrame(int16_t frame_index,
                    base::TimeDelta time_waited) final;

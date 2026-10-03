@@ -780,7 +780,7 @@ IN_PROC_BROWSER_TEST_P(NetworkContextConfigurationBrowserTest,
   std::unique_ptr<network::ResourceRequest> request =
       std::make_unique<network::ResourceRequest>();
   request->url = https_server.GetURL("/echoheader?Cookie");
-  url::Origin origin = url::Origin::Create(GURL(chrome::kChromeUIPrintURL));
+  url::Origin origin = url::Origin::Create(GURL(chrome::kChromeUIVersionURL));
   request->site_for_cookies = net::SiteForCookies::FromOrigin(origin);
   request->trusted_params = network::ResourceRequest::TrustedParams();
   request->trusted_params->isolation_info =

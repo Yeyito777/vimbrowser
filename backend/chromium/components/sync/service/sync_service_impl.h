@@ -65,9 +65,6 @@ class BackendMigrator;
 class SyncFeatureStatusForMigrationsRecorder;
 class SyncPrefsPolicyHandler;
 
-#if BUILDFLAG(IS_ANDROID)
-class SyncServiceAndroidBridge;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Look at the SyncService interface for information on how to use this class.
 // You should not need to know about SyncServiceImpl directly.
@@ -117,9 +114,6 @@ class SyncServiceImpl : public SyncService,
   void Initialize(DataTypeController::TypeVector controllers);
 
   // SyncService implementation
-#if BUILDFLAG(IS_ANDROID)
-  base::android::ScopedJavaLocalRef<jobject> GetJavaObject() override;
-#endif  // BUILDFLAG(IS_ANDROID)
   SyncUserSettings* GetUserSettings() override;
   const SyncUserSettings* GetUserSettings() const override;
   DisableReasonSet GetDisableReasons() const override;
@@ -216,11 +210,7 @@ class SyncServiceImpl : public SyncService,
   CoreAccountInfo GetSyncAccountInfoForPrefs() const override;
   void OnSyncClientDisabledByPolicyChanged() override;
   void OnSelectedTypesChanged() override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnSyncFeatureDisabledViaDashboardCleared() override;
-#else   // BUILDFLAG(IS_CHROMEOS)
   void OnInitialSyncFeatureSetupCompleted() override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // IdentityManager::Observer implementation.
   void OnAccountsCookieDeletedByUserAction() override;
@@ -552,11 +542,6 @@ class SyncServiceImpl : public SyncService,
 
   std::unique_ptr<DeviceStatisticsScheduler> device_statistics_scheduler_;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Manage and fetch the java object that wraps this SyncService on
-  // android.
-  std::unique_ptr<SyncServiceAndroidBridge> sync_service_android_;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   base::WeakPtrFactory<SyncServiceImpl> weak_factory_{this};
 };

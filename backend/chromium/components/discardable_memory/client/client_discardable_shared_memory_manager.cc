@@ -53,12 +53,6 @@ size_t GetDefaultAllocationSize() {
   // Not on Android, since on this platform total number of file descriptors is
   // also a concern.
   return kDefaultLowEndDeviceAllocationSize;
-#elif BUILDFLAG(IS_FUCHSIA)
-  // Low end Fuchsia devices may be very constrained, so use smaller allocations
-  // to save memory. See https://fxbug.dev/55760.
-  return base::SysInfo::IsLowEndDevice() ? kDefaultLowEndDeviceAllocationSize
-                                         : kDefaultAllocationSize;
-
 #else
   return kDefaultAllocationSize;
 #endif

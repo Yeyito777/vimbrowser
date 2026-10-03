@@ -38,7 +38,7 @@ _disable_partition_alloc_everywhere =
 # - The allocator shim does not work with macOS with use_custom_libcxx=false.
 # - The allocator shim isn't working standalone on Windows at the moment.
 #   See crbug.com/pdfium/2068.
-if ((is_linux || is_chromeos || is_android || is_apple ||
+if ((is_linux || is_chromeos || is_apple ||
      (is_win && !is_component_build && !is_debug)) && !_is_using_sanitizers &&
     (!is_mac || use_custom_libcxx) && !is_win) {
   _use_shim = true

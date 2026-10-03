@@ -209,9 +209,6 @@ bool CefBrowserCreateParams::IsWindowless() const {
 // static
 void CefBrowserCreateParams::InitWindowInfo(CefWindowInfo* window_info,
                                             CefBrowserHostBase* opener) {
-#if BUILDFLAG(IS_WIN)
-  window_info->SetAsPopup(nullptr, CefString());
-#endif
 
   if (opener->IsAlloyStyle()) {
     // Give the popup the same runtime style as the opener.

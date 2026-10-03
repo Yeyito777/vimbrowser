@@ -588,14 +588,7 @@ void ConsumerHost::EnableTracing(
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   DCHECK(!tracing_session_);
 
-#if BUILDFLAG(IS_WIN)
-  // TODO(crbug.com/40736989): Support writing to a file directly on Windows.
-  DCHECK(!output_file.IsValid())
-      << "Tracing directly to a file isn't supported yet on Windows";
-  perfetto::base::ScopedFile file;
-#else
   perfetto::base::ScopedFile file(output_file.TakePlatformFile());
-#endif
 
   tracing_session_ = std::make_unique<TracingSession>(
       this, std::move(tracing_session_host), std::move(tracing_session_client),

@@ -75,12 +75,6 @@
 #include "ui/views/view_class_properties.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-// TODO(crbug.com/40147906): Enable gn check once it learns about conditional
-// includes.
-#include "components/metrics/structured/structured_events.h"  // nogncheck
-#include "components/metrics/structured/structured_metrics_client.h"  // nogncheck
-#endif
 
 namespace {
 
@@ -394,9 +388,6 @@ class ImageCarouselView : public views::View {
 BEGIN_METADATA(ImageCarouselView)
 END_METADATA
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace cros_events = metrics::structured::events::v2::cr_os_events;
-#endif
 
 }  // namespace
 
@@ -492,12 +483,6 @@ void ShowWebAppDetailedInstallDialog(
 
   base::RecordAction(base::UserMetricsAction("WebAppDetailedInstallShown"));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  webapps::AppId app_id = web_app::GenerateAppIdFromManifestId(manifest_id);
-  metrics::structured::StructuredMetricsClient::Record(
-      cros_events::AppDiscovery_Browser_AppInstallDialogShown().SetAppId(
-          app_id));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 }  // namespace web_app

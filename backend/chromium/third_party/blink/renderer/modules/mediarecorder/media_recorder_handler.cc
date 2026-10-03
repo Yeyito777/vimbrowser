@@ -63,9 +63,6 @@
 #include "third_party/blink/renderer/platform/wtf/functional.h"
 #include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "media/gpu/windows/mf_audio_encoder.h"
-#endif
 
 using base::TimeTicks;
 
@@ -594,15 +591,6 @@ bool MediaRecorderHandler::Start(int timeslice,
             add_parameter_sets_in_bitstream_, write_callback),
         optional_timeslice);
 
-#if BUILDFLAG(IS_WIN)
-    // Windows OS uses MediaFoundation for MP4 muxing, which requires the
-    // specific audio bit rate for AAC encoding.
-    if (audio_bits_per_second_ != 0u) {
-      audio_bits_per_second_ =
-          media::MFAudioEncoder::ClampAccCodecBitrate(audio_bits_per_second_);
-      recorder_->UpdateAudioBitrate(audio_bits_per_second_);
-    }
-#endif
   } else if (timeslice_.is_max() &&
              base::FeatureList::IsEnabled(kMediaRecorderSeekableWebm)) {
     // Write a seekable WebM instead of a live one.

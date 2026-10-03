@@ -19,19 +19,7 @@ component("fingerprint") {
     "//mojo/public/cpp/bindings",
   ]
 
-  if (is_chromeos) {
-    sources += [
-      "fingerprint_chromeos.cc",
-      "fingerprint_chromeos.h",
-    ]
-    deps += [
-      "//chromeos/ash/components/dbus/biod",
-      "//dbus",
-      "//third_party/protobuf:protobuf_lite",
-    ]
-  } else {
-    sources += [ "fingerprint_default.cc" ]
-  }
+  sources += [ "fingerprint_default.cc" ]
 
   public_deps = [ "//services/device/public/mojom" ]
 }

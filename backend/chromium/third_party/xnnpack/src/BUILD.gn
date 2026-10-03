@@ -282,7 +282,7 @@ config("xnnpack_private_config") {
     defines += [ "XNN_LOG_LEVEL=0" ]
   }
 
-  if ((is_android || is_linux) && current_cpu == "arm64") {
+  if (is_linux && current_cpu == "arm64") {
     # Mark assembly files with BTI support
     asmflags = [ "-mmark-bti-property" ]
   }

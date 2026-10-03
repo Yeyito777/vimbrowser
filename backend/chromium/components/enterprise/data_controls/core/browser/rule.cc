@@ -76,9 +76,6 @@ std::vector<std::string_view> AnyOfConditions(const base::DictValue& value) {
        {kKeySources, kKeyDestinations, AttributesCondition::kKeyUrls,
         AttributesCondition::kKeyIncognito,
         AttributesCondition::kKeyOtherProfile,
-#if BUILDFLAG(IS_CHROMEOS)
-        AttributesCondition::kKeyComponents
-#endif  // BUILDFLAG(IS_CHROMEOS)
        }) {
     if (value.contains(anyof_condition)) {
       anyof_conditions.push_back(anyof_condition);
@@ -509,9 +506,6 @@ bool Rule::AddUnsupportedAttributeErrors(
                   AttributesCondition::kKeyUrls,
                   AttributesCondition::kKeyIncognito,
                   AttributesCondition::kKeyOtherProfile,
-#if BUILDFLAG(IS_CHROMEOS)
-                  AttributesCondition::kKeyComponents,
-#endif  // BUILDFLAG(IS_CHROMEOS)
                   kKeyAnd,
                   kKeyOr,
                   kKeyNot,
@@ -524,9 +518,6 @@ bool Rule::AddUnsupportedAttributeErrors(
               {
                   AttributesCondition::kKeyUrls,
                   AttributesCondition::kKeyIncognito,
-#if BUILDFLAG(IS_CHROMEOS)
-                  AttributesCondition::kKeyComponents,
-#endif  // BUILDFLAG(IS_CHROMEOS)
                   kKeyAnd,
                   kKeyOr,
                   kKeyNot,

@@ -35,12 +35,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/settings/about_flags.h"
-#include "chrome/browser/profiles/profile.h"
-#else
 #include "chrome/browser/browser_process.h"
-#endif
 
 namespace {
 
@@ -168,14 +163,6 @@ void ChromeLabsViewController::ParseModelDataAndAddLabs() {
 }
 
 void ChromeLabsViewController::RestartToApplyFlags() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // On Chrome OS be less intrusive and restart inside the user session after
-  // we apply the newly selected flags.
-  VLOG(1) << "Restarting to apply per-session flags...";
-  ash::about_flags::FeatureFlagsUpdate(
-      *flags_storage_, browser_->profile()->GetOriginalProfile()->GetPrefs())
-      .UpdateSessionManager();
-#endif
   // During the restart process some situations may cause previously active
   // bubbles to deactivate. Since the restart action itself is not binded to any
   // state, run the restart asynchronously. See crbug.com/1310212 where
@@ -194,13 +181,8 @@ void ChromeLabsViewController::SetRestartCallback() {
 user_education::DisplayNewBadge ChromeLabsViewController::ShouldLabShowNewBadge(
     Profile* profile,
     const LabInfo& lab) {
-#if BUILDFLAG(IS_CHROMEOS)
-  ScopedDictPrefUpdate update(
-      profile->GetPrefs(), chrome_labs_prefs::kChromeLabsNewBadgeDictAshChrome);
-#else
   ScopedDictPrefUpdate update(g_browser_process->local_state(),
                               chrome_labs_prefs::kChromeLabsNewBadgeDict);
-#endif
 
   base::DictValue& new_badge_prefs = update.Get();
   std::optional<int> start_day = new_badge_prefs.FindInt(lab.internal_name);

@@ -342,14 +342,6 @@ void WallpaperSearchHandler::GetWallpaperSearchResults(
                             std::vector<WallpaperSearchResultPtr>());
     return;
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  // Check if user is browsing in guest mode.
-  if (profile_->IsGuestSession()) {
-    std::move(callback).Run(WallpaperSearchStatus::kSignedOut,
-                            std::vector<WallpaperSearchResultPtr>());
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   callback = mojo::WrapCallbackWithDefaultInvokeIfNotRun(
       std::move(callback), WallpaperSearchStatus::kError,
@@ -573,11 +565,6 @@ void WallpaperSearchHandler::LaunchHatsSurvey() {
 }
 
 void WallpaperSearchHandler::ShowFeedbackPage() {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (skip_show_feedback_page_for_testing_) {
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   Browser* browser = chrome::FindLastActive();
   if (!browser) {
     return;

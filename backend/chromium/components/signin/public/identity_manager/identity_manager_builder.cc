@@ -25,16 +25,9 @@
 #include "components/signin/public/identity_manager/accounts_mutator.h"
 #include "components/signin/public/identity_manager/device_accounts_synchronizer.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/signin/internal/identity_manager/account_fetcher_factory_android.h"
-#else
 #include "components/signin/internal/identity_manager/account_fetcher_factory_gaia.h"
 #include "components/signin/public/webdata/token_web_data.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_IOS)
-#include "components/signin/public/identity_manager/ios/device_accounts_provider.h"
-#endif
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 #include "components/signin/internal/identity_manager/device_accounts_synchronizer_impl.h"
@@ -111,19 +104,10 @@ IdentityManager::InitParameters BuildIdentityManagerInitParameters(
     token_service = BuildProfileOAuth2TokenService(
         params->pref_service, account_tracker_service.get(),
         params->network_connection_tracker, params->account_consistency,
-#if BUILDFLAG(IS_CHROMEOS)
-        params->account_manager_facade, params->is_regular_profile,
-#endif  // BUILDFLAG(IS_CHROMEOS)
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
         params->delete_signin_cookies_on_exit, params->token_web_data,
         params->unexportable_key_service,
 #endif  // BUILDFLAG(ENABLE_DICE_SUPPORT)
-#if BUILDFLAG(IS_IOS)
-        std::move(params->device_accounts_provider),
-#endif
-#if BUILDFLAG(IS_WIN)
-        params->reauth_callback,
-#endif
         params->signin_client);
   }
 
@@ -156,9 +140,6 @@ IdentityManager::InitParameters BuildIdentityManagerInitParameters(
       token_service.get(), gaia_cookie_manager_service.get());
 
   std::unique_ptr<AccountFetcherFactory> account_fetcher_factory;
-#if BUILDFLAG(IS_ANDROID)
-  account_fetcher_factory = std::make_unique<AccountFetcherFactoryAndroid>();
-#else
   // Default to server-based lookups if platform-specific capabilities fetcher
   // is not defined.
   if (params->account_fetcher_factory) {
@@ -167,7 +148,6 @@ IdentityManager::InitParameters BuildIdentityManagerInitParameters(
     account_fetcher_factory = std::make_unique<AccountFetcherFactoryGaia>(
         token_service.get(), params->signin_client);
   }
-#endif  // BULIDFLAG(IS_ANDROID)
 
   init_params.account_fetcher_service = BuildAccountFetcherService(
       params->signin_client, token_service.get(), account_tracker_service.get(),
@@ -186,9 +166,6 @@ IdentityManager::InitParameters BuildIdentityManagerInitParameters(
   init_params.token_service = std::move(token_service);
   init_params.account_consistency = params->account_consistency;
   init_params.signin_client = params->signin_client;
-#if BUILDFLAG(IS_CHROMEOS)
-  init_params.account_manager_facade = params->account_manager_facade;
-#endif
 
   return init_params;
 }

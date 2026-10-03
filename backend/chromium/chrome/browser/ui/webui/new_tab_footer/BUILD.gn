@@ -4,8 +4,6 @@
 
 import("//mojo/public/tools/bindings/mojom.gni")
 
-assert(!is_android)
-
 source_set("new_tab_footer") {
   sources = [
     "footer_context_menu.h",

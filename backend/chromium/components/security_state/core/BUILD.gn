@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
-
 static_library("core") {
   sources = [
     "security_state.cc",
@@ -20,17 +15,6 @@ static_library("core") {
   ]
 
   deps = [ "//services/network/public/cpp" ]
-}
-
-if (is_android) {
-  java_cpp_enum("security_state_enums") {
-    sources = [ "security_state.h" ]
-  }
-
-  android_library("security_state_enums_java") {
-    srcjar_deps = [ ":security_state_enums" ]
-    deps = [ "//third_party/androidx:androidx_annotation_annotation_java" ]
-  }
 }
 
 source_set("unit_tests") {

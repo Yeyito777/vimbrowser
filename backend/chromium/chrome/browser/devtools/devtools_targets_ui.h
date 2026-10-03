@@ -12,9 +12,12 @@
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
-#include "chrome/browser/devtools/device/devtools_android_bridge.h"
 
 class Profile;
+
+namespace content {
+class DevToolsAgentHost;
+}
 
 class DevToolsTargetsUIHandler {
  public:
@@ -61,19 +64,12 @@ class DevToolsTargetsUIHandler {
   Callback callback_;
 };
 
-class PortForwardingStatusSerializer
-    : private DevToolsAndroidBridge::PortForwardingListener {
+class PortForwardingStatusSerializer {
  public:
   using Callback = base::RepeatingCallback<void(base::Value)>;
 
-  PortForwardingStatusSerializer(const Callback& callback, Profile* profile);
-  ~PortForwardingStatusSerializer() override;
-
-  void PortStatusChanged(const ForwardingStatus& status) override;
-
- private:
-  Callback callback_;
-  raw_ptr<Profile> profile_;
+ PortForwardingStatusSerializer(const Callback& callback, Profile* profile);
+  ~PortForwardingStatusSerializer();
 };
 
 #endif  // CHROME_BROWSER_DEVTOOLS_DEVTOOLS_TARGETS_UI_H_

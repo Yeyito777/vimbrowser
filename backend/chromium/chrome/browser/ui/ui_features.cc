@@ -20,11 +20,7 @@ namespace features {
 
 // Enables the use of WGC for the Eye Dropper screen capture.
 BASE_FEATURE(kAllowEyeDropperWGCScreenCapture,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif  // BUILDFLAG(IS_WIN)
 );
 
 BASE_FEATURE(kBrowserWidgetCacheThemeService,
@@ -53,14 +49,6 @@ BASE_FEATURE(kExtensionsCollapseMainMenu, base::FEATURE_DISABLED_BY_DEFAULT);
 
 BASE_FEATURE(kInfobarRefresh, base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kOfferPinToTaskbarWhenSettingToDefault,
-             "OfferPinToTaskbarWhenSettingDefault",
-             base::FEATURE_ENABLED_BY_DEFAULT);
-BASE_FEATURE(kOfferPinToTaskbarInFirstRunExperience,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-BASE_FEATURE(kOfferPinToTaskbarInSettings, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 // Shows an infobar at startup offering to pin Chrome to the taskbar (on
@@ -160,14 +148,12 @@ BASE_FEATURE(kTabDuplicateMetrics, base::FEATURE_ENABLED_BY_DEFAULT);
 // https://crbug.com/1110108
 BASE_FEATURE(kTabGroupsCollapseFreezing, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if !BUILDFLAG(IS_ANDROID)
 BASE_FEATURE(kTabGroupMenuMoreEntryPoints, base::FEATURE_DISABLED_BY_DEFAULT);
 
 bool IsTabGroupMenuMoreEntryPointsEnabled() {
   return base::FeatureList::IsEnabled(kTabGroupMenuMoreEntryPoints);
 }
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // Enables preview images in tab-hover cards.
 // https://crbug.com/928954
@@ -234,9 +220,7 @@ BASE_FEATURE(kTabOrganizationEnableNudgeForEnterprise,
 BASE_FEATURE(kTearOffWebAppTabOpensWebAppWindow,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if !BUILDFLAG(IS_ANDROID)
 BASE_FEATURE(kThreeButtonPasswordSaveDialog, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kToolbarHeightSidePanel, base::FEATURE_DISABLED_BY_DEFAULT);
 
@@ -273,22 +257,14 @@ BASE_FEATURE(kManagedProfileRequiredInterstitial,
 // Enables a web-based tab strip. See https://crbug.com/989131. Note this
 // feature only works when the ENABLE_WEBUI_TAB_STRIP buildflag is enabled.
 BASE_FEATURE(kWebUITabStrip,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 // The default value of this flag is aligned with platform behavior to handle
 // context menu with touch.
 // TODO(crbug.com/40796475): Enable this flag for all platforms after launch.
 BASE_FEATURE(kWebUITabStripContextMenuAfterTap,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_DISABLED_BY_DEFAULT
-#else
              base::FEATURE_ENABLED_BY_DEFAULT
-#endif
 );
 
 #if BUILDFLAG(IS_MAC)
@@ -307,11 +283,7 @@ BASE_FEATURE(kPageSpecificDataDialogRelatedInstalledAppsSection,
 BASE_FEATURE(kEnableManagementPromotionBanner,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_CHROMEOS)
 BASE_FEATURE(kEnablePolicyPromotionBanner, base::FEATURE_ENABLED_BY_DEFAULT);
-#else
-BASE_FEATURE(kEnablePolicyPromotionBanner, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kInlineFullscreenPerfExperiment, base::FEATURE_ENABLED_BY_DEFAULT);
 
@@ -328,11 +300,7 @@ BASE_FEATURE_PARAM(bool,
                    &kPageActionsMigration,
                    "intent_picker",
 // TODOD(crbug.com/480035938): Enable on ChromeOS.
-#if BUILDFLAG(IS_CHROMEOS)
-                   false
-#else
                    true
-#endif
 );
 
 BASE_FEATURE_PARAM(bool,
@@ -459,7 +427,6 @@ BASE_FEATURE_PARAM(bool,
                    false);
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 BASE_FEATURE(kNewTabAddsToActiveGroup, base::FEATURE_DISABLED_BY_DEFAULT);
 
 bool IsNewTabAddsToActiveGroupEnabled() {
@@ -502,17 +469,7 @@ bool IsWebUIToolbarEnabled() {
          IsWebUIBackForwardButtonEnabled() ||
          IsWebUIPinnedToolbarActionsEnabled();
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kAndroidAnimatedProgressBarInBrowser,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-bool IsAndroidAnimatedProgressBarInBrowserEnabled() {
-  return base::FeatureList::IsEnabled(
-      features::kAndroidAnimatedProgressBarInBrowser);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 BASE_FEATURE(kWhatsNewDesktopRefresh, base::FEATURE_ENABLED_BY_DEFAULT);
 

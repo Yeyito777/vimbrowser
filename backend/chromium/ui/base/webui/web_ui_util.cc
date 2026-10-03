@@ -31,9 +31,6 @@
 #include "ui/webui/resources/grit/webui_resources.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 namespace webui {
 namespace {

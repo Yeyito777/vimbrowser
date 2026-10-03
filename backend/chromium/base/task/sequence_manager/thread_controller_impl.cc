@@ -369,10 +369,5 @@ void ThreadControllerImpl::AttachToMessagePump() {
 }
 #endif  // BUILDFLAG(IS_IOS) || BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_IOS)
-void ThreadControllerImpl::DetachFromMessagePump() {
-  NOTREACHED();
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 }  // namespace base::sequence_manager::internal

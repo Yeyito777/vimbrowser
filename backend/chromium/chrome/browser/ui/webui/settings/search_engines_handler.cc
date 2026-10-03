@@ -43,9 +43,6 @@
 #include "extensions/browser/management_policy.h"
 #include "extensions/common/extension.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/public/cpp/new_window_delegate.h"
-#endif
 
 namespace {
 // The following strings need to match with the IDs of the text input elements
@@ -139,13 +136,6 @@ void SearchEnginesHandler::RegisterMessages() {
       base::BindRepeating(
           &SearchEnginesHandler::HandleSearchEngineEditCompleted,
           base::Unretained(this)));
-#if BUILDFLAG(IS_CHROMEOS)
-  web_ui()->RegisterMessageCallback(
-      "openBrowserSearchSettings",
-      base::BindRepeating(
-          &SearchEnginesHandler::HandleOpenBrowserSearchSettings,
-          base::Unretained(this)));
-#endif
 }
 
 void SearchEnginesHandler::OnJavascriptAllowed() {
@@ -500,14 +490,5 @@ void SearchEnginesHandler::HandleSearchEngineEditCompleted(
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void SearchEnginesHandler::HandleOpenBrowserSearchSettings(
-    const base::ListValue& args) {
-  ash::NewWindowDelegate::GetInstance()->OpenUrl(
-      GURL(chrome::kChromeUISettingsURL).Resolve(chrome::kSearchSubPage),
-      ash::NewWindowDelegate::OpenUrlFrom::kUserInteraction,
-      ash::NewWindowDelegate::Disposition::kSwitchToTab);
-}
-#endif
 
 }  // namespace settings

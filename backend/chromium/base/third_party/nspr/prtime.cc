@@ -64,16 +64,6 @@
 #define DAYS_BETWEEN_YEARS(A, B) (COUNT_DAYS(B) - COUNT_DAYS(A))
 
 /* Implements the Unix localtime_r() function for windows */
-#if BUILDFLAG(IS_WIN)
-static struct tm* localtime_r(const time_t* timer, struct tm* result) {
-    errno_t err = localtime_s(result, timer);
-    if (err != 0) {
-        errno = err;
-        return NULL;
-    }
-    return result;
-}
-#endif
 
 /*
  * Static variables used by functions in this file

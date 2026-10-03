@@ -93,13 +93,6 @@ void SharingFCMSender::DoSendMessageToDevice(
                          std::move(callback));
 }
 
-void SharingFCMSender::DoSendUnencryptedMessageToDevice(
-    const SharingTargetDeviceInfo& device,
-    sync_pb::UnencryptedSharingMessage message,
-    SendMessageCallback callback) {
-  NOTREACHED();
-}
-
 void SharingFCMSender::SendMessageToFcmTarget(
     const components_sharing_message::FCMChannelConfiguration&
         fcm_configuration,

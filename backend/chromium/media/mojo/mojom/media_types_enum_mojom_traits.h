@@ -21,47 +21,6 @@
 
 namespace mojo {
 
-#if BUILDFLAG(IS_WIN)
-template <>
-struct EnumTraits<media::mojom::CdmEvent, ::media::CdmEvent> {
-  static media::mojom::CdmEvent ToMojom(::media::CdmEvent input) {
-    switch (input) {
-      case ::media::CdmEvent::kSignificantPlayback:
-        return media::mojom::CdmEvent::kSignificantPlayback;
-      case ::media::CdmEvent::kPlaybackError:
-        return media::mojom::CdmEvent::kPlaybackError;
-      case ::media::CdmEvent::kCdmError:
-        return media::mojom::CdmEvent::kCdmError;
-      case ::media::CdmEvent::kHardwareContextReset:
-        return media::mojom::CdmEvent::kHardwareContextReset;
-    }
-
-    NOTREACHED();
-  }
-
-  // Returning false results in deserialization failure and causes the
-  // message pipe receiving it to be disconnected.
-  static bool FromMojom(media::mojom::CdmEvent input,
-                        ::media::CdmEvent* output) {
-    switch (input) {
-      case media::mojom::CdmEvent::kSignificantPlayback:
-        *output = ::media::CdmEvent::kSignificantPlayback;
-        return true;
-      case media::mojom::CdmEvent::kPlaybackError:
-        *output = ::media::CdmEvent::kPlaybackError;
-        return true;
-      case media::mojom::CdmEvent::kCdmError:
-        *output = ::media::CdmEvent::kCdmError;
-        return true;
-      case media::mojom::CdmEvent::kHardwareContextReset:
-        *output = ::media::CdmEvent::kHardwareContextReset;
-        return true;
-    }
-
-    NOTREACHED();
-  }
-};
-#endif  // BUILDFLAG(IS_WIN)
 
 template <>
 struct EnumTraits<media::mojom::CdmSessionClosedReason,

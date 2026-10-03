@@ -28,10 +28,6 @@ namespace apps {
 // static
 bool AppRestoreService::ShouldRestoreApps(bool is_browser_restart) {
   bool should_restore_apps = is_browser_restart;
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS always restarts apps, even if it was a regular shutdown.
-  should_restore_apps = true;
-#endif
   return should_restore_apps;
 }
 

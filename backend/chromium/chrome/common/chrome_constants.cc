@@ -31,34 +31,19 @@ const char kChromeVersion[] = CHROME_VERSION_STRING;
 // in the UITest class we support switching to that version when told to
 // do so.
 
-#if BUILDFLAG(IS_WIN)
-const base::FilePath::CharType kBrowserProcessExecutableName[] =
-    FPL("chrome.exe");
-const base::FilePath::CharType kHelperProcessExecutableName[] =
-    FPL("chrome.exe");
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 const base::FilePath::CharType kBrowserProcessExecutableName[] =
     FPL(PRODUCT_FULLNAME_STRING);
 const base::FilePath::CharType kHelperProcessExecutableName[] =
     FPL(PRODUCT_FULLNAME_STRING " Helper");
-#elif BUILDFLAG(IS_ANDROID)
-// NOTE: Keep it synced with the process names defined in AndroidManifest.xml.
-const base::FilePath::CharType kBrowserProcessExecutableName[] = FPL("chrome");
-const base::FilePath::CharType kHelperProcessExecutableName[] =
-    FPL("sandboxed_process");
-#elif BUILDFLAG(IS_POSIX)
+#else
 const base::FilePath::CharType kBrowserProcessExecutableName[] = FPL("chrome");
 // Helper processes end up with a name of "exe" due to execing via
 // /proc/self/exe.  See bug 22703.
 const base::FilePath::CharType kHelperProcessExecutableName[] = FPL("exe");
 #endif  // OS_*
 
-#if BUILDFLAG(IS_WIN)
-const base::FilePath::CharType kBrowserProcessExecutablePath[] =
-    FPL("chrome.exe");
-const base::FilePath::CharType kHelperProcessExecutablePath[] =
-    FPL("chrome.exe");
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 const base::FilePath::CharType kBrowserProcessExecutablePath[] =
     FPL(PRODUCT_FULLNAME_STRING ".app/Contents/MacOS/" PRODUCT_FULLNAME_STRING);
 const base::FilePath::CharType
@@ -72,10 +57,7 @@ const base::FilePath::CharType kChromiumBrowserProcessExecutablePath[] =
 const base::FilePath::CharType kHelperProcessExecutablePath[] =
     FPL(PRODUCT_FULLNAME_STRING
         " Helper.app/Contents/MacOS/" PRODUCT_FULLNAME_STRING " Helper");
-#elif BUILDFLAG(IS_ANDROID)
-const base::FilePath::CharType kBrowserProcessExecutablePath[] = FPL("chrome");
-const base::FilePath::CharType kHelperProcessExecutablePath[] = FPL("chrome");
-#elif BUILDFLAG(IS_POSIX)
+#else
 const base::FilePath::CharType kBrowserProcessExecutablePath[] = FPL("chrome");
 const base::FilePath::CharType kHelperProcessExecutablePath[] = FPL("chrome");
 #endif  // OS_*
@@ -88,17 +70,6 @@ const base::FilePath::CharType kFrameworkExecutableName[] =
 const char kMacHelperSuffixAlerts[] = " (Alerts)";
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-const base::FilePath::CharType kBrowserResourcesDll[] =
-#if BUILDFLAG(ENABLE_CEF)
-    FPL("libcef.dll");
-#else
-    FPL("chrome.dll");
-#endif
-const base::FilePath::CharType kElfDll[] = FPL("chrome_elf.dll");
-const base::FilePath::CharType kStatusTrayWindowClass[] =
-    FPL("Chrome_StatusTrayWindow");
-#endif  // BUILDFLAG(IS_WIN)
 
 const char kInitialProfile[] = "Default";
 const char kMultiProfileDirPrefix[] = "Profile ";
@@ -169,16 +140,8 @@ const base::FilePath::CharType kWebAppDirname[] = FPL("Web Applications");
 const base::FilePath::CharType kReportingAndNelStoreFilename[] =
     FPL("Reporting and NEL");
 
-#if BUILDFLAG(IS_WIN)
-const base::FilePath::CharType kJumpListIconDirname[] = FPL("JumpListIcons");
-#endif
 
 // directory names
-#if BUILDFLAG(IS_WIN)
-const wchar_t kUserDataDirname[] = L"User Data";
-#elif BUILDFLAG(IS_ANDROID)
-const base::FilePath::CharType kOTRTempStateDirname[] = FPL("OTRTempState");
-#endif
 
 const float kMaxShareOfExtensionProcesses = 0.30f;
 

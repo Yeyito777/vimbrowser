@@ -175,9 +175,7 @@ if (sanitize != "") {
   sanitizers = ""
   if (sanitize == "ASAN") {
     sanitizers = "undefined,address,float-divide-by-zero"
-    if (is_android) {
-      sanitizers = "address"
-    }
+
     if (!is_win) {
       # See Skia's GN config("no_rtti")
       sanitizer_args += [ "--enable_rtti" ]
@@ -252,12 +250,6 @@ action("dawn_cmake") {
       "--win_sdk_version=" + win_sdk_version,
       "--win_vc=" + win_vc,
       "--win_toolchain_version=" + win_toolchain_version,
-    ]
-  }
-  if (is_android) {
-    args += [
-      "--android_ndk_path=" + ndk,
-      "--android_platform=android-" + ndk_api,
     ]
   }
 

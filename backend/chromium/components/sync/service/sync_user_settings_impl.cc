@@ -38,16 +38,6 @@ DataTypeSet UserSelectableTypesToDataTypes(
   return preferred_types;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-DataTypeSet UserSelectableOsTypesToDataTypes(
-    UserSelectableOsTypeSet selected_types) {
-  DataTypeSet preferred_types;
-  for (UserSelectableOsType type : selected_types) {
-    preferred_types.PutAll(UserSelectableOsTypeToAllDataTypes(type));
-  }
-  return preferred_types;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 int GetCurrentMajorProductVersion() {
   DCHECK(version_info::GetVersion().IsValid());
@@ -76,7 +66,6 @@ bool SyncUserSettingsImpl::IsInitialSyncFeatureSetupComplete() const {
   return prefs_->IsInitialSyncFeatureSetupComplete();
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void SyncUserSettingsImpl::SetInitialSyncFeatureSetupComplete(
     SyncFirstSetupCompleteSource source) {
   if (IsInitialSyncFeatureSetupComplete()) {
@@ -86,7 +75,6 @@ void SyncUserSettingsImpl::SetInitialSyncFeatureSetupComplete(
   prefs_->SetInitialSyncFeatureSetupComplete();
   delegate_->OnInitialSyncFeatureSetupCompleted();
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 bool SyncUserSettingsImpl::IsSyncEverythingEnabled() const {
   return prefs_->HasKeepEverythingSynced();
@@ -209,58 +197,6 @@ UserSelectableTypeSet SyncUserSettingsImpl::GetRegisteredSelectableTypes()
   return registered_types;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void SyncUserSettingsImpl::SetSyncFeatureDisabledViaDashboard() {
-  prefs_->SetSyncFeatureDisabledViaDashboard();
-}
-
-void SyncUserSettingsImpl::ClearSyncFeatureDisabledViaDashboard() {
-  if (!IsSyncFeatureDisabledViaDashboard()) {
-    return;
-  }
-  prefs_->ClearSyncFeatureDisabledViaDashboard();
-  delegate_->OnSyncFeatureDisabledViaDashboardCleared();
-}
-
-bool SyncUserSettingsImpl::IsSyncFeatureDisabledViaDashboard() const {
-  return prefs_->IsSyncFeatureDisabledViaDashboard();
-}
-
-bool SyncUserSettingsImpl::IsSyncAllOsTypesEnabled() const {
-  return prefs_->IsSyncAllOsTypesEnabled();
-}
-
-UserSelectableOsTypeSet SyncUserSettingsImpl::GetSelectedOsTypes() const {
-  UserSelectableOsTypeSet types = prefs_->GetSelectedOsTypes();
-  types.RetainAll(GetRegisteredSelectableOsTypes());
-  return types;
-}
-
-bool SyncUserSettingsImpl::IsOsTypeManagedByPolicy(
-    UserSelectableOsType type) const {
-  return prefs_->IsOsTypeManagedByPolicy(type);
-}
-
-void SyncUserSettingsImpl::SetSelectedOsTypes(bool sync_all_os_types,
-                                              UserSelectableOsTypeSet types) {
-  UserSelectableOsTypeSet registered_types = GetRegisteredSelectableOsTypes();
-  DCHECK(registered_types.HasAll(types));
-  prefs_->SetSelectedOsTypes(sync_all_os_types, registered_types, types);
-}
-
-UserSelectableOsTypeSet SyncUserSettingsImpl::GetRegisteredSelectableOsTypes()
-    const {
-  UserSelectableOsTypeSet registered_types;
-  for (UserSelectableOsType type : UserSelectableOsTypeSet::All()) {
-    if (!base::Intersection(registered_data_types_,
-                            UserSelectableOsTypeToAllDataTypes(type))
-             .empty()) {
-      registered_types.Put(type);
-    }
-  }
-  return registered_types;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool SyncUserSettingsImpl::IsCustomPassphraseAllowed() const {
   return delegate_->IsCustomPassphraseAllowed();
@@ -344,17 +280,6 @@ bool SyncUserSettingsImpl::SetDecryptionPassphrase(
 DataTypeSet SyncUserSettingsImpl::GetPreferredDataTypes() const {
   DataTypeSet types = UserSelectableTypesToDataTypes(GetSelectedTypes());
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (IsSyncFeatureDisabledViaDashboard()) {
-    // If sync is disabled via dashboard, only a minimal set of datatypes should
-    // sync. This prevents code changes from causing accidental behavioral
-    // differences in this ChromeOS-specific edge case, as a side effect of
-    // starting sync-the-transport.
-    types.Clear();
-  } else {
-    types.PutAll(UserSelectableOsTypesToDataTypes(GetSelectedOsTypes()));
-  }
-#endif
 
   types.PutAll(AlwaysPreferredUserTypes());
   types.RetainAll(registered_data_types_);

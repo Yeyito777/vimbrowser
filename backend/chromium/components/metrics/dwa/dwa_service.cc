@@ -263,20 +263,10 @@ void DwaService::RecordCoarseSystemInformation(
       break;
   }
 
-#if BUILDFLAG(IS_WIN)
-  coarse_system_info->set_platform(::dwa::CoarseSystemInfo::PLATFORM_WINDOWS);
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   coarse_system_info->set_platform(::dwa::CoarseSystemInfo::PLATFORM_MACOS);
 #elif BUILDFLAG(IS_LINUX)
   coarse_system_info->set_platform(::dwa::CoarseSystemInfo::PLATFORM_LINUX);
-#elif BUILDFLAG(IS_ANDROID)
-  // TODO(b/366276323): Populate set_platform using more granular
-  // PLATFORM_ANDROID enum.
-  coarse_system_info->set_platform(::dwa::CoarseSystemInfo::PLATFORM_ANDROID);
-#elif BUILDFLAG(IS_IOS)
-  coarse_system_info->set_platform(::dwa::CoarseSystemInfo::PLATFORM_IOS);
-#elif BUILDFLAG(IS_CHROMEOS)
-  coarse_system_info->set_platform(::dwa::CoarseSystemInfo::PLATFORM_CHROMEOS);
 #else
   coarse_system_info->set_platform(::dwa::CoarseSystemInfo::PLATFORM_OTHER);
 #endif

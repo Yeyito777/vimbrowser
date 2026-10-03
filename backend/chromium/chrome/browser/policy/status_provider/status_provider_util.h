@@ -24,13 +24,5 @@ void GetUserAffiliationStatus(base::DictValue* dict, Profile* profile);
 // current |profile|.
 void SetProfileId(base::DictValue* dict, Profile* profile);
 
-#if BUILDFLAG(IS_CHROMEOS)
-void GetOffHoursStatus(base::DictValue* dict);
-
-// Adds a new entry to |dict| with the enterprise domain manager of the user
-// associated with |profile|. This method shouldn't be called for device scope
-// status.
-void GetUserManager(base::DictValue* dict, Profile* profile);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #endif  // CHROME_BROWSER_POLICY_STATUS_PROVIDER_STATUS_PROVIDER_UTIL_H_

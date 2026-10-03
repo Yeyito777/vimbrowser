@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
 import("//components/optimization_guide/features.gni")
 import("//testing/libfuzzer/fuzzer_test.gni")
 
@@ -213,17 +208,6 @@ static_library("internal") {
     "//components/optimization_guide/proto:optimization_guide_proto",
     "//components/segmentation_platform/public",
   ]
-
-  if (is_android) {
-    sources += [
-      "android/execution/processing/custom_device_utils.cc",
-      "android/execution/processing/custom_device_utils.h",
-      "android/segmentation_platform_service_android.cc",
-      "android/segmentation_platform_service_android.h",
-    ]
-
-    deps += [ ":jni_headers" ]
-  }
 }
 
 if (build_with_tflite_lib) {
@@ -399,40 +383,6 @@ bundle_data("unit_tests_bundle_data") {
   sources = [ "//components/test/data/segmentation_platform/adder.tflite" ]
   outputs = [ "{{bundle_resources_dir}}/" +
               "{{source_root_relative_dir}}/{{source_file_part}}" ]
-}
-
-if (is_android) {
-  android_library("internal_java") {
-    visibility = [
-      ":javatests",
-      "//chrome/android:chrome_all_java",
-    ]
-    srcjar_deps = [ ":jni_headers" ]
-    sources = [
-      "android/java/src/org/chromium/components/segmentation_platform/SegmentationPlatformServiceImpl.java",
-      "android/java/src/org/chromium/components/segmentation_platform/execution/processing/CustomDeviceUtils.java",
-    ]
-
-    deps = [
-      "//base:base_java",
-      "//build/android:build_java",
-      "//components/optimization_guide/proto:optimization_guide_proto_java",
-      "//components/segmentation_platform/public:public_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-  }
-
-  generate_jni("jni_headers") {
-    visibility = [
-      ":*",
-      "//chrome/browser",
-    ]
-
-    sources = [
-      "android/java/src/org/chromium/components/segmentation_platform/SegmentationPlatformServiceImpl.java",
-      "android/java/src/org/chromium/components/segmentation_platform/execution/processing/CustomDeviceUtils.java",
-    ]
-  }
 }
 
 fuzzer_test("segmentation_platform_config_parser_fuzzer") {

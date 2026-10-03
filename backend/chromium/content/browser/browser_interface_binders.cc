@@ -173,7 +173,6 @@
 #include "third_party/blink/public/mojom/mediastream/media_devices.mojom.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "third_party/blink/public/mojom/notifications/notification_service.mojom.h"
-#include "third_party/blink/public/mojom/on_device_translation/translation_manager.mojom.h"
 #include "third_party/blink/public/mojom/origin_trials/origin_trial_state_host.mojom.h"
 #include "third_party/blink/public/mojom/payments/payment_app.mojom.h"
 #include "third_party/blink/public/mojom/payments/secure_payment_confirmation_service.mojom.h"
@@ -205,20 +204,11 @@
 #include "third_party/blink/public/public_buildflags.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/browser/android/text_suggestion_host_android.h"
-#include "content/browser/renderer_host/render_widget_host_view_android.h"
-#include "content/common/gin_java_bridge.mojom.h"
-#include "services/device/public/mojom/nfc.mojom.h"
-#include "third_party/blink/public/mojom/hid/hid.mojom.h"
-#include "third_party/blink/public/mojom/unhandled_tap_notifier/unhandled_tap_notifier.mojom.h"
-#else  // BUILDFLAG(IS_ANDROID)
 #include "content/browser/direct_sockets/direct_sockets_service_impl.h"
 #include "media/mojo/mojom/renderer_extensions.mojom.h"
 #include "media/mojo/mojom/speech_recognition.mojom.h"  // nogncheck
 #include "third_party/blink/public/mojom/hid/hid.mojom.h"
 #include "third_party/blink/public/mojom/installedapp/installed_app_provider.mojom.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_P2P_ENABLED)
 #include "services/network/public/mojom/p2p.mojom.h"
@@ -248,16 +238,7 @@
 #include "third_party/blink/public/mojom/input/text_input_host.mojom.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "content/browser/lock_screen/lock_screen_service_impl.h"
-#include "third_party/blink/public/mojom/lock_screen/lock_screen.mojom.h"
-#include "third_party/blink/public/mojom/smart_card/smart_card.mojom.h"
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "content/browser/renderer_host/media/fuchsia_media_cdm_provider_impl.h"
-#include "media/mojo/mojom/fuchsia_media.mojom.h"
-#endif
 
 namespace blink {
 class StorageKey;
@@ -367,18 +348,6 @@ void BindDateTimeChooserForFrame(
 }
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-void BindTextSuggestionHostForFrame(
-    RenderFrameHost* host,
-    mojo::PendingReceiver<blink::mojom::TextSuggestionHost> receiver) {
-  auto* view =
-      RenderWidgetHostViewAndroid::FromRenderWidgetHostView(host->GetView());
-  if (!view || !view->text_suggestion_host())
-    return;
-
-  view->text_suggestion_host()->BindTextSuggestionHost(std::move(receiver));
-}
-#endif
 
 // Get the service worker's worker process ID and post a task to bind the
 // receiver on a USER_VISIBLE task runner.
@@ -748,7 +717,6 @@ void PopulateBinderMapWithContext(
     map->Add<blink::mojom::BrowsingTopicsDocumentService>(
         &BrowsingTopicsDocumentHost::CreateMojoService);
   }
-#if !BUILDFLAG(IS_ANDROID)
   map->Add<blink::mojom::DirectSocketsService>(
       &DirectSocketsServiceImpl::CreateForFrame);
   map->Add<media::mojom::SpeechRecognitionContext>(
@@ -760,7 +728,6 @@ void PopulateBinderMapWithContext(
       &EmptyBinderForFrame<media::mojom::MediaFoundationRendererNotifier>);
   map->Add<media::mojom::MediaPlayerObserverClient>(
       &EmptyBinderForFrame<media::mojom::MediaPlayerObserverClient>);
-#endif
 #if BUILDFLAG(ENABLE_UNHANDLED_TAP)
   map->Add<blink::mojom::UnhandledTapNotifier>(
       &EmptyBinderForFrame<blink::mojom::UnhandledTapNotifier>);
@@ -885,13 +852,11 @@ void PopulateBinderMapWithContext(
   map->Add<blink::mojom::SpeechSynthesis>(
       &BindRenderFrameHostImpl<&RenderFrameHostImpl::GetSpeechSynthesis>);
 
-#if !BUILDFLAG(IS_ANDROID)
   map->Add<blink::mojom::DeviceAPIService>(
       &BindRenderFrameHostImpl<&RenderFrameHostImpl::GetDeviceInfoService>);
   map->Add<blink::mojom::ManagedConfigurationService>(
       &BindRenderFrameHostImpl<
           &RenderFrameHostImpl::GetManagedConfigurationService>);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   map->Add<blink::mojom::WebUsbService>(
       &BindRenderFrameHostImpl<&RenderFrameHostImpl::CreateWebUsbService>);
@@ -1099,10 +1064,6 @@ void PopulateBinderMapWithContext(
   map->Add<blink::mojom::SerialService>(
       &BindRenderFrameHostImpl<&RenderFrameHostImpl::BindSerialService>);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  map->Add<blink::mojom::SmartCardService>(
-      &BindRenderFrameHostImpl<&RenderFrameHostImpl::GetSmartCardService>);
-#endif
 
 #if BUILDFLAG(IS_MAC)
   map->Add<blink::mojom::TextInputHost>(base::BindRepeating(
@@ -1130,23 +1091,6 @@ void PopulateBinderMapWithContext(
       },
       base::Unretained(GetContentClient()->browser())));
 
-#if BUILDFLAG(IS_FUCHSIA)
-  map->Add<media::mojom::FuchsiaMediaCodecProvider>(base::BindRepeating(
-      [](RenderFrameHost* host,
-         mojo::PendingReceiver<media::mojom::FuchsiaMediaCodecProvider>
-             receiver) {
-        host->GetProcess()->BindMediaCodecProvider(std::move(receiver));
-      }));
-#endif
-
-  map->Add<blink::mojom::TranslationManager>(base::BindRepeating(
-      [](RenderFrameHost* host,
-         mojo::PendingReceiver<blink::mojom::TranslationManager> receiver) {
-        GetContentClient()->browser()->BindTranslationManager(
-            host->GetProcess(), host->GetBrowserContext(),
-            &RenderFrameHostImpl::From(host)->document_associated_data(),
-            host->GetLastCommittedOrigin(), std::move(receiver));
-      }));
 
   map->Add<language_detection::mojom::ContentLanguageDetectionDriver>(
       base::BindRepeating(
@@ -1208,12 +1152,8 @@ void PopulateBinderMapWithContext(
 #if BUILDFLAG(IS_ANDROID) || (BUILDFLAG(IS_IOS) && !BUILDFLAG(IS_IOS_TVOS))
   map->Add<blink::mojom::DateTimeChooser>(&BindDateTimeChooserForFrame);
 #endif
-#if BUILDFLAG(IS_ANDROID)
-  map->Add<blink::mojom::TextSuggestionHost>(&BindTextSuggestionHostForFrame);
-#else
   map->Add<blink::mojom::TextSuggestionHost>(
       &EmptyBinderForFrame<blink::mojom::TextSuggestionHost>);
-#endif  // BUILDFLAG(IS_ANDROID)
 
   map->Add<blink::mojom::Authenticator>(
       &BindRenderFrameHostImpl<
@@ -1246,16 +1186,7 @@ void PopulateBinderMapWithContext(
                                      ->CreateVibrationManagerListener());
       });
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(features::kWebLockScreenApi)) {
-    map->Add<blink::mojom::LockScreenService>(&LockScreenServiceImpl::Create);
-  }
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-  map->Add<media::mojom::FuchsiaMediaCdmProvider>(
-      &FuchsiaMediaCdmProviderImpl::Bind);
-#endif
 
   map->Add<blink::mojom::OriginTrialStateHost>(
       &OriginTrialStateHostImpl::Create);
@@ -1324,11 +1255,9 @@ void PopulateDedicatedWorkerBinders(DedicatedWorkerHost* host,
         base::Unretained(host)));
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   map->Add<blink::mojom::DirectSocketsService>(
       base::BindRepeating(&DedicatedWorkerHost::CreateDirectSocketsService,
                           base::Unretained(host)));
-#endif
   map->Add<blink::mojom::WebUsbService>(base::BindRepeating(
       &DedicatedWorkerHost::CreateWebUsbService, base::Unretained(host)));
   map->Add<blink::mojom::WebSocketConnector>(base::BindRepeating(
@@ -1355,10 +1284,8 @@ void PopulateDedicatedWorkerBinders(DedicatedWorkerHost* host,
       &CreateReportingServiceProxyForDedicatedWorker, base::Unretained(host)));
   map->Add<blink::mojom::SerialService>(base::BindRepeating(
       &DedicatedWorkerHost::BindSerialService, base::Unretained(host)));
-#if !BUILDFLAG(IS_ANDROID)
   map->Add<blink::mojom::HidService>(base::BindRepeating(
       &DedicatedWorkerHost::BindHidService, base::Unretained(host)));
-#endif  // !BUILDFLAG(IS_ANDROID)
   map->Add<blink::mojom::BucketManagerHost>(base::BindRepeating(
       &DedicatedWorkerHost::CreateBucketManagerHost, base::Unretained(host)));
   map->Add<blink::mojom::FileSystemAccessManager>(
@@ -1376,10 +1303,6 @@ void PopulateDedicatedWorkerBinders(DedicatedWorkerHost* host,
       &RenderProcessHostImpl::BindVideoDecodePerfHistory, host));
   map->Add<media::mojom::WebrtcVideoPerfHistory>(BindWorkerReceiver(
       &RenderProcessHostImpl::BindWebrtcVideoPerfHistory, host));
-#if BUILDFLAG(IS_FUCHSIA)
-  map->Add<media::mojom::FuchsiaMediaCodecProvider>(
-      BindWorkerReceiver(&RenderProcessHostImpl::BindMediaCodecProvider, host));
-#endif
 
   // RenderProcessHost binders taking a StorageKey
   map->Add<blink::mojom::FileSystemManager>(BindWorkerReceiverForStorageKey(
@@ -1398,15 +1321,6 @@ void PopulateDedicatedWorkerBinders(DedicatedWorkerHost* host,
                           base::Unretained(GetContentClient()->browser()),
                           host->GetProcessHost()->GetBrowserContext(),
                           base::Unretained(host), /*rfh=*/nullptr));
-  map->Add<blink::mojom::TranslationManager>(base::BindRepeating(
-      [](DedicatedWorkerHost* host,
-         mojo::PendingReceiver<blink::mojom::TranslationManager> receiver) {
-        auto* process_host = host->GetProcessHost();
-        GetContentClient()->browser()->BindTranslationManager(
-            process_host, process_host->GetBrowserContext(), host,
-            host->GetStorageKey().origin(), std::move(receiver));
-      },
-      base::Unretained(host)));
   map->Add<language_detection::mojom::ContentLanguageDetectionDriver>(
       base::BindRepeating(
           [](DedicatedWorkerHost* host,
@@ -1518,15 +1432,6 @@ void PopulateSharedWorkerBinders(SharedWorkerHost* host, mojo::BinderMap* map) {
         &BindWebNNContextProviderForWorker<SharedWorkerHost>,
         base::Unretained(host)));
   }
-  map->Add<blink::mojom::TranslationManager>(base::BindRepeating(
-      [](SharedWorkerHost* host,
-         mojo::PendingReceiver<blink::mojom::TranslationManager> receiver) {
-        auto* process_host = host->GetProcessHost();
-        GetContentClient()->browser()->BindTranslationManager(
-            process_host, process_host->GetBrowserContext(), host,
-            host->GetStorageKey().origin(), std::move(receiver));
-      },
-      base::Unretained(host)));
   map->Add<language_detection::mojom::ContentLanguageDetectionDriver>(
       base::BindRepeating(
           [](SharedWorkerHost* host,
@@ -1539,7 +1444,6 @@ void PopulateSharedWorkerBinders(SharedWorkerHost* host, mojo::BinderMap* map) {
           },
           base::Unretained(host)));
 
-#if !BUILDFLAG(IS_ANDROID)
   map->Add<blink::mojom::DirectSocketsService>(base::BindRepeating(
       [](SharedWorkerHost* host,
          mojo::PendingReceiver<blink::mojom::DirectSocketsService> receiver) {
@@ -1547,7 +1451,6 @@ void PopulateSharedWorkerBinders(SharedWorkerHost* host, mojo::BinderMap* map) {
                                                         std::move(receiver));
       },
       base::Unretained(host)));
-#endif
 
   // RenderProcessHost binders
   map->Add<media::mojom::VideoDecodePerfHistory>(BindWorkerReceiver(
@@ -1664,7 +1567,6 @@ void PopulateServiceWorkerBinders(ServiceWorkerHost* host,
       &ServiceWorkerHost::CreateBlobUrlStoreProvider, base::Unretained(host)));
   map->Add<blink::mojom::ReportingServiceProxy>(base::BindRepeating(
       &CreateReportingServiceProxyForServiceWorker, base::Unretained(host)));
-#if !BUILDFLAG(IS_ANDROID)
   map->Add<blink::mojom::DirectSocketsService>(base::BindRepeating(
       [](ServiceWorkerHost* host,
          mojo::PendingReceiver<blink::mojom::DirectSocketsService> receiver) {
@@ -1674,7 +1576,6 @@ void PopulateServiceWorkerBinders(ServiceWorkerHost* host,
       base::Unretained(host)));
   map->Add<blink::mojom::HidService>(base::BindRepeating(
       &ServiceWorkerHost::BindHidService, base::Unretained(host)));
-#endif
   map->Add<blink::mojom::BucketManagerHost>(base::BindRepeating(
       &ServiceWorkerHost::CreateBucketManagerHost, base::Unretained(host)));
   map->Add<blink::mojom::WebUsbService>(base::BindRepeating(
@@ -1688,17 +1589,6 @@ void PopulateServiceWorkerBinders(ServiceWorkerHost* host,
         &BindWebNNContextProviderForWorker<ServiceWorkerHost>,
         base::Unretained(host)));
   }
-  map->Add<blink::mojom::TranslationManager>(base::BindRepeating(
-      [](ServiceWorkerHost* host,
-         mojo::PendingReceiver<blink::mojom::TranslationManager> receiver) {
-        if (auto* process_host = static_cast<RenderProcessHostImpl*>(
-                RenderProcessHost::FromID(host->worker_process_id()))) {
-          GetContentClient()->browser()->BindTranslationManager(
-              process_host, process_host->GetBrowserContext(), host,
-              host->GetBucketStorageKey().origin(), std::move(receiver));
-        }
-      },
-      base::Unretained(host)));
   map->Add<language_detection::mojom::ContentLanguageDetectionDriver>(
       base::BindRepeating(
           [](ServiceWorkerHost* host,

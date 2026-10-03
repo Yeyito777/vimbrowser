@@ -28,12 +28,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <android/sync.h>
+#include <sync/sync.h>
 
-/* Prototypes for deprecated functions that used to be declared in the legacy
- * android/sync.h. They've been moved here to make sure new code does not use
- * them, but the functions are still defined to avoid breaking existing
- * binaries. Eventually they can be removed altogether.
+/* Prototypes for deprecated functions kept only for legacy-kernel fallback.
+ * They are deliberately private so new code cannot depend on them.
  */
 struct sync_fence_info_data {
     uint32_t len;

@@ -128,28 +128,11 @@ media_session::mojom::MediaSessionInfo::SessionState ToSessionState(
 }
 
 std::u16string GetSourceTitle(const media_router::MediaRoute& route) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (route.media_sink_name().empty()) {
-    return base::UTF8ToUTF16(route.description());
-  }
-
-  if (route.description().empty()) {
-    return base::UTF8ToUTF16(route.media_sink_name());
-  }
-
-  const char kSeparator[] = " \xC2\xB7 ";  // "Middle dot" character.
-  const std::string source_title =
-      base::i18n::IsRTL()
-          ? route.media_sink_name() + kSeparator + route.description()
-          : route.description() + kSeparator + route.media_sink_name();
-  return base::UTF8ToUTF16(source_title);
-#else
   if (route.description().empty()) {
     return l10n_util::GetStringUTF16(
         IDS_GLOBAL_MEDIA_CONTROLS_UNKNOWN_SOURCE_TEXT);
   }
   return base::UTF8ToUTF16(route.description());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 }  // namespace

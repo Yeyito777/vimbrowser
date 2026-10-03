@@ -85,8 +85,4 @@ blink_modules_sources("accessibility") {
     configs += [ "//cef/libcef/features:config" ]
     deps += [ "//cef/libcef/features:deps" ]
   }
-
-  if (is_android) {
-    defines = [ "REDUCE_AX_INLINE_TEXTBOXES" ]
-  }
 }

@@ -37,10 +37,8 @@
 #include "components/signin/public/identity_manager/identity_manager.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/profiles/profile_window.h"
 #include "chrome/browser/ui/browser.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace {
 

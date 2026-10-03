@@ -59,11 +59,6 @@ class CFGAS_GEFont final : public Retainable {
   CFGAS_GEFont();
   ~CFGAS_GEFont() override;
 
-#if BUILDFLAG(IS_WIN)
-  bool LoadFontInternal(const wchar_t* pszFontFamily,
-                        uint32_t dwFontStyles,
-                        FX_CodePage wCodePage);
-#endif
   bool LoadFontInternal(std::unique_ptr<CFX_Font> pInternalFont);
   bool LoadFontInternal(RetainPtr<CPDF_Font> pPDFFont);
   bool InitFont();

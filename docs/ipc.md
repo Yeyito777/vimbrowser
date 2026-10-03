@@ -64,11 +64,22 @@ The client is intentionally thin. Protocol semantics belong in the browser comma
 
 `tabid` and tab index are deliberately different:
 
-- `tabid` is a runtime-stable monotonically increasing integer assigned when a tab backend is created.
-- `tabid` is not reused during the process lifetime.
+- `tabid` is a stable monotonically increasing integer assigned when a tab is created.
+- For tabs restored from a persistent profile state, `tabid` survives browser
+  restarts and remains attached to the same saved tab even after reordering.
+- The persistent profile allocator is saved too, so IDs belonging to closed or
+  transient tabs are not reused after a restart.
+- Legacy state files without saved IDs are migrated automatically on their next
+  save; each restored tab receives a fresh unique ID once.
 - `tabid` does not change when tabs are reordered.
 - `index` is the current zero-based position in the tab vector and can change.
 - `tab` is the one-based UI-friendly position.
+
+Named isolated request-context tabs are restored with their exact context names,
+IDs, folders/order and pinned flags in the context-aware state format. Older
+binaries omitted those tabs; they must not be used for full-session recovery.
+An instance-local state path provides persistence only while that state
+file remains available; use `--profile-dir` for durable automation identity.
 
 Use ID-based commands for automation. Keep `tab <1-based-index>` only for legacy index-style scripts.
 
@@ -311,6 +322,12 @@ Resolves and records the target like `open-tab`, but creates the tab without
 changing the active or visible tab. Returns `tabs` JSON. Native CEF focus
 requests from the background browser are rejected by the shell.
 
+#### `open-background-tab <url-or-query-or-local-path>`
+
+Resolves and records the target like `open-tab`, but creates the tab without
+changing the active or visible tab. Returns `tabs` JSON. Native CEF focus
+requests from the background browser are rejected by the shell.
+
 #### `open-context-tab <context-name> <url-or-query-or-local-path>`
 
 Opens a new background tab in a named persistent `CefRequestContext`. A name must be
@@ -324,12 +341,14 @@ cache paths be immediate children of the configured root cache. Different names
 do not share request-context storage with each other or with the default profile.
 Reusing a name shares the same context and storage.
 
-Named-context tabs are persisted as independent `context_tab=` state records
-(backported from upstream `8dd9f2b220`). Older binaries ignore those records,
-rather than loading isolated URLs in the default profile. Context names are
-validated on restore. Context tabs remain excluded from the legacy undo-close
-stack. Upgrading from the old running binary requires recording its named tabs
-before quitting because that binary cannot write the new state records.
+Named-context tabs persist both storage and exact shell identity. Each uses a
+single `context_tab=` state record containing context, ID, folder, sort order,
+pinned flag and escaped URL. Legacy binaries ignore these records instead of
+restoring isolated URLs in the default context. Tabs created from isolated tabs
+(new-tab link actions, clones, targeted links and popups) keep their context.
+The URL-only undo-close stack still excludes named tabs; that separate behavior
+is unchanged. For recovery from a pre-restart `tabs` snapshot see
+[session-recovery.md](session-recovery.md).
 `open-focus-context-tab` is the explicit foreground variant.
 
 #### `open-background-context-tab <context-name> <url-or-query-or-local-path>`
@@ -493,6 +512,36 @@ the capability before validation and rejects expiration, replay, frame/document
 navigation, node removal/replacement, disabling, visibility changes, local hit
 changes, and OOPIF compositor-target mismatches. The internal activation point
 is selected by Blink and never crosses the public IPC boundary.
+
+#### `activate-control <tabid> <exact-node-handle>`
+
+Consumes one `eh1_...` handle returned by `inspect-controls` and performs one
+privileged native click. This is the general control-activation path for actions
+that require Chromium transient user activation, such as an OAuth button whose
+handler calls `window.open()`. It does not accept selectors, indexes, coordinates,
+or arbitrary JavaScript.
+
+Before granting activation, Chromium repeats all capability checks and verifies
+the exact node is still connected, enabled, strictly visible, and the native hit
+target in both its local frame and the browser compositor. Only then does Blink
+grant `kInteraction` user activation immediately around the click dispatch. The
+handle is consumed before validation, so failures and successful actions are both
+one-shot. Ordinary `element.click()`, synthetic key events, and unrelated page
+script remain untrusted and subject to Chromium's popup blocker.
+
+```sh
+vimbrowser-cli frame-tree @active --pretty
+vimbrowser-cli inspect-controls @active --frame FRAME_ID \
+  --role button --name-exact 'Log in with Google' --require-one --pretty
+vimbrowser-cli activate-control @active eh1_HANDLE_FROM_INSPECTION
+```
+
+Ordinary web popups retain their real Chromium browsing context—including
+`window.opener`, the `WindowProxy` returned by `window.open()`, `postMessage()`,
+named-window reuse, POST targets, and `window.close()`—but vimbrowser embeds that
+BrowserView as a tab adjacent to its opener. CEF is not allowed to fall back to an
+unmanaged top-level web window if tab capture fails; the popup is closed instead.
+Document Picture-in-Picture remains the sole native floating browsing surface.
 
 #### `upload-file <tabid> <base64-v1-json-payload>`
 
@@ -689,7 +738,57 @@ Sets a cookie for the tab URL. If `domain` is omitted CEF creates a host cookie.
 
 ### Network debugging commands
 
-Network capture is per tab and backend-owned. `BrowserClient` implements CEF request/resource hooks, assigns a per-tab monotonic request ID, stores a bounded ring of recent requests, captures headers/timing/status, and captures response bodies through a native `CefResponseFilter` up to a size limit.
+Network capture is exact-tab and backend-owned. `BrowserClient` implements CEF
+request/resource hooks, assigns a per-tab monotonic request ID, stores a bounded
+ring of recent requests, captures headers/timing/status, and captures response
+bodies through a native `CefResponseFilter` up to a size limit. Runtime capture
+defaults off independently for every tab. The legacy startup-wide
+`VIMBROWSER_NETWORK_CAPTURE`/`--enable-vimbrowser-network-capture` switch still
+captures every request in every tab and is reported as `global_enabled`.
+
+#### `network <tabid> capture status`
+
+Returns the exact tab's runtime capture state and current request-ID cursor:
+
+```json
+{"enabled":false,"global_enabled":false,"url_prefix":"","latest_request_id":0}
+```
+
+#### `network <tabid> capture on [url-prefix]`
+
+Enables capture for this tab only. When a prefix is supplied, only requests
+whose complete URL begins with that exact, case-sensitive prefix are recorded.
+Returns the same state object as `capture status`. Capture filtering does not
+disable the browser's normal content-blocking request handler.
+
+#### `network <tabid> capture off`
+
+Disables runtime capture for this tab and clears its prefix. Existing records
+remain available until `clear`. A startup-wide capture switch, when present,
+continues to capture and is visible as `global_enabled:true`.
+
+#### `network <tabid> wait <url-prefix> [timeout-ms] [after-request-id]`
+
+Waits up to 10 seconds by default (maximum 30 seconds) for a captured request
+whose URL begins with the prefix. If `after-request-id` is omitted or zero, the
+newest existing match can satisfy the wait; this intentionally closes the race
+between triggering a page request and issuing `wait`. Supplying the
+`latest_request_id` cursor returned by `capture status` restricts the result to
+a later request. Issue an IPC-triggered page action first and then call `wait`;
+while a wait is pending, renderer/network activity continues but the IPC server
+serializes other commands behind it.
+
+Matched response:
+
+```json
+{"matched":true,"timed_out":false,"request":{"id":42,"url":"https://example.test/sync","method":"POST","complete":false}}
+```
+
+Timeout response:
+
+```json
+{"matched":false,"timed_out":true,"after_request_id":41}
+```
 
 #### `network <tabid> list`
 
@@ -709,7 +808,85 @@ Returns the captured response body bytes/text directly. Bodies are capped by the
 
 #### `network <tabid> replay <requestid>`
 
-Replays a captured request using native `CefURLRequest` in the tab's request context and returns JSON with status, headers, and body. Requests with truncated request bodies are refused instead of replaying partial data.
+Replays a captured request using native `CefURLRequest` in the tab's request
+context and returns JSON with status, headers, and body. Requests with truncated
+request bodies are refused instead of replaying partial data. Captured `Cookie`,
+`Host`, and `Content-Length` are discarded; CEF supplies current context cookies,
+the destination host, and the computed body length.
+
+#### `network-execute-base64 <tabid> <base64-json-payload>`
+
+Executes a mutable request derived from a captured template using the exact
+tab's current `CefRequestContext`. The payload is base64 only to keep the IPC
+transport one-line and binary-safe. Callers must send the underlying JSON over
+stdin or directly over the Unix socket; sensitive URL/body/header values must
+not be placed in OS arguments or logs. The reference CLI provides this as:
+
+```sh
+printf '%s' "$payload_json" | vimbrowser-cli network-execute TABID
+```
+
+Version-1 payload:
+
+```json
+{
+  "version": 1,
+  "templateRequestId": 42,
+  "url": "https://example.test/sync/next",
+  "method": "POST",
+  "bodyUtf8": "request body",
+  "headerOverrides": {
+    "Content-Type": "application/x-www-form-urlencoded",
+    "X-Request-Token": "current-template-value"
+  },
+  "removeHeaders": ["X-Unwanted-Template-Header"],
+  "timeoutMs": 30000
+}
+```
+
+All fields after `templateRequestId` are optional:
+
+- Omitted URL, method, body, and headers inherit from the captured request.
+- `bodyUtf8` and `bodyBase64` are mutually exclusive. An explicitly empty body
+  clears a captured body. The request-body limit is 512 KiB and the complete
+  decoded payload limit is 700 KiB.
+- `headerOverrides` is an object of case-insensitive replacements;
+  `removeHeaders` is an array of case-insensitive names removed before overrides.
+- `Cookie`, `Host`, and `Content-Length` are always removed from the template and
+  forbidden in overrides. `UR_FLAG_ALLOW_STORED_CREDENTIALS` lets CEF attach the
+  context's current cookies and persist response `Set-Cookie` values.
+- A URL override must retain the captured template's exact HTTP(S) origin.
+  Redirect following is disabled so template credentials cannot cross an origin;
+  an HTTP redirect is returned to the caller for explicit handling.
+- A truncated template request body may only be used when a complete body
+  override is supplied.
+- `timeoutMs` defaults to 30000 and is constrained to 1–30000.
+
+Structured result:
+
+```json
+{
+  "ok": true,
+  "template_request_id": 42,
+  "request_status": 2,
+  "request_status_text": "success",
+  "error": 0,
+  "status": 200,
+  "status_text": "OK",
+  "mime_type": "application/json",
+  "final_url": "https://example.test/sync/next",
+  "headers": [{"name":"Content-Type","value":"application/json"}],
+  "body_utf8": "{}",
+  "body_base64": "e30=",
+  "body_size": 2,
+  "body_truncated": false
+}
+```
+
+`body_utf8` is `null` when the response is not valid UTF-8. `body_base64` is
+always present, including for UTF-8 responses. Broker response bodies are capped
+at 8 MiB and report truncation explicitly. HTTP error status codes remain
+structured responses; `ok` describes CEF transport completion, not HTTP success.
 
 #### `network <tabid> clear`
 

@@ -27,9 +27,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 NavigationMetricsRecorder::NavigationMetricsRecorder(
     content::WebContents* web_contents)

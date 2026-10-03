@@ -47,12 +47,6 @@ class ClickToCallUiController
                         const SharingTargetDeviceInfo& device,
                         SharingClickToCallEntryPoint entry_point);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Called when an Intent Picker dialog is shown containing click to call
-  // devices.
-  void OnIntentPickerShown(bool has_devices, bool has_apps);
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Overridden from SharingUiController:
   std::u16string GetTitle(SharingDialogType dialog_type) override;

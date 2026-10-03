@@ -33,11 +33,9 @@ namespace payments {
 
 namespace {
 
-#if !BUILDFLAG(IS_IOS)
 constexpr char kIsBbkHardwareSupportedHistogramName[] =
     "PaymentRequest.GetSecurePaymentConfirmationCapabilities."
     "BrowserBoundKeyHardware";
-#endif
 
 void OnIsUserVerifyingPlatformAuthenticatorAvailable(
     SecurePaymentConfirmationService::
@@ -177,7 +175,6 @@ void SecurePaymentConfirmationService::StorePaymentCredential(
 void SecurePaymentConfirmationService::MakePaymentCredential(
     blink::mojom::PublicKeyCredentialCreationOptionsPtr options,
     MakePaymentCredentialCallback callback) {
-#if !BUILDFLAG(IS_IOS)
   std::string relying_party_id;
   if (options &&
       base::FeatureList::IsEnabled(
@@ -223,7 +220,6 @@ void SecurePaymentConfirmationService::MakePaymentCredential(
             weak_ptr_factory_.GetWeakPtr(), std::move(callback),
             std::move(relying_party_id), /*browser_bound_key=*/std::nullopt));
   }
-#endif  // !BUILDFLAG(IS_IOS)
 }
 
 void SecurePaymentConfirmationService::SetPasskeyBrowserBinderForTesting(
@@ -276,9 +272,6 @@ void SecurePaymentConfirmationService::OnAuthenticatorMakeCredential(
       // Last used time is needed on platforms where the credentials cannot be
       // listed by platform APIs.
       std::optional<base::Time> last_used;
-#if BUILDFLAG(IS_WIN)
-      last_used = base::Time::NowFromSystemTime();
-#endif
 
       passkey_browser_binder_->BindKey(
           std::move(*browser_bound_key), response->info->raw_id,
@@ -315,7 +308,6 @@ void SecurePaymentConfirmationService::OnCreateUnboundKey(
 
 void SecurePaymentConfirmationService::IsBrowserBoundKeyHardwareSupported(
     base::OnceCallback<void(bool)> callback) {
-#if !BUILDFLAG(IS_IOS)
   scoped_refptr<BrowserBoundKeyStore> bbk_store =
       test_browser_bound_key_store_
           ? test_browser_bound_key_store_
@@ -337,7 +329,6 @@ void SecurePaymentConfirmationService::IsBrowserBoundKeyHardwareSupported(
             std::move(callback).Run(supported);
           },
           std::move(callback)));
-#endif  // !BUILDFLAG(IS_IOS)
 }
 
 bool SecurePaymentConfirmationService::IsCurrentStateValid() const {

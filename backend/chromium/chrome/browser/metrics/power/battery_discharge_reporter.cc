@@ -58,9 +58,6 @@ void BatteryDischargeReporter::OnBatteryStateSampled(
   if (!last_sample_time_) {
     last_sample_time_ = now_ticks;
     StartNewOneMinuteInterval(battery_state);
-#if BUILDFLAG(IS_WIN)
-    StartNewTenMinutesInterval(battery_state);
-#endif  // BUILDFLAG(IS_WIN)
     return;
   }
 
@@ -71,9 +68,6 @@ void BatteryDischargeReporter::OnBatteryStateSampled(
     // The sample interval is invalid. Maybe the computer when to sleep. Don't
     // trust the data.
     StartNewOneMinuteInterval(battery_state);
-#if BUILDFLAG(IS_WIN)
-    StartNewTenMinutesInterval(battery_state);
-#endif  // BUILDFLAG(IS_WIN)
     return;
   }
 
@@ -90,16 +84,6 @@ void BatteryDischargeReporter::OnBatteryStateSampled(
     is_initial_interval_ = false;
   }
 
-#if BUILDFLAG(IS_WIN)
-  // Ten minutes interval.
-  ++ten_minutes_sample_count_;
-  ten_minutes_interval_duration_ += current_sample_interval;
-
-  if (ten_minutes_sample_count_ == (base::Minutes(10) / GetSampleInterval())) {
-    ReportTenMinutesInterval(ten_minutes_interval_duration_, battery_state);
-    StartNewTenMinutesInterval(battery_state);
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 base::TimeDelta BatteryDischargeReporter::GetSampleInterval() const {
@@ -123,15 +107,6 @@ void BatteryDischargeReporter::StartNewOneMinuteInterval(
   one_minute_interval_start_battery_state_ = battery_state;
 }
 
-#if BUILDFLAG(IS_WIN)
-void BatteryDischargeReporter::StartNewTenMinutesInterval(
-    const std::optional<base::BatteryLevelProvider::BatteryState>&
-        battery_state) {
-  ten_minutes_sample_count_ = 0;
-  ten_minutes_interval_duration_ = base::TimeDelta();
-  ten_minutes_interval_start_battery_state_ = battery_state;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void BatteryDischargeReporter::ReportOneMinuteInterval(
     base::TimeDelta interval_duration,
@@ -142,29 +117,6 @@ void BatteryDischargeReporter::ReportOneMinuteInterval(
       one_minute_interval_start_battery_state_, battery_state,
       interval_duration);
 
-#if BUILDFLAG(IS_WIN)
-  if (battery_discharge.mode == BatteryDischargeMode::kDischarging) {
-    base::UmaHistogramBoolean(
-        "Power.BatteryDischargeGranularityAvailable",
-        battery_state->battery_discharge_granularity.has_value());
-
-    if (battery_state->battery_discharge_granularity.has_value()) {
-      base::UmaHistogramCustomCounts(
-          "Power.BatteryDischargeGranularityMilliwattHours2",
-          battery_state->battery_discharge_granularity.value(),
-          /*min=*/0, /*exclusive_max=*/20000,
-          /*buckets=*/50);
-
-      uint32_t granularity_relative =
-          battery_state->battery_discharge_granularity.value() * 10000 /
-          battery_state->full_charged_capacity.value();
-      base::UmaHistogramCustomCounts(
-          "Power.BatteryDischargeGranularityRelative2", granularity_relative,
-          /*min=*/0, /*exclusive_max=*/20000,
-          /*buckets=*/50);
-    }
-  }
-#endif
 
   auto interval_data = battery_usage_scenario_data_store_->ResetIntervalData();
 
@@ -179,19 +131,6 @@ void BatteryDischargeReporter::ReportOneMinuteInterval(
                           is_initial_interval_, long_interval_suffixes);
 }
 
-#if BUILDFLAG(IS_WIN)
-void BatteryDischargeReporter::ReportTenMinutesInterval(
-    base::TimeDelta interval_duration,
-    const std::optional<base::BatteryLevelProvider::BatteryState>&
-        battery_state) {
-  auto battery_discharge = GetBatteryDischargeDuringInterval(
-      ten_minutes_interval_start_battery_state_, battery_state,
-      interval_duration);
-
-  ReportBatteryHistogramsTenMinutesInterval(interval_duration,
-                                            battery_discharge);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
 void BatteryDischargeReporter::RecordIOPMPowerSourceSampleEventDelta(

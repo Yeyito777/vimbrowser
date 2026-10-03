@@ -60,15 +60,7 @@ void EmitUkmMetricsForTab(tabs::TabInterface* tab) {
   interaction.effective_display_mode = static_cast<int>(
       provider->registrar_unsafe().GetAppEffectiveDisplayMode(*app_id));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (apps::AppServiceProxyFactory::IsAppServiceAvailableForProfile(profile)) {
-    auto* proxy = apps::AppServiceProxyFactory::GetForProfile(profile);
-    interaction.captures_links =
-        proxy->PreferredAppsList().IsPreferredAppForSupportedLinks(*app_id);
-  }
-#else
   interaction.captures_links = registrar.CapturesLinksInScope(*app_id);
-#endif
   interaction.promotable =
       registrar.AppMatches(*app_id, WebAppFilter::IsCraftedApp());
 

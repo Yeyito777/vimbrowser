@@ -87,9 +87,7 @@ void SanitizeGeneratedFileName(base::FilePath::StringType* filename,
     size_t length = filename->size();
     size_t pos = filename->find_last_not_of(FILE_PATH_LITERAL(" ."));
     filename->resize((pos == std::string::npos) ? 0 : (pos + 1));
-#if BUILDFLAG(IS_WIN)
-    base::TrimWhitespace(*filename, base::TRIM_TRAILING, filename);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
     base::TrimWhitespaceASCII(*filename, base::TRIM_TRAILING, filename);
 #else
 #error Unsupported platform
@@ -191,25 +189,12 @@ void EnsureSafeExtension(const std::string& mime_type,
   base::FilePath::StringType extension =
       GetCorrectedExtensionUnsafe(mime_type, ignore_extension, *file_name);
 
-#if BUILDFLAG(IS_WIN)
-  const base::FilePath::CharType kDefaultExtension[] =
-      FILE_PATH_LITERAL("download");
-
-  // Rename shell-integrated extensions.
-  // TODO(asanka): Consider stripping out the bad extension and replacing it
-  // with the preferred extension for the MIME type if one is available.
-  if (IsShellIntegratedExtension(extension))
-    extension = kDefaultExtension;
-#endif
 
   *file_name = file_name->ReplaceExtension(extension);
 }
 
 bool FilePathToString16(const base::FilePath& path, std::u16string* converted) {
-#if BUILDFLAG(IS_WIN)
-  converted->assign(path.value().begin(), path.value().end());
-  return true;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   std::string component8 = path.AsUTF8Unsafe();
   return !component8.empty() &&
          base::UTF8ToUTF16(component8.c_str(), component8.size(), converted);
@@ -264,11 +249,7 @@ std::u16string GetSuggestedFilenameImpl(
 
   bool replace_trailing = false;
   base::FilePath::StringType result_str, default_name_str;
-#if BUILDFLAG(IS_WIN)
-  replace_trailing = true;
-  result_str = base::UTF8ToWide(filename);
-  default_name_str = base::UTF8ToWide(default_name);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   result_str = filename;
   default_name_str = default_name;
 #else
@@ -318,9 +299,7 @@ base::FilePath GenerateFileNameImpl(
       default_file_name, should_replace_extension,
       replace_illegal_characters_function);
 
-#if BUILDFLAG(IS_WIN)
-  base::FilePath generated_name(base::AsWStringView(file_name));
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   base::FilePath generated_name(
       base::SysWideToNativeMB(base::UTF16ToWide(file_name)));
 #endif

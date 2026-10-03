@@ -28,13 +28,6 @@ class LinkCapturingUserData
     source_disposition_ = disposition;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const webapps::AppId& source_app_id() const { return source_app_id_; }
-
-  void set_source_app_id(webapps::AppId app_id) {
-    source_app_id_ = std::move(app_id);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   explicit LinkCapturingUserData(content::WebContents* contents)
@@ -45,11 +38,6 @@ class LinkCapturingUserData
 
   // The disposition of the navigation which caused this tab to open.
   WindowOpenDisposition source_disposition_;
-#if BUILDFLAG(IS_CHROMEOS)
-  // If non-empty, the App ID of the web app where the link that caused this tab
-  // to open was clicked.
-  webapps::AppId source_app_id_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(LinkCapturingUserData);

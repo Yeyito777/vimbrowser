@@ -25,12 +25,6 @@ if (use_blink) {
       "//content/public/browser",
     ]
 
-    if (is_android) {
-      deps += [
-        "//components/privacy_sandbox/privacy_sandbox_attestations/preload",
-      ]
-    }
-
     public_deps = [
       "//base",
       "//build:buildflag_header_h",

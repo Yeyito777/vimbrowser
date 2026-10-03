@@ -1,9 +1,5 @@
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 proto_library("proto") {
   proto_in_dir = "//"
   sources = [
@@ -12,17 +8,6 @@ proto_library("proto") {
   ]
 
   deps = [ "//components/optimization_guide/proto:optimization_guide_proto" ]
-}
-
-if (is_android) {
-  proto_java_library("proto_java") {
-    proto_path = "//"
-    sources = [ "proto/about_this_site_metadata.proto" ]
-
-    deps = [
-      "//components/optimization_guide/proto:optimization_guide_proto_java",
-    ]
-  }
 }
 
 static_library("core") {
@@ -63,12 +48,6 @@ static_library("core") {
     "//services/metrics/public/cpp:ukm_builders",
     "//ui/base",
   ]
-}
-
-if (is_android) {
-  java_cpp_enum("page_info_action_javagen") {
-    sources = [ "page_info_action.h" ]
-  }
 }
 
 source_set("unit_tests") {

@@ -37,7 +37,6 @@ namespace crypto {
 
 namespace {
 
-#if !BUILDFLAG(IS_CHROMEOS)
 base::FilePath GetXdgDataNssdbDirectory() {
   std::unique_ptr<base::Environment> env = base::Environment::Create();
   return base::nix::GetXDGDataWriteLocation(env.get()).AppendASCII("pki/nssdb");
@@ -82,17 +81,12 @@ base::FilePath PrepareDefaultConfigDirectory() {
   DVLOG(2) << "DefaultConfigDirectory: " << dir.value();
   return dir;
 }
-#endif  // BUILDFLAG!(IS_CHROMEOS)
 
 // On non-ChromeOS platforms, return the default config directory. On ChromeOS
 // return a empty path which will result in NSS being initialized without a
 // persistent database.
 base::FilePath GetInitialConfigDirectory() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return base::FilePath();
-#else
   return PrepareDefaultConfigDirectory();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 // This callback for NSS forwards all requests to a caller-specified
@@ -247,11 +241,7 @@ class NSSInitSingleton {
       // Use "sql:" which can be shared by multiple processes safely.
       std::string nss_config_dir =
           base::StringPrintf("sql:%s", database_dir.value().c_str());
-#if BUILDFLAG(IS_CHROMEOS)
-      status = NSS_Init(nss_config_dir.c_str());
-#else
       status = NSS_InitReadWrite(nss_config_dir.c_str());
-#endif
       if (status != SECSuccess) {
         LOG(ERROR) << "Error initializing NSS with a persistent "
                       "database ("

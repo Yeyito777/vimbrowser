@@ -41,13 +41,6 @@ class MockSystemSignalsService : public mojom::SystemSignalsService {
                GetFileSystemSignalsCallback),
               (override));
 
-#if BUILDFLAG(IS_WIN)
-  MOCK_METHOD(void,
-              GetAntiVirusSignals,
-              (GetAntiVirusSignalsCallback),
-              (override));
-  MOCK_METHOD(void, GetHotfixSignals, (GetHotfixSignalsCallback), (override));
-#endif  // BUILDFLAG(IS_WIN)
 
   mojo::PendingRemote<device_signals::mojom::SystemSignalsService>
   BindNewPipeAndPassRemote();

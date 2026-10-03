@@ -162,8 +162,6 @@ class ChromeAutofillClient : public ContentAutofillClient {
   const GURL& GetLastCommittedPrimaryMainFrameURL() const final;
   url::Origin GetLastCommittedPrimaryMainFrameOrigin() const final;
   security_state::SecurityLevel GetSecurityLevelForUmaHistograms() final;
-  const translate::LanguageState* GetLanguageState() final;
-  translate::TranslateDriver* GetTranslateDriver() final;
   GeoIpCountryCode GetVariationConfigCountryCode() const final;
   profile_metrics::BrowserProfileType GetProfileType() const final;
   void ShowAutofillSettings(SuggestionType suggestion_type) final;

@@ -40,7 +40,6 @@ PERFETTO_PB_MSG_DECL(perfetto_protos_TraceConfig_IncrementalStateConfig);
 PERFETTO_PB_MSG_DECL(perfetto_protos_TraceConfig_Note);
 PERFETTO_PB_MSG_DECL(perfetto_protos_TraceConfig_ProducerConfig);
 PERFETTO_PB_MSG_DECL(perfetto_protos_TraceConfig_SessionSemaphore);
-PERFETTO_PB_MSG_DECL(perfetto_protos_TraceConfig_StatsdMetadata);
 PERFETTO_PB_MSG_DECL(perfetto_protos_TraceConfig_TraceFilter);
 PERFETTO_PB_MSG_DECL(perfetto_protos_TraceConfig_TraceFilter_StringFilterChain);
 PERFETTO_PB_MSG_DECL(perfetto_protos_TraceConfig_TraceFilter_StringFilterRule);
@@ -61,15 +60,6 @@ PERFETTO_PB_ENUM_IN_MSG(perfetto_protos_TraceConfig, CompressionType){
                                   COMPRESSION_TYPE_UNSPECIFIED) = 0,
     PERFETTO_PB_ENUM_IN_MSG_ENTRY(perfetto_protos_TraceConfig,
                                   COMPRESSION_TYPE_DEFLATE) = 1,
-};
-
-PERFETTO_PB_ENUM_IN_MSG(perfetto_protos_TraceConfig, StatsdLogging){
-    PERFETTO_PB_ENUM_IN_MSG_ENTRY(perfetto_protos_TraceConfig,
-                                  STATSD_LOGGING_UNSPECIFIED) = 0,
-    PERFETTO_PB_ENUM_IN_MSG_ENTRY(perfetto_protos_TraceConfig,
-                                  STATSD_LOGGING_ENABLED) = 1,
-    PERFETTO_PB_ENUM_IN_MSG_ENTRY(perfetto_protos_TraceConfig,
-                                  STATSD_LOGGING_DISABLED) = 2,
 };
 
 PERFETTO_PB_ENUM_IN_MSG(perfetto_protos_TraceConfig, WriteFlushMode){
@@ -180,11 +170,6 @@ PERFETTO_PB_FIELD(perfetto_protos_TraceConfig,
                   producers,
                   6);
 PERFETTO_PB_FIELD(perfetto_protos_TraceConfig,
-                  MSG,
-                  perfetto_protos_TraceConfig_StatsdMetadata,
-                  statsd_metadata,
-                  7);
-PERFETTO_PB_FIELD(perfetto_protos_TraceConfig,
                   VARINT,
                   bool,
                   write_into_file,
@@ -279,11 +264,6 @@ PERFETTO_PB_FIELD(perfetto_protos_TraceConfig,
                   perfetto_protos_TraceConfig_IncidentReportConfig,
                   incident_report_config,
                   25);
-PERFETTO_PB_FIELD(perfetto_protos_TraceConfig,
-                  VARINT,
-                  enum perfetto_protos_TraceConfig_StatsdLogging,
-                  statsd_logging,
-                  31);
 PERFETTO_PB_FIELD(perfetto_protos_TraceConfig,
                   VARINT,
                   int64_t,
@@ -559,28 +539,6 @@ PERFETTO_PB_FIELD(perfetto_protos_TraceConfig_GuardrailOverrides,
                   uint32_t,
                   max_tracing_buffer_size_kb,
                   2);
-
-PERFETTO_PB_MSG(perfetto_protos_TraceConfig_StatsdMetadata);
-PERFETTO_PB_FIELD(perfetto_protos_TraceConfig_StatsdMetadata,
-                  VARINT,
-                  int64_t,
-                  triggering_alert_id,
-                  1);
-PERFETTO_PB_FIELD(perfetto_protos_TraceConfig_StatsdMetadata,
-                  VARINT,
-                  int32_t,
-                  triggering_config_uid,
-                  2);
-PERFETTO_PB_FIELD(perfetto_protos_TraceConfig_StatsdMetadata,
-                  VARINT,
-                  int64_t,
-                  triggering_config_id,
-                  3);
-PERFETTO_PB_FIELD(perfetto_protos_TraceConfig_StatsdMetadata,
-                  VARINT,
-                  int64_t,
-                  triggering_subscription_id,
-                  4);
 
 PERFETTO_PB_MSG(perfetto_protos_TraceConfig_ProducerConfig);
 PERFETTO_PB_FIELD(perfetto_protos_TraceConfig_ProducerConfig,

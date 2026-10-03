@@ -27,11 +27,6 @@ source_set("features") {
     "//build/config/compiler:wexit_time_destructors",
     "//build/config/compiler:wglobal_constructors",
   ]
-
-  if (is_android) {
-    sources += [ "feature_map.cc" ]
-    deps += [ "android:gwp_asan_jni" ]
-  }
 }
 
 component("client") {
@@ -50,10 +45,6 @@ component("client") {
     "thread_local_random_bit_generator.h",
     "thread_local_state.h",
   ]
-
-  if (is_win) {
-    sources += [ "guarded_page_allocator_win.cc" ]
-  }
 
   if (is_posix) {
     sources += [ "guarded_page_allocator_posix.cc" ]
@@ -100,10 +91,6 @@ component("client") {
   ]
 
   configs += [ ":gwp_asan_implementation" ]
-
-  if (is_android || is_ios) {
-    deps += [ "//components/crash/core/app" ]
-  }
 }
 
 source_set("unit_tests") {

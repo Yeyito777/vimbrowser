@@ -5,13 +5,8 @@
 #ifndef CHROME_BROWSER_DEVTOOLS_PROTOCOL_TARGET_HANDLER_H_
 #define CHROME_BROWSER_DEVTOOLS_PROTOCOL_TARGET_HANDLER_H_
 
-#include <set>
-
 #include "chrome/browser/devtools/protocol/target.h"
 #include "chrome/browser/ui/browser_list_observer.h"
-#include "net/base/host_port_pair.h"
-
-using RemoteLocations = std::set<net::HostPortPair>;
 
 class TargetHandler : public protocol::Target::Backend {
  public:
@@ -23,8 +18,6 @@ class TargetHandler : public protocol::Target::Backend {
   TargetHandler& operator=(const TargetHandler&) = delete;
 
   ~TargetHandler() override;
-
-  RemoteLocations& remote_locations() { return remote_locations_; }
 
   // Target::Backend:
   protocol::Response SetRemoteLocations(
@@ -47,7 +40,6 @@ class TargetHandler : public protocol::Target::Backend {
       std::string* out_target_id) override;
 
  private:
-  RemoteLocations remote_locations_;
   const bool is_trusted_;
   const bool may_read_local_files_;
 };

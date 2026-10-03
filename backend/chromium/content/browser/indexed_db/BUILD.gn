@@ -113,9 +113,7 @@ source_set("indexed_db") {
     "//v8:v8_version",
   ]
 
-  if (!is_android && !is_fuchsia) {
-    deps += [ "//third_party/zstd:compress" ]
-  }
+  deps += [ "//third_party/zstd:compress" ]
 
   configs += [ "//content:content_implementation" ]
 
@@ -203,5 +201,4 @@ mojom("internals_mojo_bindings") {
     "//mojo/public/mojom/base",
   ]
   webui_module_path = "/"
-  generate_java = false
 }

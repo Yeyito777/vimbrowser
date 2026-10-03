@@ -22,7 +22,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/time/time.h"
 #include "components/content_settings/core/browser/content_settings_utils.h"
-#include "components/messages/android/message_enums.h"
 #include "components/permissions/constants.h"
 #include "components/permissions/features.h"
 #include "components/permissions/permission_uma_util.h"
@@ -31,8 +30,6 @@
 #include "components/permissions/resolvers/permission_prompt_options.h"
 #include "components/pref_registry/pref_registry_syncable.h"
 #include "components/prefs/pref_service.h"
-#include "components/strings/grit/components_strings.h"
-#include "ui/base/l10n/l10n_util.h"
 
 namespace permissions {
 
@@ -220,13 +217,9 @@ PermissionHatsTriggerHelper::PromptParametersForHats::PromptParametersForHats(
 
 PermissionHatsTriggerHelper::SurveyParametersForHats::SurveyParametersForHats(
     double trigger_probability,
-    std::optional<std::string> supplied_trigger_id,
-    std::optional<std::u16string> custom_survey_invitation,
-    std::optional<messages::MessageIdentifier> message_identifier)
+    std::optional<std::string> supplied_trigger_id)
     : trigger_probability(trigger_probability),
-      supplied_trigger_id(std::move(supplied_trigger_id)),
-      custom_survey_invitation(std::move(custom_survey_invitation)),
-      message_identifier(std::move(message_identifier)) {}
+      supplied_trigger_id(std::move(supplied_trigger_id)) {}
 
 PermissionHatsTriggerHelper::SurveyParametersForHats::
     ~SurveyParametersForHats() = default;
@@ -402,75 +395,13 @@ PermissionHatsTriggerHelper::GetSurveyParametersForRequestType(
       base::SplitString(feature_params::kPermissionsPromptSurveyTriggerId.Get(),
                         ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY));
 
-  std::vector<std::string> custom_invitation_trigger_id_vector(
-      base::SplitString(
-          feature_params::kPermissionsPromptSurveyCustomInvitationTriggerId
-              .Get(),
-          ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY));
-
-  CHECK(custom_invitation_trigger_id_vector.empty() ||
-        custom_invitation_trigger_id_vector.size() ==
-            permission_trigger_id_vector.size());
-
-  // If custom_invitation_trigger_id_vector is not empty, the custom invitation
-  // experiment is active. In that case, we show custom invitations with the
-  // corresponding separate triggerId with probability 50%, and the generic
-  // invitation with the corresponding separate triggerId in the other 50% of
-  // cases.
-  bool is_custom_invitation_experiment =
-      custom_invitation_trigger_id_vector.size() != 0;
-  bool is_custom_invitation_arm =
-      is_custom_invitation_experiment && base::RandDouble() < 0.5;
-
-  std::optional<messages::MessageIdentifier> message_identifier;
-  std::optional<std::u16string> custom_invitation;
-  if (is_custom_invitation_experiment) {
-    int request_type_message_id = -1;
-    if (request_type == RequestType::kCameraStream) {
-      request_type_message_id = IDS_CAMERA_PERMISSION_NAME_FRAGMENT;
-      message_identifier = is_custom_invitation_arm
-                               ? messages::MessageIdentifier::
-                                     PROMPT_HATS_CAMERA_CUSTOM_INVITATION
-                               : messages::MessageIdentifier::
-                                     PROMPT_HATS_CAMERA_GENERIC_INVITATION;
-    } else if (request_type == RequestType::kGeolocation) {
-      request_type_message_id = IDS_GEOLOCATION_NAME_FRAGMENT;
-      message_identifier = is_custom_invitation_arm
-                               ? messages::MessageIdentifier::
-                                     PROMPT_HATS_LOCATION_CUSTOM_INVITATION
-                               : messages::MessageIdentifier::
-                                     PROMPT_HATS_LOCATION_GENERIC_INVITATION;
-    } else if (request_type == RequestType::kMicStream) {
-      request_type_message_id = IDS_MICROPHONE_PERMISSION_NAME_FRAGMENT;
-      message_identifier = is_custom_invitation_arm
-                               ? messages::MessageIdentifier::
-                                     PROMPT_HATS_MICROPHONE_CUSTOM_INVITATION
-                               : messages::MessageIdentifier::
-                                     PROMPT_HATS_MICROPHONE_GENERIC_INVITATION;
-    }
-
-    // If request_type_message_id == -1, the request is not part of the custom
-    // invitation experiment, hence the custom invitation doesn't need to be
-    // set.
-    if (request_type_message_id != -1 && is_custom_invitation_arm) {
-      custom_invitation =
-          std::optional<std::u16string>(l10n_util::GetStringFUTF16(
-              IDS_PERMISSION_PROMPT_SURVEY_CUSTOM_INVITATION,
-              l10n_util::GetStringUTF16(request_type_message_id)));
-    }
-  }
-
   if (permission_trigger_id_vector.size() == 1 &&
       probability_vector.size() <= 1) {
     // If a value is configured, use it, otherwise set it to 1.
     double probability =
         probability_vector.size() == 1 ? probability_vector[0] : 1.0;
-    std::string supplied_trigger_id =
-        is_custom_invitation_arm ? custom_invitation_trigger_id_vector[0]
-                                 : permission_trigger_id_vector[0];
     return PermissionHatsTriggerHelper::SurveyParametersForHats(
-        probability, std::move(supplied_trigger_id),
-        std::move(custom_invitation));
+        probability, permission_trigger_id_vector[0]);
   }
 
   if (permission_trigger_id_vector.size() != probability_vector.size()) {
@@ -490,12 +421,8 @@ PermissionHatsTriggerHelper::GetSurveyParametersForRequestType(
             permissions::PermissionUmaUtil::GetRequestTypeString(request_type),
             request_filter_vector[i])) {
       double probability = probability_vector[i];
-      std::string supplied_trigger_id =
-          is_custom_invitation_arm ? custom_invitation_trigger_id_vector[i]
-                                   : permission_trigger_id_vector[i];
       return PermissionHatsTriggerHelper::SurveyParametersForHats(
-          probability, std::move(supplied_trigger_id),
-          std::move(custom_invitation), std::move(message_identifier));
+          probability, permission_trigger_id_vector[i]);
     }
   }
 

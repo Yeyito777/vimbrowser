@@ -108,12 +108,6 @@ inline constexpr char kSearchProviderOverridesVersion[] =
 inline constexpr char kSearchEnginesStudyGroup[] =
     "search_engines.client_side_study_group";
 
-#if BUILDFLAG(IS_IOS)
-// Number of time the search engine choice screen was skipped because the app
-// was started via an external intent.
-inline constexpr char kDefaultSearchProviderChoiceScreenSkippedCount[] =
-    "default_search_provider.skip_count";
-#endif
 
 }  // namespace prefs
 

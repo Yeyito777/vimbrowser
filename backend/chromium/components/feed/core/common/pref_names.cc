@@ -21,10 +21,6 @@ const char kHostOverrideBlessNonce[] = "feed.host_override.bless_nonce";
 const char kHasReachedClickAndViewActionsUploadConditions[] =
     "feed.clicks_and_views_upload_conditions_reached";
 const char kLastFetchHadNoticeCard[] = "feed.last_fetch_had_notice_card";
-#if BUILDFLAG(IS_IOS)
-const char kLastFetchHadLoggingEnabled[] =
-    "feed.last_fetch_had_logging_enabled";
-#endif  // BUILDFLAG(IS_IOS)
 const char kNoticeCardViewsCount[] = "feed.notice_card_views_count";
 const char kNoticeCardClicksCount[] = "feed.notice_card_clicks_count";
 
@@ -99,10 +95,6 @@ void RegisterProfilePrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(feed::prefs::kExperimentsV3);
   registry->RegisterDictionaryPref(feed::prefs::kInfoCardTrackingStateDict);
 
-#if BUILDFLAG(IS_IOS)
-  registry->RegisterBooleanPref(feed::prefs::kLastFetchHadLoggingEnabled,
-                                false);
-#endif  // BUILDFLAG(IS_IOS)
 
   RegisterObsoletePrefsJun_2024(registry);
 }

@@ -374,7 +374,6 @@ VertexConversionBuffer::~VertexConversionBuffer() = default;
 // BufferVk implementation.
 BufferVk::BufferVk(const gl::BufferState &state)
     : BufferImpl(state),
-      mClientBuffer(nullptr),
       mMemoryTypeIndex(0),
       mMemoryPropertyFlags(0),
       mIsStagingBufferMapped(false),
@@ -419,29 +418,6 @@ angle::Result BufferVk::release(ContextVk *contextVk)
     return angle::Result::Continue;
 }
 
-angle::Result BufferVk::setExternalBufferData(const gl::Context *context,
-                                              gl::BufferBinding target,
-                                              GLeglClientBufferEXT clientBuffer,
-                                              size_t size,
-                                              VkMemoryPropertyFlags memoryPropertyFlags)
-{
-    ContextVk *contextVk = vk::GetImpl(context);
-
-    // Release and re-create the memory and buffer.
-    ANGLE_TRY(release(contextVk));
-
-    VkBufferCreateInfo createInfo    = {};
-    createInfo.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    createInfo.flags                 = 0;
-    createInfo.size                  = size;
-    createInfo.usage                 = GetDefaultBufferUsageFlags(contextVk->getRenderer());
-    createInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
-    createInfo.queueFamilyIndexCount = 0;
-    createInfo.pQueueFamilyIndices   = nullptr;
-
-    return mBuffer.initExternal(contextVk, memoryPropertyFlags, createInfo, clientBuffer);
-}
-
 angle::Result BufferVk::setDataWithUsageFlags(const gl::Context *context,
                                               gl::BufferBinding target,
                                               GLeglClientBufferEXT clientBuffer,
@@ -452,17 +428,19 @@ angle::Result BufferVk::setDataWithUsageFlags(const gl::Context *context,
                                               gl::BufferStorage bufferStorage,
                                               BufferFeedback *feedback)
 {
+    if (clientBuffer != nullptr)
+    {
+        UNREACHABLE();
+        return angle::Result::Stop;
+    }
+
     ContextVk *contextVk                      = vk::GetImpl(context);
     VkMemoryPropertyFlags memoryPropertyFlags = 0;
-    bool persistentMapRequired                = false;
-    const bool isExternalBuffer               = clientBuffer != nullptr;
 
     if (bufferStorage == gl::BufferStorage::Immutable)
     {
         // glBufferStorage API call
-        memoryPropertyFlags =
-            GetStorageMemoryType(contextVk->getRenderer(), flags, isExternalBuffer);
-        persistentMapRequired = (flags & GL_MAP_PERSISTENT_BIT_EXT) != 0;
+        memoryPropertyFlags = GetStorageMemoryType(contextVk->getRenderer(), flags, false);
     }
     else
     {
@@ -470,20 +448,6 @@ angle::Result BufferVk::setDataWithUsageFlags(const gl::Context *context,
         memoryPropertyFlags = GetPreferredMemoryType(contextVk->getRenderer(), target, usage);
     }
 
-    if (isExternalBuffer)
-    {
-        ANGLE_TRY(setExternalBufferData(context, target, clientBuffer, size, memoryPropertyFlags));
-        if (!mBuffer.isHostVisible())
-        {
-            // If external buffer's memory does not support host visible memory property, we cannot
-            // support a persistent map request.
-            ANGLE_VK_CHECK(contextVk, !persistentMapRequired, VK_ERROR_MEMORY_MAP_FAILED);
-        }
-
-        mClientBuffer = clientBuffer;
-
-        return angle::Result::Continue;
-    }
     return setDataWithMemoryType(context, target, data, size, memoryPropertyFlags, usage, feedback);
 }
 
@@ -729,9 +693,6 @@ angle::Result BufferVk::ghostMappedBuffer(ContextVk *contextVk,
                                           void **mapPtr,
                                           BufferFeedback *feedback)
 {
-    // We shouldn't get here if it is external memory
-    ASSERT(!isExternalBuffer());
-
     ++contextVk->getPerfCounters().buffersGhosted;
 
     // If we are creating a new buffer because the GPU is using it as read-only, then we
@@ -836,7 +797,7 @@ angle::Result BufferVk::mapRangeImpl(ContextVk *contextVk,
     }
 
     // Write case, buffer not in use.
-    if (isExternalBuffer() || !isCurrentlyInUse(contextVk->getRenderer()))
+    if (!isCurrentlyInUse(contextVk->getRenderer()))
     {
         return mapHostVisibleBuffer(contextVk, offset, access, mapPtrBytes);
     }
@@ -1117,8 +1078,6 @@ angle::Result BufferVk::acquireAndUpdate(ContextVk *contextVk,
                                          BufferUpdateType updateType,
                                          BufferFeedback *feedback)
 {
-    // We shouldn't get here if this is external memory
-    ASSERT(!isExternalBuffer());
     // If StorageRedefined, we cannot use mState.getSize() to allocate a new buffer.
     ASSERT(updateType != BufferUpdateType::StorageRedefined);
     ASSERT(mBuffer.valid());
@@ -1247,8 +1206,7 @@ angle::Result BufferVk::setDataImpl(ContextVk *contextVk,
         // - The update modifies a significant portion of the buffer
         // - The preferCPUForBufferSubData feature is enabled.
         //
-        const bool canAcquireAndUpdate = !isExternalBuffer() &&
-                                         updateType != BufferUpdateType::StorageRedefined &&
+        const bool canAcquireAndUpdate = updateType != BufferUpdateType::StorageRedefined &&
                                          !IsSelfCopy(dataSource, mBuffer);
         if (canAcquireAndUpdate &&
             (!mHasValidData || ShouldAvoidRenderPassBreakOnUpdate(contextVk, mBuffer, bufferSize) ||

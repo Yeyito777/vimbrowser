@@ -34,14 +34,6 @@
 #include "ui/gfx/gpu_memory_buffer_handle.h"
 #include "ui/gl/gl_bindings.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-// gn check does not account for BUILDFLAG(), so including these headers will
-// make gn check fail for builds other than ChromeOS. See gn help nogncheck
-// for more information.
-#include "chromeos/components/cdm_factory_daemon/chromeos_cdm_factory.h"  // nogncheck
-#include "media/gpu/chromeos/secure_buffer.pb.h"                  // nogncheck
-#include "third_party/cros_system_api/constants/cdm_oemcrypto.h"  // nogncheck
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace media {
 namespace {
@@ -83,97 +75,6 @@ std::string VectorToString(const std::vector<T>& vec) {
   return result.str();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-scoped_refptr<DecoderBuffer> DecryptBitstreamBuffer(
-    BitstreamBuffer bitstream_buffer) {
-  // Check to see if we have our secure buffer tag and then extract the
-  // decrypt parameters.
-  auto mem_region = bitstream_buffer.DuplicateRegion();
-  if (!mem_region.IsValid()) {
-    DVLOG(2) << "Invalid shared memory region";
-    return nullptr;
-  }
-  const size_t available_size =
-      mem_region.GetSize() -
-      base::checked_cast<size_t>(bitstream_buffer.offset());
-  auto mapping = mem_region.Map();
-  if (!mapping.IsValid()) {
-    DVLOG(2) << "Failed mapping shared memory";
-    return nullptr;
-  }
-  // Checks if this buffer contains the details needed for HW protected video
-  // decoding.
-  // The header is 1KB in size (cdm_oemcrypto::kSecureBufferHeaderSize).
-  // It consists of 3 components.
-  // 1. Marker tag - cdm_oemcrypto::kSecureBufferTag
-  // 2. unsigned 32-bit size of #3
-  // 3. Serialized ArcSecureBufferForChrome proto
-  uint8_t* data = mapping.GetMemoryAs<uint8_t>();
-  if (!data) {
-    DVLOG(2) << "Failed accessing shared memory";
-    return nullptr;
-  }
-  // Apply the offset here so we don't need to worry about page alignment in the
-  // mapping.
-  UNSAFE_TODO(data += bitstream_buffer.offset());
-  if (available_size <= cdm_oemcrypto::kSecureBufferHeaderSize ||
-      UNSAFE_TODO(memcmp(data, cdm_oemcrypto::kSecureBufferTag,
-                         cdm_oemcrypto::kSecureBufferTagLen))) {
-    // This occurs in Intel implementations when we are in a clear portion.
-    return bitstream_buffer.ToDecoderBuffer();
-  }
-  VLOG(2) << "Detected secure buffer format in VDVDA";
-  // Read the protobuf size.
-  uint32_t proto_size = 0;
-  UNSAFE_TODO(memcpy(&proto_size, data + cdm_oemcrypto::kSecureBufferTagLen,
-                     sizeof(uint32_t)));
-  if (proto_size > cdm_oemcrypto::kSecureBufferHeaderSize -
-                       cdm_oemcrypto::kSecureBufferProtoOffset) {
-    DVLOG(2) << "Proto size goes beyond header size";
-    return nullptr;
-  }
-  // Read the serialized proto.
-  std::string serialized_proto(
-      UNSAFE_TODO(data + cdm_oemcrypto::kSecureBufferProtoOffset),
-      UNSAFE_TODO(data + cdm_oemcrypto::kSecureBufferProtoOffset + proto_size));
-  chromeos::cdm::ArcSecureBufferForChrome buffer_proto;
-  if (!buffer_proto.ParseFromString(serialized_proto)) {
-    DVLOG(2) << "Failed deserializing secure buffer proto";
-    return nullptr;
-  }
-
-  // Now extract the DecryptConfig info from the protobuf.
-  std::vector<media::SubsampleEntry> subsamples;
-  size_t buffer_size = 0;
-  for (const auto& subsample : buffer_proto.subsample()) {
-    buffer_size += subsample.clear_bytes() + subsample.cypher_bytes();
-    subsamples.emplace_back(subsample.clear_bytes(), subsample.cypher_bytes());
-  }
-  std::optional<EncryptionPattern> pattern = std::nullopt;
-  if (buffer_proto.has_pattern()) {
-    pattern.emplace(buffer_proto.pattern().cypher_bytes(),
-                    buffer_proto.pattern().clear_bytes());
-  }
-  // Now create the DecryptConfig and set it in the decoder buffer.
-  scoped_refptr<DecoderBuffer> buffer = bitstream_buffer.ToDecoderBuffer(
-      cdm_oemcrypto::kSecureBufferHeaderSize, buffer_size);
-  if (!buffer) {
-    DVLOG(2) << "Secure buffer data goes beyond shared memory size";
-    return nullptr;
-  }
-  if (buffer_proto.encryption_scheme() !=
-      chromeos::cdm::ArcSecureBufferForChrome::NONE) {
-    buffer->set_decrypt_config(std::make_unique<DecryptConfig>(
-        buffer_proto.encryption_scheme() ==
-                chromeos::cdm::ArcSecureBufferForChrome::CBCS
-            ? EncryptionScheme::kCbcs
-            : EncryptionScheme::kCenc,
-        buffer_proto.key_id(), buffer_proto.iv(), std::move(subsamples),
-        std::move(pattern)));
-  }
-  return buffer;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -270,11 +171,6 @@ bool VdVideoDecodeAccelerator::Initialize(const Config& config,
     client_ = client;
   }
   media::CdmContext* cdm_context = nullptr;
-#if BUILDFLAG(IS_CHROMEOS)
-  is_encrypted_ = config.is_encrypted();
-  if (is_encrypted_)
-    cdm_context = chromeos::ChromeOsCdmFactory::GetArcCdmContext();
-#endif  // BUILDFLAG(IS_CHROMEOS)
   VideoDecoderConfig vd_config(
       VideoCodecProfileToVideoCodec(config.profile), config.profile,
       VideoDecoderConfig::AlphaMode::kIsOpaque, config.container_color_space,
@@ -303,19 +199,6 @@ void VdVideoDecodeAccelerator::OnInitializeDone(DecoderStatus status) {
 
 void VdVideoDecodeAccelerator::Decode(BitstreamBuffer bitstream_buffer) {
   const int32_t bitstream_id = bitstream_buffer.id();
-#if BUILDFLAG(IS_CHROMEOS)
-  if (is_encrypted_) {
-    scoped_refptr<DecoderBuffer> buffer =
-        DecryptBitstreamBuffer(std::move(bitstream_buffer));
-    // This happens in the error case.
-    if (!buffer) {
-      OnError(FROM_HERE, PLATFORM_FAILURE);
-      return;
-    }
-    Decode(std::move(buffer), bitstream_id);
-    return;
-  }
-#endif  // BUILFLAG(IS_CHROMEOS)
   Decode(bitstream_buffer.ToDecoderBuffer(), bitstream_id);
 }
 

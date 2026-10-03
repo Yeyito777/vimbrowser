@@ -339,26 +339,10 @@ static_library("performance_manager") {
     deps += [ "//components/guest_view/browser" ]
   }
 
-  if (!is_android) {
-    sources += [
-      "graph/policies/process_priority_policy.cc",
-      "graph/policies/process_priority_policy.h",
-    ]
-  }
-
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/dbus/power",
-      "//chromeos/dbus/power:power_manager_proto",
-    ]
-
-    sources += [
-      "power/battery_level_provider_chromeos.cc",
-      "power/battery_level_provider_chromeos.h",
-      "power/dbus_power_manager_sampling_event_source.cc",
-      "power/dbus_power_manager_sampling_event_source.h",
-    ]
-  }
+  sources += [
+    "graph/policies/process_priority_policy.cc",
+    "graph/policies/process_priority_policy.h",
+  ]
 }
 
 source_set("unit_tests") {
@@ -463,37 +447,22 @@ source_set("unit_tests") {
     "//testing/gtest",
   ]
 
-  if (is_ios) {
-    deps += [ "//components/test:performance_manager_test_bundle_data" ]
-  }
-
   # The site data database isn't supported on Android.
-  if (!is_android) {
-    sources += [
-      "decorators/site_data_recorder_unittest.cc",
-      "freezing/freezer_unittest.cc",
-      "freezing/freezing_policy_unittest.cc",
-      "freezing/freezing_unittest.cc",
-      "graph/policies/process_priority_policy_unittest.cc",
-      "persistence/site_data/exponential_moving_average_unittest.cc",
-      "persistence/site_data/leveldb_site_data_store_unittest.cc",
-      "persistence/site_data/non_recording_site_data_cache_unittest.cc",
-      "persistence/site_data/site_data_cache_factory_unittest.cc",
-      "persistence/site_data/site_data_cache_impl_unittest.cc",
-      "persistence/site_data/site_data_impl_unittest.cc",
-      "persistence/site_data/site_data_reader_unittest.cc",
-      "persistence/site_data/site_data_writer_unittest.cc",
-    ]
-  }
-
-  if (is_chromeos) {
-    deps += [
-      "//chromeos/dbus/power",
-      "//chromeos/dbus/power:power_manager_proto",
-    ]
-
-    sources += [ "power/battery_level_provider_chromeos_unittest.cc" ]
-  }
+  sources += [
+    "decorators/site_data_recorder_unittest.cc",
+    "freezing/freezer_unittest.cc",
+    "freezing/freezing_policy_unittest.cc",
+    "freezing/freezing_unittest.cc",
+    "graph/policies/process_priority_policy_unittest.cc",
+    "persistence/site_data/exponential_moving_average_unittest.cc",
+    "persistence/site_data/leveldb_site_data_store_unittest.cc",
+    "persistence/site_data/non_recording_site_data_cache_unittest.cc",
+    "persistence/site_data/site_data_cache_factory_unittest.cc",
+    "persistence/site_data/site_data_cache_impl_unittest.cc",
+    "persistence/site_data/site_data_impl_unittest.cc",
+    "persistence/site_data/site_data_reader_unittest.cc",
+    "persistence/site_data/site_data_writer_unittest.cc",
+  ]
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
@@ -526,8 +495,4 @@ source_set("browser_tests") {
     "//testing/gmock",
     "//testing/gtest",
   ]
-
-  if (is_ios) {
-    deps += [ "//components/test:performance_manager_test_bundle_data" ]
-  }
 }

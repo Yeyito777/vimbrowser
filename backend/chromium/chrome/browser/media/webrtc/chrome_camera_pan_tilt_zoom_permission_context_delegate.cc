@@ -9,9 +9,6 @@
 #include "content/public/browser/render_frame_host.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/compiler_specific.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS) && BUILDFLAG(IS_CHROMEOS)
 #include "extensions/browser/extension_registry.h"         // nogncheck
@@ -35,12 +32,7 @@ bool ChromeCameraPanTiltZoomPermissionContextDelegate::
     GetPermissionStatusInternal(const GURL& requesting_origin,
                                 const GURL& embedding_origin,
                                 ContentSetting* content_setting_result) {
-#if BUILDFLAG(IS_ANDROID)
-  // The PTZ permission is automatically granted on Android. It is safe to do so
-  // because pan and tilt are not supported on Android.
-  *content_setting_result = CONTENT_SETTING_ALLOW;
-  return true;
-#elif BUILDFLAG(ENABLE_EXTENSIONS) && BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(ENABLE_EXTENSIONS) && BUILDFLAG(IS_CHROMEOS)
   // Extensions running in kiosk mode that have declared the "videoCapture"
   // permission in their manifest are allowed to control camera movements.
   if (IsPermissionGrantedForExtension(requesting_origin)) {

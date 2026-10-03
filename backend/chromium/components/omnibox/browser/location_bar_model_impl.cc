@@ -81,9 +81,6 @@ std::u16string LocationBarModelImpl::GetURLForDisplay() const {
     format_types |= url_formatter::kFormatUrlTrimAfterHost;
   }
 
-#if BUILDFLAG(IS_IOS)
-  format_types |= url_formatter::kFormatUrlTrimAfterHost;
-#endif
 
   format_types |= url_formatter::kFormatUrlOmitHTTPS;
   format_types |= url_formatter::kFormatUrlOmitTrivialSubdomains;
@@ -120,17 +117,6 @@ std::u16string LocationBarModelImpl::GetFormattedURL(
 
   GURL url(GetURL());
 
-#if BUILDFLAG(IS_IOS)
-  // On iOS, the blob: display URLs should be simply the domain name. However,
-  // url_formatter parses everything past blob: as path, not domain, so swap
-  // the url here to be just origin.
-  if (url.SchemeIsBlob()) {
-    url::Origin origin = url::Origin::Create(url);
-    if (!origin.host().empty()) {
-      url = origin.GetURL();
-    }
-  }
-#endif  // BUILDFLAG(IS_IOS)
 
   // Special handling for dom-distiller:. Instead of showing internal reader
   // mode URLs, show the original article URL in the omnibox.

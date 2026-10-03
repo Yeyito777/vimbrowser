@@ -1,4 +1,4 @@
-.PHONY: all bootstrap-chromium build-chromium-cef sync-source-distrib slim-runtime source-distrib mac-source-distrib backend-dev build-shell build mac-build mac-install install-wrapper install benchmark benchmark-live benchmark-all key-regression vite-install vite-dev vite-build vite-preview run clean status
+.PHONY: all bootstrap-chromium build-chromium-cef sync-source-distrib slim-runtime source-distrib mac-source-distrib backend-dev build-shell build mac-build mac-install install-wrapper install benchmark benchmark-live benchmark-all network-broker-test key-regression vite-install vite-dev vite-build vite-preview run clean status
 
 BUILD_DIR ?= build-source
 JOBS ?= 12
@@ -140,6 +140,17 @@ benchmark-live:
 
 benchmark-all:
 	./scripts/vimbrowser-benchmark --suite all --check --binary "$(BENCH_BINARY)"
+
+network-broker-test:
+	VIMBROWSER_TEST_BINARY="$(BENCH_BINARY)" ./scripts/vimbrowser-network-broker-test
+
+.PHONY: diagnostic-controls-test
+diagnostic-controls-test:
+	python3 tests/diagnostic_controls_test.py --binary "$(BENCH_BINARY)"
+
+.PHONY: background-activity-test
+background-activity-test:
+	python3 tests/background_activity_test.py --binary "$(BENCH_BINARY)"
 
 key-regression:
 	./scripts/vimbrowser-key-regression --binary "$(BENCH_BINARY)"

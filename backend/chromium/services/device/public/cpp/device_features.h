@@ -28,25 +28,10 @@ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
     kWebUsbProtectedClassControlTransferBlock);
 DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
     kWebHidAttributeAllowsBackForwardCache);
-#if BUILDFLAG(IS_WIN)
-DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kWinSystemLocationPermission);
-DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
-    kWinSystemLocationPermissionEventBased);
-DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kHidGetFeatureReportFix);
-
-extern const DEVICE_FEATURES_EXPORT base::FeatureParam<int>
-    kWinSystemLocationPermissionPollingParam;
-#endif  // BUILDFLAG(IS_WIN)
 DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kLocationProviderManager);
 
-#if BUILDFLAG(IS_ANDROID)
-DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
-    kBatteryStatusManagerBroadcastReceiverInBackground);
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if !BUILDFLAG(IS_ANDROID)
 DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kSecurityKeyHidInterfacesAreFido);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 extern const DEVICE_FEATURES_EXPORT
     base::FeatureParam<device::mojom::LocationProviderManagerMode>
@@ -62,9 +47,7 @@ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kAutomaticUsbDetach);
 DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kProductNameOverHidName);
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_WIN)
 DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kSerialSplitDtrAndRts);
-#endif  // !BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
 DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kHidReportRequestExactLength);

@@ -27,10 +27,6 @@ SANDBOX_POLICY_EXPORT extern const char kNoSandbox[];
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 SANDBOX_POLICY_EXPORT extern const char kNoZygoteSandbox[];
 #endif
-#if BUILDFLAG(IS_WIN)
-SANDBOX_POLICY_EXPORT extern const char kAllowThirdPartyModules[];
-SANDBOX_POLICY_EXPORT extern const char kAddXrAppContainerCaps[];
-#endif
 #if BUILDFLAG(IS_MAC)
 SANDBOX_POLICY_EXPORT extern const char kEnableSandboxLogging[];
 SANDBOX_POLICY_EXPORT extern const char kDisableMetalShaderCache[];

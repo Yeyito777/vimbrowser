@@ -201,16 +201,6 @@ void GpuClient::SetEstablishGpuChannelCallbackForTesting(
   callback_for_testing_ = std::move(callback);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void GpuClient::CreateJpegDecodeAccelerator(
-    mojo::PendingReceiver<chromeos_camera::mojom::MjpegDecodeAccelerator>
-        jda_receiver) {
-  if (auto* gpu_host = delegate_->EnsureGpuHost()) {
-    gpu_host->gpu_service()->CreateJpegDecodeAccelerator(
-        std::move(jda_receiver));
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void GpuClient::CreateVideoEncodeAcceleratorProvider(
     mojo::PendingReceiver<media::mojom::VideoEncodeAcceleratorProvider>

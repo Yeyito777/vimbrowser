@@ -82,23 +82,10 @@ LanguageDetectionModel::LoadModelFromFile(base::File model_file,
 
   base::ElapsedTimer timer;
 // Windows doesn't support using mmap for the language detection model.
-#if !BUILDFLAG(IS_WIN)
   options.mutable_base_options()
       ->mutable_model_file()
       ->mutable_file_descriptor_meta()
       ->set_fd(model_file.GetPlatformFile());
-#else
-  {
-    std::string file_content(model_file.GetLength(), '\0');
-    if (!model_file.ReadAndCheck(0,
-                                 base::as_writable_byte_span(file_content))) {
-      return std::nullopt;
-    }
-    *options.mutable_base_options()
-         ->mutable_model_file()
-         ->mutable_file_content() = std::move(file_content);
-  }
-#endif
 
   auto statusor_classifier =
       tflite::task::text::nlclassifier::NLClassifier::CreateFromOptions(

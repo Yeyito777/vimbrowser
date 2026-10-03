@@ -22,37 +22,17 @@
 #include "content/public/common/content_switches.h"
 #include "third_party/blink/public/mojom/v8_cache_options.mojom.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/debug/debugger.h"
-#include "base/feature_list.h"
-#endif
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
 #include <signal.h>
 static void SigUSR1Handler(int signal) {}
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/win/windows_version.h"
-#endif
 
 namespace content {
 
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-
-std::wstring ToNativeString(std::string_view string) {
-  return base::ASCIIToWide(string);
-}
-
-std::string FromNativeString(std::wstring_view string) {
-  return base::WideToASCII(string);
-}
-
-#else  // BUILDFLAG(IS_WIN)
 
 std::string ToNativeString(const std::string& string) {
   return string;
@@ -62,7 +42,6 @@ std::string FromNativeString(const std::string& string) {
   return string;
 }
 
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -83,25 +62,6 @@ blink::mojom::V8CacheOptions GetV8CacheOptions() {
 }
 
 void WaitForDebugger(const std::string& label) {
-#if BUILDFLAG(IS_WIN)
-#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-  std::string title = "Google Chrome";
-#else   // BUILDFLAG(CHROMIUM_BRANDING)
-  std::string title = "Chromium";
-#endif  // BUILDFLAG(CHROMIUM_BRANDING)
-  title += " ";
-  title += label;  // makes attaching to process easier
-  std::string message = label;
-  message += " starting with pid: ";
-  message += base::NumberToString(base::GetCurrentProcId());
-  ::MessageBox(NULL, base::UTF8ToWide(message).c_str(),
-               base::UTF8ToWide(title).c_str(), MB_OK | MB_SETFOREGROUND);
-#elif BUILDFLAG(IS_POSIX)
-#if BUILDFLAG(IS_ANDROID)
-  LOG(ERROR) << label << " waiting for GDB.";
-  // Wait 24 hours for a debugger to be attached to the current process.
-  base::debug::WaitForDebugger(24 * 60 * 60, true);
-#else
   // TODO(playmobil): In the long term, overriding this flag doesn't seem
   // right, either use our own flag or open a dialog we can use.
   // This is just to ease debugging in the interim.
@@ -114,8 +74,6 @@ void WaitForDebugger(const std::string& label) {
   sigaction(SIGUSR1, &sa, nullptr);
 
   pause();
-#endif  // BUILDFLAG(IS_ANDROID)
-#endif  // BUILDFLAG(IS_POSIX)
 }
 
 std::vector<std::string> FeaturesFromSwitch(

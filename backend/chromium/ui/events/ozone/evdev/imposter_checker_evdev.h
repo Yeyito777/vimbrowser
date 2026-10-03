@@ -13,9 +13,6 @@
 #include "ui/events/ozone/evdev/event_converter_evdev.h"
 #include "ui/events/ozone/evdev/imposter_checker_evdev_state.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/events/ozone/evdev/fake_keyboard_heuristic_metrics.h"
-#endif
 
 namespace ui {
 class COMPONENT_EXPORT(EVDEV) ImposterCheckerEvdev {
@@ -44,9 +41,6 @@ class COMPONENT_EXPORT(EVDEV) ImposterCheckerEvdev {
   std::multimap<std::string, int> devices_on_phys_path_;
   std::unique_ptr<ImposterCheckerEvdevState> imposter_checker_evdev_state_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  FakeKeyboardHeuristicMetrics fake_keyboard_heuristic_metrics_;
-#endif
 };
 }  // namespace ui
 

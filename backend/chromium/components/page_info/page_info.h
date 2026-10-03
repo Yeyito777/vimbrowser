@@ -251,9 +251,6 @@ class PageInfo : private content_settings::CookieControlsObserver,
   // This method is called when the user opens the Cookies & Site Data subpage.
   void OnCookiesPageOpened();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  bool ShouldSyncCookiesForCurrentUrl();
-#endif
 
   // Return a pointer to the ObjectPermissionContextBase corresponding to the
   // content settings type, |type|. Returns nullptr for content settings
@@ -429,12 +426,6 @@ class PageInfo : private content_settings::CookieControlsObserver,
   // strings below to the corresponding UI code, in order to prevent
   // unnecessary UTF-8 string conversions.
 
-#if BUILDFLAG(IS_ANDROID)
-  // Details about the website's identity. If the website's identity has been
-  // verified then |identity_status_description_android_| contains who verified
-  // the identity. This string will be displayed in the UI.
-  std::u16string identity_status_description_android_;
-#endif
 
   // Set when the user has explicitly bypassed an SSL error for this host
   // and/or the user has explicitly bypassed an HTTP warning (from HTTPS-First

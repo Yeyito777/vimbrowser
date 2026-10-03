@@ -67,11 +67,7 @@ base::FilePath URLToPath(std::string_view url) {
   }
 
   std::string result = base::UnescapeBinaryURLComponent(url.substr(path_start));
-#if BUILDFLAG(IS_WIN)
-  return base::FilePath(base::UTF8ToWide(result)).NormalizePathSeparators();
-#else
   return base::FilePath(result);
-#endif
 }
 
 }  // namespace
@@ -104,11 +100,7 @@ std::vector<FileInfo> URIListToFileInfos(std::string_view uri_list) {
 
 std::string FilePathToFileURL(const base::FilePath& file_path) {
   std::string url;
-#if BUILDFLAG(IS_WIN)
-  std::string path = base::WideToUTF8(file_path.value());
-#else
   std::string path = file_path.value();
-#endif
   // Allocate maximum possible size upfront:
   // 'file:' + '///' + (3 x path.size() for percent encoding).
   url.reserve((sizeof(kFileSchemePrefix) - 1) + 3 + (3 * path.size()));
@@ -134,19 +126,12 @@ std::string FilePathToFileURL(const base::FilePath& file_path) {
   for (char c : path) {
     // Encode special characters `%;#?\`.
     if (c == '%' || c == ';' || c == '#' || c == '?' ||
-#if !BUILDFLAG(IS_WIN)
         // Backslash is percent-encoded on posix platforms.
         c == '\\' ||
-#endif
         // Encode space and all control chars.
         c <= ' ') {
       url += '%';
       base::AppendHexEncodedByte(static_cast<uint8_t>(c), url);
-#if BUILDFLAG(IS_WIN)
-    } else if (c == '\\') {
-      // Backslash is converted to slash on windows.
-      url += '/';
-#endif
     } else {
       url += c;
     }

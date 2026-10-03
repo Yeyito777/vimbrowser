@@ -126,15 +126,6 @@ class WebAppUiManagerImpl : public BrowserCollectionObserver,
                     Profile& profile,
                     LaunchWebAppDebugValueCallback callback,
                     WithAppResources& lock) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void MigrateLauncherState(const webapps::AppId& from_app_id,
-                            const webapps::AppId& to_app_id,
-                            base::OnceClosure callback) override;
-
-  void DisplayRunOnOsLoginNotification(
-      const base::flat_map<webapps::AppId, RoolNotificationBehavior>& apps,
-      base::WeakPtr<Profile> profile) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void NotifyAppRelaunchState(const webapps::AppId& placeholder_app_id,
                               const webapps::AppId& final_app_id,
@@ -208,16 +199,7 @@ class WebAppUiManagerImpl : public BrowserCollectionObserver,
   void OnBrowserCreated(BrowserWindowInterface* browser) override;
   void OnBrowserClosed(BrowserWindowInterface* browser) override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // TabStripModelObserver:
-  void OnTabCloseCancelled(const tabs::TabInterface* contents) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-  // Attempts to uninstall the given web app id. Meant to be used with OS-level
-  // uninstallation support/hooks.
-  void UninstallWebAppFromStartupSwitch(const webapps::AppId& app_id);
-#endif
 
  private:
   // Returns true if Browser is for an installed App.
@@ -268,14 +250,6 @@ class WebAppUiManagerImpl : public BrowserCollectionObserver,
 
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnBrowserCloseCancelled(
-      BrowserWindowInterface* browser,
-      BrowserWindowInterface::ClosingStatus closing_status);
-
-  std::vector<base::CallbackListSubscription>
-      browser_close_cancelled_subscriptions_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const raw_ptr<Profile> profile_;
   std::map<webapps::AppId, std::vector<base::OnceClosure>>

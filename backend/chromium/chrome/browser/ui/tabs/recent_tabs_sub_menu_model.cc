@@ -434,7 +434,6 @@ void RecentTabsSubMenuModel::BuildLocalEntries() {
 }
 
 void RecentTabsSubMenuModel::BuildTabsFromOtherDevices() {
-#if !BUILDFLAG(IS_CHROMEOS)
   if (base::FeatureList::IsEnabled(
           syncer::kReplaceSyncPromosWithSignInPromos)) {
     syncer::SyncService* sync_service =
@@ -468,7 +467,6 @@ void RecentTabsSubMenuModel::BuildTabsFromOtherDevices() {
         break;
     }
   }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // All other devices' items (device headers or tabs) use AddItem*() to append
   // a menu item, because they take always place in the end of menu.

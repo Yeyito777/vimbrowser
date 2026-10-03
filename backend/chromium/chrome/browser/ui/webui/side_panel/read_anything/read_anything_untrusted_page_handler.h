@@ -25,8 +25,6 @@
 #include "chrome/browser/ui/webui/side_panel/read_anything/read_anything_screenshotter.h"
 #include "chrome/common/read_anything/read_anything.mojom.h"
 #include "components/dom_distiller/core/task_tracker.h"
-#include "components/translate/core/browser/translate_client.h"
-#include "components/translate/core/browser/translate_driver.h"
 #include "content/public/browser/tts_controller.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -36,14 +34,7 @@
 #include "ui/accessibility/ax_action_handler_registry.h"
 #include "ui/accessibility/ax_updates_and_events.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/public/cpp/session/session_observer.h"
-#include "chrome/browser/ui/webui/side_panel/read_anything/chrome_os_extension_wrapper.h"
-#include "chromeos/ash/components/language_packs/language_pack_manager.h"
-using ash::language_packs::PackResult;
-#else
 #include "extensions/browser/extension_registry_observer.h"
-#endif
 
 namespace content {
 class ScopedAccessibilityMode;
@@ -133,17 +124,12 @@ class ReadAnythingWebContentsObserver : public content::WebContentsObserver {
 //  lifetime as the Side Panel view.
 //
 class ReadAnythingUntrustedPageHandler :
-#if BUILDFLAG(IS_CHROMEOS)
-    public ash::SessionObserver,
-#else
     public content::UpdateLanguageStatusDelegate,
     public extensions::ExtensionRegistryObserver,
-#endif
     public ui::AXActionHandlerObserver,
     public read_anything::mojom::UntrustedPageHandler,
     public ReadAnythingLifecycleObserver,
-    public PinnedToolbarActionsModel::Observer,
-    public translate::TranslateDriver::LanguageDetectionObserver {
+    public PinnedToolbarActionsModel::Observer {
  public:
   ReadAnythingUntrustedPageHandler(
       mojo::PendingRemote<read_anything::mojom::UntrustedPage> page,
@@ -151,11 +137,6 @@ class ReadAnythingUntrustedPageHandler :
           receiver,
       content::WebUI* web_ui,
       bool use_screen_ai_service
-#if BUILDFLAG(IS_CHROMEOS)
-      ,
-      std::unique_ptr<ChromeOsExtensionWrapper> extension_wrapper =
-          std::make_unique<ChromeOsExtensionWrapper>()
-#endif
   );
   ReadAnythingUntrustedPageHandler(const ReadAnythingUntrustedPageHandler&) =
       delete;
@@ -229,11 +210,6 @@ class ReadAnythingUntrustedPageHandler :
   // of read anything immersive
   void MaybeUpdateImmersivePinStatus();
 
-  // TranslateDriver::LanguageDetectionObserver:
-  void OnLanguageDetermined(
-      const translate::LanguageDetectionDetails& details) override;
-  void OnTranslateDriverDestroyed(translate::TranslateDriver* driver) override;
-
   // ReadAnythingLifecycleObserver:
   void OnDestroyed() override;
   void OnTabWillDetach() override;
@@ -245,10 +221,6 @@ class ReadAnythingUntrustedPageHandler :
   // on system voice usage.
   void LogExtensionState() override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // ash::SessionObserver
-  void OnLockStateChanged(bool locked) override;
-#endif
 
  protected:
   void OnImageDataDownloaded(const ui::AXTreeID& target_tree_id,
@@ -260,7 +232,6 @@ class ReadAnythingUntrustedPageHandler :
                              const std::vector<gfx::Size>& sizes);
 
  private:
-#if !BUILDFLAG(IS_CHROMEOS)
   // content::UpdateLanguageStatusDelegate:
   void OnUpdateLanguageStatus(content::BrowserContext* browser_context,
                               const std::string& lang,
@@ -272,21 +243,6 @@ class ReadAnythingUntrustedPageHandler :
   // which read anything needs to know about to access the new voices.
   void OnExtensionReady(content::BrowserContext* browser_context,
                         const extensions::Extension* extension) override;
-#else
-  enum LanguageRequestType {
-    kInstall,
-    kInfo,
-  };
-
-  struct LanguageRequest {
-    std::string language;
-    LanguageRequestType type;
-  };
-
-  void SendOrQueueLanguageRequest(LanguageRequest request);
-  void SendNextLanguageRequest();
-  void OnInstallPackResponse(const PackResult& pack_result);
-#endif
   // Callback for when the tab's web contents are discarded.
   void OnTabDiscarded(tabs::TabInterface* tab,
                       content::WebContents* old_contents,
@@ -408,15 +364,6 @@ class ReadAnythingUntrustedPageHandler :
   std::string current_language_code_ = "en-US";
   const bool use_screen_ai_service_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // The ChromeOS language pack manager can't handle more than one language
-  // request at a time. When we receive requests from the page, queue them up
-  // here and only request the next one when we receive the callback for the
-  // previous one.
-  std::deque<LanguageRequest> queued_language_requests_;
-  bool has_pending_language_request_ = false;
-  std::unique_ptr<ChromeOsExtensionWrapper> extension_wrapper_;
-#endif
 
   // Observes the AXActionHandlerRegistry for AXTree removals.
   base::ScopedObservation<ui::AXActionHandlerRegistry,
@@ -447,12 +394,6 @@ class ReadAnythingUntrustedPageHandler :
   raw_ptr<PinnedToolbarActionsModel> pinned_toolbar_;
 
   base::ScopedClosureRunner audible_closure_;
-
-  // Observes LanguageDetectionObserver, which notifies us when the language of
-  // the contents of the current page has been determined.
-  base::ScopedObservation<translate::TranslateDriver,
-                          translate::TranslateDriver::LanguageDetectionObserver>
-      translate_observation_{this};
 
   // Timer used for checking for pdf contents after the page has loaded.
   // Otherwise, it may incorrectly return that the page is not a pdf if

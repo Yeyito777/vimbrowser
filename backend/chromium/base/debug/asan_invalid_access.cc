@@ -18,9 +18,6 @@
 #include "base/immediate_crash.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace base::debug {
 
@@ -92,15 +89,6 @@ void AsanHeapUseAfterFree() {
   base::debug::Alias(&dummy);
 }
 
-#if BUILDFLAG(IS_WIN)
-void AsanCorruptHeapBlock() {
-  CorruptMemoryBlock(false);
-}
-
-void AsanCorruptHeap() {
-  CorruptMemoryBlock(true);
-}
-#endif  // BUILDFLAG(IS_WIN)
 #endif  // ADDRESS_SANITIZER
 
 }  // namespace base::debug

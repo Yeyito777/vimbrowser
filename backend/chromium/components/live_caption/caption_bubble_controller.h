@@ -21,7 +21,6 @@ namespace captions {
 
 class CaptionBubbleContext;
 class CaptionBubbleSettings;
-class TranslationViewWrapperBase;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Caption Bubble Controller
@@ -41,8 +40,7 @@ class CaptionBubbleController : public CaptionControllerBase::Listener {
 
   static std::unique_ptr<CaptionBubbleController> Create(
       CaptionBubbleSettings* caption_bubble_settings,
-      const std::string& application_locale,
-      std::unique_ptr<TranslationViewWrapperBase> translation_view_wrapper);
+      const std::string& application_locale);
 
   // Called when the speech service has an error.  This should be part of
   // `CaptionControllerBase::Listener`, but the callbacks make this tricky.

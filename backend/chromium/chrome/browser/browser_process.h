@@ -41,7 +41,6 @@ class GlobalFeatures;
 class GpuModeManager;
 class IconManager;
 class MediaFileSystemRegistry;
-class NotificationPlatformBridge;
 class NotificationUIManager;
 class PrefService;
 class ProfileManager;
@@ -51,11 +50,9 @@ class StatusTray;
 class SystemNetworkContextManager;
 class WebRtcLogUploader;
 
-#if !BUILDFLAG(IS_ANDROID)
 class HidSystemTrayIcon;
 class UsbSystemTrayIcon;
 class IntranetRedirectDetector;
-#endif
 
 namespace embedder_support {
 class OriginTrialsSettingsStorage;
@@ -122,12 +119,6 @@ class ChromeBrowserPolicyConnector;
 class PolicyService;
 }  // namespace policy
 
-namespace printing {
-class BackgroundPrintingManager;
-class PrintJobManager;
-class PrintPreviewDialogController;
-}  // namespace printing
-
 namespace resource_coordinator {
 class ResourceCoordinatorParts;
 class TabManager;
@@ -185,11 +176,9 @@ class BrowserProcess {
 
   virtual BrowserProcessPlatformPart* platform_part() = 0;
 
-  // Returns the manager for desktop notifications.
-  // TODO(miguelg) This is in the process of being deprecated in favour of
-  // NotificationPlatformBridge + NotificationDisplayService
+  // Returns the legacy manager for desktop notifications. Vimbrowser builds
+  // without Chrome notifications, so implementations return nullptr.
   virtual NotificationUIManager* notification_ui_manager() = 0;
-  virtual NotificationPlatformBridge* notification_platform_bridge() = 0;
 
   // Replacement for IOThread. It owns and manages the
   // NetworkContext which will use the network service when the network service
@@ -218,12 +207,6 @@ class BrowserProcess {
 
   virtual bool IsShuttingDown() = 0;
 
-  virtual printing::PrintJobManager* print_job_manager() = 0;
-  virtual printing::PrintPreviewDialogController*
-  print_preview_dialog_controller() = 0;
-  virtual printing::BackgroundPrintingManager*
-  background_printing_manager() = 0;
-
   // Returns a handle to the manager of device parental controls, which
   // are independent from the profile. This handler is member of browser process
   // directly and cannot be moved to GlobalFeatures, because it is also required
@@ -232,9 +215,7 @@ class BrowserProcess {
   virtual supervised_user::DeviceParentalControls&
   device_parental_controls() = 0;
 
-#if !BUILDFLAG(IS_ANDROID)
   virtual IntranetRedirectDetector* intranet_redirect_detector() = 0;
-#endif
 
   // Sets or gets the locale used by the application. It is the IETF language
   // tag, defined in BCP 47. The region subtag is not included when it adds no
@@ -295,18 +276,13 @@ class BrowserProcess {
 
   virtual component_updater::ComponentUpdateService* component_updater() = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  virtual MediaFileSystemRegistry* media_file_system_registry() = 0;
-#endif
 
   virtual WebRtcLogUploader* webrtc_log_uploader() = 0;
 
   virtual network_time::NetworkTimeTracker* network_time_tracker() = 0;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Avoid using this. Prefer using GCMProfileServiceFactory.
   virtual gcm::GCMDriver* gcm_driver() = 0;
-#endif
 
   // Returns the tab manager. On non-supported platforms, this returns null.
   // TODO(sebmarchand): Update callers to
@@ -320,7 +296,6 @@ class BrowserProcess {
   // through the policy engine.
   virtual SerialPolicyAllowedPorts* serial_policy_allowed_ports() = 0;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Returns the object which maintains Human Interface Device (HID) system tray
   // icon.
   virtual HidSystemTrayIcon* hid_system_tray_icon() = 0;
@@ -328,7 +303,6 @@ class BrowserProcess {
   // Returns the object which maintains Universal Serial Bus (USB) system tray
   // icon.
   virtual UsbSystemTrayIcon* usb_system_tray_icon() = 0;
-#endif
 
   // Obtain the browser instance of OSCryptAsync, which should be used for data
   // encryption.

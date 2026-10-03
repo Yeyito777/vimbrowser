@@ -16,9 +16,6 @@
 #include "ui/gfx/buffer_types.h"
 #include "ui/gfx/geometry/mojom/geometry_mojom_traits.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#endif
 
 namespace mojo {
 
@@ -41,15 +38,6 @@ struct GPU_IPC_COMMON_EXPORT StructTraits<gpu::mojom::GpuDeviceDataView,
     return input.revision;
   }
 #endif
-#if BUILDFLAG(IS_WIN)
-  static uint32_t sub_sys_id(const gpu::GPUInfo::GPUDevice& input) {
-    return input.sub_sys_id;
-  }
-
-  static const CHROME_LUID luid(const gpu::GPUInfo::GPUDevice& input) {
-    return input.luid;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   static bool active(const gpu::GPUInfo::GPUDevice& input) {
     return input.active;
@@ -178,55 +166,6 @@ struct GPU_IPC_COMMON_EXPORT StructTraits<
   }
 };
 
-#if BUILDFLAG(IS_WIN)
-template <>
-struct GPU_IPC_COMMON_EXPORT EnumTraits<gpu::mojom::OverlaySupport,
-                                        gpu::OverlaySupport> {
-  static gpu::mojom::OverlaySupport ToMojom(gpu::OverlaySupport support);
-  static bool FromMojom(gpu::mojom::OverlaySupport input,
-                        gpu::OverlaySupport* out);
-};
-
-template <>
-struct GPU_IPC_COMMON_EXPORT StructTraits<gpu::mojom::OverlayInfoDataView,
-                                          gpu::OverlayInfo> {
-  static bool Read(gpu::mojom::OverlayInfoDataView data, gpu::OverlayInfo* out);
-
-  static bool direct_composition(const gpu::OverlayInfo& input) {
-    return input.direct_composition;
-  }
-
-  static bool supports_overlays(const gpu::OverlayInfo& input) {
-    return input.supports_overlays;
-  }
-
-  static gpu::OverlaySupport yuy2_overlay_support(
-      const gpu::OverlayInfo& input) {
-    return input.yuy2_overlay_support;
-  }
-
-  static gpu::OverlaySupport nv12_overlay_support(
-      const gpu::OverlayInfo& input) {
-    return input.nv12_overlay_support;
-  }
-
-  static gpu::OverlaySupport bgra8_overlay_support(
-      const gpu::OverlayInfo& input) {
-    return input.bgra8_overlay_support;
-  }
-
-  static gpu::OverlaySupport rgb10a2_overlay_support(
-      const gpu::OverlayInfo& input) {
-    return input.rgb10a2_overlay_support;
-  }
-
-  static gpu::OverlaySupport p010_overlay_support(
-      const gpu::OverlayInfo& input) {
-    return input.p010_overlay_support;
-  }
-};
-
-#endif
 
 template <>
 struct GPU_IPC_COMMON_EXPORT StructTraits<gpu::mojom::GpuInfoDataView,
@@ -341,27 +280,6 @@ struct GPU_IPC_COMMON_EXPORT StructTraits<gpu::mojom::GpuInfoDataView,
     return input.can_support_threaded_texture_mailbox;
   }
 
-#if BUILDFLAG(IS_WIN)
-  static uint32_t directml_feature_level(const gpu::GPUInfo& input) {
-    return input.directml_feature_level;
-  }
-
-  static uint32_t d3d12_feature_level(const gpu::GPUInfo& input) {
-    return input.d3d12_feature_level;
-  }
-
-  static uint32_t vulkan_version(const gpu::GPUInfo& input) {
-    return input.vulkan_version;
-  }
-
-  static const gpu::OverlayInfo& overlay_info(const gpu::GPUInfo& input) {
-    return input.overlay_info;
-  }
-
-  static bool shared_image_d3d(const gpu::GPUInfo& input) {
-    return input.shared_image_d3d;
-  }
-#endif
   static const gpu::VideoDecodeAcceleratorSupportedProfiles&
   video_decode_accelerator_supported_profiles(const gpu::GPUInfo& input) {
     return input.video_decode_accelerator_supported_profiles;

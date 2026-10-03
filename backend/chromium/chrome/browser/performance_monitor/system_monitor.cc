@@ -14,11 +14,7 @@
 #include "base/task/thread_pool.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/performance_monitor/metric_evaluator_helper_win.h"
-#elif BUILDFLAG(IS_POSIX)
 #include "chrome/browser/performance_monitor/metric_evaluator_helper_posix.h"
-#endif
 
 namespace performance_monitor {
 
@@ -240,13 +236,7 @@ void SystemMonitor::NotifyObservers(SystemMonitor::MetricVector metrics) {
 // static
 std::unique_ptr<MetricEvaluatorsHelper>
 SystemMonitor::CreateMetricEvaluatorsHelper() {
-#if BUILDFLAG(IS_WIN)
-  return base::WrapUnique(new MetricEvaluatorsHelperWin());
-#elif BUILDFLAG(IS_POSIX)
   return std::make_unique<MetricEvaluatorsHelperPosix>();
-#else
-#error Unsupported platform
-#endif
 }
 
 SystemMonitor::MetricEvaluator::MetricEvaluator(Type type) : type_(type) {}

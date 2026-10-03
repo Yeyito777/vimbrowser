@@ -12,11 +12,7 @@
 #include "build/build_config.h"
 #include "content/public/browser/tracing_delegate.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/ui/android/tab_model/tab_model_list_observer.h"
-#else
 #include "chrome/browser/ui/browser_list_observer.h"
-#endif
 
 namespace tracing {
 class BackgroundTracingStateManager;
@@ -38,11 +34,7 @@ enum class TracingFinalizationDisallowedReason {
 };
 
 class ChromeTracingDelegate : public content::TracingDelegate,
-#if BUILDFLAG(IS_ANDROID)
-                              public TabModelListObserver
-#else
                               public BrowserListObserver
-#endif
 {
  public:
   // Whether system-wide performance trace collection using the external system
@@ -62,26 +54,11 @@ class ChromeTracingDelegate : public content::TracingDelegate,
   tracing::MetadataDataSource::BundleRecorder
   CreateSystemProfileMetadataRecorder() const override;
 
-#if BUILDFLAG(IS_WIN)
-  void GetSystemTracingState(
-      base::OnceCallback<void(bool service_supported, bool service_enabled)>
-          on_tracing_state) override;
-  void EnableSystemTracing(
-      base::OnceCallback<void(bool success)> on_complete) override;
-  void DisableSystemTracing(
-      base::OnceCallback<void(bool success)> on_complete) override;
-#endif  // BUILDFLAG(IS_WIN)
 
  private:
-#if BUILDFLAG(IS_ANDROID)
-  // TabModelListObserver implementation.
-  void OnTabModelAdded(TabModel* tab_model) override;
-  void OnTabModelRemoved(TabModel* tab_model) override;
-#else
   // BrowserListObserver implementation.
   void OnBrowserAdded(Browser* browser) override;
   void OnBrowserRemoved(Browser* browser) override;
-#endif
 
   // Track the most recent OffTheRecord browser creation time. It's ok to update
   // to a newer timestamp when there are multiple OffTheRecord browsers, since

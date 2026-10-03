@@ -15,13 +15,6 @@
 #include "components/os_crypt/async/common/encryptor.mojom.h"
 #include "mojo/public/cpp/bindings/struct_traits.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include <dpapi.h>
-
-#include "base/feature_list.h"
-#endif
 
 namespace mojo {
 
@@ -95,12 +88,6 @@ bool StructTraits<os_crypt_async::mojom::KeyDataView,
   auto memory_span = mapping.GetMemoryAsSpan<uint8_t>();
   std::copy(memory_span.begin(), memory_span.end(), out->key_.begin());
 
-#if BUILDFLAG(IS_WIN)
-  SecureZeroMemory(std::data(memory_span), std::size(memory_span));
-  out->encrypted_ =
-      ::CryptProtectMemory(std::data(out->key_), std::size(out->key_),
-                           CRYPTPROTECTMEMORY_SAME_PROCESS);
-#endif  // BUILDFLAG(IS_WIN)
 
   out->algorithm_ = data.algorithm();
 
@@ -126,14 +113,6 @@ base::UnsafeSharedMemoryRegion StructTraits<os_crypt_async::mojom::KeyDataView,
   auto mapping = region.Map();
   auto memory_span = mapping.GetMemoryAsSpan<uint8_t>();
   memory_span.copy_from(in.key_);
-#if BUILDFLAG(IS_WIN)
-  if (in.encrypted_) {
-    // Not much we can do if this fails.
-    std::ignore =
-        ::CryptUnprotectMemory(std::data(memory_span), std::size(memory_span),
-                               CRYPTPROTECTMEMORY_SAME_PROCESS);
-  }
-#endif  // BUILDFLAG(IS_WIN)
   return region;
 }
 

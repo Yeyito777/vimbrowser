@@ -20,7 +20,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "components/language/core/common/language_util.h"
 #include "components/language_detection/core/constants.h"
-#include "components/translate/core/common/translate_metrics.h"
 #include "components/translate/core/language_detection/chinese_script_classifier.h"
 #include "third_party/cld_3/src/src/nnet_language_identifier.h"
 
@@ -197,15 +196,6 @@ std::string DeterminePageLanguage(const std::string& code,
   return DeterminePageLanguage(code, html_lang, detected_language, is_reliable);
 }
 
-std::string DeterminePageLanguageNoModel(
-    const std::string& code,
-    const std::string& html_lang,
-    LanguageVerificationType language_verification_type) {
-  translate::ReportLanguageVerification(language_verification_type);
-  std::string language = GetHTMLOrHTTPContentLanguage(code, html_lang);
-  return language.empty() ? language_detection::kUnknownLanguageCode : language;
-}
-
 // Now consider the web page language details along with the contents language.
 std::string DeterminePageLanguage(const std::string& code,
                                   const std::string& html_lang,
@@ -215,42 +205,30 @@ std::string DeterminePageLanguage(const std::string& code,
   // If |language| is empty, just use model result even though it might be
   // language_detection::kUnknownLanguageCode.
   if (language.empty()) {
-    translate::ReportLanguageVerification(
-        translate::LanguageVerificationType::kModelOnly);
     return model_detected_language;
   }
 
   // If |model_detected_language| is empty, just use |language|.
   if (model_detected_language.empty() ||
       model_detected_language == language_detection::kUnknownLanguageCode) {
-    translate::ReportLanguageVerification(
-        translate::LanguageVerificationType::kModelUnknown);
     return language;
   }
 
   if (CanModelComplementSubCode(language, model_detected_language)) {
-    translate::ReportLanguageVerification(
-        translate::LanguageVerificationType::kModelComplementsCountry);
     return model_detected_language;
   }
 
   if (IsSameOrSimilarLanguages(language, model_detected_language)) {
-    translate::ReportLanguageVerification(
-        translate::LanguageVerificationType::kModelAgrees);
     return language;
   }
 
   if (MaybeServerWrongConfiguration(language, model_detected_language)) {
-    translate::ReportLanguageVerification(
-        translate::LanguageVerificationType::kModelOverrides);
     return model_detected_language;
   }
 
   // Content-Language value might be wrong because model says that this page is
   // written in another language with confidence. In this case, Chrome doesn't
   // rely on any of the language codes, and gives up suggesting a translation.
-  translate::ReportLanguageVerification(
-      translate::LanguageVerificationType::kModelDisagrees);
   return language_detection::kUnknownLanguageCode;
 }
 

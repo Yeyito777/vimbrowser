@@ -39,7 +39,6 @@
 #include "perfetto/ext/tracing/core/consumer.h"
 #include "perfetto/ext/tracing/ipc/consumer_ipc_client.h"
 #include "perfetto/tracing/core/forward_decls.h"
-#include "src/android_stats/perfetto_atoms.h"
 #include "src/perfetto_cmd/packet_writer.h"
 
 namespace perfetto {
@@ -166,9 +165,6 @@ class PerfettoCmd : public Consumer {
       bool statsd_logging);
   void ReportTraceToAndroidFrameworkOrCrash();
 #endif
-  void LogUploadEvent(PerfettoStatsdAtom atom);
-  void LogUploadEvent(PerfettoStatsdAtom atom, const std::string& trigger_name);
-
   base::MaybeLockFreeTaskRunner task_runner_;
 
   std::unique_ptr<perfetto::TracingService::ConsumerEndpoint>
@@ -184,7 +180,6 @@ class PerfettoCmd : public Consumer {
   base::Pipe background_wait_pipe_;
   bool save_to_incidentd_ = false;
   bool report_to_android_framework_ = false;
-  bool statsd_logging_ = false;
   bool tracing_succeeded_ = false;
   std::string detach_key_;
   std::string attach_key_;

@@ -26,13 +26,7 @@
 #include "partition_alloc/partition_alloc_constants.h"
 #include "partition_alloc/thread_isolation/thread_isolation.h"
 
-#if PA_BUILDFLAG(IS_IOS)
-#include <mach-o/dyld.h>
-#endif
 
-#if PA_BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif  // PA_BUILDFLAG(IS_WIN)
 
 #if PA_BUILDFLAG(ENABLE_THREAD_ISOLATION)
 #include <sys/mman.h>
@@ -44,18 +38,6 @@ namespace partition_alloc::internal {
 
 namespace {
 
-#if PA_BUILDFLAG(IS_WIN)
-
-PA_NOINLINE void HandlePoolAllocFailureOutOfVASpace() {
-  PA_NO_CODE_FOLDING();
-  PA_CHECK(false);
-}
-
-PA_NOINLINE void HandlePoolAllocFailureOutOfCommitCharge() {
-  PA_NO_CODE_FOLDING();
-  PA_CHECK(false);
-}
-#endif  // PA_BUILDFLAG(IS_WIN)
 
 PA_NOINLINE void HandlePoolAllocFailure() {
   PA_NO_CODE_FOLDING();
@@ -63,19 +45,6 @@ PA_NOINLINE void HandlePoolAllocFailure() {
   PA_DEBUG_DATA_ON_STACK("error", static_cast<size_t>(alloc_page_error_code));
   // It's important to easily differentiate these two failures on Windows, so
   // crash with different stacks.
-#if PA_BUILDFLAG(IS_WIN)
-  if (alloc_page_error_code == ERROR_NOT_ENOUGH_MEMORY) {
-    // The error code says NOT_ENOUGH_MEMORY, but since we only do MEM_RESERVE,
-    // it must be VA space exhaustion.
-    HandlePoolAllocFailureOutOfVASpace();
-  } else if (alloc_page_error_code == ERROR_COMMITMENT_LIMIT ||
-             alloc_page_error_code == ERROR_COMMITMENT_MINIMUM) {
-    // Should not happen, since as of Windows 8.1+, reserving address space
-    // should not be charged against the commit limit, aside from a very small
-    // amount per 64kiB block. Keep this path anyway, to check in crash reports.
-    HandlePoolAllocFailureOutOfCommitCharge();
-  } else
-#endif  // PA_BUILDFLAG(IS_WIN)
   {
     PA_CHECK(false);
   }
@@ -114,9 +83,7 @@ size_t PartitionAddressSpace::metadata_region_size_ = 0;
 #endif  // PA_CONFIG(MOVE_METADATA_OUT_OF_GIGACAGE)
 
 #if PA_CONFIG(DYNAMICALLY_SELECT_POOL_SIZE)
-#if !PA_BUILDFLAG(IS_IOS)
 #error Dynamic pool size is only supported on iOS.
-#endif
 
 bool PartitionAddressSpace::IsIOSTestProcess() {
   // On iOS, only applications with the extended virtual addressing entitlement
@@ -167,19 +134,6 @@ void PartitionAddressSpace::Init() {
                  PageAccessibilityConfiguration(
                      PageAccessibilityConfiguration::kInaccessible),
                  PageTag::kPartitionAlloc);
-#if PA_BUILDFLAG(IS_ANDROID)
-  // On Android, Adreno-GSL library fails to mmap if we snatch address
-  // 0x400000000. Find a different address instead.
-  if (setup_.regular_pool_base_address_ == 0x400000000) {
-    uintptr_t new_base_address =
-        AllocPages(glued_pool_sizes, glued_pool_sizes,
-                   PageAccessibilityConfiguration(
-                       PageAccessibilityConfiguration::kInaccessible),
-                   PageTag::kPartitionAlloc);
-    FreePages(setup_.regular_pool_base_address_, glued_pool_sizes);
-    setup_.regular_pool_base_address_ = new_base_address;
-  }
-#endif  // PA_BUILDFLAG(IS_ANDROID)
   if (!setup_.regular_pool_base_address_) {
     HandlePoolAllocFailure();
   }

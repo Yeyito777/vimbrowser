@@ -63,9 +63,8 @@ source_set("skills") {
     "//ui/views/controls/webview",
     "//ui/webui",
   ]
-  if (!is_android) {
-    deps += [ "//ui/web_dialogs" ]
-  }
+
+  deps += [ "//ui/web_dialogs" ]
 }
 
 source_set("unit_tests") {

@@ -51,11 +51,6 @@ class MEDIA_MOJO_EXPORT MojoCdmHelper final : public CdmAuxiliaryHelper,
                          const std::string& challenge,
                          ChallengePlatformCB callback) final;
   void GetStorageId(uint32_t version, StorageIdCB callback) final;
-#if BUILDFLAG(IS_WIN)
-  void GetMediaFoundationCdmData(GetMediaFoundationCdmDataCB callback) final;
-  void SetCdmClientToken(const std::vector<uint8_t>& client_token) final;
-  void OnCdmEvent(CdmEvent event, HRESULT hresult) final;
-#endif  // BUILDFLAG(IS_WIN)
 
   // MojoCdmFileIO::Delegate implementation.
   void CloseCdmFileIO(MojoCdmFileIO* cdm_file_io) final;

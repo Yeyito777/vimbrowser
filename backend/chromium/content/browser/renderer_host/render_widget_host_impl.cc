@@ -151,10 +151,6 @@
 #include "ui/gfx/skbitmap_operations.h"
 #include "ui/snapshot/snapshot.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/browser/renderer_host/input/fling_scheduler_android.h"
-#include "ui/android/view_android.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "content/browser/renderer_host/input/fling_scheduler_mac.h"
@@ -1005,27 +1001,6 @@ void RenderWidgetHostImpl::CancelSuccessfulPresentationTimeRequest() {
   blink_widget_->CancelSuccessfulPresentationTimeRequest();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void RenderWidgetHostImpl::SetImportance(ChildProcessImportance importance) {
-  if (importance_ == importance) {
-    return;
-  }
-  importance_ = importance;
-  GetProcess()->UpdateClientPriority(this);
-}
-
-void RenderWidgetHostImpl::AddImeInputEventObserver(
-    RenderWidgetHost::InputEventObserver* observer) {
-  if (!ime_input_event_observers_.HasObserver(observer)) {
-    ime_input_event_observers_.AddObserver(observer);
-  }
-}
-
-void RenderWidgetHostImpl::RemoveImeInputEventObserver(
-    RenderWidgetHost::InputEventObserver* observer) {
-  ime_input_event_observers_.RemoveObserver(observer);
-}
-#endif
 
 blink::VisualProperties RenderWidgetHostImpl::GetInitialVisualProperties() {
   blink::VisualProperties initial_props = GetVisualProperties();
@@ -2145,9 +2120,6 @@ base::TimeDelta RenderWidgetHostImpl::GetHungRendererDelayForTesting() {
 RenderProcessHostPriorityClient::Priority RenderWidgetHostImpl::GetPriority() {
   RenderProcessHostPriorityClient::Priority priority = {
       is_hidden_,  frame_depth_, intersects_viewport_, is_discarding_,
-#if BUILDFLAG(IS_ANDROID)
-      importance_,
-#endif
   };
   bool should_contribute = should_contribute_priority_to_process_;
   if (owner_delegate_ && !owner_delegate_->IsMainFrameActive()) {
@@ -2160,18 +2132,10 @@ RenderProcessHostPriorityClient::Priority RenderWidgetHostImpl::GetPriority() {
     should_contribute = false;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // should_contribute represents whether the RenderWidgetHost is active or not.
-  // For example, RenderWidgetHost is inactive if it is in BFCache.
-  priority.has_active_clients = should_contribute;
-#endif
   if (!should_contribute) {
     priority.is_hidden = true;
     priority.frame_depth = RenderProcessHostImpl::kMaxFrameDepthForPriority;
     priority.is_discarding = false;
-#if BUILDFLAG(IS_ANDROID)
-    priority.importance = ChildProcessImportance::NORMAL;
-#endif
   }
   return priority;
 }
@@ -2365,11 +2329,6 @@ void RenderWidgetHostImpl::ImeSetComposition(
   GetWidgetInputHandler()->ImeSetComposition(
       text, ime_text_spans, replacement_range, selection_start, selection_end,
       ime_state, base::OnceClosure());
-#if BUILDFLAG(IS_ANDROID)
-  for (auto& observer : ime_input_event_observers_) {
-    observer.OnImeSetComposingTextEvent(text);
-  }
-#endif
 }
 
 void RenderWidgetHostImpl::ImeCommitText(
@@ -2381,20 +2340,10 @@ void RenderWidgetHostImpl::ImeCommitText(
   GetWidgetInputHandler()->ImeCommitText(text, ime_text_spans,
                                          replacement_range, relative_cursor_pos,
                                          base::OnceClosure());
-#if BUILDFLAG(IS_ANDROID)
-  for (auto& observer : ime_input_event_observers_) {
-    observer.OnImeTextCommittedEvent(text);
-  }
-#endif
 }
 
 void RenderWidgetHostImpl::ImeFinishComposingText(bool keep_selection) {
   GetWidgetInputHandler()->ImeFinishComposingText(keep_selection);
-#if BUILDFLAG(IS_ANDROID)
-  for (auto& observer : ime_input_event_observers_) {
-    observer.OnImeFinishComposingTextEvent();
-  }
-#endif
 }
 
 void RenderWidgetHostImpl::ImeCancelComposition() {
@@ -2973,17 +2922,6 @@ void RenderWidgetHostImpl::StartDragging(
   gfx::ImageSkia image = gfx::ImageSkia::CreateFromBitmap(bitmap, scale);
   gfx::Vector2d offset = cursor_offset_in_dip;
   gfx::Rect rect = drag_obj_rect_in_dip;
-#if BUILDFLAG(IS_WIN)
-  // Scale the offset by device scale factor, otherwise the drag
-  // image location doesn't line up with the drop location (drag destination).
-  // TODO(crbug.com/40859305): this conversion should not be necessary.
-  gfx::Vector2dF scaled_offset = static_cast<gfx::Vector2dF>(offset);
-  scaled_offset.Scale(scale);
-  offset = gfx::ToRoundedVector2d(scaled_offset);
-  gfx::RectF scaled_rect = static_cast<gfx::RectF>(rect);
-  scaled_rect.Scale(scale);
-  rect = gfx::ToRoundedRect(scaled_rect);
-#endif
   view->StartDragging(filtered_data, source_origin, drag_operations_mask, image,
                       offset, rect, *event_info, this);
 }
@@ -3211,18 +3149,12 @@ void RenderWidgetHostImpl::OnUnconfirmedTapConvertedToTap() {
 }
 
 void RenderWidgetHostImpl::UpdateElementFocusForStylusWriting(
-#if BUILDFLAG(IS_WIN)
-    const gfx::Rect& focus_widget_rect_in_dips
-#endif  // BUILDFLAG(IS_WIN)
 ) {
   if (blink_frame_widget_) {
     auto callback = base::BindOnce(
         &RenderWidgetHostImpl::OnUpdateElementFocusForStylusWritingHandled,
         weak_factory_.GetWeakPtr());
     blink_frame_widget_->OnStartStylusWriting(
-#if BUILDFLAG(IS_WIN)
-        focus_widget_rect_in_dips,
-#endif  // BUILDFLAG(IS_WIN)
         std::move(callback));
   }
 }
@@ -3232,30 +3164,11 @@ void RenderWidgetHostImpl::OnUpdateElementFocusForStylusWritingHandled(
   if (!view_) {
     return;
   }
-#if BUILDFLAG(IS_WIN)
-  if (focus_result && focus_result->proximate_bounds) {
-    if (focus_result->proximate_bounds->range.length() !=
-        focus_result->proximate_bounds->widget_bounds_in_dips.size()) {
-      mojo::ReportBadMessage("mismatched range and bounds length received");
-      return;
-    }
-    if (focus_result->proximate_bounds->range.is_reversed()) {
-      mojo::ReportBadMessage("unexpected reversed range");
-      return;
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
   view_->OnEditElementFocusedForStylusWriting(std::move(focus_result));
 }
 
 void RenderWidgetHostImpl::PassImeRenderWidgetHost(
     mojo::PendingRemote<blink::mojom::ImeRenderWidgetHost> pending_remote) {
-#if BUILDFLAG(IS_ANDROID)
-  if (!blink_frame_widget_) {
-    return;
-  }
-  blink_frame_widget_->PassImeRenderWidgetHost(std::move(pending_remote));
-#endif
 }
 
 void RenderWidgetHostImpl::SetMouseCapture(bool capture) {
@@ -3579,14 +3492,7 @@ void RenderWidgetHostImpl::WindowSnapshotReachedScreen(int snapshot_id) {
   CHECK(base::CurrentUIThread::IsSet());
 
   if (!pending_browser_snapshots_.empty()) {
-#if BUILDFLAG(IS_ANDROID)
-    // On Android, call sites should pass in the bounds with correct offset
-    // to capture the intended content area.
-    gfx::Rect snapshot_bounds(GetView()->GetViewBounds());
-    snapshot_bounds.Offset(0, GetView()->GetNativeView()->content_offset());
-#else
     gfx::Rect snapshot_bounds(GetView()->GetViewBounds().size());
-#endif
 
     ui::GrabViewSnapshot(
         GetView()->GetNativeView(), snapshot_bounds,
@@ -3794,8 +3700,6 @@ std::unique_ptr<input::FlingSchedulerBase>
 RenderWidgetHostImpl::MakeFlingScheduler() {
 #if BUILDFLAG(IS_MAC)
   return std::make_unique<FlingSchedulerMac>(this);
-#elif BUILDFLAG(IS_ANDROID)
-  return std::make_unique<FlingSchedulerAndroid>(this);
 #else
   return std::make_unique<FlingScheduler>(this);
 #endif

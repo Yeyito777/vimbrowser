@@ -64,7 +64,6 @@ constexpr char kObsoletePrivateNetworkChooserDataPref[] =
 constexpr char kGeolocationMigrateExceptionsPref[] =
     "profile.content_settings.exceptions.migrate_geolocation";
 
-#if !BUILDFLAG(IS_IOS)
 constexpr char kObsoleteTpcdTrialExceptionsPref[] =
     "profile.content_settings.exceptions.3pcd_support";
 constexpr char kObsoleteTopLevelTpcdTrialExceptionsPref[] =
@@ -82,7 +81,6 @@ constexpr char kLocalNetworkAccessMigrateExceptionsPref[] =
     "profile.content_settings.exceptions.has_migrated_local_network_access";
 constexpr char kObsoleteTrackingProtectionExceptionsPref[] =
     "profile.content_settings.exceptions.tracking_protection";
-#endif  // !BUILDFLAG(IS_IOS)
 
 }  // namespace
 
@@ -122,7 +120,6 @@ void PrefProvider::RegisterProfilePrefs(
   registry->RegisterListPref(
       kObsoleteFederatedIdentityActiveSesssionExceptionsPref);
   registry->RegisterDictionaryPref(kObsoletePrivateNetworkChooserDataPref);
-#if !BUILDFLAG(IS_IOS)
   registry->RegisterDictionaryPref(kObsoleteTpcdTrialExceptionsPref);
   registry->RegisterDictionaryPref(kObsoleteTopLevelTpcdTrialExceptionsPref);
   registry->RegisterDictionaryPref(
@@ -132,7 +129,6 @@ void PrefProvider::RegisterProfilePrefs(
   registry->RegisterBooleanPref(kBug364820109AlreadyWorkedAroundPref, false);
   registry->RegisterBooleanPref(kLocalNetworkAccessMigrateExceptionsPref,
                                 false);
-#endif  // !BUILDFLAG(IS_IOS)
 }
 
 PrefProvider::PrefProvider(PrefService* prefs,
@@ -172,9 +168,7 @@ PrefProvider::PrefProvider(PrefService* prefs,
   }
 
   MigrateGeolocationExceptions();
-#if !BUILDFLAG(IS_IOS)
   MigrateLocalNetworkAccessExceptions();
-#endif  // !BUILDFLAG(IS_IOS)
 
   size_t num_exceptions = 0;
   if (!off_the_record_) {
@@ -457,14 +451,12 @@ void PrefProvider::DiscardOrMigrateObsoletePreferences() {
   prefs_->ClearPref(kObsoleteFederatedIdentityActiveSesssionExceptionsPref);
   prefs_->ClearPref(kObsoletePrivateNetworkChooserDataPref);
 
-#if !BUILDFLAG(IS_IOS)
   prefs_->ClearPref(kObsoleteTpcdTrialExceptionsPref);
   prefs_->ClearPref(kObsoleteTopLevelTpcdTrialExceptionsPref);
   prefs_->ClearPref(kObsoleteTopLevelTpcdOriginTrialExceptionsPref);
   prefs_->ClearPref(kObsoleteTrackingProtectionExceptionsPref);
   // TODO(https://crbug.com/367181093): clean this up.
   prefs_->ClearPref(kBug364820109AlreadyWorkedAroundPref);
-#endif  // !BUILDFLAG(IS_IOS)
 }
 
 void PrefProvider::MigrateGeolocationExceptions() {
@@ -519,7 +511,6 @@ void PrefProvider::MigrateGeolocationExceptions() {
   }
 }
 
-#if !BUILDFLAG(IS_IOS)
 void PrefProvider::MigrateLocalNetworkAccessExceptions() {
   if (off_the_record_) {
     return;
@@ -575,7 +566,6 @@ void PrefProvider::MigrateLocalNetworkAccessExceptions() {
     prefs_->SetBoolean(kLocalNetworkAccessMigrateExceptionsPref, false);
   }
 }
-#endif  // !BUILDFLAG(IS_IOS)
 
 void PrefProvider::SetClockForTesting(const base::Clock* clock) {
   clock_ = clock;

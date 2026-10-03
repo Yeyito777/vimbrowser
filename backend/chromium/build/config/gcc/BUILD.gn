@@ -94,12 +94,6 @@ if (is_component_build && !is_android) {
 config("executable_config") {
   configs = executable_and_shared_library_configs_
   ldflags = [ "-pie" ]
-  if (is_android) {
-    ldflags += [
-      "-Bdynamic",
-      "-Wl,-z,nocopyreloc",
-    ]
-  }
 
   if (!is_android && current_os != "aix") {
     ldflags += [

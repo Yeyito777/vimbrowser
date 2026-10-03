@@ -4,10 +4,6 @@
 
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 source_set("commerce_info_cache") {
   sources = [
     "commerce_info_cache.cc",
@@ -110,24 +106,9 @@ proto_library("proto") {
   ]
 }
 
-if (is_android) {
-  proto_java_library("proto_java") {
-    proto_path = "//"
-    sources = [
-      "proto/price_tracking.proto",
-      "proto/product_category.proto",
-    ]
-  }
-
-  proto_library("merchant_signal_db_proto") {
-    proto_in_dir = "//"
-    sources = [ "proto/merchant_signal_db_content.proto" ]
-  }
-} else {
-  proto_library("coupon_db_content_proto") {
-    proto_in_dir = "//"
-    sources = [ "proto/coupon_db_content.proto" ]
-  }
+proto_library("coupon_db_content_proto") {
+  proto_in_dir = "//"
+  sources = [ "proto/coupon_db_content.proto" ]
 }
 
 proto_library("parcel_tracking_db_content_proto") {
@@ -271,16 +252,6 @@ static_library("shopping_service") {
     "//components/commerce/core/subscriptions",
     "//services/data_decoder/public/cpp",
   ]
-
-  if (is_android) {
-    sources += [
-      "android/feature_utils_android.cc",
-      "android/shopping_service_android.cc",
-      "android/shopping_service_android.h",
-    ]
-
-    deps += [ "//components/commerce/core/android:core_jni" ]
-  }
 }
 
 source_set("shopping_service_test_support") {

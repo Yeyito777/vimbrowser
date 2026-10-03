@@ -151,10 +151,6 @@ component("views_examples_lib") {
     "//ui/base/mojom:ui_base_types",
   ]
 
-  if (is_win) {
-    deps += [ "//third_party/wtl" ]
-  }
-
   if (use_aura) {
     deps += [ "//ui/aura" ]
   }
@@ -200,10 +196,6 @@ source_set("views_examples_proc") {
     ]
   }
 
-  if (is_win) {
-    deps += [ "//build/win:default_exe_manifest" ]
-  }
-
   if (is_mac) {
     sources += [
       "examples_main_proc_mac_parts.h",
@@ -216,13 +208,6 @@ source_set("views_examples_proc") {
       "//ui/aura",
       "//ui/wm",
     ]
-  }
-  if (is_chromeos) {
-    sources += [
-      "examples_views_delegate_chromeos.cc",
-      "examples_views_delegate_chromeos.h",
-    ]
-    deps += [ "//ui/wm:test_support" ]
   }
 }
 
@@ -450,11 +435,6 @@ executable("views_examples_with_content") {
     "//ui/views_content_client",
   ]
 
-  if (is_win) {
-    configs += [ "//build/config/win:windowed" ]
-    configs -= [ "//build/config/win:console" ]
-  }
-
   if (is_mac) {
     deps += [ "//sandbox/mac:seatbelt" ]
   }
@@ -515,13 +495,6 @@ test("views_examples_unittests") {
     deps += [
       "//ui/aura",
       "//ui/wm",
-    ]
-  }
-
-  if (is_fuchsia) {
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/fonts.shard.test-cml",
-      "//third_party/fuchsia-sdk/sdk/pkg/vulkan/client.shard.cml",
     ]
   }
 

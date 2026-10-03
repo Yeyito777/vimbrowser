@@ -13,11 +13,9 @@
 
 #include "build/build_config.h"
 
-#if !BUILDFLAG(IS_WIN)
 namespace base {
 class FilePath;
 }
-#endif
 
 namespace crash_reporter {
 
@@ -68,24 +66,6 @@ class CrashReporterClient {
   virtual void SetCrashReporterClientIdFromGUID(const std::string& client_guid);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // Returns true if an alternative location to store the minidump files was
-  // specified. Returns true if |crash_dir| was set.
-  virtual bool GetAlternativeCrashDumpLocation(std::wstring* crash_dir);
-
-  // Returns a textual description of the product type and version to include
-  // in the crash report.
-  virtual void GetProductNameAndVersion(const std::wstring& exe_path,
-                                        std::wstring* product_name,
-                                        std::wstring* version,
-                                        std::wstring* special_build,
-                                        std::wstring* channel_name);
-
-  // Returns the fully-qualified path for a registered out of process exception
-  // helper module. The module is optional. Return an empty string to indicate
-  // that no module should be registered.
-  virtual std::wstring GetWerRuntimeExceptionModule();
-#endif
 
 #if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC))
   // Returns true if larger crash dumps should be dumped.
@@ -108,21 +88,13 @@ class CrashReporterClient {
   // |crash_dir| was set. Windows has to use std::wstring because this code
   // needs to work in chrome_elf, where only kernel32.dll is allowed, and
   // base::FilePath and its dependencies pull in other DLLs.
-#if BUILDFLAG(IS_WIN)
-  virtual bool GetCrashDumpLocation(std::wstring* crash_dir);
-#else
   virtual bool GetCrashDumpLocation(base::FilePath* crash_dir);
-#endif
 
   // The location where metrics files should be written. Returns true if
   // |metrics_dir| was set. Windows has to use std::wstring because this code
   // needs to work in chrome_elf, where only kernel32.dll is allowed, and
   // base::FilePath and its dependencies pull in other DLLs.
-#if BUILDFLAG(IS_WIN)
-  virtual bool GetCrashMetricsLocation(std::wstring* metrics_dir);
-#else
   virtual bool GetCrashMetricsLocation(base::FilePath* metrics_dir);
-#endif
 
   // Returns a textual description of the product info (product name, version,
   // etc.) to include in the crash report.
@@ -143,19 +115,6 @@ class CrashReporterClient {
   // that case, |breakpad_enabled| is set to the value enforced by policies.
   virtual bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled);
 
-#if BUILDFLAG(IS_ANDROID)
-  // Used by WebView to sample crashes without generating the unwanted dumps. If
-  // the returned value is less than 100, crash dumping will be sampled to that
-  // percentage.
-  virtual unsigned int GetCrashDumpPercentage();
-
-  // Returns true if |ptype| was set to a value to override the default `ptype`
-  // annotation used for the browser process.
-  virtual bool GetBrowserProcessType(std::string* ptype);
-
-  // Returns true if minudump should be written to android log.
-  virtual bool ShouldWriteMinidumpToLog();
-#endif
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   // Configures sanitization of crash dumps.
@@ -196,10 +155,6 @@ class CrashReporterClient {
   // Populate |arguments| with additional optional arguments.
   virtual void GetCrashOptionalArguments(std::vector<std::string>* arguments);
 
-#if BUILDFLAG(IS_WIN)
-  // Returns the absolute path to the external crash handler exe.
-  virtual std::wstring GetCrashExternalHandler(const std::wstring& exe_dir);
-#endif
 
 #if BUILDFLAG(IS_MAC)
   // Returns true if forwarding of crashes to the system crash reporter is

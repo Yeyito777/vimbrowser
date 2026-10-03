@@ -126,7 +126,6 @@ chromium-metrics-reviews@google.com.
   </int>
 </enum>
 
-<!-- LINT.ThenChange(//components/on_device_translation/service/translate_kit_client.h:LoadTranslateKitResult) -->
 
 <!-- LINT.IfChange(WritingAssistanceMetricsOptionFormat) -->
 

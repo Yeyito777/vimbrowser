@@ -21,7 +21,7 @@ import("../../gn/wasm.gni")
 # On standalone builds this is all the OSes we support. On chromium builds,
 # though, this really means !is_fuchsia && !is_nacl.
 _subprocess_supported =
-    is_linux || is_chromeos || is_android || is_mac || is_win || is_freebsd
+    is_linux || is_chromeos || is_mac || is_win || is_freebsd
 
 perfetto_component("base") {
   deps = [
@@ -33,7 +33,6 @@ perfetto_component("base") {
     "../../include/perfetto/ext/base",
   ]
   sources = [
-    "android_utils.cc",
     "base64.cc",
     "crash_keys.cc",
     "ctrl_c_handler.cc",
@@ -57,6 +56,7 @@ perfetto_component("base") {
     "string_utils.cc",
     "string_view.cc",
     "string_view_splitter.cc",
+    "system_info.cc",
     "temp_file.cc",
     "thread_checker.cc",
     "thread_utils.cc",
@@ -141,9 +141,8 @@ if (enable_perfetto_stderr_crash_dump) {
     deps = [
       "../../gn:default_deps",
       "../../include/perfetto/ext/base",
-      "../../include/perfetto/ext/base",
     ]
-    if (is_linux || is_android) {
+    if (is_linux) {
       deps += [ "../../gn:libbacktrace" ]
     }
     cflags = [ "-Wno-deprecated" ]
@@ -252,22 +251,17 @@ perfetto_unittest_source_set("unittests") {
   }
 
   # TODO: Enable these for Windows when possible.
-  if (!is_win) {
-    sources += [
-      "metatrace_unittest.cc",
-      "thread_task_runner_unittest.cc",
-      "watchdog_posix_unittest.cc",
-    ]
-  }
-  if (is_fuchsia) {
-    deps += [ "//third_party/fuchsia-sdk/sdk/pkg/fdio" ]  # nogncheck
-  }
+  sources += [
+    "metatrace_unittest.cc",
+    "thread_task_runner_unittest.cc",
+    "watchdog_posix_unittest.cc",
+  ]
   if (perfetto_build_standalone || perfetto_build_with_android) {
     sources += [ "unix_socket_unittest.cc" ]
     deps += [ ":unix_socket" ]
 
     # This causes some problems on the chromium waterfall.
-    if (is_linux || is_android) {
+    if (is_linux) {
       sources += [ "watchdog_unittest.cc" ]
     }
   }

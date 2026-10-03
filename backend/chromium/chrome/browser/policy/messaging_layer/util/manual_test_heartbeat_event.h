@@ -10,19 +10,12 @@
 #include "build/build_config.h"
 #include "components/keyed_service/core/keyed_service.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/policy/status_collector/managed_session_service.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace reporting {
 
 // This class is only used for manual testing purpose. Do not depend on it in
 // other parts of the production code.
 class ManualTestHeartbeatEvent :
-#if BUILDFLAG(IS_CHROMEOS)
-    // Used to listen for user login.
-    public policy::ManagedSessionService::Observer,
-#endif  // BUILDFLAG(IS_CHROMEOS)
     public KeyedService {
  public:
   ManualTestHeartbeatEvent();
@@ -31,10 +24,6 @@ class ManualTestHeartbeatEvent :
   // KeyedService
   void Shutdown() override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // ManagedSessionService::Observer:
-  void OnLogin(Profile* profile) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   // Starts a self-managed ReportQueueManualTestContext running on its own
@@ -42,14 +31,6 @@ class ManualTestHeartbeatEvent :
   // Destination and delete itself.
   void StartHeartbeatEvent() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Object that monitors managed session related events used by reporting
-  // services.
-  std::unique_ptr<policy::ManagedSessionService> managed_session_service_;
-  base::ScopedObservation<policy::ManagedSessionService,
-                          policy::ManagedSessionService::Observer>
-      managed_session_observation_{this};
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace reporting

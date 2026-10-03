@@ -268,6 +268,50 @@ class BenchmarkHTTPHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802 - stdlib callback
         self.server.request_log.append({"t": monotonic_ms(), "path": self.path})
         path = self.path.split("?", 1)[0]
+        if path == "/notification-disabled-sw.js":
+            body = (
+                b"self.addEventListener('install', event => self.skipWaiting());\n"
+                b"self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));\n"
+            )
+            self.send_response(200)
+            self.send_header("Content-Type", "text/javascript; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        if path == "/notification-disabled.html":
+            body = b"""<!doctype html><meta charset="utf-8"><title>notification-disabled</title>
+<script>
+window.capabilities = {
+  done: false,
+  notificationSupported: 'Notification' in window,
+  permission: 'Notification' in window ? Notification.permission : null,
+  requestPermission: null,
+  serviceWorkerSupported: 'serviceWorker' in navigator,
+  serviceWorkerRegistered: false,
+  error: null,
+};
+(async () => {
+  try {
+    capabilities.requestPermission = await Notification.requestPermission();
+    const registration = await navigator.serviceWorker.register('/notification-disabled-sw.js');
+    await navigator.serviceWorker.ready;
+    capabilities.serviceWorkerRegistered = Boolean(registration.active || registration.waiting || registration.installing);
+  } catch (error) {
+    capabilities.error = String(error);
+  } finally {
+    capabilities.done = true;
+  }
+})();
+</script>"""
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if path.startswith("/asset"):
             time.sleep(0.012)
             body = (
@@ -908,6 +952,52 @@ def run_local_suite(binary: Path, tmp_root: Path, extra_args: List[str]) -> Dict
             result["metrics"]["local.open_page.first_contentful_paint_ms"] = summarize(
                 [r["nav"].get("first_contentful_paint_ms") for r in open_rows]
             )
+
+            # Removed-feature contract: website notifications are deterministically
+            # denied without a prompt, while service-worker registration still works.
+            capability_start = monotonic_ms()
+            capability_status = browser.ipc_json(
+                ["open-tab", server.url("/notification-disabled.html")], timeout=10
+            )
+            capability_tabid = int(capability_status["active_tabid"])
+            browser.wait_tab_complete(capability_tabid, capability_start, timeout=30)
+            capability_deadline = time.time() + 15
+            capability_record: Optional[Dict[str, Any]] = None
+            while time.time() < capability_deadline:
+                payload = browser.ipc_json(
+                    ["js", str(capability_tabid), "JSON.stringify(window.capabilities||null)"],
+                    timeout=4,
+                )
+                capability_record = json.loads(payload["result"])
+                if capability_record and capability_record.get("done"):
+                    break
+                time.sleep(0.05)
+            expected_capabilities = {
+                "notificationSupported": True,
+                "permission": "denied",
+                "requestPermission": "denied",
+                "serviceWorkerSupported": True,
+                "serviceWorkerRegistered": True,
+                "error": None,
+            }
+            if not capability_record or not capability_record.get("done"):
+                raise RuntimeError(
+                    f"notification/service-worker capability check timed out: {capability_record}"
+                )
+            mismatches = {
+                key: {"expected": expected, "actual": capability_record.get(key)}
+                for key, expected in expected_capabilities.items()
+                if capability_record.get(key) != expected
+            }
+            if mismatches:
+                raise RuntimeError(
+                    f"notification/service-worker capability check failed: {mismatches}"
+                )
+            result["records"]["notification_disabled_service_worker_retained"] = {
+                "tabid": capability_tabid,
+                "elapsed_ms": monotonic_ms() - capability_start,
+                "capabilities": capability_record,
+            }
 
             # High-resource local page: stresses request-handler overhead without
             # relying on public-network timing or external ad/tracker hosts.

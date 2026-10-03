@@ -11,7 +11,6 @@
 #include "gpu/config/gpu_info.h"
 #include "gpu/config/gpu_info_collector.h"
 #include "gpu/config/gpu_util.h"
-#include "media/base/android_overlay_mojo_factory.h"
 #include "media/base/media_types.h"
 #include "media/base/supported_types.h"
 #include "media/base/video_codecs.h"
@@ -40,7 +39,7 @@ void AddSupplementalCodecsForTesting(gpu::GpuPreferences gpu_preferences) {
       /*needs_more_info=*/nullptr);
   GpuMojoMediaClientTraits traits(
       gpu_preferences, dummy_workarounds, gpu_feature_info, gpu_info,
-      /*gpu_task_runner=*/nullptr, AndroidOverlayMojoFactoryCB(),
+      /*gpu_task_runner=*/nullptr,
       /*media_gpu_channel_manager=*/nullptr);
   auto client = GpuMojoMediaClient::Create(traits);
 

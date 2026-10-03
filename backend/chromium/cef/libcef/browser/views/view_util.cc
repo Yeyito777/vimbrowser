@@ -25,9 +25,6 @@
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/window/non_client_view.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#endif
 
 namespace view_util {
 
@@ -215,24 +212,12 @@ CefRefPtr<CefWindow> GetWindowFor(views::Widget* widget) {
 display::Display GetDisplayNearestPoint(const gfx::Point& point,
                                         bool input_pixel_coords) {
   gfx::Point find_point = point;
-#if BUILDFLAG(IS_WIN)
-  if (input_pixel_coords) {
-    find_point = gfx::ToFlooredPoint(
-        display::win::GetScreenWin()->ScreenToDIPPoint(gfx::PointF(point)));
-  }
-#endif
   return display::Screen::Get()->GetDisplayNearestPoint(find_point);
 }
 
 display::Display GetDisplayMatchingBounds(const gfx::Rect& bounds,
                                           bool input_pixel_coords) {
   gfx::Rect find_bounds = bounds;
-#if BUILDFLAG(IS_WIN)
-  if (input_pixel_coords) {
-    find_bounds =
-        display::win::GetScreenWin()->ScreenToDIPRect(nullptr, find_bounds);
-  }
-#endif
   return display::Screen::Get()->GetDisplayMatching(find_bounds);
 }
 
@@ -246,24 +231,6 @@ void ConvertPointToPixels(gfx::Point* point, float device_scale_factor) {
       gfx::ScalePoint(gfx::PointF(*point), device_scale_factor));
 }
 
-#if BUILDFLAG(IS_WIN)
-gfx::Point ConvertPointFromPixels(const gfx::Point& point) {
-  return gfx::ToFlooredPoint(
-      display::win::GetScreenWin()->ScreenToDIPPoint(gfx::PointF(point)));
-}
-
-gfx::Point ConvertPointToPixels(const gfx::Point& point) {
-  return display::win::GetScreenWin()->DIPToScreenPoint(point);
-}
-
-gfx::Rect ConvertRectFromPixels(const gfx::Rect& rect) {
-  return display::win::GetScreenWin()->ScreenToDIPRect(nullptr, rect);
-}
-
-gfx::Rect ConvertRectToPixels(const gfx::Rect& rect) {
-  return display::win::GetScreenWin()->DIPToScreenRect(nullptr, rect);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 bool ConvertPointToScreen(views::View* view,
                           gfx::Point* point,

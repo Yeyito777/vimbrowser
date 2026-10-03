@@ -27,10 +27,8 @@
 namespace signin {
 
 namespace {
-#if !BUILDFLAG(IS_CHROMEOS)
 // Default timeout used to wait for account capabilities fetch.
 const int kMinorModeRestrictionsFetchDeadlineMs = 1000;
-#endif
 
 }  // namespace
 
@@ -87,12 +85,7 @@ Browser* GetDesktopBrowser(content::WebUI* web_ui) {
 }
 
 base::TimeDelta GetMinorModeRestrictionsDeadline() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Not implemented for this platform.
-  NOTREACHED();
-#else
   return base::Milliseconds(kMinorModeRestrictionsFetchDeadlineMs);
-#endif
 }
 
 void SetInitializedModalHeight(Browser* browser,
@@ -107,7 +100,6 @@ void SetInitializedModalHeight(Browser* browser,
       static_cast<int>(height));
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void ClearProfileWithManagedAccounts(Profile* profile) {
   policy::UserPolicySigninServiceFactory::GetForProfile(profile)
       ->ShutdownCloudPolicyManager();
@@ -121,7 +113,6 @@ void ClearProfileWithManagedAccounts(Profile* profile) {
         signin_metrics::ProfileSignout::kAbortSignin);
   }
 }
-#endif
 
 std::string GetAccountPictureUrl(const AccountInfo& account_info) {
   return account_info.account_image.IsEmpty()

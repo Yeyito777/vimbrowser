@@ -25,9 +25,6 @@
 #include "ui/gfx/font_render_params.h"
 #include "ui/gfx/text_utils.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/system_fonts_win.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "ui/linux/linux_ui.h"
@@ -39,11 +36,7 @@ namespace {
 // The font family name which is used when a user's application font for
 // GNOME/KDE is a non-scalable one. The name should be listed in the
 // IsFallbackFontAllowed function in skia/ext/SkFontHost_fontconfig_direct.cpp.
-#if BUILDFLAG(IS_ANDROID)
-const char kFallbackFontFamilyName[] = "serif";
-#else
 const char kFallbackFontFamilyName[] = "sans";
-#endif
 
 constexpr SkGlyphID kUnsupportedGlyph = 0;
 
@@ -158,17 +151,6 @@ void PlatformFontSkia::EnsuresDefaultFontIsInitialized() {
   Font::Weight weight = Font::Weight::NORMAL;
   FontRenderParams params;
 
-#if BUILDFLAG(IS_WIN)
-  // On windows, the system default font is retrieved by using the GDI API
-  // SystemParametersInfo(...) (see struct NONCLIENTMETRICS). The font
-  // properties need to be converted as close as possible to a skia font.
-  // The style must be kept (see http://crbug/989476).
-  gfx::Font system_font = win::GetDefaultSystemFont();
-  family = system_font.GetFontName();
-  size_pixels = system_font.GetFontSize();
-  style = system_font.GetStyle();
-  weight = system_font.GetWeight();
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX)
   // On Linux, LinuxUi is used to query the native toolkit (e.g.
@@ -183,21 +165,7 @@ void PlatformFontSkia::EnsuresDefaultFontIsInitialized() {
   } else
 #endif
       if (default_font_description_) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // On ChromeOS, a FontList font description string is stored as a
-    // translatable resource and passed in via SetDefaultFontDescription().
-    FontRenderParamsQuery query;
-    CHECK(FontList::ParseDescription(*default_font_description_,
-                                     &query.families, &query.style,
-                                     &query.pixel_size, &query.weight))
-        << "Failed to parse font description " << *default_font_description_;
-    params = gfx::GetFontRenderParams(query, &family);
-    size_pixels = query.pixel_size;
-    style = query.style;
-    weight = query.weight;
-#else
         NOTREACHED();
-#endif
   } else {
     params = gfx::GetFontRenderParams(FontRenderParamsQuery(), nullptr);
   }
@@ -239,11 +207,7 @@ void PlatformFontSkia::SetDefaultFontDescription(
 Font PlatformFontSkia::DeriveFont(int size_delta,
                                   int style,
                                   Font::Weight weight) const {
-#if BUILDFLAG(IS_WIN)
-  const int new_size = win::AdjustFontSize(font_size_pixels_, size_delta);
-#else
   const int new_size = font_size_pixels_ + size_delta;
-#endif
 
   DCHECK_GT(new_size, 0);
 
@@ -441,11 +405,7 @@ void PlatformFontSkia::ComputeMetricsIfNecessary() {
     //     Linux Skia implements   : ceil(-ascent) + ceil(descent)
     // TODO(etienneb): Make both implementation consistent and fix the broken
     // unittests.
-#if BUILDFLAG(IS_WIN)
-    height_pixels_ = SkScalarCeilToInt(metrics.fDescent - metrics.fAscent);
-#else
     height_pixels_ = ascent_pixels_ + SkScalarCeilToInt(metrics.fDescent);
-#endif
 
     if (metrics.fAvgCharWidth) {
       average_width_pixels_ = SkScalarToDouble(metrics.fAvgCharWidth);

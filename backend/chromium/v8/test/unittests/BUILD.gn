@@ -11,30 +11,6 @@ if (v8_enable_webassembly) {
   }
 }
 
-if (is_fuchsia) {
-  import("//build/config/fuchsia/generate_runner_scripts.gni")
-  import("//third_party/fuchsia-sdk/sdk/build/component.gni")
-  import("//third_party/fuchsia-sdk/sdk/build/package.gni")
-
-  fuchsia_component("v8_unittests_component") {
-    testonly = true
-    data_deps = [ ":v8_unittests" ]
-    manifest = "v8_unittests.cml"
-  }
-
-  fuchsia_package("v8_unittests_pkg") {
-    testonly = true
-    package_name = "v8_unittests"
-    deps = [ ":v8_unittests_component" ]
-  }
-
-  fuchsia_test_runner("v8_unittests_fuchsia") {
-    testonly = true
-    package = ":v8_unittests_pkg"
-    package_name = "v8_unittests"
-  }
-}
-
 config("gcc_warnings_not_errors") {
   if (!is_clang && !is_win) {
     cflags = [
@@ -860,10 +836,6 @@ v8_cluster_source_set("v8_unittests_sources") {
       sources += [ "wasm/trap-handler-posix-unittest.cc" ]
     }
 
-    if (is_win) {
-      sources += [ "wasm/trap-handler-win-unittest.cc" ]
-    }
-
     # Include this test on simulator builds on x64 on Linux, Mac and
     # Windows, and on simulator builds on arm64 on Linux and Mac.
     if ((current_cpu == "x64" &&
@@ -931,15 +903,13 @@ v8_cluster_source_set("v8_unittests_sources") {
       }
     }
 
-    if (!is_win) {
-      # TODO(https://crbug.com/40941204): Using jsoncpp doesn't work on
-      # Windows.
-      sources += [
-        "json/json-unittest.cc",
-        "profiler/heap-snapshot-unittest.cc",
-      ]
-      deps += [ "//third_party/jsoncpp" ]
-    }
+    # TODO(https://crbug.com/40941204): Using jsoncpp doesn't work on
+    # Windows.
+    sources += [
+      "json/json-unittest.cc",
+      "profiler/heap-snapshot-unittest.cc",
+    ]
+    deps += [ "//third_party/jsoncpp" ]
   }
 
   if (v8_enable_webassembly) {
@@ -951,24 +921,6 @@ v8_cluster_source_set("v8_unittests_sources") {
       # TODO(skyostil): Migrate to protozero.
       "//third_party/perfetto/protos/perfetto/trace:lite",
     ]
-  }
-
-  if (is_win) {
-    # This warning is benignly triggered by the U16 and U32 macros in
-    # bytecode-utils.h.
-    # C4309: 'static_cast': truncation of constant value
-    cflags = [ "/wd4309" ]
-
-    sources += [ "avoid-windows-h-includes.cc" ]
-  }
-
-  if (is_win) {
-    if (v8_enable_etw_stack_walking) {
-      sources += [
-        "diagnostics/etw-control-unittest.cc",
-        "diagnostics/etw-isolate-capture-state-monitor-win-unittest.cc",
-      ]
-    }
   }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and

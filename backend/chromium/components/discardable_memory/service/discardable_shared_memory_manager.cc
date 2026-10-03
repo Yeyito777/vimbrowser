@@ -168,12 +168,7 @@ uint64_t GetDefaultMemoryLimit() {
   // not all Chromecast devices.
   uint64_t max_default_memory_limit = 64 * kMegabyte;
 #else
-#if BUILDFLAG(IS_ANDROID)
-  // Limits the number of FDs used to 32, assuming a 4MB allocation size.
-  uint64_t max_default_memory_limit = 128 * kMegabyte;
-#else
   uint64_t max_default_memory_limit = 512 * kMegabyte;
-#endif
 
   // Use 1/8th of discardable memory on low-end devices.
   if (base::SysInfo::IsLowEndDevice())

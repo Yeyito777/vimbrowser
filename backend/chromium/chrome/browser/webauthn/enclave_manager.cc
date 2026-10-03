@@ -114,9 +114,6 @@
 #include "third_party/boringssl/src/include/openssl/evp.h"
 #include "third_party/boringssl/src/include/openssl/rand.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/shell.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "components/trusted_vault/icloud_recovery_key_mac.h"
@@ -973,22 +970,6 @@ base::flat_map<int32_t, std::vector<uint8_t>> GetNewSecretsToStore(
   return new_secrets;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-UserVerifyingKeyProviderConfigChromeos MakeUserVerifyingKeyConfig(
-    EnclaveManager::UVKeyOptions options) {
-  UserVerifyingKeyProviderConfigChromeos config{options.dialog_controller,
-                                                /*window=*/nullptr,
-                                                options.rp_id};
-  if (options.render_frame_host_id) {
-    auto* rfh = content::RenderFrameHost::FromID(options.render_frame_host_id);
-    // This is ultimately invoked from GpmEnclaveController, which can't outlive
-    // the RFH where the request originated.
-    CHECK(rfh);
-    config.window = rfh->GetNativeView()->GetToplevelWindow();
-  }
-  return config;
-}
-#else
 crypto::UserVerifyingKeyProvider::Config MakeUserVerifyingKeyConfig(
     EnclaveManager::UVKeyOptions options) {
   crypto::UserVerifyingKeyProvider::Config config;
@@ -999,7 +980,6 @@ crypto::UserVerifyingKeyProvider::Config MakeUserVerifyingKeyConfig(
 #endif  // BUILDFLAG(IS_MAC)
   return config;
 }
-#endif
 
 std::unique_ptr<crypto::UserVerifyingKeyProvider>
 GetUserVerifyingKeyProviderForSigning(EnclaveManager::UVKeyOptions options) {
@@ -1692,12 +1672,6 @@ class EnclaveManager::StateMachine {
             return;
           }
           if (state_machine->user_->wrapped_uv_private_key().empty()) {
-#if BUILDFLAG(IS_WIN)
-            // On Windows we don't want to create a UV key at registration
-            // time. Instead we defer creation until one is going to be
-            // used in a UV request.
-            state_machine->GenerateIdentityKey(DeferredUVKeyCreation());
-#else
             // Create a new UV key.
             key_provider->GenerateUserVerifyingSigningKey(
                 device::enclave::kSigningAlgorithms,
@@ -1721,7 +1695,6 @@ class EnclaveManager::StateMachine {
                       state_machine->GenerateIdentityKey(std::move(uv_key));
                     },
                     state_machine));
-#endif
             return;
           }
           // Use the existing UV key.
@@ -3284,15 +3257,6 @@ void EnclaveManager::GetUserVerifyingKeyForSignature(
     return;
   }
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, retrieving the UV key is slow so we cache it. On Mac, we avoid
-  // caching the key as we need to use a fresh LAContext every time we retrieve
-  // the key.
-  if (user_verifying_key_) {
-    std::move(callback).Run(user_verifying_key_);
-    return;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   auto user_verifying_key_provider =
       GetUserVerifyingKeyProviderForSigning(std::move(options));
@@ -3624,11 +3588,6 @@ EnclaveManager::UvKeyState EnclaveManager::uv_key_state(
     }
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (user_->deferred_uv_key_creation()) {
-    return UvKeyState::kUsesSystemUIDeferredCreation;
-  }
-#endif
   if (user_->wrapped_uv_private_key().empty()) {
     return UvKeyState::kNone;
   }
@@ -3678,13 +3637,8 @@ void EnclaveManager::AreUserVerifyingKeysSupported(Callback callback) {
         FROM_HERE, base::BindOnce(std::move(callback), true));
     return;
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS doesn't have HW-backed UV keys, but uses a software provider.
-  std::move(callback).Run(true);
-#else
   crypto::AreUserVerifyingKeysSupported(
       MakeUserVerifyingKeyConfig(/*options=*/{}), std::move(callback));
-#endif
 }
 
 std::unique_ptr<signin::PrimaryAccountAccessTokenFetcher>

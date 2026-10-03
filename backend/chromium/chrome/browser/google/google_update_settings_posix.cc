@@ -37,15 +37,6 @@ base::Lock& GetPosixClientIdLock() {
 const char kConsentToSendStats[] = "Consent To Send Stats";
 
 void SetConsentFilePermissionIfNeeded(const base::FilePath& consent_file) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // The consent file needs to be world readable. See http://crbug.com/40079723
-  int permissions;
-  if (base::GetPosixFilePermissions(consent_file, &permissions) &&
-      (permissions & base::FILE_PERMISSION_READ_BY_OTHERS) == 0) {
-    permissions |= base::FILE_PERMISSION_READ_BY_OTHERS;
-    base::SetPosixFilePermissions(consent_file, permissions);
-  }
-#endif
 }
 
 bool GetCollectStatsConsentFromDir(const base::FilePath& consent_dir) {

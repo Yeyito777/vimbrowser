@@ -22,9 +22,7 @@ config("libunwind_config") {
 # TODO(crbug.com/40273848): Move this build file to third_party/libc++/BUILD.gn once submodule migration is done
 source_set("libunwind") {
   visibility = [ "//buildtools/third_party/libc++abi" ]
-  if (is_android) {
-    visibility += [ "//services/tracing/public/cpp" ]
-  }
+
   if (!is_component_build) {
     defines = [ "_LIBUNWIND_DISABLE_VISIBILITY_ANNOTATIONS" ]
   }

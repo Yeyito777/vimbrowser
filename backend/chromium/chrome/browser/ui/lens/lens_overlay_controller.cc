@@ -36,8 +36,6 @@
 #include "chrome/browser/ui/browser_element_identifiers.h"
 #include "chrome/browser/ui/browser_window/public/browser_window_features.h"
 #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
-#include "chrome/browser/ui/desktop_to_mobile_promos/ios_promo_trigger_service.h"
-#include "chrome/browser/ui/desktop_to_mobile_promos/ios_promo_trigger_service_factory.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "chrome/browser/ui/hats/hats_service.h"
 #include "chrome/browser/ui/hats/hats_service_factory.h"
@@ -77,7 +75,6 @@
 #include "chrome/common/webui_url_constants.h"
 #include "chrome/grit/branded_strings.h"
 #include "components/contextual_tasks/public/features.h"
-#include "components/desktop_to_mobile_promos/features.h"
 #include "components/feature_engagement/public/feature_constants.h"
 #include "components/find_in_page/find_tab_helper.h"
 #include "components/lens/lens_features.h"
@@ -127,10 +124,6 @@
 #endif  // BUILDFLAG(ENABLE_PDF)
 
 namespace {
-
-// The amount of time to wait after the side panel opens before showing the
-// mobile promo.
-constexpr base::TimeDelta kMobilePromoShowDelay = base::Seconds(4);
 
 // Copy the objects of a vector into another without transferring
 // ownership.
@@ -372,13 +365,6 @@ void LensOverlayController::NotifyResultsPanelOpened() {
     page_->NotifyResultsPanelOpened();
   }
 
-  if (IsVisualSelectionType(lens_selection_type_)) {
-    base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
-        FROM_HERE,
-        base::BindOnce(&LensOverlayController::MaybeShowMobilePromo,
-                       weak_factory_.GetWeakPtr()),
-        kMobilePromoShowDelay);
-  }
 }
 
 void LensOverlayController::TriggerCopy() {
@@ -2341,20 +2327,6 @@ void LensOverlayController::FetchPdfTextIfEligible() {
                        weak_factory_.GetWeakPtr()));
   }
 #endif
-}
-
-void LensOverlayController::MaybeShowMobilePromo() {
-  if (MobilePromoOnDesktopTypeEnabled(
-          MobilePromoOnDesktopPromoType::kLensPromo)) {
-    IOSPromoTriggerService* service =
-        IOSPromoTriggerServiceFactory::GetForProfile(
-            Profile::FromBrowserContext(
-                tab_->GetContents()->GetBrowserContext()));
-    if (service) {
-      service->NotifyPromoShouldBeShown(
-          desktop_to_mobile_promos::PromoType::kLens);
-    }
-  }
 }
 
 lens::LensOverlayDismissalSource LensOverlayController::ConvertDismissalSource(

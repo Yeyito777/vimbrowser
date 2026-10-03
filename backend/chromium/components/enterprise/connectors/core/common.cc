@@ -119,9 +119,6 @@ const char* AnalysisConnectorPref(AnalysisConnector connector) {
     case AnalysisConnector::PRINT:
       return kOnPrintPref;
     case AnalysisConnector::FILE_TRANSFER:
-#if BUILDFLAG(IS_CHROMEOS)
-      return kOnFileTransferPref;
-#endif
     case AnalysisConnector::ANALYSIS_CONNECTOR_UNSPECIFIED:
       NOTREACHED() << "Using unspecified analysis connector";
   }
@@ -138,9 +135,6 @@ const char* AnalysisConnectorScopePref(AnalysisConnector connector) {
     case AnalysisConnector::PRINT:
       return kOnPrintScopePref;
     case AnalysisConnector::FILE_TRANSFER:
-#if BUILDFLAG(IS_CHROMEOS)
-      return kOnFileTransferScopePref;
-#endif
     case AnalysisConnector::ANALYSIS_CONNECTOR_UNSPECIFIED:
       NOTREACHED() << "Using unspecified analysis connector";
   }

@@ -74,9 +74,6 @@ class ThemeSource : public content::URLDataSource {
                      const content::WebContents::Getter& wc_getter,
                      content::URLDataSource::GotDataCallback callback);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SendTypographyCss(content::URLDataSource::GotDataCallback callback);
-#endif
 
   // The profile this object was initialized with.
   raw_ptr<Profile, FlakyDanglingUntriaged> profile_;

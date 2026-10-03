@@ -10,11 +10,6 @@
 #include "chrome/common/buildflags.h"
 #include "components/captive_portal/core/buildflags.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/app_mode/kiosk_chrome_app_manager.h"
-#include "chrome/browser/ash/app_mode/kiosk_controller.h"
-#include "chrome/browser/ash/app_mode/kiosk_system_session.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_CAPTIVE_PORTAL_DETECTION)
 #include "chrome/browser/captive_portal/captive_portal_service_factory.h"
@@ -38,10 +33,6 @@ void ChromeGuestViewManagerDelegate::OnGuestAdded(
   // manager.
   task_manager::WebContentsTags::CreateForGuestContents(guest_web_contents);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Notifies Kiosk controller about the added guest.
-  ash::KioskController::Get().OnGuestAdded(guest_web_contents);
-#endif
 
   // Check if guest belongs to glic and apply specific customizations if so.
   glic::OnGuestAdded(guest_web_contents);

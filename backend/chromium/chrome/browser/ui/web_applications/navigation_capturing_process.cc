@@ -54,10 +54,6 @@
 #include "ui/base/window_open_disposition.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ui/ash/system_web_apps/system_web_app_ui_utils.h"
-#include "chrome/browser/web_applications/chromeos_web_app_experiments.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace web_app {
 
@@ -328,24 +324,6 @@ NavigationCapturingProcess::MaybeHandleAppNavigation(
     const NavigateParams& params) {
   Profile* profile = params.initiating_profile;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // System Web Apps should not be going through the navigation capturing
-  // process.
-  const std::optional<ash::SystemWebAppType> capturing_system_app_type =
-      ash::GetCapturingSystemAppForURL(profile, params.url);
-  if (capturing_system_app_type.has_value()) {
-    if (params.browser && ash::IsBrowserForSystemWebApp(
-                              params.browser->GetBrowserForMigrationOnly(),
-                              capturing_system_app_type.value())) {
-      RecordInitialNavigationCapturingResult(
-          NavigationCapturingInitialResult::kNotHandled);
-      return nullptr;
-    }
-    // This process should never be called for URLS captured by system web apps
-    // from a non-system-web-app browser.
-    NOTREACHED();
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (!AreWebAppsUserInstallable(profile) ||
       Browser::GetCreationStatusForProfile(profile) !=
@@ -1405,21 +1383,6 @@ bool NavigationCapturingProcess::
     return true;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Check application-specific flags.
-  if (first_navigation_app_id_.has_value() &&
-      ::web_app::ChromeOsWebAppExperiments::
-          IsNavigationCapturingReimplEnabledForTargetApp(
-              *first_navigation_app_id_)) {
-    return true;
-  }
-  if (source_browser_app_id_.has_value() &&
-      ::web_app::ChromeOsWebAppExperiments::
-          IsNavigationCapturingReimplEnabledForSourceApp(
-              *source_browser_app_id_, navigation_params_url_)) {
-    return true;
-  }
-#endif
 
   return false;
 }

@@ -9,9 +9,7 @@
 #include "base/compiler_specific.h"
 #include "base/time/time.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
 #include <semaphore.h>
 #else
 #include "base/synchronization/waitable_event.h"
@@ -47,9 +45,7 @@ class BASE_EXPORT CancelableEvent {
 
   void Wait() { TimedWait(TimeDelta::Max()); }
 
-#if BUILDFLAG(IS_WIN)
-  using NativeHandle = HANDLE;
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
   using NativeHandle = sem_t;
 #else
   using NativeHandle = WaitableEvent;

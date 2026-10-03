@@ -7,9 +7,6 @@ import("//build/config/ui.gni")
 import("//build/toolchain/gcc_toolchain.gni")
 import("//third_party/blink/public/public_features.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-}
 if (current_cpu == "arm") {
   import("//build/config/arm.gni")
 }
@@ -55,7 +52,7 @@ declare_args() {
   # Blink; however, the extensions are default-disabled. Chrome (and any other
   # non-WebView products) should never attempt to enable the extensions at
   # runtime.
-  use_blink_extensions_webview = is_android
+  use_blink_extensions_webview = false
 }
 
 # feature_defines_list ---------------------------------------------------------
@@ -83,10 +80,3 @@ if (blink_symbol_level == 2) {
 } else {
   blink_symbols_config = [ "//build/config/compiler:default_symbols" ]
 }
-
-# Record whether target_os (rather than current_os) is android, for the case of
-# generating the v8 context snapshot for android. When generating the snapshot
-# for android, blink is compiled with current_os="linux" and
-# target_os="android". Using target_os is necessary as we need to compile in the
-# same way as would happen when current_os="android".
-target_os_is_android = target_os == "android"

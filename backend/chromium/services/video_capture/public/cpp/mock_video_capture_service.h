@@ -22,19 +22,6 @@ class MockVideoCaptureService
       mojo::PendingReceiver<video_capture::mojom::VideoSourceProvider> receiver)
       override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void InjectGpuDependencies(
-      mojo::PendingRemote<video_capture::mojom::AcceleratorFactory>
-          accelerator_factory) override;
-
-  MOCK_METHOD1(
-      DoInjectGpuDependencies,
-      void(mojo::PendingRemote<video_capture::mojom::AcceleratorFactory>
-               accelerator_factory));
-
-  void ConnectToCameraAppDeviceBridge(
-      mojo::PendingReceiver<cros::mojom::CameraAppDeviceBridge>) override {}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void BindControlsForTesting(
       mojo::PendingReceiver<mojom::TestingControls>) override {}
@@ -44,9 +31,6 @@ class MockVideoCaptureService
                void(mojo::PendingReceiver<
                     video_capture::mojom::VideoSourceProvider> receiver));
 
-#if BUILDFLAG(IS_WIN)
-  MOCK_METHOD1(OnGpuInfoUpdate, void(const CHROME_LUID&));
-#endif
 };
 
 }  // namespace video_capture

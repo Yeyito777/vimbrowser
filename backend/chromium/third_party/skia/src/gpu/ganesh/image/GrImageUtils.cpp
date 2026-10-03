@@ -60,7 +60,6 @@
 #include "src/gpu/ganesh/effects/GrYUVtoRGBEffect.h"
 #include "src/gpu/ganesh/image/SkImage_Ganesh.h"
 #include "src/gpu/ganesh/image/SkImage_GaneshBase.h"
-#include "src/gpu/ganesh/image/SkImage_RasterPinnable.h"
 #include "src/gpu/ganesh/image/SkSpecialImage_Ganesh.h"
 #include "src/image/SkImage_Base.h"
 #include "src/image/SkImage_Lazy.h"
@@ -418,9 +417,6 @@ std::tuple<GrSurfaceProxyView, GrColorType> AsView(GrRecordingContext* rContext,
     if (ib->type() == SkImage_Base::Type::kRaster) {
         return skgpu::ganesh::RasterAsView(
                     rContext, static_cast<const SkImage_Raster*>(ib), mipmapped, policy);
-    } else if (ib->type() == SkImage_Base::Type::kRasterPinnable) {
-        auto rp = static_cast<const SkImage_RasterPinnable*>(img);
-        return rp->asView(rContext, mipmapped, policy);
     } else if (ib->isGaneshBacked()) {
         auto gb = static_cast<const SkImage_GaneshBase*>(img);
         return gb->asView(rContext, mipmapped, policy, targetSurface);

@@ -147,10 +147,7 @@ void UpdateCheckerImpl::CheckForUpdates(
 UpdaterStateAttributes UpdateCheckerImpl::ReadUpdaterStateAttributes(
     UpdaterStateProvider update_state_provider,
     bool is_machine) {
-#if BUILDFLAG(IS_WIN)
-  // On Windows, the Chrome and the updater install modes are matched by design.
-  return update_state_provider.Run(is_machine);
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return update_state_provider.Run(false);
 #else
   return {};

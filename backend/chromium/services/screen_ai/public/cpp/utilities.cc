@@ -29,17 +29,8 @@ const base::FilePath::CharType kScreenAISubDirName[] =
     FILE_PATH_LITERAL("screen_ai");
 
 const base::FilePath::CharType kScreenAIComponentBinaryName[] =
-#if BUILDFLAG(IS_WIN)
-    FILE_PATH_LITERAL("chrome_screen_ai.dll");
-#else
     FILE_PATH_LITERAL("libchromescreenai.so");
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-// The path to the Screen AI DLC directory.
-constexpr char kScreenAIDlcRootPath[] =
-    "/run/imageloader/screen-ai/package/root/";
-#endif
 
 #if BUILDFLAG(ENABLE_SCREEN_AI_BROWSERTESTS)
 #if BUILDFLAG(IS_LINUX)
@@ -52,14 +43,6 @@ constexpr base::FilePath::CharType kScreenAIResourcePathForTests[] =
 #elif defined(ARCH_CPU_ARM64)
 constexpr base::FilePath::CharType kScreenAIResourcePathForTests[] =
     FILE_PATH_LITERAL("third_party/screen-ai/macos_arm64/resources");
-#endif  // defined(ARCH_CPU_X86_64)
-#elif BUILDFLAG(IS_WIN)
-#if defined(ARCH_CPU_X86_64)
-constexpr base::FilePath::CharType kScreenAIResourcePathForTests[] =
-    FILE_PATH_LITERAL("third_party\\screen-ai\\windows_amd64\\resources");
-#elif defined(ARCH_CPU_X86)
-constexpr base::FilePath::CharType kScreenAIResourcePathForTests[] =
-    FILE_PATH_LITERAL("third_party\\screen-ai\\windows_386\\resources");
 #endif  // defined(ARCH_CPU_X86_64)
 #endif  // BUILDFLAG(IS_LINUX)
 
@@ -98,9 +81,6 @@ base::FilePath GetComponentDir() {
   }
 #endif  // BUILDFLAG(ENABLE_SCREEN_AI_BROWSERTESTS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  return base::FilePath::FromASCII(kScreenAIDlcRootPath);
-#else
   base::FilePath components_dir;
   if (!base::PathService::Get(component_updater::DIR_COMPONENT_USER,
                               &components_dir) ||
@@ -109,7 +89,6 @@ base::FilePath GetComponentDir() {
   }
 
   return components_dir.Append(kScreenAISubDirName);
-#endif
 }
 
 #if BUILDFLAG(ENABLE_SCREEN_AI_BROWSERTESTS)

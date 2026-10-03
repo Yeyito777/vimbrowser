@@ -188,27 +188,6 @@ source_set("filters") {
         "ffmpeg_video_decoder.h",
       ]
     }
-
-    if (is_android) {
-      sources += [
-        "android/video_frame_extractor.cc",
-        "android/video_frame_extractor.h",
-      ]
-    }
-  }
-
-  if (is_android) {
-    sources -= [
-      "decrypting_audio_decoder.cc",
-      "decrypting_audio_decoder.h",
-      "decrypting_video_decoder.cc",
-      "decrypting_video_decoder.h",
-    ]
-    sources += [
-      "android/media_codec_audio_decoder.cc",
-      "android/media_codec_audio_decoder.h",
-    ]
-    deps += [ "//media/base/android" ]
   }
 
   if (is_apple) {
@@ -225,25 +204,6 @@ source_set("filters") {
       "passthrough_dts_audio_decoder.cc",
       "passthrough_dts_audio_decoder.h",
     ]
-  }
-  if (is_win) {
-    sources += [
-      "win/media_foundation_audio_decoder.cc",
-      "win/media_foundation_audio_decoder.h",
-    ]
-    deps += [ "//media/base/win:media_foundation_util" ]
-    if (enable_platform_dts_audio) {
-      ldflags = [
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/concrt140_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/msvcp140_1_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/msvcp140_2_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/msvcp140_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/vcamp140_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/vccorlib140_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/vcomp140_app.dll",
-        "/DELAYLOAD:packages/Microsoft.VCRTForwarders.140.1.0.6/runtimes/win10-x64/native/release/vcruntime140_app.dll",
-      ]
-    }
   }
 
   if (is_win || use_vaapi) {
@@ -345,21 +305,8 @@ source_set("unit_tests") {
     "//ui/gfx:test_support",
   ]
 
-  if (is_android) {
-    sources += [ "android/video_frame_extractor_unittest.cc" ]
-    sources -= [
-      "decrypting_audio_decoder_unittest.cc",
-      "decrypting_video_decoder_unittest.cc",
-    ]
-
-    deps += [ "//ui/gl" ]
-  }
-
   # libvpx for running vpx test on chromecast doesn't support high bit depth.
   # This may cause some unit tests failure. See b/65382374 for further context.
-  if (is_castos) {
-    defines = [ "LIBVPX_NO_HIGH_BIT_DEPTH" ]
-  }
 
   if (media_use_ffmpeg) {
     sources += [
@@ -378,12 +325,10 @@ source_set("unit_tests") {
 
     # Even if FFmpeg is enabled on Android we don't want these.
     # TODO(watk): Refactor tests that could be made to run on Android.
-    if (!is_android) {
-      sources += [
-        "audio_video_metadata_extractor_unittest.cc",
-        "media_file_checker_unittest.cc",
-      ]
-    }
+    sources += [
+      "audio_video_metadata_extractor_unittest.cc",
+      "media_file_checker_unittest.cc",
+    ]
 
     if (enable_ffmpeg_video_decoders && proprietary_codecs) {
       sources += [ "ffmpeg_video_decoder_unittest.cc" ]

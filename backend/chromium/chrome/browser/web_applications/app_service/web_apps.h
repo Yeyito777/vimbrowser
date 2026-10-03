@@ -34,12 +34,6 @@ namespace webapps {
 enum class WebappUninstallSource;
 }  // namespace webapps
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace apps {
-class InstanceRegistry;
-struct AppLaunchParams;
-}
-#endif
 
 namespace web_app {
 
@@ -75,12 +69,6 @@ class WebApps final : public apps::AppPublisher,
                 int32_t size_hint_in_dip,
                 bool allow_placeholder_icon,
                 apps::LoadIconCallback callback) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void GetCompressedIconData(const std::string& app_id,
-                             int32_t size_in_dip,
-                             ui::ResourceScaleFactor scale_factor,
-                             apps::LoadIconCallback callback) override;
-#endif
   void Launch(const std::string& app_id,
               int32_t event_flags,
               apps::LaunchSource launch_source,
@@ -103,13 +91,6 @@ class WebApps final : public apps::AppPublisher,
                  apps::UninstallSource uninstall_source,
                  bool clear_site_data,
                  bool report_abuse) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void GetMenuModel(
-      const std::string& app_id,
-      apps::MenuType menu_type,
-      int64_t display_id,
-      base::OnceCallback<void(apps::MenuItems)> callback) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void UpdateAppSize(const std::string& app_id) override;
 
@@ -129,28 +110,6 @@ class WebApps final : public apps::AppPublisher,
   std::vector<apps::AppPtr> CreateWebApps();
   void InitWebApps();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // apps::AppPublisher overrides.
-  void PauseApp(const std::string& app_id) override;
-  void UnpauseApp(const std::string& app_id) override;
-  void StopApp(const std::string& app_id) override;
-  // menu_type is stored as |shortcut_id|.
-  void ExecuteContextMenuCommand(const std::string& app_id,
-                                 int command_id,
-                                 const std::string& shortcut_id,
-                                 int64_t display_id) override;
-
-  void GetAppShortcutMenuModel(
-      const std::string& app_id,
-      apps::MenuItems menu_items,
-      base::OnceCallback<void(apps::MenuItems)> callback);
-
-  void OnShortcutsMenuIconsRead(
-      const std::string& app_id,
-      apps::MenuItems menu_items,
-      base::OnceCallback<void(apps::MenuItems)> callback,
-      ShortcutsMenuIconBitmaps shortcuts_menu_icon_bitmaps);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const raw_ptr<Profile> profile_;
 
@@ -159,9 +118,6 @@ class WebApps final : public apps::AppPublisher,
   // Specifies whether the web app registry becomes ready.
   bool is_ready_ = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const raw_ptr<apps::InstanceRegistry> instance_registry_;
-#endif
 
   WebAppPublisherHelper publisher_helper_;
   base::WeakPtrFactory<WebApps> weak_ptr_factory_{this};

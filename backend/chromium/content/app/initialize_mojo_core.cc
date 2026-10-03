@@ -42,11 +42,6 @@ void InitializeMojoCore() {
     if (!config.is_broker_process)
       config.force_direct_shared_memory_allocation = true;
   } else {
-#if BUILDFLAG(IS_WIN)
-    // On Windows it's not necessary to broker shared memory allocation, as
-    // even sandboxed processes can allocate their own without trouble.
-    config.force_direct_shared_memory_allocation = true;
-#endif
   }
 
   mojo::core::Init(config);

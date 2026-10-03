@@ -68,11 +68,6 @@ namespace syncer {
 class SyncService;
 }
 
-namespace translate {
-class LanguageState;
-class TranslateDriver;
-}  // namespace translate
-
 namespace ukm {
 class UkmRecorder;
 }
@@ -105,9 +100,6 @@ class AutofillCrowdsourcingManager;
 class AutofillDriverFactory;
 class AutofillOptimizationGuideDecider;
 class AutofillProfile;
-#if BUILDFLAG(IS_ANDROID)
-class AutofillSnackbarControllerImpl;
-#endif  // BUILDFLAG(IS_ANDROID)
 class AutofillSuggestionDelegate;
 enum class AutofillTriggerSource;
 class IdentityCredentialDelegate;
@@ -462,13 +454,6 @@ class AutofillClient {
   // context if possible, SECURITY_LEVEL_COUNT otherwise.
   virtual security_state::SecurityLevel GetSecurityLevelForUmaHistograms() = 0;
 
-  // Returns the language state, if available.
-  virtual const translate::LanguageState* GetLanguageState() = 0;
-
-  // Returns the translate driver, if available, which is used to observe the
-  // page language for language-dependent heuristics.
-  virtual translate::TranslateDriver* GetTranslateDriver() = 0;
-
   // Retrieves the country code of the user from Chrome variation service.
   // If the variation service is not available, return an empty string.
   virtual GeoIpCountryCode GetVariationConfigCountryCode() const;
@@ -629,17 +614,7 @@ class AutofillClient {
 
   virtual const AutofillAblationStudy& GetAblationStudy() const;
 
-#if BUILDFLAG(IS_ANDROID)
-  // The AutofillSnackbarController is used to show a snackbar notification
-  // on Android.
-  virtual AutofillSnackbarControllerImpl* GetAutofillSnackbarController();
-#endif
 
-#if BUILDFLAG(IS_IOS)
-  // Checks whether `field_id` is the last field that for which
-  // AutofillAgent::queryAutofillForForm() was called. See crbug.com/1097015.
-  virtual bool IsLastQueriedField(FieldGlobalId field_id) = 0;
-#endif
 
   // Whether we can add more information to the contents of suggestions text due
   // to the use of a large keyboard accessory view. See b/40942168.

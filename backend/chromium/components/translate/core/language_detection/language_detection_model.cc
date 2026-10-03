@@ -15,10 +15,16 @@
 #include "components/language/core/common/language_util.h"
 #include "components/language_detection/core/constants.h"
 #include "components/language_detection/core/language_detection_model.h"
-#include "components/translate/core/common/translate_util.h"
 #include "components/translate/core/language_detection/language_detection_util.h"
 
 namespace translate {
+namespace {
+
+// The minimum score for a TFLite model prediction to be considered reliable.
+constexpr double kTFLiteReliabilityThreshold = 0.7;
+
+}  // namespace
+
 LanguageDetectionModel::LanguageDetectionModel(
     language_detection::LanguageDetectionModel& shared_tflite_model)
     : tflite_model_(shared_tflite_model) {}

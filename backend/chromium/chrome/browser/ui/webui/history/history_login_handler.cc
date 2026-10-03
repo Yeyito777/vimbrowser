@@ -92,11 +92,9 @@ void HistoryLoginHandler::HandleTurnOnSyncFlow(
       IdentityManagerFactory::GetForProfile(profile);
   CoreAccountInfo account_info =
       identity_manager->GetPrimaryAccountInfo(signin::ConsentLevel::kSignin);
-#if !BUILDFLAG(IS_CHROMEOS)
   if (account_info.IsEmpty()) {
     account_info = signin_ui_util::GetSingleAccountForPromos(identity_manager);
   }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   signin_ui_util::EnableSyncFromSingleAccountPromo(
       profile, account_info, signin_metrics::AccessPoint::kRecentTabs);
 }

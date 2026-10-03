@@ -104,9 +104,6 @@
 #include "ui/gfx/hdr_metadata.h"
 #include "ui/gfx/swap_result.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/viz/service/display/overlay_processor_surface_control.h"
-#endif
 
 namespace viz {
 
@@ -973,18 +970,7 @@ SkiaRenderer::SkiaRenderer(const RendererSettings* settings,
       current_gpu_commands_completed_fence_.get());
   this->resource_provider()->SetReleaseFence(current_release_fence_.get());
 
-#if BUILDFLAG(IS_WIN)
-  // Windows does not normally use buffer queue because swap chains and DComp
-  // surfaces internally manage buffers and cross-frame damage. It instead lets
-  // the renderer allocate the root surface like a normal render pass backing.
-
-  // It's possible to use BufferQueue with DComp textures, so we can optionally
-  // enable it behind a feature flag.
-  const bool want_buffer_queue = IsBufferQueueSupportedAndEnabled(
-      output_surface_->capabilities().dc_support_level);
-#else
   const bool want_buffer_queue = true;
-#endif
   if (want_buffer_queue &&
       output_surface->capabilities().renderer_allocates_images) {
     // When using dynamic frame buffer allocation we'll start with 0 buffers and
@@ -1921,15 +1907,9 @@ std::optional<const DrawQuad*> SkiaRenderer::CanPassBeDrawnDirectly(
     // Force passes whose backings can be directly scanned out from being a
     // bypass quad. This logic should mirror
     // |GetRenderPassBackingForDirectScanout|.
-#if BUILDFLAG(IS_WIN)
-  if (requirements.is_scanout) {
-    return std::nullopt;
-  }
-#else
   // This platform doesn't support direct scanout, so we don't expect any
   // scanout render pass backings.
   CHECK(!requirements.is_scanout);
-#endif
 
   const DrawQuad* quad = *pass->quad_list.BackToFrontBegin();
   // For simplicity in debug border and picture quad draw implementations, don't
@@ -2566,12 +2546,6 @@ void SkiaRenderer::DrawTextureQuad(const TextureDrawQuad* quad,
   // avoid color changes during promotion we use the same color space for
   // compositing.
   std::optional<gfx::ColorSpace> overlay_color_space;
-#if BUILDFLAG(IS_ANDROID)
-  if (resource_provider()->IsOverlayCandidate(quad->resource_id)) {
-    overlay_color_space =
-        OverlayProcessorSurfaceControl::GetOverrideColorSpace();
-  }
-#endif
 
   // We need only RGB portion of the color space, YUV conversion handled in
   // skia.
@@ -2791,9 +2765,7 @@ void SkiaRenderer::ScheduleOverlays() {
 
   std::vector<gpu::SyncToken> sync_tokens;
 
-#if !BUILDFLAG(IS_WIN)
   DCHECK(output_surface_->capabilities().supports_surfaceless);
-#endif
 
   bool has_primary_plane_overlay = false;
 
@@ -2925,9 +2897,7 @@ void SkiaRenderer::ScheduleOverlays() {
       // delegating to the system compositor, and don't need the buffers
       // anymore. On Mac the primary plane buffers are marked as purgeable so
       // the OS can decide if they should be destroyed or not.
-#if BUILDFLAG(IS_WIN)
-      buffer_queue_->DestroyBuffers();
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
       buffer_queue_->SetBuffersPurgeable();
 #endif
     }
@@ -3568,28 +3538,7 @@ void SkiaRenderer::AllocateRenderPassResourceIfNeeded(
       !settings_->force_non_scanout_backing_for_pixel_tests) {
     usage |= gpu::SHARED_IMAGE_USAGE_SCANOUT;
 
-#if BUILDFLAG(IS_WIN)
-    // DComp surfaces do not support RGB10A2 so we must fall back to swap
-    // chains. If this happens with video overlays, this can result in the video
-    // overlay and its parent surface having unsynchronized updates.
-    //
-    // TODO(tangm): We should clean this up by either avoiding HDR or using
-    //              RGBAF16 surfaces in this case.
-    const bool dcomp_surface_unsupported_format =
-        requirements.format == SinglePlaneFormat::kRGBA_1010102;
-
-    if (requirements.scanout_dcomp_surface &&
-        !dcomp_surface_unsupported_format) {
-      usage |= gpu::SHARED_IMAGE_USAGE_SCANOUT_DCOMP_SURFACE;
-
-      // DComp surfaces are write-only, viz cannot sample them.
-      usage.RemoveAll(gpu::SHARED_IMAGE_USAGE_DISPLAY_READ);
-    } else {
-      usage |= gpu::SHARED_IMAGE_USAGE_SCANOUT_DXGI_SWAP_CHAIN;
-    }
-#else
     DCHECK(!requirements.scanout_dcomp_surface);
-#endif
   } else {
     DCHECK(!requirements.scanout_dcomp_surface);
   }
@@ -3692,29 +3641,9 @@ bool SkiaRenderer::CanSkipRenderPassOverlay(
 std::optional<SkiaRenderer::RenderPassBacking>
 SkiaRenderer::GetRenderPassBackingForDirectScanout(
     const AggregatedRenderPassId& render_pass_id) const {
-#if BUILDFLAG(IS_WIN)
-  if (auto backing_it = render_pass_backings_.find(render_pass_id);
-      backing_it != render_pass_backings_.end()) {
-    if (backing_it->second.is_scanout) {
-      if (DCHECK_IS_ON()) {
-        auto pass_it =
-            std::ranges::find(*current_frame()->render_passes_in_draw_order,
-                              backing_it->first, &AggregatedRenderPass::id);
-        CHECK(pass_it != current_frame()->render_passes_in_draw_order->end());
-
-        DCHECK(!pass_it->get()->generate_mipmap);
-        DCHECK(!(pass_it->get()->will_backing_be_read_by_viz &&
-                 backing_it->second.scanout_dcomp_surface));
-      }
-
-      return std::make_optional(backing_it->second);
-    }
-  }
-#else
   // Non-Win backends need BufferQueue support on render pass backings. Any new
   // implementation should also modify |CanPassBeDrawnDirectly| to avoid the
   // bypass quad case for direct scanout backings.
-#endif
 
   return std::nullopt;
 }
@@ -4186,13 +4115,7 @@ gfx::Rect SkiaRenderer::GetCurrentFramebufferDamage() const {
 
 void SkiaRenderer::Reshape(const OutputSurface::ReshapeParams& reshape_params) {
   if (buffer_queue_) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // CrOS assumes that we (almost) never reallocate buffers, so we force
-    // |kPremul| to never trigger a reallocation due to root opacity changes.
-    const RenderPassAlphaType alpha_type = RenderPassAlphaType::kPremul;
-#else
     const RenderPassAlphaType alpha_type = reshape_params.alpha_type;
-#endif
     buffer_queue_->Reshape(reshape_params.size, reshape_params.color_space,
                            alpha_type, reshape_params.format);
   }

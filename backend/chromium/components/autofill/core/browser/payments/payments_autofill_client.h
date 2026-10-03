@@ -20,11 +20,9 @@
 #include "components/autofill/core/browser/suggestions/suggestion.h"
 #include "components/signin/public/identity_manager/account_info.h"
 
-#if !BUILDFLAG(IS_IOS)
 namespace webauthn {
 class InternalAuthenticator;
 }
-#endif
 
 namespace autofill {
 
@@ -273,9 +271,6 @@ class PaymentsAutofillClient : public RiskDataLoader {
 
     std::u16string card_number;
     std::optional<std::u16string> security_code;
-#if BUILDFLAG(IS_IOS)
-    std::optional<std::u16string> nickname;
-#endif
   };
 
   // Callback to run after the local/upload card Save and Fill dialog is shown.
@@ -322,17 +317,6 @@ class PaymentsAutofillClient : public RiskDataLoader {
       SaveCardOfferUserDecision user_decision,
       const UserProvidedCardDetails& user_provided_card_details)>;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Gets the AutofillSaveCardBottomSheetBridge or creates one if it doesn't
-  // exist.
-  virtual AutofillSaveCardBottomSheetBridge*
-  GetOrCreateAutofillSaveCardBottomSheetBridge() = 0;
-
-  // Gets the AutofillSaveIbanBottomSheetBridge or creates one if it doesn't
-  // exist.
-  virtual AutofillSaveIbanBottomSheetBridge*
-  GetOrCreateAutofillSaveIbanBottomSheetBridge() = 0;
-#elif !BUILDFLAG(IS_IOS)  // && !BUILDFLAG(IS_ANDROID)
   // TODO(crbug.com/40639086): Find a way to merge these two functions.
   // Shouldn't use WebauthnDialogState as that state is a purely UI state
   // (should not be accessible for managers?), and some of the states
@@ -360,7 +344,6 @@ class PaymentsAutofillClient : public RiskDataLoader {
 
   // Hides the virtual card enroll bubble and icon if it is visible.
   virtual void HideVirtualCardEnrollBubbleAndIconIfVisible() = 0;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
   // Display the cardholder name fix flow prompt and run the `callback` if
@@ -541,15 +524,6 @@ class PaymentsAutofillClient : public RiskDataLoader {
 
   virtual void OnUnmaskVerificationResult(PaymentsRpcResult result) = 0;
 
-#if BUILDFLAG(IS_IOS)
-  virtual std::unique_ptr<AutofillProgressDialogController>
-  ExtractProgressDialogModel() = 0;
-
-  virtual std::unique_ptr<CardUnmaskOtpInputDialogController>
-  ExtractOtpInputDialogModel() = 0;
-
-  virtual CardUnmaskPromptController* GetCardUnmaskPromptModel() = 0;
-#endif
 
   // Returns a pointer to a VirtualCardEnrollmentManager that is owned by
   // PaymentsAutofillClient. VirtualCardEnrollmentManager is used for virtual
@@ -577,10 +551,6 @@ class PaymentsAutofillClient : public RiskDataLoader {
   // by the user, if applicable.
   virtual bool IsMandatoryReauthEnabled() = 0;
 
-#if BUILDFLAG(IS_IOS)
-  // Returns true if the feature to use custom card icons is enabled.
-  virtual bool IsUsingCustomCardIconEnabled() const = 0;
-#endif
 
   // Prompt the user to enable mandatory reauthentication for payment method
   // autofill. When enabled, the user will be asked to authenticate using
@@ -742,13 +712,11 @@ class PaymentsAutofillClient : public RiskDataLoader {
   // Gets a const version of the PaymentsDataManager.
   const PaymentsDataManager& GetPaymentsDataManager() const;
 
-#if !BUILDFLAG(IS_IOS)
   // Creates the appropriate implementation of InternalAuthenticator. May be
   // null for platforms that don't support this, in which case standard CVC
   // authentication will be used instead.
   virtual std::unique_ptr<webauthn::InternalAuthenticator>
   CreateCreditCardInternalAuthenticator(AutofillDriver* driver) = 0;
-#endif
 
   // Gets or creates a payments autofill mandatory re-auth manager. This will be
   // used to handle payments mandatory re-auth related flows.

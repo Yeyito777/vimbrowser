@@ -6,10 +6,6 @@ import("//components/supervised_user/buildflags.gni")
 import("//extensions/buildflags/buildflags.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 source_set("pref_names") {
   sources = [ "pref_names.h" ]
   public_deps = [ "//build:branding_buildflags" ]
@@ -88,13 +84,6 @@ static_library("ntp_tiles") {
     "//third_party/re2",
     "//ui/base",
   ]
-
-  if (is_ios) {
-    sources += [
-      "country_code_ios.h",
-      "country_code_ios.mm",
-    ]
-  }
 
   if (enable_extensions) {
     deps += [ "//extensions/common:common_constants" ]
@@ -177,20 +166,7 @@ source_set("unit_tests") {
   }
 }
 
-if (is_android) {
-  java_cpp_enum("ntp_tiles_enums_java") {
-    sources = [
-      "section_type.h",
-      "tile_title_source.h",
-      "tile_visual_type.h",
-    ]
-  }
-}
-
 mojom("mojo_bindings") {
-  if (is_android) {
-    generate_java = true
-  }
   sources = [
     "tile_source.mojom",
     "tile_type.mojom",

@@ -42,14 +42,6 @@ interface SaveDataBlockMessageData {
   token: string;
 }
 
-export interface PrintPreviewParams {
-  type: string;
-  url: string;
-  grayscale: boolean;
-  modifiable: boolean;
-  pageNumbers: number[];
-}
-
 interface ThumbnailMessageData {
   imageData: ArrayBuffer;
   width: number;
@@ -119,9 +111,6 @@ export interface ContentController {
   rotateCounterclockwise(): void;
   setDisplayAnnotations(displayAnnotations: boolean): void;
   setTwoUpView(enableTwoUpView: boolean): void;
-
-  /** Triggers printing of the current document. */
-  print(): void;
 
   /** Undo an annotation mode edit action. */
   undo(): void;
@@ -397,10 +386,6 @@ export class PluginController implements ContentController {
     });
   }
 
-  print() {
-    this.postMessage_({type: 'print'});
-  }
-
   selectAll() {
     this.postMessage_({type: 'selectAll'});
   }
@@ -442,20 +427,6 @@ export class PluginController implements ContentController {
     });
   }
 
-  resetPrintPreviewMode(printPreviewParams: PrintPreviewParams) {
-    this.postMessage_({
-      type: 'resetPrintPreviewMode',
-      url: printPreviewParams.url,
-      grayscale: printPreviewParams.grayscale,
-      // If the PDF isn't modifiable we send 0 as the page count so that no
-      // blank placeholder pages get appended to the PDF.
-      pageCount:
-          (printPreviewParams.modifiable ?
-               printPreviewParams.pageNumbers.length :
-               0),
-    });
-  }
-
   /**
    * @param color New color, as a 32-bit integer, of the PDF plugin
    *     background.
@@ -465,10 +436,6 @@ export class PluginController implements ContentController {
       type: 'setBackgroundColor',
       color: color,
     });
-  }
-
-  loadPreviewPage(url: string, index: number) {
-    this.postMessage_({type: 'loadPreviewPage', url: url, index: index});
   }
 
   getPageBoundingBox(page: number): Promise<Rect> {

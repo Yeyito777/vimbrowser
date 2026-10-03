@@ -12,8 +12,6 @@ source_set("hang_monitor") {
   if (is_mac) {
     sources = [ "hang_crash_dump_mac.cc" ]
     deps += [ "//content/public/browser" ]
-  } else if (is_win) {
-    sources = [ "hang_crash_dump_win.cc" ]
   } else {
     sources = [ "hang_crash_dump.cc" ]
   }

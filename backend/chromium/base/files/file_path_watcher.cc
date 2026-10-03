@@ -83,10 +83,5 @@ FilePathWatcher::FilePathWatcher(std::unique_ptr<PlatformDelegate> delegate) {
   impl_ = std::move(delegate);
 }
 
-#if BUILDFLAG(IS_WIN)
-Lock& FilePathWatcher::GetWatchThreadLockForTest() {
-  return impl_->GetWatchThreadLockForTest();  // IN-TEST
-}
-#endif
 
 }  // namespace base

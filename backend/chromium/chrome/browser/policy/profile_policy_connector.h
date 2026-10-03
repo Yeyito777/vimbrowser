@@ -18,12 +18,8 @@
 #include "components/policy/core/common/policy_namespace.h"
 #include "components/policy/core/common/policy_service.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/ui/android/tab_model/tab_model_observer.h"
-#else
 #include "chrome/browser/ui/browser_list_observer.h"
 #include "chrome/browser/ui/tabs/tab_strip_model_observer.h"
-#endif
 
 namespace user_manager {
 class User;
@@ -31,9 +27,6 @@ class User;
 
 namespace policy {
 namespace internal {
-#if BUILDFLAG(IS_CHROMEOS)
-class ProxiedPoliciesPropagatedWatcher;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 class LocalTestInfoBarVisibilityManager;
 }  // namespace internal
 
@@ -84,11 +77,6 @@ class ProfilePolicyConnector final : public PolicyService::Observer {
   // higher-level provider.
   bool IsProfilePolicy(const char* policy_key) const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Triggers the time out handling of waiting for the proxied primary user
-  // policies to propagate. May be only called form tests.
-  void TriggerProxiedPoliciesWaitTimeoutForTesting();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Returns affiliation IDs contained in the PolicyData corresponding to the
   // profile.
@@ -132,57 +120,6 @@ class ProfilePolicyConnector final : public PolicyService::Observer {
   // every 7 days if the profile remains open.
   void RecordAffiliationMetrics();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // On Chrome OS, primary Profile user policies are forwarded to the
-  // device-global PolicyService[1] using a ProxyPolicyProvider.
-  // When that is done, signaling that |policy_service_| is initialized should
-  // be delayed until the policies provided by |user_policy_delegate| have
-  // propagated to the device-wide PolicyService[1]. This is done so that code
-  // that runs early on Profile initialization can rely on the device-wide
-  // PolicyService[1] and local state Preferences[2] respecting the proxied
-  // primary user policies.
-  //
-  // This function starts watching for the propagation to happen by creating a
-  // |ProxiedPoliciesPropagatedWatcher| and creates a PolicyService that
-  // only signals that it is initilalized when the
-  // |proxied_policies_propagated_watcher_| has fired.
-  //
-  // [1] i.e. g_browser_process->policy_service()
-  // [2] i.e. g_browser_process->local_state()
-  std::unique_ptr<PolicyService> CreatePolicyServiceWithInitializationThrottled(
-      const std::vector<raw_ptr<ConfigurationPolicyProvider,
-                                VectorExperimental>>& policy_providers,
-      std::vector<std::unique_ptr<PolicyMigrator>> migrators,
-      ConfigurationPolicyProvider* user_policy_delegate);
-
-  // Called when primary user policies that are proxied to the device-wide
-  // PolicyService have propagated.
-  // |policy_service| is passed here because UnthrottleInitialization is
-  // implemented on PolicyServiceImpl, but the |policy_service_| class member is
-  // a PolicyService for testability.
-  void OnProxiedPoliciesPropagated(PolicyServiceImpl* policy_service);
-
-  raw_ptr<const user_manager::User, DanglingUntriaged> user_ = nullptr;
-
-  // Some of the user policy configuration affects browser global state, and
-  // can only come from one Profile. |is_primary_user_| is true if this
-  // connector belongs to the first signed-in Profile, and in that case that
-  // Profile's policy is the one that affects global policy settings in
-  // local state.
-  bool is_primary_user_ = false;
-  // Whether the user was freshly created in this session.
-  bool is_user_new_ = false;
-
-  std::unique_ptr<ConfigurationPolicyProvider> special_user_policy_provider_;
-
-  // If the user associated with the Profile for this ProfilePolicyConnector is
-  // the primary user, the user policies will be proxied into the device-wide
-  // PolicyService. This object allows calling a callback when that is finished
-  // so it is possible to delay signaling that |policy_service_| is initialized
-  // until the policies have been reflected in the device-wide PolicyService.
-  std::unique_ptr<internal::ProxiedPoliciesPropagatedWatcher>
-      proxied_policies_propagated_watcher_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Wrap policy provider with SchemaRegistryTrackingPolicyProvider to track
   // extensions' policy schema update.
@@ -193,9 +130,6 @@ class ProfilePolicyConnector final : public PolicyService::Observer {
       nullptr;
   raw_ptr<const CloudPolicyStore> policy_store_ = nullptr;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<ConfigurationPolicyProvider> restricted_mgs_policy_provider;
-#endif
 
   // |policy_providers_| contains a list of the policy providers available for
   // the PolicyService of this connector, in decreasing order of priority.

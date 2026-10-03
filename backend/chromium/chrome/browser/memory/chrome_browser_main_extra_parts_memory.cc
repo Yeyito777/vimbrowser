@@ -18,11 +18,6 @@
 #include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/logging.h"
-#include "base/system/sys_info.h"
-#include "chromeos/ash/components/memory/pressure/system_memory_pressure_evaluator.h"
-#endif
 
 namespace {
 
@@ -62,20 +57,7 @@ void ChromeBrowserMainExtraPartsMemory::PostCreateThreads() {
 
 void ChromeBrowserMainExtraPartsMemory::PostBrowserStart() {
   // The MemoryPressureMonitor might not be available in some tests.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (auto* monitor =
-          memory_pressure::MultiSourceMemoryPressureMonitor::Get()) {
-    if (base::SysInfo::IsRunningOnChromeOS()) {
-      cros_evaluator_ =
-          std::make_unique<ash::memory::SystemMemoryPressureEvaluator>(
-              monitor->CreateVoter());
-    }
-  }
-#endif
 }
 
 void ChromeBrowserMainExtraPartsMemory::PostMainMessageLoopRun() {
-#if BUILDFLAG(IS_CHROMEOS)
-  cros_evaluator_.reset();
-#endif
 }

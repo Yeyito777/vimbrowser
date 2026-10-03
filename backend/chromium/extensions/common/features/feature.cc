@@ -20,16 +20,10 @@ namespace extensions {
 
 // static
 Feature::Platform Feature::GetCurrentPlatform() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return CHROMEOS_PLATFORM;
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   return LINUX_PLATFORM;
 #elif BUILDFLAG(IS_MAC)
   return MACOSX_PLATFORM;
-#elif BUILDFLAG(IS_WIN)
-  return WIN_PLATFORM;
-#elif BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-  return DESKTOP_ANDROID_PLATFORM;
 #else
   return UNSPECIFIED_PLATFORM;
 #endif

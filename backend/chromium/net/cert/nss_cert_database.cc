@@ -32,9 +32,6 @@
 #include "net/third_party/mozilla_security_manager/nsNSSCertificateDB.h"
 #include "net/third_party/mozilla_security_manager/nsPKCS12Blob.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "crypto/chaps_support.h"
-#endif
 
 // PSM = Mozilla's Personal Security Manager.
 namespace psm = mozilla_security_manager;
@@ -123,20 +120,6 @@ void NSSCertDatabase::ListCertsInSlot(ListCertsCallback callback,
       std::move(callback));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-crypto::ScopedPK11Slot NSSCertDatabase::GetSystemSlot() const {
-  return crypto::ScopedPK11Slot();
-}
-
-// static
-bool NSSCertDatabase::IsCertificateOnSlot(CERTCertificate* cert,
-                                          PK11SlotInfo* slot) {
-  if (!slot)
-    return false;
-
-  return PK11_FindCertInSlot(slot, cert, nullptr) != CK_INVALID_HANDLE;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 crypto::ScopedPK11Slot NSSCertDatabase::GetPublicSlot() const {
   return crypto::ScopedPK11Slot(PK11_ReferenceSlot(public_slot_.get()));
@@ -374,26 +357,6 @@ bool NSSCertDatabase::IsHardwareBacked(const CERTCertificate* cert) {
   if (!slot)
     return false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // For keys in Chaps, it's possible that they are truly hardware backed, or
-  // they can be software-backed, such as if the creator requested it, or if the
-  // TPM does not support the key algorithm. Chaps sets a kKeyInSoftware
-  // attribute to true for private keys that aren't wrapped by the TPM.
-  if (crypto::IsSlotProvidedByChaps(slot)) {
-    constexpr CK_ATTRIBUTE_TYPE kKeyInSoftware = CKA_VENDOR_DEFINED + 5;
-    SECKEYPrivateKey* private_key = PK11_FindPrivateKeyFromCert(
-        slot, const_cast<CERTCertificate*>(cert), nullptr);
-    // PK11_HasAttributeSet returns true if the object in the given slot has
-    // the attribute set to true. Otherwise it returns false.
-    if (private_key &&
-        PK11_HasAttributeSet(slot, private_key->pkcs11ID, kKeyInSoftware,
-                             /*haslock=*/PR_FALSE)) {
-      return false;
-    }
-    // All keys in chaps without the attribute are hardware backed.
-    return true;
-  }
-#endif
   return PK11_IsHW(slot);
 }
 

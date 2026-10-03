@@ -67,13 +67,6 @@ class SharesheetServiceDelegator {
                   DeliveredCallback delivered_callback,
                   CloseCallback close_callback);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Skips the generic Sharesheet bubble and directly displays the
-  // NearbyShare bubble dialog.
-  void ShowNearbyShareBubbleForArc(apps::IntentPtr intent,
-                                   DeliveredCallback delivered_callback,
-                                   CloseCallback close_callback);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Invoked immediately after an action has launched in the event that UI
   // changes need to occur at this point.

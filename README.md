@@ -1,5 +1,10 @@
 # vimbrowser
 
+For read-only transport/UI/target diagnostics, exact control readiness, timeout
+ambiguity and staged activation, see [docs/diagnostics.md](docs/diagnostics.md).
+`vimbrowser-cli diagnose TAB` never focuses or wakes tabs. Use
+`open-context --brief CONTEXT URL` for an opt-in exact-created-tab response.
+
 Fresh, minimal CEF-based vim browser.
 
 Goals:
@@ -76,6 +81,7 @@ scripts/vimbrowser-ipc screenshot 3 > tab.png
 scripts/vimbrowser-ipc js 3 'document.title'
 vimbrowser-cli frame-tree 3 --pretty
 vimbrowser-cli inspect-controls 3 --frame FRAME_ID --role button --name-exact Browse --require-one
+vimbrowser-cli activate-control 3 eh1_INSPECTED_TARGET
 vimbrowser-cli upload-file 3 '#attachment' /home/me/report.pdf
 vimbrowser-cli upload-file 3 'activate:#browse-button' /home/me/resume.pdf
 vimbrowser-cli upload-file 3 'handle:eh1_INSPECTED_TARGET' /home/me/resume.pdf
@@ -92,9 +98,10 @@ source `scripts/vimbrowser-ipc` fallback. Set
 separate test instance.
 
 See [`docs/ipc.md`](docs/ipc.md) for protocol framing, command semantics, and
-compatibility rules. IPC now has stable tab IDs (separate from reorderable tab
-indexes), ID-based tab focus/delete/order/open commands, complete folder/sidebar
-inspection and control, native HTML/text/JS, backend tab screenshots, backend
+compatibility rules. IPC now has profile-persistent stable tab IDs (separate
+from reorderable tab indexes), ID-based tab focus/delete/order/open commands,
+complete folder/sidebar inspection and control, native HTML/text/JS, backend tab
+screenshots, backend
 cookie inspection/mutation, secure browser-process local-file input assignment,
 and per-tab native network capture/replay.
 
@@ -189,6 +196,28 @@ vimbrowser --remote-debugging-port=9333 https://example.com
 
 Use `--remote-debugging-port=0` to disable remote CDP.
 
+## Two-person IPC browsing
+
+Page-directed IPC (background open, navigation, JS/frame inspection, controls,
+uploads, scrolling and screenshots) automatically renews a **60-second activity
+lease on that tab only**, without selecting it or moving native keyboard focus.
+Leased BrowserViews have a viewport/compositor surface behind the user's page;
+Chromium's `Emulation.setFocusEmulationEnabled` visible-capturer keeps Blink rAF,
+timers, child frames and rendering active even when occluded. `document.hasFocus()`
+and page visibility are emulated on the addressed page; native focus is not.
+Auth popups inherit the opener's remaining lease and stay in background tabs.
+
+Use `vimbrowser-cli activity TAB 300000` before a longer authentication/wait step
+(maximum five minutes), renew as needed, and `vimbrowser-cli activity TAB 0` when
+finished. Raw IPC is `tab-activity <tabid> <0..300000 milliseconds>`. Expiry/release
+restores normal hidden-tab behavior. Tab/status/network/cookie metadata reads do
+not renew leases; `tabs` exposes `activity_remaining_ms` for passive observation.
+Leases are not saved/restored, and dormant unrelated tabs are not initialized.
+
+`make background-activity-test` runs the local rAF/cross-origin-form/auth-popup,
+screenshot, native owner typing and idle-expiry regression in a disposable xenv
+and profile only. Requires `xenv`, `vimbrowser-cli`, Python and Pillow.
+
 ## Current shell behavior
 
 - one top-level CEF Views window; page-created popups are captured into the tab
@@ -200,6 +229,7 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   persistent default; `--profile-dir DIR` always selects an explicit profile
 - `Ctrl+Shift+I` opens DevTools
 - web view focused by default in website-normal mode
+
 - media autoplay is disabled by default; pages need an explicit user gesture to
   start playback after fresh loads or browser restarts
 - the source-built CEF backend enables Chrome-branded FFmpeg proprietary codec
@@ -291,15 +321,15 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   website-normal/normal web modes, `Space` toggles playback; in insert mode,
   `h` / `l` seek -/+5s and `j` / `k` adjust volume -/+5% unless a page text
   field is focused, in which case the keys type into the field normally
-- `Escape` from insert mode enters regular Vim normal mode; `Escape` again
-  returns to website-normal mode
+- `Escape` from insert mode enters regular Vim normal mode when a page text
+  control is focused; without a focused editable it returns directly to
+  website-normal mode. A second `Escape` leaves regular normal mode.
 - when a page text field receives focus, including via native hints, web mode
   automatically enters insert mode so typing can start immediately
 - left qutebrowser-style tab sidebar
 - bottom qutebrowser-style command line while command mode is active
-- command line starts in insert mode, shows a block cursor, supports `Escape` to
-  command-normal mode, then `i` / `a` / `h` / `l` / `x` for a minimal shared Vim
-  editing skeleton
+- command-line editing is insert-only and `Escape` dismisses the command line in
+  one step, restoring its previous focus area
 - `:open` / `:open tab` autocomplete includes the last 1000 command-opened
   entries, shortest matching URLs first; long history entries are ellipsized in
   the popup while still completing to the full text. `:open tab` inserts the new
@@ -319,6 +349,8 @@ Use `--remote-debugging-port=0` to disable remote CDP.
   native PDF in `~/Desktop/musescore-sheets` (override with
   `MUSESCORE_DOWNLOAD_DIR`). The network transfer and SVG/PNG-to-PDF conversion
   are implemented in C/C++ with libcurl, librsvg, and Cairo on both desktops
+- A separate, vimbrowser-independent Python alternative lives in
+  [`Yeyito777/musescore-download-script`](https://github.com/Yeyito777/musescore-download-script)
 
 Next work: broader qutebrowser command compatibility on top of this CEF/CDP
 core.

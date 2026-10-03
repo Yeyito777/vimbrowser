@@ -391,18 +391,10 @@ AutocompleteMatch& AutocompleteMatch::operator=(
       std::move(match.history_embeddings_answer_header_loading);
   feedback_type = std::move(match.feedback_type);
   matching_tab_group_uuid = std::move(match.matching_tab_group_uuid);
-#if BUILDFLAG(IS_ANDROID)
-  DestroyJavaObject();
-  std::swap(java_match_, match.java_match_);
-  UpdateJavaObjectNativeRef();
-#endif
   return *this;
 }
 
 AutocompleteMatch::~AutocompleteMatch() {
-#if BUILDFLAG(IS_ANDROID)
-  DestroyJavaObject();
-#endif
 }
 
 AutocompleteMatch& AutocompleteMatch::operator=(
@@ -476,17 +468,6 @@ AutocompleteMatch& AutocompleteMatch::operator=(
   feedback_type = match.feedback_type;
   matching_tab_group_uuid = match.matching_tab_group_uuid;
 
-#if BUILDFLAG(IS_ANDROID)
-  // In case the target element previously held a java object, release it.
-  // This happens, when in an expression "match1 = match2;" match1 already
-  // is initialized and linked to a Java object: we rewrite the contents of the
-  // match1 object and it would be desired to either update its corresponding
-  // Java element, or drop it and construct it lazily the next time it is
-  // needed.
-  // Note that because Java<>C++ AutocompleteMatch relation is 1:1, we do not
-  // want to copy the object here.
-  DestroyJavaObject();
-#endif
   return *this;
 }
 
@@ -1335,11 +1316,6 @@ std::u16string AutocompleteMatch::GetSubstitutingExplicitlyInvokedKeyword(
 std::u16string AutocompleteMatch::GetKeywordPlaceholder(
     const TemplateURL* template_url,
     bool is_history_embeddings_enabled) {
-#if BUILDFLAG(IS_IOS)
-  // `kOmniboxScoped` isn't defined on iOS and all history embedding subfeatures
-  // are disabled on iOS.
-  return u"";
-#else
   if (!template_url) {
     return u"";
   }
@@ -1372,7 +1348,6 @@ std::u16string AutocompleteMatch::GetKeywordPlaceholder(
       return u"";
   }
   return l10n_util::GetStringUTF16(message_id);
-#endif
 }
 
 TemplateURL* AutocompleteMatch::GetTemplateURL(
@@ -1604,12 +1579,10 @@ int AutocompleteMatch::GetSortingOrder() const {
     }
   }
 
-#if !BUILDFLAG(IS_IOS)
   // Group history cluster suggestions with searches.
   if (type == AutocompleteMatchType::HISTORY_CLUSTER) {
     return 3;
   }
-#endif  // !BUILDFLAG(IS_IOS)
 
   switch (enterprise_search_aggregator_type) {
     case EnterpriseSearchAggregatorType::NONE:

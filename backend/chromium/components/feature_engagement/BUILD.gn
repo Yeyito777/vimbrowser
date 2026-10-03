@@ -4,11 +4,6 @@
 
 import("//build/buildflag_header.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
-
 group("feature_engagement") {
   public_deps = [ "//components/feature_engagement/public" ]
 
@@ -30,13 +25,4 @@ source_set("components_unittests_gtest_filter") {
   testonly = true
 
   data = [ "components_unittests.filter" ]
-}
-
-if (is_android) {
-  java_group("feature_engagement_java") {
-    deps = [
-      "//components/feature_engagement/internal:internal_java",
-      "//components/feature_engagement/public:public_java",
-    ]
-  }
 }

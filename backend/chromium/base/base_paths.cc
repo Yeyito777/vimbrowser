@@ -28,11 +28,7 @@ bool EnvOverridePathProvider(int key, FilePath* result) {
       std::optional<std::string> cr_source_root = env->GetVar("CR_SOURCE_ROOT");
       if (cr_source_root.has_value()) {
         FilePath path;
-#if BUILDFLAG(IS_WIN)
-        path = FilePath(UTF8ToWide(cr_source_root.value()));
-#else
         path = FilePath(cr_source_root.value());
-#endif
         if (!path.IsAbsolute()) {
           FilePath root;
           if (PathService::Get(DIR_EXE, &root)) {

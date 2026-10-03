@@ -18,10 +18,6 @@ source_set("common") {
   public_deps = [ "//base" ]
 
   deps = []
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/install_attributes" ]
-  }
 }
 
 source_set("unit_tests") {

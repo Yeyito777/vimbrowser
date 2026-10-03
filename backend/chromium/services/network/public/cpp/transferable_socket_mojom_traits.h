@@ -17,12 +17,7 @@ namespace mojo {
 template <>
 struct StructTraits<network::mojom::TransferableSocketDataView,
                     network::TransferableSocket> {
-#if BUILDFLAG(IS_WIN)
-  static const std::vector<uint8_t>& protocol_info(
-      const network::TransferableSocket& value);
-#else
   static mojo::PlatformHandle socket(network::TransferableSocket& value);
-#endif  // BUILDFLAG(IS_WIN)
   static bool Read(network::mojom::TransferableSocketDataView in,
                    network::TransferableSocket* out);
 };

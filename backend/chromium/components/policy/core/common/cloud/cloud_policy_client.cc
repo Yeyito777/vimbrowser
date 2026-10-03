@@ -52,11 +52,7 @@ namespace policy {
 BASE_FEATURE(kPolicyFetchWithSha256, base::FEATURE_ENABLED_BY_DEFAULT);
 
 BASE_FEATURE(kEnableReregistration,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#else
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 namespace {
 
@@ -843,9 +839,6 @@ void CloudPolicyClient::FetchPolicyInternal(
 
   em::DeviceManagementRequest* request = config->request();
 
-#if BUILDFLAG(IS_WIN)
-  em::PolicyFetchRequest* cbcm_policy_fetch_request = nullptr;
-#endif
 
   // Build policy fetch requests.
   em::DevicePolicyRequest* policy_request = request->mutable_policy_request();
@@ -859,12 +852,8 @@ void CloudPolicyClient::FetchPolicyInternal(
     // desktop.
     if (type_to_fetch.policy_type() ==
         dm_protocol::kChromeMachineLevelUserCloudPolicyType) {
-#if BUILDFLAG(IS_WIN)
-        cbcm_policy_fetch_request = fetch_request;
-#else
       fetch_request->set_allocated_browser_device_identifier(
           GetBrowserDeviceIdentifier().release());
-#endif  // BUILDFLAG(IS_WIN)
     }
 #else
     AddPolicyFetchRequest(policy_request, type_to_fetch);
@@ -894,15 +883,6 @@ void CloudPolicyClient::FetchPolicyInternal(
 
   // CBCM policy fetch request on Windows needs to get device identifier on a
   // background COM thread.
-#if BUILDFLAG(IS_WIN)
-  if (cbcm_policy_fetch_request) {
-    GetBrowserDeviceIdentifierAsync(
-        base::BindOnce(&CloudPolicyClient::SetBrowserDeviceIdentifier,
-                       weak_ptr_factory_.GetWeakPtr(),
-                       cbcm_policy_fetch_request, std::move(config)));
-    return;
-  }
-#endif  // BUILDFLAG(IS_WIN)
   if (reason == PolicyFetchReason::kExtensionInstall) {
     request_jobs_.push_back(service_->CreateJob(std::move(config)));
   } else {
@@ -952,16 +932,6 @@ void CloudPolicyClient::DeterminePromotionEligibility(
   request_jobs_.push_back(service_->CreateJob(std::move(config)));
 }
 
-#if BUILDFLAG(IS_WIN)
-void CloudPolicyClient::SetBrowserDeviceIdentifier(
-    em::PolicyFetchRequest* request,
-    std::unique_ptr<DMServerJobConfiguration> config,
-    std::unique_ptr<em::BrowserDeviceIdentifier> identifier) {
-  request->set_allocated_browser_device_identifier(
-      GetBrowserDeviceIdentifier().release());
-  unique_request_job_ = service_->CreateJob(std::move(config));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void CloudPolicyClient::UploadPolicyValidationReport(
     CloudPolicyValidatorBase::Status status,

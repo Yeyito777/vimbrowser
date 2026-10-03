@@ -19,9 +19,6 @@
 #include "build/build_config.h"
 #include "content/public/browser/browser_context.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_java_ref.h"
-#endif
 
 class ChromeZoomLevelPrefs;
 class ExtensionSpecialStoragePolicy;
@@ -51,9 +48,6 @@ class ProfileCloudPolicyManager;
 class UserCloudPolicyManager;
 class CloudPolicyManager;
 
-#if BUILDFLAG(IS_CHROMEOS)
-class UserCloudPolicyManagerAsh;
-#endif
 }  // namespace policy
 
 namespace network {
@@ -101,11 +95,6 @@ class Profile : public content::BrowserContext {
     // Creates a unique OTR profile id to be used for media router.
     static OTRProfileID CreateUniqueForMediaRouter();
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // Creates a unique OTR profile id to be used for captive portal signin on
-    // ChromeOS.
-    static OTRProfileID CreateUniqueForCaptivePortal();
-#endif
     // Creates a unique OTR profile id for tests.
     static OTRProfileID CreateUniqueForTesting();
 
@@ -117,31 +106,7 @@ class Profile : public content::BrowserContext {
     bool AllowsBrowserWindows() const;
     bool IsDevTools() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // Returns true if the OTR Profile was created for captive portal signin.
-    bool IsCaptivePortal() const;
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-    // Constructs a Java OTRProfileID from the provided C++ OTRProfileID
-    base::android::ScopedJavaLocalRef<jobject> ConvertToJavaOTRProfileID(
-        JNIEnv* env) const;
-
-    // Constructs a C++ OTRProfileID from the provided Java OTRProfileID
-    static OTRProfileID ConvertFromJavaOTRProfileID(
-        JNIEnv* env,
-        const base::android::JavaRef<jobject>& j_otr_profile_id);
-
-    // Constructs an OTRProfileID based on the string passed in. Should only be
-    // called with values previously returned by Serialize().
-    static OTRProfileID Deserialize(const std::string& value);
-
-    // Constructs a string that represents OTRProfileID from the provided
-    // OTRProfileID.
-    // TODO(crbug.com/40162345): Use one serialize function for both java and
-    // native side instead of having duplicate code.
-    std::string Serialize() const;
-#endif
 
    private:
     friend std::ostream& operator<<(std::ostream& out,
@@ -334,14 +299,9 @@ class Profile : public content::BrowserContext {
   // Returns the SchemaRegistryService.
   virtual policy::SchemaRegistryService* GetPolicySchemaRegistryService() = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Returns the UserCloudPolicyManagerAsh.
-  virtual policy::UserCloudPolicyManagerAsh* GetUserCloudPolicyManagerAsh() = 0;
-#else
   // Returns the UserCloudPolicyManager.
   virtual policy::UserCloudPolicyManager* GetUserCloudPolicyManager() = 0;
   virtual policy::ProfileCloudPolicyManager* GetProfileCloudPolicyManager() = 0;
-#endif
 
   // Returns CloudPolicyManager.
   // This function combine three Get*CloudPolicyManager functions above and
@@ -360,34 +320,6 @@ class Profile : public content::BrowserContext {
   virtual base::FilePath last_selected_directory() = 0;
   virtual void set_last_selected_directory(const base::FilePath& path) = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  enum AppLocaleChangedVia{// Caused by chrome://settings change.
-                           APP_LOCALE_CHANGED_VIA_SETTINGS,
-                           // Locale has been reverted via LocaleChangeGuard.
-                           APP_LOCALE_CHANGED_VIA_REVERT,
-                           // From login screen.
-                           APP_LOCALE_CHANGED_VIA_LOGIN,
-                           // From login to a public session.
-                           APP_LOCALE_CHANGED_VIA_PUBLIC_SESSION_LOGIN,
-                           // From AllowedLanguages policy.
-                           APP_LOCALE_CHANGED_VIA_POLICY,
-                           // Locale is reverted in the next demo session.
-                           APP_LOCALE_CHANGED_VIA_DEMO_SESSION_REVERT,
-                           // From system tray.
-                           APP_LOCALE_CHANGED_VIA_SYSTEM_TRAY,
-                           // Source unknown.
-                           APP_LOCALE_CHANGED_VIA_UNKNOWN};
-
-  // Changes application locale for a profile.
-  virtual void ChangeAppLocale(
-      const std::string& locale, AppLocaleChangedVia via) = 0;
-
-  // Called after login.
-  virtual void OnLogin() = 0;
-
-  // Initializes Chrome OS's preferences.
-  virtual void InitChromeOSPreferences() = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Returns the home page for this profile.
   virtual GURL GetHomePage() = 0;
@@ -499,10 +431,6 @@ class Profile : public content::BrowserContext {
   // Returns a debug information in std::string.
   std::string ToDebugString() const;
 
-#if BUILDFLAG(IS_ANDROID)
-  static Profile* FromJavaObject(const jni_zero::JavaRef<jobject>& obj);
-  jni_zero::ScopedJavaLocalRef<jobject> GetJavaObject() const;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   void NotifyOffTheRecordProfileCreated(Profile* off_the_record);
 
@@ -529,11 +457,6 @@ class Profile : public content::BrowserContext {
 
   const std::optional<OTRProfileID> otr_profile_id_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(40233408): Remove this when migration is completed.
-  // True if the guest profile uses BrowserProfileType::kGuest.
-  bool new_guest_profile_impl_;
-#endif
 
  private:
   bool restored_last_session_ = false;
@@ -568,13 +491,6 @@ class Profile : public content::BrowserContext {
   // match that of Profile itself.
   std::unique_ptr<variations::VariationsClient> chrome_variations_client_;
 
-#if BUILDFLAG(IS_ANDROID)
-  void InitJavaObject();
-  void NotifyJavaOnProfileWillBeDestroyed();
-  void DestroyJavaObject();
-
-  jni_zero::ScopedJavaGlobalRef<jobject> j_obj_;
-#endif
   base::WeakPtrFactory<Profile> weak_factory_{this};
 };
 
@@ -586,19 +502,4 @@ struct ProfileCompare {
 std::ostream& operator<<(std::ostream& out,
                          const Profile::OTRProfileID& profile_id);
 
-#if BUILDFLAG(IS_ANDROID)
-namespace jni_zero {
-template <>
-inline Profile* FromJniType<Profile*>(JNIEnv* env,
-                                      const JavaRef<jobject>& j_profile) {
-  return Profile::FromJavaObject(j_profile);
-}
-
-template <>
-inline ScopedJavaLocalRef<jobject> ToJniType<Profile>(JNIEnv* env,
-                                                      const Profile& profile) {
-  return profile.GetJavaObject();
-}
-}  // namespace jni_zero
-#endif  // BUILDFLAG(IS_ANDROID)
 #endif  // CHROME_BROWSER_PROFILES_PROFILE_H_

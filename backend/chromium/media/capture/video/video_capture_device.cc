@@ -36,17 +36,6 @@ CapturedExternalVideoBuffer::CapturedExternalVideoBuffer(
       format(std::move(format)),
       color_space(std::move(color_space)) {}
 
-#if BUILDFLAG(IS_WIN)
-CapturedExternalVideoBuffer::CapturedExternalVideoBuffer(
-    Microsoft::WRL::ComPtr<IMFMediaBuffer> imf_buffer,
-    gfx::GpuMemoryBufferHandle handle,
-    VideoCaptureFormat format,
-    gfx::ColorSpace color_space)
-    : imf_buffer(std::move(imf_buffer)),
-      handle(std::move(handle)),
-      format(std::move(format)),
-      color_space(std::move(color_space)) {}
-#endif
 
 CapturedExternalVideoBuffer::CapturedExternalVideoBuffer(
     CapturedExternalVideoBuffer&& other)
@@ -54,9 +43,6 @@ CapturedExternalVideoBuffer::CapturedExternalVideoBuffer(
       client_shared_image(std::move(other.client_shared_image)),
       format(std::move(other.format)),
       color_space(std::move(other.color_space)) {
-#if BUILDFLAG(IS_WIN)
-  imf_buffer = std::move(other.imf_buffer);
-#endif
 }
 
 CapturedExternalVideoBuffer& CapturedExternalVideoBuffer::operator=(
@@ -65,9 +51,6 @@ CapturedExternalVideoBuffer& CapturedExternalVideoBuffer::operator=(
   client_shared_image = std::move(other.client_shared_image);
   format = std::move(other.format);
   color_space = std::move(other.color_space);
-#if BUILDFLAG(IS_WIN)
-  imf_buffer = std::move(other.imf_buffer);
-#endif
   return *this;
 }
 

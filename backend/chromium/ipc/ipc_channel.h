@@ -28,9 +28,7 @@
 #include "mojo/public/cpp/bindings/shared_remote.h"
 #include "mojo/public/cpp/system/message_pipe.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include <sys/types.h>
-#endif
 
 namespace IPC {
 

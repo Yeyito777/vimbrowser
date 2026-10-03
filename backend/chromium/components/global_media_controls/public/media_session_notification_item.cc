@@ -382,9 +382,7 @@ media_session::MediaMetadata MediaSessionNotificationItem::GetSessionMetadata()
   }
 
   bool add_device_name_to_source_title = !!device_name_;
-#if !BUILDFLAG(IS_CHROMEOS)
   add_device_name_to_source_title = false;
-#endif
 
   if (add_device_name_to_source_title) {
     std::string source_title = base::UTF16ToUTF8(data.source_title);

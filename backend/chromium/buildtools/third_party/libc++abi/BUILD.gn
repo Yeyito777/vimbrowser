@@ -55,22 +55,12 @@ target(libcxxabi_target_type, "libc++abi") {
   # demangler on android.
   # TODO(thakis): Switch to building with LIBCXXABI_NON_DEMANGLING_TERMINATE
   # defined instead.
-  if (is_android) {
-    sources += [ "cxa_demangle_stub.cc" ]
-  } else {
-    sources += [ "//third_party/libc++abi/src/src/cxa_demangle.cpp" ]
-  }
+  sources += [ "//third_party/libc++abi/src/src/cxa_demangle.cpp" ]
 
   defines = [ "LIBCXXABI_SILENT_TERMINATE" ]
 
   if (is_fuchsia || (is_posix && !is_apple)) {
     sources += [ "//third_party/libc++abi/src/src/cxa_thread_atexit.cpp" ]
-
-    # Android's bionic libc added support for '__cxa_thread_atexit_impl' as of
-    # API level 23.
-    if (is_android && android_ndk_api_level >= 23) {
-      defines += [ "HAVE___CXA_THREAD_ATEXIT_IMPL" ]
-    }
   }
 
   configs -= [

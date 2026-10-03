@@ -180,11 +180,6 @@ class BrowserSwitcherPrefs : public KeyedService,
   RawRuleSet GetCachedExternalGreylist() const;
   void SetCachedExternalGreylist(const RawRuleSet& greylist);
 
-#if BUILDFLAG(IS_WIN)
-  // Retrieves or stores the locally cached IEEM sitelist from the PrefStore.
-  RawRuleSet GetCachedIeemSitelist() const;
-  void SetCachedIeemSitelist(const RawRuleSet& sitelist);
-#endif
 
   // Returns the URL to download for an external XML sitelist. If the pref is
   // not managed, returns an invalid URL.
@@ -194,19 +189,6 @@ class BrowserSwitcherPrefs : public KeyedService,
   // not managed, returns an invalid URL.
   GURL GetExternalGreylistUrl() const;
 
-#if BUILDFLAG(IS_WIN)
-  // Returns true if Chrome should download and apply the XML sitelist from
-  // IEEM's SiteList policy. If the pref is not managed, returns false.
-  bool UseIeSitelist() const;
-
-  // Returns the path to the Chrome executable to launch when switching from IE,
-  // before substitutions.
-  const base::FilePath& GetChromePath() const;
-
-  // Returns the arguments to pass to Chrome when switching from IE, before
-  // substitutions.
-  const std::vector<std::string>& GetChromeParameters() const;
-#endif
 
   // policy::PolicyService::Observer
   void OnPolicyUpdated(const policy::PolicyNamespace& ns,
@@ -231,10 +213,6 @@ class BrowserSwitcherPrefs : public KeyedService,
   void ParsingModeChanged();
   void UrlListChanged();
   void GreylistChanged();
-#if BUILDFLAG(IS_WIN)
-  void ChromePathChanged();
-  void ChromeParametersChanged();
-#endif
 
   const raw_ptr<policy::PolicyService> policy_service_;
   const raw_ptr<PrefService> prefs_;
@@ -255,10 +233,6 @@ class BrowserSwitcherPrefs : public KeyedService,
   std::string alt_browser_path_;
   std::vector<std::string> alt_browser_params_;
   ParsingMode parsing_mode_ = ParsingMode::kDefault;
-#if BUILDFLAG(IS_WIN)
-  base::FilePath chrome_path_;
-  std::vector<std::string> chrome_params_;
-#endif
 
   // Rules from the BrowserSwitcherUrlList and BrowserSwitcherGreylist policies.
   //
@@ -290,13 +264,6 @@ extern const char kCachedExternalSitelistGreylist[];
 extern const char kExternalGreylistUrl[];
 extern const char kCachedExternalGreylist[];
 
-#if BUILDFLAG(IS_WIN)
-extern const char kUseIeSitelist[];
-extern const char kCachedIeSitelist[];
-extern const char kCachedIeSitelistGreylist[];
-extern const char kChromePath[];
-extern const char kChromeParameters[];
-#endif
 
 }  // namespace prefs
 

@@ -225,11 +225,7 @@ CEF_EXPORT cef_platform_thread_id_t cef_get_current_platform_thread_id() {
 
 CEF_EXPORT cef_platform_thread_handle_t
 cef_get_current_platform_thread_handle() {
-#if BUILDFLAG(IS_WIN)
-  return base::PlatformThread::CurrentId().raw();
-#else
   return base::PlatformThread::CurrentHandle().platform_handle();
-#endif
 }
 
 CEF_EXPORT int cef_dump_without_crashing(long long mseconds_between_dumps,

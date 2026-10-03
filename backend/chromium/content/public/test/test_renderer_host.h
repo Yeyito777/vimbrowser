@@ -29,9 +29,7 @@
 #include "ui/aura/test/aura_test_helper.h"
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "third_party/blink/public/mojom/hid/hid.mojom-forward.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 namespace aura {
 namespace test {
@@ -49,9 +47,6 @@ struct WebPreferences;
 }  // namespace blink::web_pref
 
 namespace display {
-#if BUILDFLAG(IS_ANDROID)
-class Screen;
-#endif
 class ScopedNativeScreen;
 }  // namespace display
 
@@ -154,11 +149,9 @@ class RenderFrameHostTester {
   // Creates and appends a fenced frame.
   virtual RenderFrameHost* AppendFencedFrame() = 0;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Creates the HidService and binds `receiver`.
   virtual void CreateHidServiceForTesting(
       mojo::PendingReceiver<blink::mojom::HidService> receiever) = 0;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Creates the WebUsbService and binds `receiver`.
   virtual void CreateWebUsbServiceForTesting(
@@ -226,9 +219,6 @@ class RenderViewHostTestEnabler {
 
   friend class RenderViewHostTestHarness;
 
-#if BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<display::Screen> screen_;
-#endif
   std::unique_ptr<base::test::SingleThreadTaskEnvironment> task_environment_;
   std::unique_ptr<MockRenderProcessHostFactory> rph_factory_;
   std::unique_ptr<MockAgentSchedulingGroupHostFactory> asgh_factory_;
@@ -354,9 +344,6 @@ class RenderViewHostTestHarness : public ::testing::Test {
   std::unique_ptr<RenderViewHostTestEnabler> rvh_test_enabler_;
 
   std::unique_ptr<WebContents> contents_;
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<ui::ScopedOleInitializer> ole_initializer_;
-#endif
 #if BUILDFLAG(IS_APPLE)
   std::unique_ptr<display::ScopedNativeScreen> screen_;
 #endif

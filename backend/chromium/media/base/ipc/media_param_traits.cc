@@ -107,12 +107,6 @@ bool ParamTraits<AudioParameters::HardwareCapabilities>::Read(
       !ReadParam(m, iter, &require_audio_offload)) {
     return false;
   }
-#if BUILDFLAG(IS_WIN)
-  if (require_audio_offload &&
-      !base::FeatureList::IsEnabled(media::kAudioOffload)) {
-    return false;
-  }
-#endif
   r->min_frames_per_buffer = min_frames_per_buffer;
   r->max_frames_per_buffer = max_frames_per_buffer;
   r->bitstream_formats = bitstream_formats;

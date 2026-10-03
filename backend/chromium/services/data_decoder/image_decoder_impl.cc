@@ -16,9 +16,6 @@
 #include "third_party/blink/public/web/web_image.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/gfx/codec/png_codec.h"
-#endif
 
 namespace data_decoder {
 
@@ -77,17 +74,6 @@ void ImageDecoderImpl::DecodeImage(mojo_base::BigBuffer encoded_data,
   }
 
   SkBitmap decoded_image;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (codec == mojom::ImageCodec::kPng) {
-    // Our PNG decoding is using libpng.
-    if (encoded_data.size()) {
-      SkBitmap decoded_png = gfx::PNGCodec::Decode(encoded_data);
-      if (!decoded_png.isNull()) {
-        decoded_image = decoded_png;
-      }
-    }
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   if (codec == mojom::ImageCodec::kDefault) {
     decoded_image = blink::WebImage::FromData(
         blink::WebData(base::as_byte_span(encoded_data)),

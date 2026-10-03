@@ -4,12 +4,6 @@
 
 import("//build/config/features.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 if (use_blink) {
   static_library("internal") {
     visibility = [
@@ -58,38 +52,12 @@ if (use_blink) {
 
     configs += [ "//build/config/compiler:wexit_time_destructors" ]
 
-    if (is_android) {
-      sources += [
-        "android/battery_status_listener_android.cc",
-        "android/battery_status_listener_android.h",
-      ]
-
-      deps += [ ":jni_headers" ]
-    }
-
     if (is_apple) {
       sources += [
         "scheduler/battery_status_listener_mac.cc",
         "scheduler/battery_status_listener_mac.h",
       ]
     }
-  }
-}
-
-if (is_android) {
-  android_library("internal_java") {
-    sources = [ "android/java/src/org/chromium/components/download/internal/BatteryStatusListenerAndroid.java" ]
-
-    deps = [
-      "//base:base_java",
-      "//net/android:net_java",
-      "//third_party/jni_zero:jni_zero_java",
-    ]
-  }
-
-  generate_jni("jni_headers") {
-    visibility = [ ":*" ]
-    sources = [ "android/java/src/org/chromium/components/download/internal/BatteryStatusListenerAndroid.java" ]
   }
 }
 

@@ -62,10 +62,6 @@ class MockRenderThread : public RenderThread {
   int32_t GetClientId() override;
   blink::WebString GetUserAgent() override;
   const blink::UserAgentMetadata& GetUserAgentMetadata() override;
-#if BUILDFLAG(IS_WIN)
-  void PreCacheFont(const LOGFONT& log_font) override;
-  void ReleaseCachedFonts() override;
-#endif
   void SetFieldTrialGroup(const std::string& trial_name,
                           const std::string& group_name) override;
   void WriteIntoTrace(

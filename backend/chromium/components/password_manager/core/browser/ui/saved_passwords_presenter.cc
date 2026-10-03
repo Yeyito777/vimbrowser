@@ -398,24 +398,7 @@ void SavedPasswordsPresenter::MoveCredentialsToAccount(
 
 std::vector<CredentialUIEntry> SavedPasswordsPresenter::GetSavedCredentials()
     const {
-#if BUILDFLAG(IS_ANDROID)
-  std::vector<CredentialUIEntry> credentials;
-  auto it = sort_key_to_password_forms_.begin();
-  while (it != sort_key_to_password_forms_.end()) {
-    auto current_key = it->first;
-    // Aggregate all passwords for the current key.
-    std::vector<PasswordForm> current_passwords_group;
-    while (it != sort_key_to_password_forms_.end() &&
-           it->first == current_key) {
-      current_passwords_group.push_back(it->second);
-      ++it;
-    }
-    credentials.emplace_back(current_passwords_group);
-  }
-  return credentials;
-#else
   return passwords_grouper_->GetAllCredentials();
-#endif
 }
 
 std::vector<AffiliatedGroup> SavedPasswordsPresenter::GetAffiliatedGroups() {
@@ -490,16 +473,9 @@ std::vector<PasswordForm>
 SavedPasswordsPresenter::GetCorrespondingPasswordForms(
     const CredentialUIEntry& credential) const {
   std::vector<PasswordForm> forms;
-#if BUILDFLAG(IS_ANDROID)
-  const auto range =
-      sort_key_to_password_forms_.equal_range(CreateSortKey(credential));
-  std::ranges::transform(range.first, range.second, std::back_inserter(forms),
-                         [](const auto& pair) { return pair.second; });
-#else
   passwords_grouper_->CheckHeapIntegrity();
   forms = passwords_grouper_->GetPasswordFormsFor(credential);
   passwords_grouper_->CheckHeapIntegrity();
-#endif
   return forms;
 }
 
@@ -649,12 +625,7 @@ void SavedPasswordsPresenter::AddForms(const std::vector<PasswordForm>& forms,
         std::make_pair(CreateSortKey(CredentialUIEntry(form)), form));
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // Passwords grouping is disabled on Android.
-  std::move(completion).Run();
-#else
   MaybeGroupCredentials(std::move(completion));
-#endif
 }
 
 void SavedPasswordsPresenter::MaybeGroupCredentials(
@@ -672,14 +643,12 @@ void SavedPasswordsPresenter::MaybeGroupCredentials(
 
   // Passkeys are collected synchronously.
   std::vector<PasskeyCredential> passkeys;
-#if !BUILDFLAG(IS_ANDROID)
   if (passkey_store_) {
     passkeys =
         PasskeyCredential::FromCredentialSpecifics(passkey_store_->GetPasskeys(
             webauthn::PasskeyModel::AnyRp(),
             webauthn::PasskeyModel::ShadowedCredentials::kInclude));
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Notify observers after grouping is complete.
   passwords_grouper_->CheckHeapIntegrity();

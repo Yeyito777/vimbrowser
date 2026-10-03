@@ -53,13 +53,6 @@ class CONTROLLER_EXPORT MemoryUsageMonitorPosix
   void SetProcFiles(base::File statm_file, base::File status_file) override;
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  void ResetFileDescriptors();
-  // For Android, SetProcFiles is used only for testing.
-  void SetProcFiles(base::File statm_file, base::File status_file);
-
-  bool file_descriptors_reset_ = false;
-#endif
 
   // The file descriptor to current process proc files. The files are kept open
   // for the whole lifetime of the renderer.

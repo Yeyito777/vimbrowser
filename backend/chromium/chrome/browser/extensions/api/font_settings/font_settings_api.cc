@@ -39,9 +39,6 @@
 #include "extensions/common/error_utils.h"
 #include "extensions/common/mojom/api_permission_id.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/win/direct_write.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace extensions {
 
@@ -86,19 +83,6 @@ std::string GetFontNamePrefPath(fonts::GenericFamily generic_family_enum,
 }
 
 void MaybeUnlocalizeFontName(std::string* font_name) {
-#if BUILDFLAG(IS_WIN)
-  // Try to get the 'us-en' font name. If it is failing, use the first name
-  // available.
-  std::optional<std::string> localized_font_name =
-      gfx::win::RetrieveLocalizedFontName(*font_name, "us-en");
-  if (!localized_font_name) {
-    localized_font_name = gfx::win::RetrieveLocalizedFontName(*font_name, "");
-  }
-
-  if (localized_font_name) {
-    *font_name = std::move(localized_font_name.value());
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 }  // namespace
@@ -341,15 +325,9 @@ ExtensionFunction::ResponseAction FontSettingsSetFontFunction::Run() {
 }
 
 ExtensionFunction::ResponseAction FontSettingsGetFontListFunction::Run() {
-#if BUILDFLAG(IS_ANDROID)
-  // Android does not support a mechanism to get "all installed fonts" like
-  // Windows/Mac/Linux.
-  return RespondNow(WithArguments(base::ListValue()));
-#else
   content::GetFontListAsync(
       BindOnce(&FontSettingsGetFontListFunction::FontListHasLoaded, this));
   return RespondLater();
-#endif
 }
 
 void FontSettingsGetFontListFunction::FontListHasLoaded(base::ListValue list) {

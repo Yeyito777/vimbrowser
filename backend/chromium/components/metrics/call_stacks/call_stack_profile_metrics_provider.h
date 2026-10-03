@@ -31,12 +31,6 @@ class CallStackProfileMetricsProvider : public MetricsProvider {
   using InterceptorCallback =
       base::RepeatingCallback<void(SampledProfile profile)>;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Count of profiles, brokens down by the Process and Thread type of the
-  // profile.
-  using ProcessThreadCount =
-      std::map<::metrics::Process, std::map<::metrics::Thread, int>>;
-#endif
 
   CallStackProfileMetricsProvider();
 
@@ -66,14 +60,6 @@ class CallStackProfileMetricsProvider : public MetricsProvider {
   // profiling thread.
   static void SetCpuInterceptorCallbackForTesting(InterceptorCallback callback);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Gets the counts of all successfully collected profiles, broken down by
-  // process type and thread type. "Successfully collected" is defined pretty
-  // minimally (we got a couple of frames). Expensive function; intended only
-  // to be run during ChromeOS tast integration testing, not to be run on end-
-  // user machines.
-  static ProcessThreadCount GetSuccessfullyCollectedCounts();
-#endif
 
   // MetricsProvider:
   void OnRecordingEnabled() override;

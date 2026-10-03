@@ -36,10 +36,6 @@
 #include "content/public/browser/render_process_host_observer.h"
 #include "content/public/common/content_features.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "chromeos/dbus/power/power_manager_client.h"
-#endif
 
 namespace performance_manager::user_tuning {
 namespace {
@@ -59,14 +55,7 @@ using BatterySaverModeState =
 // threshold on those platforms, by being added to the 20% threshold value (so
 // setting this parameter to 3 would result in battery saver being activated at
 // 23% actual battery level).
-#if BUILDFLAG(IS_CHROMEOS)
-// On ChromeOS, the adjustment generally seems to be around 3%, sometimes 2%. We
-// choose 3% because it gets us close enough, or overestimates (which is better
-// than underestimating in this instance).
-constexpr int kBatterySaverModeThresholdAdjustmentForDisplayLevel = 3;
-#else
 constexpr int kBatterySaverModeThresholdAdjustmentForDisplayLevel = 0;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class FrameThrottlingDelegateImpl
     : public performance_manager::user_tuning::BatterySaverModeManager::
@@ -403,93 +392,6 @@ class DesktopBatterySaverProvider
   raw_ptr<BatterySaverModeManager> manager_;
 };
 
-#if BUILDFLAG(IS_CHROMEOS)
-class ChromeOSBatterySaverProvider
-    : public BatterySaverModeManager::BatterySaverProvider,
-      public chromeos::PowerManagerClient::Observer {
- public:
-  explicit ChromeOSBatterySaverProvider(BatterySaverModeManager* manager)
-      : manager_(manager) {
-    CHECK(manager_);
-
-    chromeos::PowerManagerClient* client = chromeos::PowerManagerClient::Get();
-    if (client) {
-      power_manager_client_observer_.Observe(client);
-      client->GetBatterySaverModeState(base::BindOnce(
-          &ChromeOSBatterySaverProvider::OnInitialBatterySaverModeObtained,
-          weak_ptr_factory_.GetWeakPtr()));
-    } else {
-      // We must be in a test that didn't set up PowerManagerClient, so we don't
-      // need to listen for updates from it.
-      CHECK_IS_TEST();
-    }
-
-    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-    if (command_line->HasSwitch(
-            BatterySaverModeManager::kForceDeviceHasBatterySwitch)) {
-      force_has_battery_ = true;
-      has_battery_ = true;
-    }
-  }
-
-  ~ChromeOSBatterySaverProvider() override = default;
-
-  void OnInitialBatterySaverModeObtained(
-      std::optional<power_manager::BatterySaverModeState> state) {
-    if (state) {
-      BatterySaverModeStateChanged(*state);
-    }
-  }
-
-  // chromeos::PowerManagerClient::Observer:
-  void BatterySaverModeStateChanged(
-      const power_manager::BatterySaverModeState& state) override {
-    if (!state.has_enabled() || enabled_ == state.enabled()) {
-      return;
-    }
-
-    enabled_ = state.enabled();
-
-    manager_->NotifyOnBatterySaverActiveChanged(enabled_);
-  }
-
-  void PowerChanged(
-      const power_manager::PowerSupplyProperties& proto) override {
-    bool device_has_battery =
-        proto.battery_state() !=
-        power_manager::PowerSupplyProperties_BatteryState_NOT_PRESENT;
-    has_battery_ = force_has_battery_ || device_has_battery;
-  }
-
-  // BatterySaverProvider:
-  bool DeviceHasBattery() const override { return has_battery_; }
-  bool IsBatterySaverModeEnabled() override { return false; }
-  bool IsBatterySaverModeManaged() override { return false; }
-  bool IsBatterySaverActive() const override { return enabled_; }
-  bool IsUsingBatteryPower() const override { return false; }
-  base::Time GetLastBatteryUsageTimestamp() const override {
-    return base::Time();
-  }
-  int SampledBatteryPercentage() const override { return -1; }
-  void SetTemporaryBatterySaverDisabledForSession(bool disabled) override {
-    NOTREACHED();
-  }
-  bool IsBatterySaverModeDisabledForSession() const override { return false; }
-
- private:
-  bool enabled_ = false;
-  bool has_battery_ = false;
-  bool force_has_battery_ = false;
-
-  base::ScopedObservation<chromeos::PowerManagerClient,
-                          chromeos::PowerManagerClient::Observer>
-      power_manager_client_observer_{this};
-
-  raw_ptr<BatterySaverModeManager> manager_;
-
-  base::WeakPtrFactory<ChromeOSBatterySaverProvider> weak_ptr_factory_{this};
-};
-#endif
 
 const uint64_t BatterySaverModeManager::kLowBatteryThresholdPercent = 20;
 
@@ -590,18 +492,8 @@ BatterySaverModeManager::BatterySaverModeManager(
 }
 
 void BatterySaverModeManager::Start() {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (ash::features::IsBatterySaverAvailable()) {
-    battery_saver_provider_ =
-        std::make_unique<ChromeOSBatterySaverProvider>(this);
-  } else {
-    battery_saver_provider_ = std::make_unique<DesktopBatterySaverProvider>(
-        this, pref_change_registrar_.prefs());
-  }
-#else
   battery_saver_provider_ = std::make_unique<DesktopBatterySaverProvider>(
       this, pref_change_registrar_.prefs());
-#endif
 }
 
 void BatterySaverModeManager::NotifyOnBatterySaverModeChanged(

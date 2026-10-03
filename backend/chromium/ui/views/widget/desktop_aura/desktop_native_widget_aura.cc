@@ -79,11 +79,6 @@
 #include "ui/wm/core/window_util.h"
 #include "ui/wm/public/activation_client.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/base/win/shell.h"
-#include "ui/gfx/win/hwnd_util.h"
-#include "ui/views/widget/desktop_aura/desktop_native_cursor_manager_win.h"
-#endif
 
 DEFINE_EXPORTED_UI_CLASS_PROPERTY_TYPE(VIEWS_EXPORT,
                                        views::DesktopNativeWidgetAura*)
@@ -120,13 +115,6 @@ class DesktopNativeWidgetTopLevelHandler : public aura::WindowObserver {
         : is_menu   ? Widget::InitParams::TYPE_MENU
                     : Widget::InitParams::TYPE_POPUP);
 
-#if BUILDFLAG(IS_WIN)
-    // For menus, on Windows versions that support drop shadow remove
-    // the standard frame in order to keep just the shadow.
-    if (init_params.type == Widget::InitParams::TYPE_MENU) {
-      init_params.remove_standard_frame = true;
-    }
-#endif
     init_params.bounds = bounds;
     init_params.layer_type = ui::LAYER_NOT_DRAWN;
     init_params.activatable = full_screen
@@ -240,7 +228,6 @@ class DesktopNativeWidgetAuraWindowParentingClient
                                  const int64_t display_id) override {
     // TODO(crbug.com/40192931): Re-enable this logic once Fuchsia's windowing
     // APIs provide the required functionality.
-#if !BUILDFLAG(IS_FUCHSIA)
     bool is_fullscreen = window->GetProperty(aura::client::kShowStateKey) ==
                          ui::mojom::WindowShowState::kFullscreen;
     bool is_menu = window->GetType() == aura::client::WINDOW_TYPE_MENU;
@@ -257,7 +244,6 @@ class DesktopNativeWidgetAuraWindowParentingClient
           window, root_window_ /* context */, bounds, is_fullscreen, is_menu,
           root_z_order);
     }
-#endif  // !BUILDFLAG(IS_FUCHSIA)
     return root_window_;
   }
 
@@ -996,15 +982,6 @@ bool DesktopNativeWidgetAura::IsVisibleOnScreen() const {
   // Determine if the window is hidden in some other way, such as on a different
   // desktop.
   // TODO(crbug.com/410938804): implement workspace handling on other platforms.
-#if BUILDFLAG(IS_WIN)
-  // If a window is cloaked, it is not visible on screen because e.g., it is
-  // on an invisible virtual desktop.
-  // https://devblogs.microsoft.com/oldnewthing/20200302-00/?p=103507
-  aura::WindowTreeHost* host = desktop_window_tree_host_->AsWindowTreeHost();
-  if (gfx::IsWindowCloaked(host->GetAcceleratedWidget())) {
-    return false;
-  }
-#endif
 
   // All checks pass, the window is visible on screen.
   return true;
@@ -1427,18 +1404,6 @@ void DesktopNativeWidgetAura::OnKeyEvent(ui::KeyEvent* event) {
 void DesktopNativeWidgetAura::OnMouseEvent(ui::MouseEvent* event) {
   DCHECK(content_window_->IsVisible());
 
-#if BUILDFLAG(IS_WIN)
-  if (event->type() == ui::EventType::kMouseMoved) {
-    // Showing a tooltip causes Windows to generate a MOUSE_MOVED
-    // event to the same location it was already at; when that happens,
-    // we need to throw the event away rather than acting as if someone
-    // moved the mouse and showing a new tooltip.
-    if (event->location() == last_mouse_loc_) {
-      return;
-    }
-    last_mouse_loc_ = event->location();
-  }
-#endif
 
   if (tooltip_manager_.get()) {
     tooltip_manager_->UpdateTooltip();

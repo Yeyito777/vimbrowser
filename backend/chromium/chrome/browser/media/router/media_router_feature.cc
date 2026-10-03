@@ -30,20 +30,14 @@
 #include "extensions/buildflags/buildflags.h"
 #include "ui/base/buildflags.h"
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
 #include "components/prefs/pref_registry_simple.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/browser_context_helper/browser_context_types.h"
-#endif
 
 // NOTE: Consider separating out UI-only features that are not consumed by the
 // Media Router itself into their own file in chrome/browser/ui/media_router.
 
 namespace media_router {
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
 BASE_FEATURE(kMediaRouter, base::FEATURE_ENABLED_BY_DEFAULT);
 BASE_FEATURE(kCastAllowAllIPsFeature,
              "CastAllowAllIPs",
@@ -59,14 +53,8 @@ BASE_FEATURE(kCastMessageLogging, base::FEATURE_DISABLED_BY_DEFAULT);
 // TODO(crbug.com/1486680): Remove once stopping mirroring routes in the global
 // media controls is implemented on ChromeOS.
 BASE_FEATURE(kFallbackToAudioTabMirroring,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#else
              base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#endif  // !BUILDFLAG(IS_ANDROID) ||
-        // BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
 
 namespace {
 const PrefService::Preference* GetMediaRouterPref(
@@ -82,13 +70,10 @@ base::flat_map<content::BrowserContext*, bool>& GetStoredPrefValues() {
   return *stored_pref_values;
 }
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
 // TODO(mfoltz): Add full implementation for validating playout delay value.
 bool IsValidMirroringPlayoutDelayMs(int delay_ms) {
   return delay_ms <= 1000 && delay_ms >= 1;
 }
-#endif  // !BUILDFLAG(IS_ANDROID) ||
-        // BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
 }  // namespace
 
 void ClearMediaRouterStoredPrefsForTesting() {
@@ -96,19 +81,9 @@ void ClearMediaRouterStoredPrefsForTesting() {
 }
 
 bool MediaRouterEnabled(content::BrowserContext* context) {
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
   if (!base::FeatureList::IsEnabled(kMediaRouter)) {
     return false;
   }
-#endif  // !BUILDFLAG(IS_ANDROID) ||
-        // BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(crbug.com/1380828): Make the Media Router feature configurable via a
-  // policy for non-user profiles, i.e. sign-in and lock screen profiles.
-  if (!ash::IsUserBrowserContext(context)) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // If the Media Router was already enabled or disabled for |context|, then it
   // must remain so.  The Media Router does not support dynamic
@@ -131,7 +106,6 @@ bool MediaRouterEnabled(content::BrowserContext* context) {
   return true;
 }
 
-#if !BUILDFLAG(IS_ANDROID) || BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
 void RegisterLocalStatePrefs(PrefRegistrySimple* registry) {
   registry->RegisterBooleanPref(prefs::kMediaRouterCastAllowAllIPs, false,
                                 PrefRegistry::PUBLIC);
@@ -203,7 +177,5 @@ std::optional<base::TimeDelta> GetCastMirroringPlayoutDelay() {
 bool IsCastMessageLoggingEnabled() {
   return base::FeatureList::IsEnabled(kCastMessageLogging);
 }
-#endif  // !BUILDFLAG(IS_ANDROID) ||
-        // BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
 
 }  // namespace media_router

@@ -4,8 +4,6 @@
 
 import("//build/buildflag_header.gni")
 
-assert(!is_android, "AXTreeFixingService does not run on Android.")
-
 source_set("service") {
   sources = [
     "ax_tree_fixing_services_router.cc",
@@ -25,10 +23,6 @@ source_set("service") {
     "//components/sync_preferences",
     "//content/public/browser",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/ash/accessibility" ]
-  }
 }
 
 source_set("prefs") {

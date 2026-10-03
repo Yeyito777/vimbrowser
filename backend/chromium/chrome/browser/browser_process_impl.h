@@ -33,18 +33,11 @@
 #include "components/safe_browsing/buildflags.h"
 #include "extensions/buildflags/buildflags.h"
 #include "media/media_buildflags.h"
-#include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/network_quality_tracker.h"
 #include "ui/base/unowned_user_data/unowned_user_data_host.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/upgrade_detector/build_state.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/application_status_listener.h"
-#include "chrome/browser/accessibility/accessibility_prefs/android/accessibility_prefs_controller.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 class BatteryMetrics;
 class ChromeMetricsServicesManagerClient;
@@ -119,14 +112,12 @@ class BrowserProcessImpl : public BrowserProcess,
   // Called to complete initialization.
   void Init();
 
-#if !BUILDFLAG(IS_ANDROID)
   // Sets a closure to be run to break out of a run loop on browser shutdown
   // (when the KeepAlive count reaches zero).
   // TODO(crbug.com/41390731): This is also used on macOS for the Cocoa
   // first run dialog so that shutdown can be initiated via a signal while the
   // first run dialog is showing.
   void SetQuitClosure(base::OnceClosure quit_closure);
-#endif
 
 #if BUILDFLAG(IS_MAC)
   // Clears the quit closure. Shutdown will not be initiated should the
@@ -148,10 +139,8 @@ class BrowserProcessImpl : public BrowserProcess,
   // ChromeBrowserMain based on notifications from the content
   // framework, rather than in the destructor, so that we can
   // interleave cleanup with threads being stopped.
-#if !BUILDFLAG(IS_ANDROID)
   void StartTearDown();
   void PostDestroyThreads();
-#endif
 
   // Sets |metrics_services_manager_| and |metrics_services_manager_client_|
   // which is owned by it.
@@ -180,7 +169,6 @@ class BrowserProcessImpl : public BrowserProcess,
   variations::VariationsService* variations_service() override;
   BrowserProcessPlatformPart* platform_part() override;
   NotificationUIManager* notification_ui_manager() override;
-  NotificationPlatformBridge* notification_platform_bridge() override;
   policy::ChromeBrowserPolicyConnector* browser_policy_connector() override;
   policy::PolicyService* policy_service() override;
   IconManager* icon_manager() override;
@@ -188,14 +176,8 @@ class BrowserProcessImpl : public BrowserProcess,
   void CreateDevToolsProtocolHandler() override;
   void CreateDevToolsAutoOpener() override;
   bool IsShuttingDown() override;
-  printing::PrintJobManager* print_job_manager() override;
-  printing::PrintPreviewDialogController* print_preview_dialog_controller()
-      override;
-  printing::BackgroundPrintingManager* background_printing_manager() override;
   supervised_user::DeviceParentalControls& device_parental_controls() override;
-#if !BUILDFLAG(IS_ANDROID)
   IntranetRedirectDetector* intranet_redirect_detector() override;
-#endif
   const std::string& GetApplicationLocale() override;
   void SetApplicationLocale(const std::string& actual_locale) override;
   DownloadStatusUpdater* download_status_updater() override;
@@ -220,23 +202,16 @@ class BrowserProcessImpl : public BrowserProcess,
 
   activity_reporter::ActivityReporter* activity_reporter() override;
   component_updater::ComponentUpdateService* component_updater() override;
-#if BUILDFLAG(IS_CHROMEOS)
-  MediaFileSystemRegistry* media_file_system_registry() override;
-#endif
   WebRtcLogUploader* webrtc_log_uploader() override;
   network_time::NetworkTimeTracker* network_time_tracker() override;
-#if !BUILDFLAG(IS_ANDROID)
   gcm::GCMDriver* gcm_driver() override;
-#endif
   resource_coordinator::TabManager* GetTabManager() override;
   resource_coordinator::ResourceCoordinatorParts* resource_coordinator_parts()
       override;
 
   SerialPolicyAllowedPorts* serial_policy_allowed_ports() override;
-#if !BUILDFLAG(IS_ANDROID)
   HidSystemTrayIcon* hid_system_tray_icon() override;
   UsbSystemTrayIcon* usb_system_tray_icon() override;
-#endif
 
   os_crypt_async::OSCryptAsync* os_crypt_async() override;
 
@@ -262,10 +237,7 @@ class BrowserProcessImpl : public BrowserProcess,
 
   void CreateProfileManager();
   void CreateIconManager();
-  void CreateNotificationPlatformBridge();
   void CreateNotificationUIManager();
-  void CreatePrintPreviewDialogController();
-  void CreateBackgroundPrintingManager();
 #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
   void CreateSafeBrowsingService();
 #endif
@@ -317,11 +289,6 @@ class BrowserProcessImpl : public BrowserProcess,
   raw_ptr<ChromeMetricsServicesManagerClient> metrics_services_manager_client_ =
       nullptr;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Must be destroyed before |local_state_|.
-  std::unique_ptr<accessibility::AccessibilityPrefsController>
-      accessibility_prefs_controller_;
-#endif
 
   std::unique_ptr<network::NetworkQualityTracker> network_quality_tracker_;
 
@@ -344,22 +311,9 @@ class BrowserProcessImpl : public BrowserProcess,
       extensions_browser_client_;
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<MediaFileSystemRegistry> media_file_system_registry_;
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
   std::unique_ptr<RemoteDebuggingServer> remote_debugging_server_;
   std::unique_ptr<DevToolsAutoOpener> devtools_auto_opener_;
-#endif
-
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-  std::unique_ptr<printing::PrintPreviewDialogController>
-      print_preview_dialog_controller_;
-
-  std::unique_ptr<printing::BackgroundPrintingManager>
-      background_printing_manager_;
-#endif
 
   std::unique_ptr<supervised_user::DeviceParentalControls>
       device_parental_controls_;
@@ -370,15 +324,9 @@ class BrowserProcessImpl : public BrowserProcess,
   std::unique_ptr<NotificationUIManager> notification_ui_manager_;
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
   std::unique_ptr<IntranetRedirectDetector> intranet_redirect_detector_;
-#endif
 
   std::unique_ptr<StatusTray> status_tray_;
-
-  bool created_notification_bridge_ = false;
-
-  std::unique_ptr<NotificationPlatformBridge> notification_bridge_;
 
   // Use SystemNotificationHelper::GetInstance to get this instance.
   std::unique_ptr<SystemNotificationHelper> system_notification_helper_;
@@ -401,11 +349,6 @@ class BrowserProcessImpl : public BrowserProcess,
   bool shutting_down_ = false;
 
   bool tearing_down_ = false;
-
-#if BUILDFLAG(ENABLE_PRINTING)
-  // Ensures that all the print jobs are finished before closing the browser.
-  std::unique_ptr<printing::PrintJobManager> print_job_manager_;
-#endif
 
   base::CallbackListSubscription on_locale_changed_callback_subscription_;
 
@@ -440,7 +383,6 @@ class BrowserProcessImpl : public BrowserProcess,
   // but some users of component updater only install per-user.
   std::unique_ptr<component_updater::ComponentUpdateService> component_updater_;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Used to create a singleton instance of SodaInstallerImpl, which can be
   // retrieved using speech::SodaInstaller::GetInstance().
   // SodaInstallerImpl depends on ComponentUpdateService, so define it here
@@ -450,7 +392,6 @@ class BrowserProcessImpl : public BrowserProcess,
   // Used to download Screen AI on demand and keep track of the library
   // availability.
   std::unique_ptr<screen_ai::ScreenAIInstallState> screen_ai_download_;
-#endif
 
   std::unique_ptr<BrowserProcessPlatformPart> platform_part_;
 
@@ -472,7 +413,6 @@ class BrowserProcessImpl : public BrowserProcess,
   std::unique_ptr<SiteIsolationPrefsObserver> site_isolation_prefs_observer_;
 
   std::unique_ptr<SerialPolicyAllowedPorts> serial_policy_allowed_ports_;
-#if !BUILDFLAG(IS_ANDROID)
   // Called to signal the process' main message loop to exit.
   base::OnceClosure quit_closure_;
 
@@ -480,11 +420,7 @@ class BrowserProcessImpl : public BrowserProcess,
   std::unique_ptr<UsbSystemTrayIcon> usb_system_tray_icon_;
 
   BuildState build_state_;
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-  std::unique_ptr<base::android::ApplicationStatusListener> app_state_listener_;
-#endif
 
   ui::UnownedUserDataHost unowned_user_data_host_;
 

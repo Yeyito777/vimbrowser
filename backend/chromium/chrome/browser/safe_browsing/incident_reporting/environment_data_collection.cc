@@ -89,7 +89,6 @@ void CollectEnvironmentData(ClientIncidentReport_EnvironmentData* data) {
   CollectProcessData(data->mutable_process());
 }
 
-#if !BUILDFLAG(IS_WIN)
 void CollectPlatformProcessData(
     ClientIncidentReport_EnvironmentData_Process* process) {
   // Empty implementation for platforms that do not (yet) have their own
@@ -100,6 +99,5 @@ void CollectPlatformOSData(ClientIncidentReport_EnvironmentData_OS* os_data) {
   // Empty implementation for platforms that do not (yet) have their own
   // implementations.
 }
-#endif
 
 }  // namespace safe_browsing

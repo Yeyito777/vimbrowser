@@ -380,9 +380,7 @@ void BrowserCommandHandler::OpenGlicSettings() {
     }
 
     std::string ks_param;
-#if BUILDFLAG(IS_WIN)
-    ks_param = "chrome_ks_win";
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
     ks_param = "chrome_ks_mac";
 #endif
     NavigateToURL(net::AppendOrReplaceQueryParameter(GURL(url), "p", ks_param),

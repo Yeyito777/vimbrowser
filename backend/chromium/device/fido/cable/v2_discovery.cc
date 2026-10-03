@@ -25,10 +25,6 @@
 #include "device/fido/public/features.h"
 #include "third_party/boringssl/src/include/openssl/aes.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/bluetooth/bluetooth_low_energy_scan_filter.h"
-#include "device/bluetooth/floss/floss_features.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
 #include "device/fido/mac/util.h"
@@ -383,89 +379,11 @@ void Discovery::DeviceChanged(BluetoothAdapter* adapter,
 }
 
 void Discovery::AdapterPoweredChanged(BluetoothAdapter* adapter, bool powered) {
-#if BUILDFLAG(IS_WIN)
-  // On Windows, the power-on event appears to race against initialization of
-  // the adapter, such that one of the WinRT API calls inside
-  // BluetoothAdapter::StartDiscoverySessionWithFilter() can fail with "Device
-  // not ready for use". So wait for things to actually be ready.
-  // TODO(crbug.com/40670639): Remove this delay once the Bluetooth layer
-  // handles the spurious failure.
-  base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
-      FROM_HERE,
-      base::BindOnce(&Discovery::StartCableDiscovery,
-                     weak_factory_.GetWeakPtr()),
-      base::Milliseconds(500));
-#else
   StartCableDiscovery();
-#endif  // BUILDFLAG(IS_WIN)
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void Discovery::OnDeviceFound(
-    device::BluetoothLowEnergyScanSession* scan_session,
-    device::BluetoothDevice* device) {
-  DeviceAdded(adapter(), device);
-}
-
-void Discovery::OnDeviceLost(
-    device::BluetoothLowEnergyScanSession* scan_session,
-    device::BluetoothDevice* device) {
-  DeviceRemoved(adapter(), device);
-}
-
-void Discovery::OnSessionStarted(
-    device::BluetoothLowEnergyScanSession* scan_session,
-    std::optional<device::BluetoothLowEnergyScanSession::ErrorCode>
-        error_code) {
-  if (error_code) {
-    FIDO_LOG(ERROR) << "Failed to start caBLE LE scan session, error_code = "
-                    << static_cast<int>(error_code.value());
-    le_scan_session_.reset();
-    return;
-  }
-
-  FIDO_LOG(DEBUG) << "LE scan session started.";
-}
-
-void Discovery::OnSessionInvalidated(
-    device::BluetoothLowEnergyScanSession* scan_session) {
-  FIDO_LOG(EVENT) << "LE scan session invalidated";
-  le_scan_session_.reset();
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void Discovery::StartCableDiscovery() {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (floss::features::IsFlossEnabled()) {
-    device::BluetoothLowEnergyScanFilter::Pattern google_pattern(
-        /*start_position=*/0,
-        device::BluetoothLowEnergyScanFilter::AdvertisementDataType::
-            kServiceData,
-        /* kServiceData takes the 16-bit UUID as a little endian byte vector. */
-        std::vector<uint8_t>{kGoogleCableUUID[3], kGoogleCableUUID[2]});
-    device::BluetoothLowEnergyScanFilter::Pattern fido_pattern(
-        /*start_position=*/0,
-        device::BluetoothLowEnergyScanFilter::AdvertisementDataType::
-            kServiceData,
-        std::vector<uint8_t>{kFIDOCableUUID[3], kFIDOCableUUID[2]});
-    auto filter = device::BluetoothLowEnergyScanFilter::Create(
-        device::BluetoothLowEnergyScanFilter::Range::kFar,
-        /*device_found_timeout=*/base::Seconds(1),
-        /*device_lost_timeout=*/base::Seconds(7),
-        {google_pattern, fido_pattern},
-        /*rssi_sampling_period=*/base::Seconds(1));
-    if (!filter) {
-      FIDO_LOG(ERROR)
-          << "Failed to start LE scanning due to failure to create filter.";
-      return;
-    }
-
-    le_scan_session_ = adapter()->StartLowEnergyScanSession(
-        std::move(filter), weak_factory_.GetWeakPtr());
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   adapter()->StartDiscoverySessionWithFilter(
       std::make_unique<BluetoothDiscoveryFilter>(

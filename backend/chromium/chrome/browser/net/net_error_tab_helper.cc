@@ -32,10 +32,6 @@
 #include "components/offline_pages/core/client_namespace_constants.h"
 #endif  // BUILDFLAG(ENABLE_OFFLINE_PAGES)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "chrome/browser/ui/ash/network/network_portal_signin_controller.h"
-#endif
 
 using content::BrowserContext;
 using content::BrowserThread;
@@ -164,12 +160,6 @@ void NetErrorTabHelper::SetIsShowingDownloadButtonInErrorPage(
 }
 #endif  // BUILDFLAG(ENABLE_OFFLINE_PAGES)
 
-#if BUILDFLAG(IS_CHROMEOS)
-void NetErrorTabHelper::ShowPortalSignin() {
-  ash::NetworkPortalSigninController::Get()->ShowSignin(
-      ash::NetworkPortalSigninController::SigninSource::kErrorPage);
-}
-#endif
 
 NetErrorTabHelper::NetErrorTabHelper(WebContents* contents)
     : WebContentsObserver(contents),

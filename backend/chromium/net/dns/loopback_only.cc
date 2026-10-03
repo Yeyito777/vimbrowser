@@ -20,11 +20,7 @@
 
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #include <net/if.h>
-#if BUILDFLAG(IS_ANDROID)
-#include "net/android/network_library.h"
-#else  // BUILDFLAG(IS_ANDROID)
 #include <ifaddrs.h>
-#endif  // BUILDFLAG(IS_ANDROID)
 #endif  // BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 
 #if BUILDFLAG(IS_LINUX)
@@ -87,13 +83,7 @@ bool HaveOnlyLoopbackAddressesUsingGetifaddrs() {
 
 // This implementation will always be posted to a thread pool.
 bool HaveOnlyLoopbackAddressesSlow() {
-#if BUILDFLAG(IS_WIN)
-  // TODO(wtc): implement with the GetAdaptersAddresses function.
-  NOTIMPLEMENTED();
-  return false;
-#elif BUILDFLAG(IS_ANDROID)
-  return android::HaveOnlyLoopbackAddresses();
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   return HaveOnlyLoopbackAddressesUsingGetifaddrs();
 #endif  // defined(various platforms)
 }

@@ -42,25 +42,11 @@
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/installer/util/install_util.h"
-#include "chrome/installer/util/shell_util.h"
-#include "ui/aura/window.h"
-#include "ui/aura/window_tree_host.h"
-#include "ui/base/win/hwnd_metrics.h"
-#include "ui/base/win/shell.h"
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "chrome/browser/shell_integration_linux.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/frame/frame_view_ash.h"
-#include "ash/wm/window_util.h"
-#include "chromeos/ui/base/window_properties.h"
-#endif
 
 namespace glic {
 namespace {
@@ -74,16 +60,6 @@ constexpr int kInitialPositionBuffer = 4;
 // should be applied in order to calculate the correct widget bounds.
 gfx::Outsets GetTargetOutsets(const gfx::Rect& bounds) {
   gfx::Outsets outsets;
-#if BUILDFLAG(IS_WIN)
-  RECT bounds_rect = bounds.ToRECT();
-  int frame_thickness = ui::GetResizableFrameThicknessFromMonitorInDIP(
-      MonitorFromRect(&bounds_rect, MONITOR_DEFAULTTONEAREST),
-      /*has_caption=*/false);
-  // On Windows, the presence of a frame means that we need to adjust the left,
-  // right and bottom by frame thickness.
-  outsets.set_left_right(frame_thickness, frame_thickness);
-  outsets.set_bottom(frame_thickness);
-#endif
   return outsets;
 }
 
@@ -93,14 +69,6 @@ class GlicClientView : public views::ClientView {
       : views::ClientView(widget, contents_view) {}
   ~GlicClientView() override = default;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void UpdateWindowRoundedCorners(
-      const gfx::RoundedCornersF& window_radii) override {
-    // For ChromeOS, we have to manually round the contents of `ClientView`.
-    glic_view()->SetBackgroundRoundedCorners(window_radii);
-    glic_view()->holder()->SetCornerRadii(window_radii);
-  }
-#endif
 
  private:
   GlicView* glic_view() { return static_cast<GlicView*>(contents_view()); }
@@ -132,41 +100,6 @@ class GlicWidgetDelegate : public views::WidgetDelegate {
   }
 };
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-class GlicFrameViewChromeOS : public ash::FrameViewAsh {
- public:
-  explicit GlicFrameViewChromeOS(views::Widget* widget)
-      : ash::FrameViewAsh(widget) {}
-
-  GlicFrameViewChromeOS(const GlicFrameViewChromeOS&) = delete;
-  GlicFrameViewChromeOS& operator=(const GlicFrameViewChromeOS&) = delete;
-
-  ~GlicFrameViewChromeOS() override = default;
-
-  // ash::FrameViewAsh:
-  int NonClientHitTest(const gfx::Point& point) override {
-    // As part of this hit testing, we check if the point is within the inside
-    // resizable region of the window.
-    int component = ash::FrameViewAsh::NonClientHitTest(point);
-
-    // If point falls into the client area (i.e web-contents), check if it
-    // within the draggable regions of web-contents.
-    if (component == HTCLIENT &&
-        glic_view()->IsPointWithinDraggableRegion(point)) {
-      return HTCAPTION;
-    }
-
-    return component;
-  }
-
- private:
-  GlicView* glic_view() {
-    return static_cast<GlicView*>(GetWidget()->GetClientContentsView());
-  }
-};
-
-#endif  // #if BUILDFLAG(IS_CHROMEOS)
 
 bool ShouldCreateNonClientView() {
   return base::FeatureList::IsEnabled(features::kGlicUseNonClient);
@@ -309,34 +242,6 @@ std::unique_ptr<views::WidgetDelegate> GlicWidget::CreateWidgetDelegate(
         return std::make_unique<GlicClientView>(widget, contents_view);
       }));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(features::kGlicHandleDraggingNatively)) {
-    delegate->SetFrameViewFactory(base::BindRepeating(
-        [](views::Widget* widget) -> std::unique_ptr<views::FrameView> {
-          return std::make_unique<GlicFrameViewChromeOS>(widget);
-        }));
-  }
-
-  // TODO(b:458115863): Move ChromeOS specific code to platform specific
-  // implementation. (Like GlicWidgetChromeOS?)
-  delegate->RegisterWidgetInitializedCallback(base::BindOnce(
-      [](views::WidgetDelegate* delegate) {
-        // Increase the hit region inside of the glic window to make it
-        // easier to resize the window.
-        constexpr int kResizeInsetSize = 6;
-        constexpr int kResizeInsetScaleForTouch = 3;
-        const gfx::Insets mouse_insets(kResizeInsetSize);
-        const gfx::Insets touch_insets =
-            gfx::ScaleToFlooredInsets(mouse_insets, kResizeInsetScaleForTouch);
-
-        auto* frame_window = delegate->GetWidget()->GetNativeWindow();
-        ash::window_util::InstallResizeHandleWindowTargeterForWindow(
-            frame_window,
-            chromeos::ResizeBorderInsets{.for_mouse = mouse_insets,
-                                         .for_touch = touch_insets});
-      },
-      base::Unretained(delegate.get())));
-#endif
 
   return delegate;
 }
@@ -382,16 +287,6 @@ std::unique_ptr<GlicWidget> GlicWidget::Create(views::WidgetDelegate* delegate,
     params.bounds.set_origin({});
   }
 #endif  // BUILDFLAG(IS_OZONE)
-#if BUILDFLAG(IS_WIN)
-  // If floaty won't be always on top, it should appear in the taskbar and
-  // alt tab list.
-  if (!base::FeatureList::IsEnabled(features::kGlicZOrderChanges)) {
-    params.dont_show_in_taskbar = true;
-  }
-  if (!ShouldCreateNonClientView()) {
-    params.force_system_menu_for_frameless = true;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_MAC)
   params.animation_enabled = true;
 #endif  // BUILDFLAG(IS_MAC)
@@ -399,11 +294,6 @@ std::unique_ptr<GlicWidget> GlicWidget::Create(views::WidgetDelegate* delegate,
   params.wm_class_class = shell_integration_linux::GetProgramClassClass();
   params.wayland_app_id = params.wm_class_class + "-glic";
 #endif  // BUILDFLAG(IS_LINUX)
-#if BUILDFLAG(IS_CHROMEOS)
-  params.shadow_type = views::Widget::InitParams::ShadowType::kDrop;
-  params.init_properties_container.SetProperty(
-      chromeos::kShouldHaveHighlightBorderOverlay, true);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (user_resizable) {
     params.bounds.Outset(GetTargetOutsets(initial_bounds));
@@ -420,16 +310,6 @@ std::unique_ptr<GlicWidget> GlicWidget::Create(views::WidgetDelegate* delegate,
                                   kGlicWidgetIdentifier);
 
   //  -------------- Platform-Specific Post-Init Properties.
-#if BUILDFLAG(IS_WIN)
-  HWND hwnd = widget->GetNativeWindow()->GetHost()->GetAcceleratedWidget();
-  if (hwnd != nullptr) {
-    ui::win::PreventWindowFromPinning(hwnd);
-    if (base::FeatureList::IsEnabled(features::kGlicZOrderChanges)) {
-      ui::win::SetAppIdForWindow(
-          ShellUtil::GetBrowserModelId(InstallUtil::IsPerUserInstall()), hwnd);
-    }
-  }
-#endif  // BUILDFLAG(IS_WIN)
   return widget;
 }
 

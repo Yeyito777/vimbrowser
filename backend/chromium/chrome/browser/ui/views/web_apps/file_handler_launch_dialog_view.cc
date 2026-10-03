@@ -43,10 +43,6 @@ FileHandlerLaunchDialogView::FileHandlerLaunchDialogView(
   auto* layout_provider = views::LayoutProvider::Get();
   gfx::Insets dialog_insets = layout_provider->GetDialogInsetsForContentType(
       views::DialogContentType::kControl, views::DialogContentType::kControl);
-#if BUILDFLAG(IS_CHROMEOS)
-  // The Chrome OS dialog has no title and no need for a top inset.
-  dialog_insets.set_top(0);
-#endif
   set_margins(dialog_insets);
   set_fixed_width(layout_provider->GetDistanceMetric(
       views::DISTANCE_MODAL_DIALOG_PREFERRED_WIDTH));

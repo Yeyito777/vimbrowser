@@ -20,8 +20,6 @@
 #include "content/public/browser/web_contents.h"
 #include "ui/views/controls/textarea/textarea.h"
 
-#include "base/win/windows_h_disallowed.h"
-
 namespace enterprise_connectors {
 
 namespace {

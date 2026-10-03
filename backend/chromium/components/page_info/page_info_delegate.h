@@ -68,7 +68,6 @@ class PageInfoDelegate {
       blink::PermissionType permission,
       const url::Origin& origin,
       const std::optional<url::Origin>& requesting_origin) = 0;
-#if !BUILDFLAG(IS_ANDROID)
   // Returns std::nullopt if `site_url` is not recognised as a member of any
   // RWS or if RWS functionality is not allowed .
   virtual std::optional<std::u16string> GetRwsOwner(const GURL& site_url) = 0;
@@ -99,7 +98,6 @@ class PageInfoDelegate {
       ContentSettingsType content_settings_type) = 0;
   virtual void OnPageInfoActionOccurred(page_info::PageInfoAction action) = 0;
   virtual void OnUIClosing() = 0;
-#endif
 
   virtual std::u16string GetSubjectName(const GURL& url) = 0;
 
@@ -132,10 +130,6 @@ class PageInfoDelegate {
   virtual security_state::SecurityLevel GetSecurityLevel() = 0;
   virtual security_state::VisibleSecurityState GetVisibleSecurityState() = 0;
   virtual void OnCookiesPageOpened() = 0;
-#if BUILDFLAG(IS_ANDROID)
-  // Gets the name of the embedder.
-  virtual const std::u16string GetClientApplicationName() = 0;
-#endif
   virtual bool IsHttpsFirstModeEnabled() = 0;
   virtual bool IsIncognitoProfile() = 0;
   // Returns whether the Local Network Access split permissions feature is
@@ -143,9 +137,6 @@ class PageInfoDelegate {
   // are shown. When disabled, only LOCAL_NETWORK_ACCESS permission is shown.
   virtual bool IsLocalNetworkAccessSplitPermissionsEnabled() = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  virtual bool ShouldSyncCookiesForUrl(const GURL& url) = 0;
-#endif
 };
 
 #endif  // COMPONENTS_PAGE_INFO_PAGE_INFO_DELEGATE_H_

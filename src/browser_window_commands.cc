@@ -197,7 +197,7 @@ void BrowserWindow::BeginCommandText(std::string text) {
   focus_area_ = FocusArea::kCommandLine;
   mode_ = Mode::kCommandOpenCurrent;
   command_text_ = std::move(text);
-  vim::Reset(command_vim_, command_text_.size(), 0, vim::Mode::kInsert);
+  vim::Reset(command_vim_, command_text_.size());
   ClearCommandAutocomplete();
   UpdateCommandAutocomplete();
   if (command_overlay_) {
@@ -648,7 +648,7 @@ void BrowserWindow::CancelCommand() {
   mode_ = Mode::kNormal;
   sidebar_prompt_ = {};
   ClearCommandAutocomplete();
-  vim::Reset(command_vim_, 0, 0, vim::Mode::kInsert);
+  vim::Reset(command_vim_, 0);
   SetCommandText("");
   if (command_overlay_) {
     command_overlay_->SetVisible(false);

@@ -39,31 +39,9 @@
 #include "google_apis/gaia/gaia_id.h"
 #include "net/http/http_response_headers.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/signin/android/signin_bridge.h"
-#include "chrome/browser/signin/android/signin_bridge_factory.h"
-#include "chrome/browser/ui/android/tab_model/tab_model.h"
-#include "chrome/browser/ui/android/tab_model/tab_model_list.h"
-#include "chrome/common/webui_url_constants.h"
-#include "ui/android/view_android.h"
-#else
 #include "chrome/browser/ui/browser_commands.h"
 #include "chrome/browser/ui/browser_finder.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/profiles/profile_manager.h"
-#include "chrome/browser/supervised_user/supervised_user_service_factory.h"
-#include "chrome/browser/ui/browser_window.h"
-#include "chromeos/ash/components/account_manager/account_manager_factory.h"
-#include "components/supervised_user/core/browser/supervised_user_service.h"
-
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-#include "content/public/browser/render_process_host.h"
-#include "extensions/browser/guest_view/web_view/web_view_renderer_state.h"
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
 #include "chrome/browser/signin/dice_response_handler.h"
@@ -93,20 +71,6 @@ const char kRemoveLocalAccountObfuscatedIDAttrName[] = "obfuscatedid";
 // the server side.
 int g_dice_account_reconcilor_blocked_delay_ms = 1000;
 
-#if BUILDFLAG(IS_ANDROID)
-std::optional<CoreAccountInfo> FindCoreAccountInfoByEmail(
-    const signin::IdentityManager* identity_manager,
-    const std::string& email) {
-  CHECK(identity_manager);
-  for (const CoreAccountInfo& account :
-       identity_manager->GetAccountsWithRefreshTokens()) {
-    if (gaia::AreEmailsSame(email, account.email)) {
-      return account;
-    }
-  }
-  return std::nullopt;
-}
-#endif
 
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
 
@@ -197,30 +161,7 @@ class ManageAccountsHeaderReceivedUserData
 bool IsWebContentsForemost(Profile* profile,
                            content::WebContents* web_contents,
                            GAIAServiceType service_type) {
-#if BUILDFLAG(IS_CHROMEOS)
-  Browser* browser = chrome::FindBrowserWithTab(web_contents);
-  // Do not do anything if the navigation happened in the "background".
-  if (!browser || !browser->window()->IsActive()) {
-    return false;
-  }
-
-  // Record the service type.
-  base::UmaHistogramEnumeration("AccountManager.ManageAccountsServiceType",
-                                service_type);
-
-  // Ignore response to background request from another profile, so dialogs are
-  // not displayed in the wrong profile when using ChromeOS multiprofile mode.
-  if (profile != ProfileManager::GetActiveUserProfile()) {
-    return false;
-  }
-  return true;
-#elif BUILDFLAG(IS_ANDROID)
-  TabModel* tab_model = TabModelList::GetTabModelForWebContents(web_contents);
-  return tab_model && tab_model->IsActiveModel() &&
-         tab_model->GetActiveWebContents() == web_contents;
-#else
   return true;  // Neither ChromeOS nor Android, always consider as foremost.
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 // Processes the mirror response header on the UI thread. Currently depending
@@ -283,139 +224,6 @@ void ProcessMirrorHeader(
   base::UmaHistogramEnumeration("Signin.ManageAccountsResponse.ServiceType",
                                 service_type);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // The only allowed operations are:
-  // 1. Going Incognito.
-  // 2. Displaying a reauthentication window: Enterprise GSuite Accounts could
-  //    have been forced through an online in-browser sign-in for sensitive
-  //    webpages, thereby decreasing their session validity. After their session
-  //    expires, they will receive a "Mirror" re-authentication request for all
-  //    Google web properties. Another case when this can be triggered is
-  //    https://crbug.com/1012649.
-  // 3. Displaying an account addition window: when user clicks "Add another
-  //    account" in One Google Bar.
-  // 4. Displaying the Account Manager for managing accounts.
-
-  // 1. Going incognito.
-  if (service_type == GAIA_SERVICE_TYPE_INCOGNITO) {
-    chrome::NewIncognitoWindow(profile);
-    return;
-  }
-
-  // 2. Displaying a reauthentication window
-  if (!manage_accounts_params.email.empty()) {
-    // Do not display the re-authentication dialog if this event was triggered
-    // by supervision being enabled for an account.  In this situation, a
-    // complete signout is required.
-    supervised_user::SupervisedUserService* service =
-        SupervisedUserServiceFactory::GetForProfile(profile);
-    if (service && service->signout_required_after_supervision_enabled()) {
-      return;
-    }
-    // Child users shouldn't get the re-authentication dialog for primary
-    // account. Log out all accounts to re-mint the cookies.
-    // (See the reason below.)
-    signin::IdentityManager* const identity_manager =
-        IdentityManagerFactory::GetForProfile(profile);
-    CoreAccountInfo primary_account =
-        identity_manager->GetPrimaryAccountInfo(signin::ConsentLevel::kSignin);
-    if (profile->IsChild() &&
-        gaia::AreEmailsSame(primary_account.email,
-                            manage_accounts_params.email)) {
-      identity_manager->GetAccountsCookieMutator()->LogOutAllAccounts(
-          gaia::GaiaSource::kChromeOS, base::DoNothing());
-      return;
-    }
-
-    // Display a re-authentication dialog.
-    signin_ui_util::ShowReauthForAccount(
-        profile, manage_accounts_params.email,
-        signin_metrics::AccessPoint::kWebSignin);
-    return;
-  }
-
-  // 3. Displaying an account addition window.
-  if (service_type == GAIA_SERVICE_TYPE_ADDSESSION) {
-    ash::AccountManagerFactory::Get()
-        ->GetAccountManagerFacade(profile->GetPath().value())
-        ->ShowAddAccountDialog(account_manager::AccountManagerFacade::
-                                   AccountAdditionSource::kOgbAddAccount);
-    return;
-  }
-
-  // 4. Displaying the Account Manager for managing accounts.
-  ash::AccountManagerFactory::Get()
-      ->GetAccountManagerFacade(profile->GetPath().value())
-      ->ShowManageAccountsSettings();
-  return;
-
-#elif BUILDFLAG(IS_ANDROID)
-  GURL continue_url = GURL(manage_accounts_params.continue_url.empty()
-                               ? chrome::kChromeUINativeNewTabURL
-                               : manage_accounts_params.continue_url);
-  signin::IdentityManager* const identity_manager =
-      IdentityManagerFactory::GetForProfile(profile);
-
-  std::optional<CoreAccountInfo> target_account_info =
-      manage_accounts_params.email.empty()
-          ? std::nullopt
-          : FindCoreAccountInfoByEmail(identity_manager,
-                                       manage_accounts_params.email);
-
-  if (manage_accounts_params.show_consistency_promo) {
-    SigninBridgeFactory::GetForProfile(profile)->OpenAccountPickerBottomSheet(
-        web_contents, continue_url,
-        target_account_info
-            ? std::make_optional(target_account_info->account_id)
-            : std::nullopt);
-    return;
-  }
-
-  if (service_type == signin::GAIA_SERVICE_TYPE_INCOGNITO) {
-    web_contents->OpenURL(
-        content::OpenURLParams(continue_url, content::Referrer(),
-                               WindowOpenDisposition::OFF_THE_RECORD,
-                               ui::PAGE_TRANSITION_AUTO_TOPLEVEL, false),
-        /*navigation_handle_callback=*/{});
-    return;
-  }
-
-  if (target_account_info &&
-      identity_manager->HasAccountWithRefreshTokenInPersistentErrorState(
-          target_account_info->account_id) &&
-      base::FeatureList::IsEnabled(switches::kSupportWebSigninAddSession)) {
-    // The target account was found on the device, but it has a persistent auth
-    // error, trigger a reauth flow to resolve it
-    SigninBridgeFactory::GetForProfile(profile)->StartUpdateCredentialsFlow(
-        TabAndroid::FromWebContents(web_contents), continue_url,
-        target_account_info->account_id);
-    return;
-  }
-
-  auto* window = web_contents->GetNativeView()->GetWindowAndroid();
-  if (!window) {
-    return;
-  }
-
-  if (service_type == signin::GAIA_SERVICE_TYPE_ADDSESSION &&
-      base::FeatureList::IsEnabled(switches::kSupportWebSigninAddSession)) {
-    if (target_account_info) {
-      // If account is already on device don't start the add account flow.
-      // TODO(crbug.com/456445865): Consider adding a reauth flow or a wait
-      // for cookies in this scenario.
-      return;
-    }
-    SigninBridgeFactory::GetForProfile(profile)->StartAddAccountFlow(
-        TabAndroid::FromWebContents(web_contents), manage_accounts_params.email,
-        continue_url);
-    return;
-  }
-
-  signin_metrics::LogAccountReconcilorStateOnGaiaResponse(
-      account_reconcilor->GetState());
-  SigninBridgeFactory::GetForProfile(profile)->OpenAccountManagementScreen(
-      window, service_type);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 #endif  // BUILDFLAG(ENABLE_MIRROR)
 
@@ -626,9 +434,6 @@ void FixAccountConsistencyRequestHeader(
     AccountConsistencyMethod account_consistency,
     const GaiaId& gaia_id,
     signin::Tribool is_child_account,
-#if BUILDFLAG(IS_CHROMEOS)
-    bool is_secondary_account_addition_allowed,
-#endif
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
     bool is_sync_enabled,
     const std::string& signin_scoped_device_id,
@@ -649,13 +454,6 @@ void FixAccountConsistencyRequestHeader(
     profile_mode_mask |= PROFILE_MODE_INCOGNITO_DISABLED;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!is_secondary_account_addition_allowed) {
-    account_consistency = AccountConsistencyMethod::kMirror;
-    // Can't add new accounts.
-    profile_mode_mask |= PROFILE_MODE_ADD_ACCOUNT_DISABLED;
-  }
-#endif
 
   AppendOrRemoveMirrorRequestHeader(
       request, redirect_url, gaia_id, is_child_account, account_consistency,

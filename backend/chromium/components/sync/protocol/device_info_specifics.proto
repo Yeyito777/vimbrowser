@@ -119,20 +119,13 @@ message FeatureSpecificFields {
   // feature enabled. As of 09/2025, this feature is only supported on ChromeOS.
   optional int64 auto_sign_out_last_signin_timestamp_windows_epoch_micros = 3;
 
-  // Tracks whether the Desktop to iOS Promo feature is enabled on the device.
-  // This is populated only for iOS devices.
-  optional bool desktop_to_ios_promo_receiving_enabled = 4;
-
-  // List of Desktop to iOS Promo types enabled on the device.
-  // This is populated only for iOS devices.
-  // The values correspond to the MobilePromoOnDesktopPromoType enum.
-  repeated SyncEnums.MobilePromoOnDesktopPromoType
-      desktop_to_ios_promo_receiving_types = 5;
+  reserved 4, 5;
+  reserved "desktop_to_ios_promo_receiving_enabled",
+      "desktop_to_ios_promo_receiving_types";
 }
 
 // Device specific information for Sharing feature. Used to send end-to-end
-// encrypted message through FCM or unencrypted message through Chime to other
-// devices.
+// encrypted messages through FCM to other devices.
 message SharingSpecificFields {
   reserved 1, 2, 3;
   reserved "vapid_fcm_token", "vapid_p256dh", "vapid_auth_secret";
@@ -181,9 +174,8 @@ message SharingSpecificFields {
   // Auth secret for message encryption [RFC8291] using Sharing sender ID.
   optional bytes sender_id_auth_secret_v2 = 10;
 
-  // Identifier used to send notifications to a specific device in Chime. Added
-  // in M128.
-  optional string chime_representative_target_id = 11;
+  reserved 11;
+  reserved "chime_representative_target_id";
 }
 
 // Device specific information telling how to send invalidations to this device.

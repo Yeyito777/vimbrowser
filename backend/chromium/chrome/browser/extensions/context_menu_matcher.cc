@@ -86,7 +86,6 @@ void ContextMenuMatcher::AppendExtensionItems(
 
   bool prepend_separator = false;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // If this is the first extension-provided menu item, and there are other
   // items in the menu, and the last item is not a separator add a separator.
   // Also, don't add separators when Smart Text Selection is enabled. Smart
@@ -94,7 +93,6 @@ void ContextMenuMatcher::AppendExtensionItems(
   // handled by them.
   prepend_separator = *index == 0 && menu_model_->GetItemCount() &&
                       !is_smart_text_selection_enabled_;
-#endif
 
   // Extensions (other than platform apps) are only allowed one top-level slot
   // (and it can't be a radio or checkbox item because we are going to put the
@@ -331,9 +329,7 @@ void ContextMenuMatcher::RecursivelyAppendExtensionItems(
 
   bool enable_separators = false;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   enable_separators = true;
-#endif
 
   for (auto i = items.begin(); i != items.end(); ++i) {
     MenuItem* item = *i;

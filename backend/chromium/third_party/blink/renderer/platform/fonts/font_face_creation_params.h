@@ -53,15 +53,6 @@ class FontFaceCreationParams {
 
   explicit FontFaceCreationParams(AtomicString family)
       : creation_type_(kCreateFontByFamily), family_(family) {
-#if BUILDFLAG(IS_WIN)
-    // Leading "@" in the font name enables Windows vertical flow flag for the
-    // font.  Because we do vertical flow by ourselves, we don't want to use the
-    // Windows feature.  IE disregards "@" regardless of the orientation, so we
-    // follow the behavior and normalize the family name.
-    family_ = (family_.empty() || family_[0] != '@')
-                  ? family_
-                  : AtomicString(family_.Impl()->Substring(1));
-#endif
   }
 
   FontFaceCreationParams(const std::string& filename,

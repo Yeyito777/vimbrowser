@@ -29,10 +29,6 @@ class KeychainV2;
 class KeyStorageLinux;
 #endif  // BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_WIN)
-class PrefRegistrySimple;
-class PrefService;
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace os_crypt {
 struct Config;
@@ -54,24 +50,6 @@ COMPONENT_EXPORT(OS_CRYPT)
 bool EncryptString(const std::string& plaintext, std::string* ciphertext);
 COMPONENT_EXPORT(OS_CRYPT)
 bool DecryptString(const std::string& ciphertext, std::string* plaintext);
-#if BUILDFLAG(IS_WIN)
-COMPONENT_EXPORT(OS_CRYPT)
-void RegisterLocalPrefs(PrefRegistrySimple* registry);
-COMPONENT_EXPORT(OS_CRYPT) bool Init(PrefService* local_state);
-
-// Initialises OSCryptImpl using an encryption key present in the |local_state|.
-// It is similar to the Init() method above, however, it will not create
-// a new encryption key if it is not present in the |local_state|.
-enum InitResult {
-  kSuccess,
-  kKeyDoesNotExist,
-  kInvalidKeyFormat,
-  kDecryptionFailed
-};
-
-COMPONENT_EXPORT(OS_CRYPT)
-InitResult InitWithExistingKey(PrefService* local_state);
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_APPLE)
 enum MockLockedKeychain {};
 COMPONENT_EXPORT(OS_CRYPT)
@@ -83,11 +61,6 @@ COMPONENT_EXPORT(OS_CRYPT)
 std::string GetRawEncryptionKey();
 COMPONENT_EXPORT(OS_CRYPT)
 void SetRawEncryptionKey(const std::string& key);
-#if BUILDFLAG(IS_WIN)
-COMPONENT_EXPORT(OS_CRYPT) void UseMockKeyForTesting(bool use_mock);
-COMPONENT_EXPORT(OS_CRYPT) void SetLegacyEncryptionForTesting(bool legacy);
-COMPONENT_EXPORT(OS_CRYPT) void ResetStateForTesting();
-#endif  // BUILDFLAG(IS_WIN)
 #if (BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CASTOS))
 COMPONENT_EXPORT(OS_CRYPT)
 void UseMockKeyStorageForTesting(
@@ -160,22 +133,6 @@ class COMPONENT_EXPORT(OS_CRYPT) OSCryptImpl {
   // get your (binary) data into a string.
   bool DecryptString(const std::string& ciphertext, std::string* plaintext);
 
-#if BUILDFLAG(IS_WIN)
-  // Registers preferences used by OSCryptImpl.
-  static void RegisterLocalPrefs(PrefRegistrySimple* registry);
-
-  // Initialises OSCryptImpl.
-  // This method should be called on the main UI thread before any calls to
-  // encryption or decryption. Returns |true| if os_crypt successfully
-  // initialized.
-  bool Init(PrefService* local_state);
-
-  // Initialises OSCryptImpl using an encryption key present in the
-  // |local_state|. It is similar to the Init() method above, however, it will
-  // not create a new encryption key if it is not present in the |local_state|.
-
-  OSCrypt::InitResult InitWithExistingKey(PrefService* local_state);
-#endif
 
 #if BUILDFLAG(IS_APPLE)
   // This is used for testing purposes only. It allows a test to inject a mock
@@ -199,20 +156,6 @@ class COMPONENT_EXPORT(OS_CRYPT) OSCryptImpl {
   // OSCryptImpl will default to the hardcoded key. This method is thread-safe.
   void SetRawEncryptionKey(const std::string& key);
 
-#if BUILDFLAG(IS_WIN)
-  // For unit testing purposes we instruct the Encryptor to use a mock Key. The
-  // default is to use the real Key bound to profile. Use OSCryptMocker, instead
-  // of calling this method directly.
-  void UseMockKeyForTesting(bool use_mock);
-
-  // For unit testing purposes, encrypt data using the older DPAPI method rather
-  // than using a session key.
-  void SetLegacyEncryptionForTesting(bool legacy);
-
-  // For unit testing purposes, reset the state of OSCryptImpl so a new key can
-  // be loaded via Init() or SetRawEncryptionkey().
-  void ResetStateForTesting();
-#endif
 
 #if (BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CASTOS))
   // For unit testing purposes, inject methods to be used.
@@ -278,19 +221,6 @@ class COMPONENT_EXPORT(OS_CRYPT) OSCryptImpl {
       storage_provider_factory_for_testing_;
 #endif  // BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_WIN)
-  // Use mock key instead of a real encryption key. Used for testing.
-  bool use_mock_key_ = false;
-
-  // Store data using the legacy (DPAPI) method rather than session key.
-  bool use_legacy_ = false;
-
-  // Encryption Key. Set either by calling Init() or SetRawEncryptionKey().
-  std::string encryption_key_;
-
-  // Mock Encryption Key. Only set and used if use_mock_key_ is true.
-  std::string mock_encryption_key_;
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_APPLE)
   // `try_keychain_` indicates whether this object should try using the keychain

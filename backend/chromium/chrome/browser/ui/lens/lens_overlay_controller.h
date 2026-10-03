@@ -407,9 +407,6 @@ class LensOverlayController : public OverlayBaseController,
       std::map<std::string, std::string> additional_query_params,
       std::optional<lens::LensOverlayInvocationSource> invocation_source);
 
-  // Shows the mobile promo if the user is eligible.
-  void MaybeShowMobilePromo();
-
   // Issues a contextual text request to the query controller.
   void IssueContextualTextRequest(
       base::Time query_start_time,

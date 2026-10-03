@@ -16,9 +16,6 @@
 #include "services/network/public/cpp/socket_broker_client.h"
 #include "services/network/public/mojom/socket_broker.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "services/network/broker_helper_win.h"
-#endif
 
 namespace net {
 
@@ -84,18 +81,9 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) BrokeredClientSocketFactory
   // `addresses`.
   bool ShouldBroker(const net::AddressList& addresses) const;
 
-#if BUILDFLAG(IS_WIN)
-  void SetBrokerHelperDelegateForTesting(
-      std::unique_ptr<BrokerHelperWin::Delegate> delegate) {
-    broker_helper_.SetDelegateForTesting(std::move(delegate));
-  }
-#endif
 
  private:
   SocketBrokerClient socket_broker_client_;
-#if BUILDFLAG(IS_WIN)
-  BrokerHelperWin broker_helper_;
-#endif
 };
 
 }  // namespace network

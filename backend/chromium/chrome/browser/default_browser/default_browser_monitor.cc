@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "base/functional/callback.h"
-#include "chrome/browser/win/registry_watcher.h"
 
 namespace default_browser {
 

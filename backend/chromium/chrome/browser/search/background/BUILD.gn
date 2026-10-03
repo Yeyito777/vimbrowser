@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 import("//third_party/protobuf/proto_library.gni")
 
@@ -52,21 +52,18 @@ source_set("background") {
     "//ui/gfx/codec",
   ]
 
-  if (!is_android) {
-    public += [
-      "wallpaper_search/wallpaper_search_background_manager.h",
-      "wallpaper_search/wallpaper_search_background_manager_observer.h",
-      "wallpaper_search/wallpaper_search_data.h",
-    ]
-    sources += [
-      "wallpaper_search/wallpaper_search_background_manager.cc",
-      "wallpaper_search/wallpaper_search_data.cc",
-    ]
-    public_deps += [
-      "//chrome/browser/ui/webui/side_panel/customize_chrome:mojo_bindings",
-    ]
-    deps += [ "//components/optimization_guide/core:features" ]
-  }
+  public += [
+    "wallpaper_search/wallpaper_search_background_manager.h",
+    "wallpaper_search/wallpaper_search_background_manager_observer.h",
+    "wallpaper_search/wallpaper_search_data.h",
+  ]
+  sources += [
+    "wallpaper_search/wallpaper_search_background_manager.cc",
+    "wallpaper_search/wallpaper_search_data.cc",
+  ]
+  public_deps +=
+      [ "//chrome/browser/ui/webui/side_panel/customize_chrome:mojo_bindings" ]
+  deps += [ "//components/optimization_guide/core:features" ]
 }
 
 source_set("constants") {

@@ -51,9 +51,6 @@
 #include "third_party/blink/public/common/features.h"
 #include "third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom-shared.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/web_applications/web_app_system_web_app_delegate_map_utils.h"
-#endif
 
 class Profile;
 
@@ -188,12 +185,6 @@ ManifestUpdateManager::ManifestUpdateManager() = default;
 
 ManifestUpdateManager::~ManifestUpdateManager() = default;
 
-#if BUILDFLAG(IS_CHROMEOS)
-void ManifestUpdateManager::SetSystemWebAppDelegateMap(
-    const ash::SystemWebAppDelegateMap* system_web_apps_delegate_map) {
-  system_web_apps_delegate_map_ = system_web_apps_delegate_map;
-}
-#endif
 
 void ManifestUpdateManager::SetProvider(base::PassKey<WebAppProvider>,
                                         WebAppProvider& provider) {
@@ -318,14 +309,6 @@ void ManifestUpdateManager::MaybeUpdate(
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (system_web_apps_delegate_map_ &&
-      IsSystemWebApp(provider_->registrar_unsafe(),
-                     *system_web_apps_delegate_map_, *app_id)) {
-    NotifyResult(url, *app_id, ManifestUpdateResult::kAppIsSystemWebApp);
-    return;
-  }
-#endif
 
   if (provider_->registrar_unsafe().IsPlaceholderApp(
           *app_id, WebAppManagement::kPolicy) ||

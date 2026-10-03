@@ -19,10 +19,6 @@
 #include "base/unguessable_token.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-struct _SECURITY_ATTRIBUTES;
-#endif
 
 namespace base {
 namespace subtle {
@@ -95,14 +91,8 @@ class BASE_EXPORT PlatformSharedMemoryRegion {
   enum class TakeError {
     kExpectedReadOnlyButNot,
     kExpectedWritableButNot,
-#if BUILDFLAG(IS_ANDROID)
-    kFailedToGetAshmemRegionProtectionMask,
-#endif
 #if BUILDFLAG(IS_APPLE)
     kVmMapFailed,
-#endif
-#if BUILDFLAG(IS_FUCHSIA)
-    kNotVmo,
 #endif
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX)
     kFcntlFailed,
@@ -141,19 +131,6 @@ class BASE_EXPORT PlatformSharedMemoryRegion {
                                          const UnguessableToken& guid);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  using CreateFileMappingCallback = HANDLE(__stdcall*)(HANDLE,
-                                                       _SECURITY_ATTRIBUTES*,
-                                                       DWORD,
-                                                       DWORD,
-                                                       DWORD,
-                                                       const wchar_t*);
-  // Sets a callback to override `CreateFileMappingW()` calls in testing.
-  // This allows tests to simulate Out-Of-Memory (OOM) failures, specifically
-  // `ERROR_COMMITMENT_LIMIT`.
-  static void SetCreateFileMappingCallbackForTesting(
-      CreateFileMappingCallback callback);
-#endif
 
   // Similar to `Take()` but relaxes the permission and mode consistency checks
   // to return an error instead. Useful when deserializing a handle from an

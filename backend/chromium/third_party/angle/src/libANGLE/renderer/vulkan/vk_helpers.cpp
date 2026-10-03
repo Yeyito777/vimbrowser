@@ -25,7 +25,6 @@
 #include "libANGLE/renderer/vulkan/DisplayVk.h"
 #include "libANGLE/renderer/vulkan/FramebufferVk.h"
 #include "libANGLE/renderer/vulkan/RenderTargetVk.h"
-#include "libANGLE/renderer/vulkan/android/vk_android_utils.h"
 #include "libANGLE/renderer/vulkan/vk_ref_counted_event.h"
 #include "libANGLE/renderer/vulkan/vk_renderer.h"
 #include "libANGLE/renderer/vulkan/vk_utils.h"
@@ -4571,15 +4570,10 @@ BufferHelper::BufferHelper()
       mCurrentWriteStages(0),
       mCurrentReadStages(0),
       mSerial(),
-      mClientBuffer(nullptr),
       mIsReleasedToExternal(false)
 {}
 
-BufferHelper::~BufferHelper()
-{
-    // We must have released external buffer properly
-    ASSERT(mClientBuffer == nullptr);
-}
+BufferHelper::~BufferHelper() = default;
 
 BufferHelper::BufferHelper(BufferHelper &&other)
 {
@@ -4609,12 +4603,6 @@ BufferHelper &BufferHelper::operator=(BufferHelper &&other)
     }
     mXFBOrComputeWriteHeuristicBits = std::move(other.mXFBOrComputeWriteHeuristicBits);
     mSerial                  = other.mSerial;
-
-    // BufferHelper is usually std::move()'ed when the GL buffer backing is internally recreated as
-    // an optimization, or for other internal buffer allocation reasons.  It should never happen for
-    // buffers that are backed by external memory.
-    ASSERT(other.mClientBuffer == nullptr);
-    mClientBuffer = nullptr;
 
     return *this;
 }
@@ -4688,48 +4676,6 @@ angle::Result BufferHelper::init(ErrorContext *context,
         ANGLE_TRY(initializeNonZeroMemory(context, createInfo->usage, createInfo->size));
     }
 
-    return angle::Result::Continue;
-}
-
-angle::Result BufferHelper::initExternal(ErrorContext *context,
-                                         VkMemoryPropertyFlags memoryProperties,
-                                         const VkBufferCreateInfo &requestedCreateInfo,
-                                         GLeglClientBufferEXT clientBuffer)
-{
-    ASSERT(IsAndroid());
-
-    Renderer *renderer = context->getRenderer();
-
-    initializeBarrierTracker(context);
-
-    VkBufferCreateInfo modifiedCreateInfo             = requestedCreateInfo;
-    VkExternalMemoryBufferCreateInfo externCreateInfo = {};
-    externCreateInfo.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO;
-    externCreateInfo.handleTypes =
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
-    externCreateInfo.pNext   = nullptr;
-    modifiedCreateInfo.pNext = &externCreateInfo;
-
-    DeviceScoped<Buffer> buffer(renderer->getDevice());
-    ANGLE_VK_TRY(context, buffer.get().init(renderer->getDevice(), modifiedCreateInfo));
-
-    DeviceScoped<DeviceMemory> deviceMemory(renderer->getDevice());
-    VkMemoryPropertyFlags memoryPropertyFlagsOut;
-    VkDeviceSize allocatedSize = 0;
-    uint32_t memoryTypeIndex;
-    ANGLE_TRY(InitAndroidExternalMemory(context, clientBuffer, memoryProperties, &buffer.get(),
-                                        &memoryPropertyFlagsOut, &memoryTypeIndex,
-                                        &deviceMemory.get(), &allocatedSize));
-    mClientBuffer = clientBuffer;
-
-    mSuballocation.initWithEntireBuffer(context, buffer.get(), MemoryAllocationType::BufferExternal,
-                                        memoryTypeIndex, deviceMemory.get(), memoryPropertyFlagsOut,
-                                        requestedCreateInfo.size, allocatedSize);
-    if (isHostVisible())
-    {
-        uint8_t *ptrOut;
-        ANGLE_TRY(map(context, &ptrOut));
-    }
     return angle::Result::Continue;
 }
 
@@ -4990,11 +4936,6 @@ void BufferHelper::destroy(Renderer *renderer)
     unmap(renderer);
     mBufferWithUserSize.destroy(renderer->getDevice());
     mSuballocation.destroy(renderer);
-    if (mClientBuffer != nullptr)
-    {
-        ReleaseAndroidExternalMemory(renderer, mClientBuffer);
-        mClientBuffer = nullptr;
-    }
 }
 
 void BufferHelper::release(Renderer *renderer)
@@ -5025,11 +4966,6 @@ void BufferHelper::releaseImpl(Renderer *renderer)
     mWriteUse.reset();
     ASSERT(!mBufferWithUserSize.valid());
 
-    if (mClientBuffer != nullptr)
-    {
-        ReleaseAndroidExternalMemory(renderer, mClientBuffer);
-        mClientBuffer = nullptr;
-    }
 }
 
 void BufferHelper::releaseBufferAndDescriptorSetCache(ContextVk *contextVk)

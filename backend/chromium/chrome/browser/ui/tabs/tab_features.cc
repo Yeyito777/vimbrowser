@@ -9,8 +9,6 @@
 #include "base/feature_list.h"
 #include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
-#include "chrome/browser/accessibility_annotator/content_annotator/content_annotator_service_factory.h"
-#include "chrome/browser/accessibility_annotator/content_annotator/content_annotator_tab_helper.h"
 #include "chrome/browser/actor/actor_keyed_service.h"
 #include "chrome/browser/actor/actor_tab_data.h"
 #include "chrome/browser/actor/ui/actor_ui_tab_controller.h"
@@ -73,7 +71,6 @@
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/tabs/tab_strip_model_delegate.h"
 #include "chrome/browser/ui/toolbar/pinned_toolbar/pinned_toolbar_actions_model.h"
-#include "chrome/browser/ui/toolbar/pinned_toolbar/pinned_translate_action_listener.h"
 #include "chrome/browser/ui/ui_features.h"
 #include "chrome/browser/ui/views/bookmarks/bookmark_page_action_controller.h"
 #include "chrome/browser/ui/views/commerce/discounts_page_action_view_controller.h"
@@ -90,7 +87,6 @@
 #include "chrome/browser/ui/views/passwords/manage_passwords_page_action_controller.h"
 #include "chrome/browser/ui/views/side_panel/customize_chrome/side_panel_controller_views.h"
 #include "chrome/browser/ui/views/side_panel/extensions/extension_side_panel_manager.h"
-#include "chrome/browser/ui/views/translate/translate_page_action_controller.h"
 #include "chrome/browser/ui/views/zoom/zoom_view_controller.h"
 #include "chrome/browser/ui/web_applications/pwa_install_page_action.h"
 #include "chrome/browser/ui/webui/webui_embedding_context.h"
@@ -135,15 +131,9 @@
 #include "ui/accessibility/accessibility_features.h"
 #include "ui/base/unowned_user_data/user_data_factory.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/skills/skills_update_observer.h"
 #include "components/skills/features.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/apps/app_service/app_service_proxy_factory.h"  // nogncheck
-#include "chrome/browser/ui/views/web_apps/protocol_handler_picker_coordinator.h"
-#endif
 
 namespace tabs {
 
@@ -197,9 +187,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
                                        page_actions::kActionIds.end()),
         page_actions::PageActionPropertiesProvider());
     page_action_controller_ = std::move(page_action_controller);
-
-    translate_page_action_controller_ =
-        std::make_unique<TranslatePageActionController>(tab);
 
     memory_saver_chip_controller_ =
         std::make_unique<memory_saver::MemorySaverChipController>(
@@ -266,14 +253,12 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
               tab, tab, profile->GetPrefs(), *page_action_controller_);
     }
 
-#if !BUILDFLAG(IS_ANDROID)
     if (base::FeatureList::IsEnabled(
             record_replay::features::kRecordReplayBase)) {
       record_replay_page_action_controller_ =
           GetUserDataFactory().CreateInstance<RecordReplayPageActionController>(
               tab, tab, *page_action_controller_);
     }
-#endif
 
     js_optimizations_page_action_controller_ =
         std::make_unique<JsOptimizationsPageActionController>(
@@ -302,9 +287,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
     permission_indicators_tab_data_ =
         std::make_unique<permissions::PermissionIndicatorsTabData>(
             tab.GetContents());
-
-    pinned_translate_action_listener_ =
-        std::make_unique<PinnedTranslateActionListener>(&tab);
 
     if (!profile->IsIncognitoProfile()) {
       // TODO(crbug.com/40863325): Consider using the in-memory cache instead.
@@ -402,15 +384,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
               tab, tab);
     }
 
-    if (accessibility_annotator::
-            ContentAnnotatorService* content_annotator_service =
-                accessibility_annotator::ContentAnnotatorServiceFactory::
-                    GetForProfile(profile)) {
-      content_annotator_tab_helper_ =
-          std::make_unique<accessibility_annotator::ContentAnnotatorTabHelper>(
-              tab, *content_annotator_service,
-              ChromeTranslateClient::FromWebContents(tab.GetContents()));
-    }
   }  // IsInNormalWindow() end.
 
   // This block instantiates the page action controllers that depends on the
@@ -467,7 +440,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
           tab.GetContents(),
           sync_sessions::SyncSessionsWebContentsRouterFactory::GetForProfile(
               profile),
-          ChromeTranslateClient::FromWebContents(tab.GetContents()),
           favicon::ContentFaviconDriver::FromWebContents(tab.GetContents()));
 
   from_gws_navigation_and_keep_alive_request_observer_ =
@@ -527,26 +499,16 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
   tab_alert_controller_ =
       GetUserDataFactory().CreateInstance<TabAlertController>(tab, tab);
 
-#if !BUILDFLAG(IS_ANDROID)
   if (base::FeatureList::IsEnabled(
           record_replay::features::kRecordReplayBase)) {
     record_replay_client_ =
         GetUserDataFactory().CreateInstance<ChromeRecordReplayClient>(tab, tab);
   }
-#endif
 
   tab_contextualization_controller_ =
       GetUserDataFactory().CreateInstance<lens::TabContextualizationController>(
           tab, &tab);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (apps::AppServiceProxyFactory::IsAppServiceAvailableForProfile(profile)) {
-    protocol_handler_picker_coordinator_ =
-        GetUserDataFactory()
-            .CreateInstance<web_app::ProtocolHandlerPickerCoordinator>(
-                tab, tab, apps::AppServiceProxyFactory::GetForProfile(profile));
-  }
-#endif
 
   // The controller is created for all tabs but only affects back button
   // behavior for destination tabs with opener relationships.
@@ -576,7 +538,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
   }
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
   if (base::FeatureList::IsEnabled(features::kSkillsEnabled)) {
     skills_update_observer_ =
         std::make_unique<skills::SkillsUpdateObserver>(tab);
@@ -587,7 +548,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
             tab, *page_action_controller_);
   }
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 TabUIHelper* TabFeatures::SetTabUIHelperForTesting(
     std::unique_ptr<TabUIHelper> tab_ui_helper) {
@@ -633,7 +593,6 @@ void TabFeatures::WillDiscardContents(tabs::TabInterface* tab,
           new_contents,
           sync_sessions::SyncSessionsWebContentsRouterFactory::GetForProfile(
               profile),
-          ChromeTranslateClient::FromWebContents(new_contents),
           favicon::ContentFaviconDriver::FromWebContents(new_contents));
 
   if (permission_indicators_tab_data_) {

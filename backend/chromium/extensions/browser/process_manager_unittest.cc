@@ -4,7 +4,6 @@
 
 #include "extensions/browser/process_manager.h"
 
-#include "build/android_buildflags.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/common/content_client.h"

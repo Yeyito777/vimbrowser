@@ -416,11 +416,6 @@ WebGPUSwapBufferProvider::SwapBuffer::SwapBuffer(
 
 WebGPUSwapBufferProvider::SwapBuffer::~SwapBuffer() = default;
 
-#if BUILDFLAG(IS_CHROMEOS)
-// This feature is only used as a possible killswitch.
-BASE_FEATURE(kWebGPUSwapBufferProviderAllowScanout,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 gpu::SharedImageUsageSet
 WebGPUSwapBufferProvider::GetSharedImageUsagesForDisplay() {
@@ -430,20 +425,6 @@ WebGPUSwapBufferProvider::GetSharedImageUsagesForDisplay() {
   // when creating a SharedImage forces that SharedImage to be backed by an
   // IOSurface.
   return gpu::SHARED_IMAGE_USAGE_DISPLAY_READ | gpu::SHARED_IMAGE_USAGE_SCANOUT;
-#elif BUILDFLAG(IS_CHROMEOS)
-  gpu::SharedImageUsageSet usage = gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
-  static bool is_scanout_allowed =
-      base::FeatureList::IsEnabled(kWebGPUSwapBufferProviderAllowScanout);
-
-  if (is_scanout_allowed && GetContextProviderWeakPtr() &&
-      GetContextProviderWeakPtr()
-          ->ContextProvider()
-          .SharedImageInterface()
-          ->GetCapabilities()
-          .supports_scanout_shared_images) {
-    usage |= gpu::SHARED_IMAGE_USAGE_SCANOUT;
-  }
-  return usage;
 #else
   // On other platforms we cannot assume and do not require that a SharedImage
   // created with WebGPU usage be backed by a native buffer.

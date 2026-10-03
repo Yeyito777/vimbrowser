@@ -14,19 +14,6 @@
 #include "content/public/browser/web_contents.h"
 #include "third_party/boringssl/src/include/openssl/base.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Enumeration of certificate management permissions which corresponds to
-// values of policy ClientCertificateManagementAllowed.
-// Underlying type is int because values are casting to/from prefs values.
-enum class ClientCertificateManagementPermission : int {
-  // Allow users to manage all certificates
-  kAll = 0,
-  // Allow users to manage user certificates
-  kUserOnly = 1,
-  // Disallow users from managing certificates
-  kNone = 2
-};
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // Enumeration of certificate management permissions which corresponds to
 // values of policy CACertificateManagementAllowed.

@@ -63,10 +63,6 @@
 #include "chrome/browser/policy/browser_dm_token_storage_linux.h"
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/policy/browser_dm_token_storage_win.h"
-#include "chrome/install_static/install_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
 #include "chrome/browser/enterprise/client_certificates/browser_context_delegate.h"
@@ -117,8 +113,6 @@ void ChromeBrowserCloudManagementControllerDesktop::
   storage_delegate = std::make_unique<BrowserDMTokenStorageMac>();
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   storage_delegate = std::make_unique<BrowserDMTokenStorageLinux>();
-#elif BUILDFLAG(IS_WIN)
-  storage_delegate = std::make_unique<BrowserDMTokenStorageWin>();
 #else
   NOTREACHED();
 #endif
@@ -269,12 +263,8 @@ ChromeBrowserCloudManagementControllerDesktop::GetReportingDelegateFactory() {
 std::unique_ptr<enterprise_reporting::SaasUsageReportingDelegateFactory>
 ChromeBrowserCloudManagementControllerDesktop::
     GetSaasUsageReportingDelegateFactory() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return nullptr;
-#else
   return enterprise_reporting::SaasUsageReportingDelegateFactoryDesktop::
       CreateForBrowser();
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }
 
 void ChromeBrowserCloudManagementControllerDesktop::SetGaiaURLLoaderFactory(

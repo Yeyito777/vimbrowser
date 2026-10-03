@@ -17,9 +17,7 @@ static_library("webui") {
     "//third_party/abseil-cpp:absl",
     "//ui/base",
   ]
-  if (!is_ios) {
-    deps += [ "//ui/webui" ]
-  }
+  deps += [ "//ui/webui" ]
   public_deps = [
     ":mojo_bindings",
     ":url_constants",

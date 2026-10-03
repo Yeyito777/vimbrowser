@@ -25,9 +25,6 @@
 #include "services/device/public/mojom/usb_enumeration_options.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/dbus/permission_broker/permission_broker_client.h"  // nogncheck
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 using device::mojom::UsbDeviceFilterPtr;
 
@@ -160,17 +157,8 @@ void UsbDevicePermissionsPrompt::Prompt::MaybeAddDevice(
   }
 
   auto device_info = std::make_unique<DeviceInfo>(device.Clone());
-#if BUILDFLAG(IS_CHROMEOS)
-  auto* device_manager = UsbDeviceManager::Get(browser_context_);
-  DCHECK(device_manager);
-  device_manager->CheckAccess(
-      device.guid,
-      base::BindOnce(&UsbDevicePermissionsPrompt::Prompt::AddCheckedDevice,
-                     this, std::move(device_info), initial_enumeration));
-#else
   AddCheckedDevice(std::move(device_info), initial_enumeration,
                    /*allowed=*/true);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void UsbDevicePermissionsPrompt::Prompt::AddCheckedDevice(

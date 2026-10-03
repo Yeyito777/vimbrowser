@@ -23,12 +23,6 @@
 #include "services/device/usb/usb_device_handle_usbfs.h"
 #include "services/device/usb/usb_service.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/dbus/permission_broker/permission_broker_client.h"  // nogncheck
-namespace {
-constexpr uint32_t kAllInterfacesMask = ~0U;
-}  // namespace
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace device {
 
@@ -39,37 +33,10 @@ UsbDeviceLinux::UsbDeviceLinux(const std::string& device_path,
 
 UsbDeviceLinux::~UsbDeviceLinux() = default;
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-void UsbDeviceLinux::CheckUsbAccess(ResultCallback callback) {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  chromeos::PermissionBrokerClient::Get()->CheckPathAccess(device_path_,
-                                                           std::move(callback));
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void UsbDeviceLinux::Open(OpenCallback callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // create the pipe used as a lifetime to re-attach the original kernel driver
-  // to the USB device in permission_broker.
-  base::ScopedFD read_end, write_end;
-  if (!base::CreatePipe(&read_end, &write_end, /*non_blocking*/ true)) {
-    LOG(ERROR) << "Couldn't create pipe for USB device " << device_path_;
-    std::move(callback).Run(nullptr);
-    return;
-  }
-
-  auto split_callback = base::SplitOnceCallback(std::move(callback));
-  chromeos::PermissionBrokerClient::Get()->OpenPathAndRegisterClient(
-      device_path_, kAllInterfacesMask, read_end.get(),
-      base::BindOnce(&UsbDeviceLinux::OnOpenRequestComplete, this,
-                     std::move(split_callback.first), std::move(write_end)),
-      base::BindOnce(&UsbDeviceLinux::OnOpenRequestError, this,
-                     std::move(split_callback.second)));
-#else
   scoped_refptr<base::SequencedTaskRunner> blocking_task_runner =
       UsbService::CreateBlockingTaskRunner();
   blocking_task_runner->PostTask(
@@ -78,33 +45,8 @@ void UsbDeviceLinux::Open(OpenCallback callback) {
                      std::move(callback),
                      base::SingleThreadTaskRunner::GetCurrentDefault(),
                      blocking_task_runner));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-void UsbDeviceLinux::OnOpenRequestComplete(OpenCallback callback,
-                                           base::ScopedFD lifeline_fd,
-                                           const std::string& client_id,
-                                           base::ScopedFD fd) {
-  if (!fd.is_valid()) {
-    USB_LOG(EVENT) << "Did not get valid device handle from permission broker.";
-    std::move(callback).Run(nullptr);
-    return;
-  }
-  Opened(std::move(fd), std::move(lifeline_fd), client_id, std::move(callback),
-         UsbService::CreateBlockingTaskRunner());
-}
-
-void UsbDeviceLinux::OnOpenRequestError(OpenCallback callback,
-                                        const std::string& error_name,
-                                        const std::string& error_message) {
-  USB_LOG(EVENT) << "Permission broker failed to open the device: "
-                 << error_name << ": " << error_message;
-  std::move(callback).Run(nullptr);
-}
-
-#else
 
 void UsbDeviceLinux::OpenOnBlockingThread(
     OpenCallback callback,
@@ -126,7 +68,6 @@ void UsbDeviceLinux::OpenOnBlockingThread(
   }
 }
 
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void UsbDeviceLinux::Opened(
     base::ScopedFD fd,

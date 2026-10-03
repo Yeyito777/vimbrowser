@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-assert(!is_android)
-
 source_set("badging") {
   sources = [
     "badge_manager.h",
@@ -20,10 +18,6 @@ source_set("badging") {
     "//third_party/blink/public/common",
     "//url",
   ]
-
-  if (is_win) {
-    sources += [ "badge_manager_delegate_win.h" ]
-  }
 
   if (is_mac) {
     sources += [ "badge_manager_delegate_mac.h" ]
@@ -51,11 +45,6 @@ source_set("impl") {
     "//ui/strings:ui_strings_grit",
   ]
 
-  if (is_win) {
-    sources += [ "badge_manager_delegate_win.cc" ]
-    deps += [ "//chrome/browser/ui/browser_window" ]
-  }
-
   if (is_mac) {
     sources += [ "badge_manager_delegate_mac.cc" ]
     deps += [ "//chrome/browser/apps/app_shim" ]
@@ -68,18 +57,16 @@ source_set("test_support") {
   sources = []
   deps = []
 
-  if (!is_android) {
-    sources += [
-      "test_badge_manager_delegate.cc",
-      "test_badge_manager_delegate.h",
-    ]
-    public_deps = [
-      ":badging",
-      "//base",
-      "//components/webapps/common",
-    ]
-    deps += [ "//chrome/browser/profiles:profile" ]
-  }
+  sources += [
+    "test_badge_manager_delegate.cc",
+    "test_badge_manager_delegate.h",
+  ]
+  public_deps = [
+    ":badging",
+    "//base",
+    "//components/webapps/common",
+  ]
+  deps += [ "//chrome/browser/profiles:profile" ]
 }
 
 source_set("unit_tests") {
@@ -87,22 +74,20 @@ source_set("unit_tests") {
   sources = []
   deps = []
 
-  if (!is_android) {
-    sources += [ "badge_manager_unittest.cc" ]
-    deps += [
-      ":badging",
-      ":test_support",
-      "//base/test:test_support",
-      "//chrome/browser/web_applications",
-      "//chrome/browser/web_applications:web_applications_test_support",
-      "//chrome/test:test_support",
-      "//components/ukm:test_support",
-      "//content/test:test_support",
-      "//extensions:test_support",
-      "//extensions/common",
-      "//services/metrics/public/cpp:gen_ukm_builders",
-      "//services/metrics/public/cpp:ukm_builders",
-      "//testing/gtest",
-    ]
-  }
+  sources += [ "badge_manager_unittest.cc" ]
+  deps += [
+    ":badging",
+    ":test_support",
+    "//base/test:test_support",
+    "//chrome/browser/web_applications",
+    "//chrome/browser/web_applications:web_applications_test_support",
+    "//chrome/test:test_support",
+    "//components/ukm:test_support",
+    "//content/test:test_support",
+    "//extensions:test_support",
+    "//extensions/common",
+    "//services/metrics/public/cpp:gen_ukm_builders",
+    "//services/metrics/public/cpp:ukm_builders",
+    "//testing/gtest",
+  ]
 }

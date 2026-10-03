@@ -120,18 +120,6 @@ void NotifyCaretBoundsChanged(ui::InputMethod* input_method) {
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-ui::mojom::WindowShowState GetShowState(views::Widget* widget) {
-  if (widget->IsMaximized()) [[unlikely]] {
-    return ui::mojom::WindowShowState::kMaximized;
-  } else if (widget->IsMinimized()) [[unlikely]] {
-    return ui::mojom::WindowShowState::kMinimized;
-  } else if (widget->IsFullscreen()) [[unlikely]] {
-    return ui::mojom::WindowShowState::kFullscreen;
-  }
-  return ui::mojom::WindowShowState::kNormal;
-}
-#endif
 
 }  // namespace
 
@@ -533,16 +521,6 @@ void Widget::Init(InitParams params) {
   const ui::mojom::WindowShowState show_state = params.show_state;
   WidgetDelegate* delegate = params.delegate;
   bool should_set_initial_bounds = true;
-#if BUILDFLAG(IS_CHROMEOS)
-  // If the target display is specified on ChromeOS, the initial bounds will be
-  // set based on the display.
-  should_set_initial_bounds = !params.display_id.has_value();
-#endif
-#if BUILDFLAG(IS_WIN)
-  // force_system_menu_for_frameless only applies to frameless windows.
-  CHECK(!params.force_system_menu_for_frameless ||
-        params.type == Widget::InitParams::TYPE_WINDOW_FRAMELESS);
-#endif  // BUILDFLAG(IS_WIN)
   background_color_ = params.background_color;
   native_widget_->InitNativeWidget(std::move(params));
   if (type == InitParams::TYPE_MENU) {
@@ -586,13 +564,6 @@ void Widget::Init(InitParams params) {
       Hide();
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // In ChromeOS, rounding window can involve rounding its client view and the
-    // contents. Therefore, wait till the contents are set.
-    // Since on ChromeOS, window can be square or rounded based on the window
-    // state, wait till window is maximized or minimized.
-    non_client_view_->frame_view()->UpdateWindowRoundedCorners();
-#endif
   } else if (delegate) {
     SetContentsView(delegate->TransferOwnershipOfContentsView());
     if (should_set_initial_bounds) {
@@ -1886,13 +1857,7 @@ bool Widget::OnNativeWidgetActivationChanged(bool active) {
                                 this);
       root = widget;
     }
-#if BUILDFLAG(IS_WIN)
-    // Windows shuffles child widgets when the application re-gains
-    // activation, so re-order to ensure z-order sublevels.
-    root->GetSublevelManager()->EnsureOwnerTreeSublevel();
-#else
     std::ignore = root;
-#endif
   }
 
   const bool was_paint_as_active = ShouldPaintAsActive();
@@ -2052,13 +2017,6 @@ void Widget::OnNativeWidgetSizeChanged(const gfx::Size& new_size) {
   observers_.Notify(&WidgetObserver::OnWidgetBoundsChanged, this,
                     GetWindowBoundsInScreen());
 
-#if BUILDFLAG(IS_WIN)
-  ui::mojom::WindowShowState show_state = GetShowState(this);
-  if (saved_show_state_ != show_state) {
-    OnNativeWidgetWindowShowStateChanged();
-    saved_show_state_ = show_state;
-  }
-#endif
 }
 
 void Widget::OnNativeWidgetUserResizeStarted() {

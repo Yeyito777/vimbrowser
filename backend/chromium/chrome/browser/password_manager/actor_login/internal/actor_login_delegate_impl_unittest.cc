@@ -273,7 +273,7 @@ TEST_F(ActorLoginDelegateImplTest, GetCredentialsLogsDomainAndLanguage) {
   content::WebContentsTester* web_contents_tester =
       content::WebContentsTester::For(web_contents());
   web_contents_tester->NavigateAndCommit(kUrl);
-  EXPECT_CALL(*mqls_logger(), SetDomainAndLanguage(_, Eq(kUrl)));
+  EXPECT_CALL(*mqls_logger(), SetDomain(Eq(kUrl)));
   delegate_->GetCredentials(mqls_logger(), base::DoNothing());
 }
 
@@ -355,7 +355,7 @@ TEST_F(ActorLoginDelegateImplTest, AttemptLoginLogsDomainAndLanguage) {
   content::WebContentsTester* web_contents_tester =
       content::WebContentsTester::For(web_contents());
   web_contents_tester->NavigateAndCommit(url);
-  EXPECT_CALL(*mqls_logger(), SetDomainAndLanguage(_, Eq(url)));
+  EXPECT_CALL(*mqls_logger(), SetDomain(Eq(url)));
   delegate_->AttemptLogin(credential, false, mqls_logger(),
                           base::TimeTicks::Now(), base::DoNothing());
 }

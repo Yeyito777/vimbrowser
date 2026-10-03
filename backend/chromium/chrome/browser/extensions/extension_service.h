@@ -258,9 +258,6 @@ class ExtensionService : public ExtensionServiceInterface,
  private:
   // Loads extensions specified via a command line flag/switch.
   void LoadExtensionsFromCommandLineFlag(const char* switch_name);
-#if BUILDFLAG(IS_CHROMEOS)
-  void LoadSigninProfileTestExtension(const std::string& path);
-#endif
 
   // ExtensionHostRegistry::Observer:
   void OnExtensionHostRenderProcessGone(

@@ -163,16 +163,6 @@ config("sqlite_warnings") {
       "-Wno-pointer-to-int-cast",
     ]
   }
-  if (is_ios) {
-    cflags += [
-      # SQLite issues a #pragma warning on iOS.
-      # http://sqlite.1065341.n5.nabble.com/Compiler-warning-quot-gethostuuid-is-disabled-quot-building-SQLite-for-iOS-td96881.html
-      #
-      # Contrary to what is said on the mailing list, setting
-      # SQLITE_ENABLE_LOCKING_STYLE to 0 does not make the warning go away.
-      "-Wno-#warnings",
-    ]
-  }
   if (is_win && !is_clang) {
     cflags += [ "/wd4101" ]  # 'zTrace' unreferenced variable in src/src/vdbe.c
   }
@@ -201,14 +191,10 @@ component("chromium_sqlite3") {
   defines = []
 
   if (is_component_build) {
-    if (is_win) {
-      defines += [ "SQLITE_API=__declspec(dllexport)" ]
-    } else {
-      defines += [ "SQLITE_API=__attribute__((visibility(\"default\")))" ]
-    }
+    defines += [ "SQLITE_API=__attribute__((visibility(\"default\")))" ]
   }
 
-  if (is_linux || is_chromeos || is_android) {
+  if (is_linux || is_chromeos) {
     defines += [
       # Linux provides fdatasync(), a faster equivalent of fsync().
       "fdatasync=fdatasync",
@@ -245,14 +231,8 @@ component("chromium_sqlite3") {
 
   if (is_apple) {
     frameworks = [ "CoreFoundation.framework" ]
-    if (!is_ios) {
-      frameworks += [ "CoreServices.framework" ]
-    }
-  } else if (is_android) {
-    defines += [
-      "SQLITE_DEFAULT_JOURNAL_SIZE_LIMIT=1048576",
-      "SQLITE_DEFAULT_AUTOVACUUM=1",
-    ]
+    frameworks += [ "CoreServices.framework" ]
+  } else {
   }
 
   deps = [ "//third_party/icu" ]
@@ -287,7 +267,7 @@ source_set("dev_sqlite3") {
   cflags = []
   defines = []
 
-  if (is_linux || is_chromeos || is_android) {
+  if (is_linux || is_chromeos) {
     defines += [
       # Linux provides fdatasync(), a faster equivalent of fsync().
       "fdatasync=fdatasync",
@@ -324,14 +304,8 @@ source_set("dev_sqlite3") {
 
   if (is_apple) {
     frameworks = [ "CoreFoundation.framework" ]
-    if (!is_ios) {
-      frameworks += [ "CoreServices.framework" ]
-    }
-  } else if (is_android) {
-    defines += [
-      "SQLITE_DEFAULT_JOURNAL_SIZE_LIMIT=1048576",
-      "SQLITE_DEFAULT_AUTOVACUUM=1",
-    ]
+    frameworks += [ "CoreServices.framework" ]
+  } else {
   }
 
   deps = [ "//third_party/icu" ]

@@ -100,23 +100,6 @@ bool HasMultipleWords(const std::u16string& text) {
 }
 
 bool ShouldOnlyShowVerbatimMatches(const AutocompleteInput& input) {
-#if BUILDFLAG(IS_IOS)
-  const bool has_lens_inputs_in_composebox =
-      omnibox::IsComposebox(input.current_page_classification()) &&
-      input.lens_overlay_suggest_inputs().has_value() &&
-      !base::FeatureList::IsEnabled(omnibox::kComposeboxAttachmentsTypedState);
-  const bool is_image_gen_mode =
-      input.input_state().active_tool ==
-          omnibox::ToolMode::TOOL_MODE_IMAGE_GEN_UPLOAD ||
-      input.input_state().active_tool == omnibox::ToolMode::TOOL_MODE_IMAGE_GEN;
-
-  // When contextual typed state suggestions are disabled for composebox, or
-  // when in image generation mode, do not query suggest and only show
-  // verbatim matches.
-  if (has_lens_inputs_in_composebox || is_image_gen_mode) {
-    return true;
-  }
-#endif
   // Nano banana and deep search typed suggestions should be disabled.
   const bool in_tool_mode = input.input_state().active_tool !=
                             omnibox::ToolMode::TOOL_MODE_UNSPECIFIED;

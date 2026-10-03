@@ -11,7 +11,6 @@
 #include "components/sharing_message/shared_clipboard/remote_copy_handle_message_result.h"
 #include "components/sharing_message/sharing_constants.h"
 #include "components/sharing_message/sharing_send_message_result.h"
-#include "components/sync/protocol/unencrypted_sharing_message.pb.h"
 
 enum class SharingDeviceRegistrationResult;
 
@@ -40,10 +39,6 @@ std::string SharingSendMessageResultToString(SharingSendMessageResult result);
 // Maps PayloadCase enums to MessageType enums.
 sharing_message::MessageType SharingPayloadCaseToMessageType(
     components_sharing_message::SharingMessage::PayloadCase payload_case);
-
-// Maps PayloadCase enums to MessageType enums for unencrypted sharing messages.
-sharing_message::MessageType SharingPayloadCaseToMessageType(
-    sync_pb::UnencryptedSharingMessage::PayloadCase payload_case);
 
 // Maps MessageType enums to strings used as histogram suffixes. Keep in sync
 // with "SharingMessage" in histograms.xml.

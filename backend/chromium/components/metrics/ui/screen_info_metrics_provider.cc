@@ -11,54 +11,9 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace metrics {
 
-#if BUILDFLAG(IS_WIN)
-
-namespace {
-
-struct ScreenDPIInformation {
-  double max_dpi_x;
-  double max_dpi_y;
-};
-
-// Called once for each connected monitor.
-BOOL CALLBACK GetMonitorDPICallback(HMONITOR, HDC hdc, LPRECT, LPARAM dwData) {
-  const double kMillimetersPerInch = 25.4;
-  ScreenDPIInformation* screen_info =
-      reinterpret_cast<ScreenDPIInformation*>(dwData);
-  // Size of screen, in mm.
-  DWORD size_x = GetDeviceCaps(hdc, HORZSIZE);
-  DWORD size_y = GetDeviceCaps(hdc, VERTSIZE);
-  double dpi_x = (size_x > 0) ?
-      GetDeviceCaps(hdc, HORZRES) / (size_x / kMillimetersPerInch) : 0;
-  double dpi_y = (size_y > 0) ?
-      GetDeviceCaps(hdc, VERTRES) / (size_y / kMillimetersPerInch) : 0;
-  screen_info->max_dpi_x = std::max(dpi_x, screen_info->max_dpi_x);
-  screen_info->max_dpi_y = std::max(dpi_y, screen_info->max_dpi_y);
-  return TRUE;
-}
-
-void WriteScreenDPIInformationProto(SystemProfileProto::Hardware* hardware) {
-  HDC desktop_dc = GetDC(nullptr);
-  if (desktop_dc) {
-    ScreenDPIInformation si = {0, 0};
-    if (EnumDisplayMonitors(desktop_dc, nullptr, GetMonitorDPICallback,
-                            reinterpret_cast<LPARAM>(&si))) {
-      hardware->set_max_dpi_x(si.max_dpi_x);
-      hardware->set_max_dpi_y(si.max_dpi_y);
-    }
-    ReleaseDC(GetDesktopWindow(), desktop_dc);
-  }
-}
-
-}  // namespace
-
-#endif  // BUILDFLAG(IS_WIN)
 
 ScreenInfoMetricsProvider::ScreenInfoMetricsProvider() {
 }
@@ -82,9 +37,6 @@ void ScreenInfoMetricsProvider::ProvideSystemProfileMetrics(
   hardware->set_primary_screen_scale_factor(GetScreenDeviceScaleFactor());
   hardware->set_screen_count(GetScreenCount());
 
-#if BUILDFLAG(IS_WIN)
-  WriteScreenDPIInformationProto(hardware);
-#endif
 }
 
 std::optional<gfx::Size> ScreenInfoMetricsProvider::GetScreenSize() const {

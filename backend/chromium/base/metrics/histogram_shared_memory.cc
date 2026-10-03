@@ -23,18 +23,7 @@
 #include "base/strings/string_split.h"
 #include "base/unguessable_token.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
 
-#include "base/win/win_util.h"
-#endif
-
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/vmo.h>
-#include <zircon/process.h>
-
-#include "base/fuchsia/fuchsia_logging.h"
-#endif
 
 // This file supports passing a read/write histogram shared memory region
 // between a parent process and child process. The information about the
@@ -57,11 +46,7 @@
 namespace base {
 
 BASE_FEATURE(kPassHistogramSharedMemoryOnLaunch,
-#if BUILDFLAG(IS_ANDROID)
-             FEATURE_DISABLED_BY_DEFAULT
-#else
              FEATURE_ENABLED_BY_DEFAULT
-#endif
 );
 
 HistogramSharedMemory::SharedMemory::SharedMemory(
@@ -117,9 +102,6 @@ bool HistogramSharedMemory::PassOnCommandLineIsEnabled(int process_type) {
   // content::ProcessType;
   [[maybe_unused]] constexpr int PROCESS_TYPE_UTILITY = 6;
   return (FeatureList::IsEnabled(kPassHistogramSharedMemoryOnLaunch)
-#if BUILDFLAG(IS_ANDROID)
-          && process_type != PROCESS_TYPE_UTILITY
-#endif
   );
 }
 

@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "ash/constants/web_app_id_constants.h"
+#include "chrome/common/web_app_id_constants.h"
 #include "base/containers/adapters.h"
 #include "base/files/file_path.h"
 #include "build/branding_buildflags.h"

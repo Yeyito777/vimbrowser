@@ -7,15 +7,6 @@
 #include "build/build_config.h"
 
 // Enable deprecation warnings on Windows. See http://crbug.com/585142.
-#if BUILDFLAG(IS_WIN)
-#if defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic error "-Wdeprecated-declarations"
-#else
-#pragma warning(push)
-#pragma warning(default : 4996)
-#endif
-#endif
 
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
@@ -931,10 +922,3 @@ void CefFrameImpl::ContextLifecycleStateChanged(
 }
 
 // Enable deprecation warnings on Windows. See http://crbug.com/585142.
-#if BUILDFLAG(IS_WIN)
-#if defined(__clang__)
-#pragma GCC diagnostic pop
-#else
-#pragma warning(pop)
-#endif
-#endif

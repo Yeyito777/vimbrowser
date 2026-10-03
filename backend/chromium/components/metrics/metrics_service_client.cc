@@ -72,12 +72,7 @@ const base::FeatureParam<int> kMaxInitialLogSizeBytes{
 };
 const base::FeatureParam<int> kMaxOngoingLogSizeBytes{
     &features::kMetricsLogTrimming, "max_ongoing_log_size_bytes",
-#if BUILDFLAG(IS_CHROMEOS)
-    // Increase CrOS limit to accommodate SampledProfile data (crbug/1210595).
-    1024 * 1024  // 1 MiB
-#else
     100 * 1024  // 100 KiB
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 // The minimum time in seconds between consecutive metrics report uploads.
@@ -129,11 +124,6 @@ GURL MetricsServiceClient::GetInsecureMetricsServerUrl() {
   return metrics::GetInsecureMetricsServerUrl();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool MetricsServiceClient::IsJobSchedulerSupported() const {
-  return base::FeatureList::IsEnabled(features::kMetricsLogJobSchedulerUpload);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 base::TimeDelta MetricsServiceClient::GetUploadInterval() {
   const base::CommandLine* command_line =

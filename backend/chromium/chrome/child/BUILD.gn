@@ -12,19 +12,6 @@ static_library("child") {
   deps = []
   data_deps = []
 
-  if (is_win) {
-    sources += [
-      "v8_crashpad_support_win.cc",
-      "v8_crashpad_support_win.h",
-    ]
-    deps += [
-      "//components/crash/core/app:crash_export_thunk_include",
-      "//gin",
-      "//v8",
-    ]
-    data_deps += [ "//tools/v8_context_snapshot" ]
-  }
-
   if (enable_pdf) {
     sources += [
       "pdf_child_init.cc",

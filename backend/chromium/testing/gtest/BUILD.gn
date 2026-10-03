@@ -3,11 +3,6 @@
 # found in the LICENSE file.
 
 import("//build_overrides/gtest.gni")
-if (is_ios) {
-  import("//build/buildflag_header.gni")
-  import("//build/config/coverage/coverage.gni")
-  import("//build/config/ios/ios_sdk.gni")
-}
 
 config("gtest_direct_config") {
   visibility = [ ":*" ]
@@ -80,21 +75,4 @@ static_library("gtest") {
 source_set("gtest_main") {
   testonly = true
   deps = [ "//third_party/googletest:gtest_main" ]
-}
-
-if (is_ios) {
-  # These headers are needed in some non test targets for iOS code coverage. So
-  # can not be testonly.
-  source_set("ios_coverage_utils") {
-    sources = [
-      "../coverage_util_ios.h",
-      "../coverage_util_ios.mm",
-    ]
-    deps = [ ":ios_enable_coverage" ]
-  }
-
-  buildflag_header("ios_enable_coverage") {
-    header = "ios_enable_coverage.h"
-    flags = [ "IOS_ENABLE_COVERAGE=$use_clang_coverage" ]
-  }
 }

@@ -21,13 +21,11 @@ BrowserActionPrefsListener::BrowserActionPrefsListener(
       browser_actions_(CHECK_DEREF(browser_actions)) {
   if (auto* profile_prefs = profile_->GetPrefs()) {
     profile_pref_registrar_.Init(profile_prefs);
-#if !BUILDFLAG(IS_CHROMEOS)
     profile_pref_registrar_.Add(
         prefs::kDesktopSharingHubEnabled,
         base::BindRepeating(
             &BrowserActionPrefsListener::UpdateActionsForSharingHubPolicy,
             base::Unretained(this)));
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   }
   if (auto* local_prefs = g_browser_process->local_state()) {
     local_pref_registrar_.Init(local_prefs);
@@ -45,7 +43,6 @@ BrowserActionPrefsListener::~BrowserActionPrefsListener() {
 }
 
 void BrowserActionPrefsListener::UpdateActionsForSharingHubPolicy() {
-#if !BUILDFLAG(IS_CHROMEOS)
   // Update the visibility of the QR code generator, send tab to self, and copy
   // link actions based on the sharing hub policy. This matches the fact that
   // these actions' visibility in the app menu.
@@ -62,7 +59,6 @@ void BrowserActionPrefsListener::UpdateActionsForSharingHubPolicy() {
   update_action_visibility(kActionQrCodeGenerator);
   update_action_visibility(kActionSendTabToSelf);
   update_action_visibility(kActionCopyUrl);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }
 
 void BrowserActionPrefsListener::UpdateQRCodeGeneratorActionEnabledState() {

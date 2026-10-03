@@ -18,9 +18,6 @@
 #include "base/time/time.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 #include <sys/types.h>
 
 namespace base {
@@ -105,17 +102,6 @@ class BASE_EXPORT CancelableSyncSocket : public SyncSocket {
   // a blocking Receive or Send.
   bool Shutdown();
 
-#if BUILDFLAG(IS_WIN)
-  // Since the Linux and Mac implementations actually use a socket, shutting
-  // them down from another thread is pretty simple - we can just call
-  // shutdown().  However, the Windows implementation relies on named pipes
-  // and there isn't a way to cancel a blocking synchronous Read that is
-  // supported on <Vista. So, for Windows only, we override these
-  // SyncSocket methods in order to support shutting down the 'socket'.
-  void Close() override;
-  size_t Receive(span<uint8_t> buffer) override;
-  size_t ReceiveWithTimeout(span<uint8_t> buffer, TimeDelta timeout) override;
-#endif
 
   // Send() is overridden to catch cases where the remote end is not responding
   // and we fill the local socket buffer. When `data` is full, this
@@ -125,10 +111,6 @@ class BASE_EXPORT CancelableSyncSocket : public SyncSocket {
   size_t Send(span<const uint8_t> data) override;
 
  private:
-#if BUILDFLAG(IS_WIN)
-  WaitableEvent shutdown_event_;
-  WaitableEvent file_operation_;
-#endif
 };
 
 }  // namespace base

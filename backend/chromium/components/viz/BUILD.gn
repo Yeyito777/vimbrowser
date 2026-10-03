@@ -41,11 +41,6 @@ viz_test("viz_unittests") {
     "//third_party/angle:includes",
   ]
 
-  if (is_android) {
-    # The top level test target must depend on the java library directly.
-    deps += [ "//components/viz/service:service_java" ]
-  }
-
   if (is_fuchsia) {
     # TODO(crbug.com/42050042): Some of these tests use SwiftShader,
     # which requires ambient VMEX.
@@ -88,19 +83,4 @@ viz_test("viz_perftests") {
     # Needed for isolate script to execute.
     "//testing:run_perf_test",
   ]
-}
-
-if (is_android) {
-  java_cpp_features("java_features_srcjar") {
-    # External code should depend on ":viz_java" instead.
-    visibility = [ ":*" ]
-    sources = [ "common/features.cc" ]
-    class_name = "org.chromium.components.viz.common.VizFeatures"
-  }
-
-  android_library("viz_java") {
-    # Right now, this only includes the Java features. But if we need more Java
-    # files, they should be added here as necessary.
-    srcjar_deps = [ ":java_features_srcjar" ]
-  }
 }

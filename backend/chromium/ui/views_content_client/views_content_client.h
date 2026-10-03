@@ -52,12 +52,7 @@ class VIEWS_CONTENT_CLIENT_EXPORT ViewsContentClient {
       base::OnceCallback<void(content::BrowserContext* browser_context,
                               gfx::NativeWindow window_context)>;
 
-#if BUILDFLAG(IS_WIN)
-  ViewsContentClient(HINSTANCE instance,
-                     sandbox::SandboxInterfaceInfo* sandbox_info);
-#else
   ViewsContentClient(int argc, const char** argv);
-#endif
 
   ViewsContentClient(const ViewsContentClient&) = delete;
   ViewsContentClient& operator=(const ViewsContentClient&) = delete;
@@ -95,13 +90,8 @@ class VIEWS_CONTENT_CLIENT_EXPORT ViewsContentClient {
   base::OnceClosure& quit_closure() { return quit_closure_; }
 
  private:
-#if BUILDFLAG(IS_WIN)
-  HINSTANCE instance_;
-  raw_ptr<sandbox::SandboxInterfaceInfo> sandbox_info_;
-#else
   int argc_;
   raw_ptr<const char*> argv_;
-#endif
   OnPreMainMessageLoopRunCallback on_pre_main_message_loop_run_callback_;
   base::OnceClosure on_resources_loaded_callback_;
   base::OnceClosure quit_closure_;

@@ -38,11 +38,9 @@ test("service_manager_unittests") {
 
   data_deps = [ ":background_service_manager_test_service" ]
 
-  if (!is_ios) {
-    sources += [ "service_process_launcher_unittest.cc" ]
+  sources += [ "service_process_launcher_unittest.cc" ]
 
-    data_deps += [ ":service_process_launcher_test_service" ]
-  }
+  data_deps += [ ":service_process_launcher_test_service" ]
 }
 
 mojom("interfaces") {

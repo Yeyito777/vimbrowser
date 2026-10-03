@@ -22,10 +22,6 @@
 #include "components/services/app_service/public/cpp/package_id.h"
 #include "components/services/app_service/public/cpp/preferred_app.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/apps/app_service/promise_apps/promise_app.h"
-#include "chrome/browser/apps/app_service/promise_apps/promise_app_registry_cache.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -81,25 +77,6 @@ std::vector<mojom::app_service_internals::PromiseAppInfoPtr> GetPromiseApps(
     apps::AppServiceProxy* proxy) {
   std::vector<mojom::app_service_internals::PromiseAppInfoPtr> promise_apps;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!proxy->PromiseAppRegistryCache()) {
-    return promise_apps;
-  }
-
-  for (const auto& promise_app :
-       proxy->PromiseAppRegistryCache()->GetAllPromiseApps()) {
-    std::stringstream debug_info;
-    debug_info << *promise_app;
-    promise_apps.emplace_back(std::in_place,
-                              promise_app.get()->package_id.ToString(),
-                              debug_info.str());
-  }
-
-  std::ranges::sort(promise_apps, std::less<>(), [](const auto& promise_app) {
-    return promise_app->package_id;
-  });
-
-#endif
   return promise_apps;
 }
 

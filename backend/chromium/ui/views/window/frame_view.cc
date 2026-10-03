@@ -15,9 +15,6 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/client_view.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#endif
 
 namespace views {
 
@@ -95,16 +92,6 @@ bool FrameView::IsWindowTitleVisible() const {
   return false;
 }
 
-#if BUILDFLAG(IS_WIN)
-gfx::Point FrameView::GetSystemMenuScreenPixelLocation() const {
-  gfx::Point point(GetMirroredXInView(GetBoundsForClientView().x()),
-                   GetSystemMenuY());
-  View::ConvertPointToScreen(this, &point);
-  point = display::win::GetScreenWin()->DIPToScreenPoint(point);
-  // The native system menu seems to overlap the titlebar by 1 px.  Match that.
-  return point - gfx::Vector2d(0, 1);
-}
-#endif
 
 int FrameView::NonClientHitTest(const gfx::Point& point) {
   return HTNOWHERE;
@@ -151,11 +138,6 @@ FrameView::FrameView() {
   SetEventTargeter(std::make_unique<views::ViewTargeter>(this));
 }
 
-#if BUILDFLAG(IS_WIN)
-int FrameView::GetSystemMenuY() const {
-  return GetBoundsForClientView().y();
-}
-#endif
 
 BEGIN_METADATA(FrameView)
 END_METADATA

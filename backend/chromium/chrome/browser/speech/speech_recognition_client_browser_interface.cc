@@ -81,13 +81,6 @@ void SpeechRecognitionClientBrowserInterface::REMOVED_1() {
   NOTIMPLEMENTED();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void SpeechRecognitionClientBrowserInterface::REMOVED_2(
-    mojo::PendingRemote<media::mojom::SpeechRecognitionBrowserObserver>
-        pending_remote) {
-  NOTIMPLEMENTED();
-}
-#endif
 
 void SpeechRecognitionClientBrowserInterface::OnSodaInstalled(
     speech::LanguageCode language_code) {

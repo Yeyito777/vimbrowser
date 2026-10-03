@@ -30,9 +30,6 @@
 #include "gpu/vulkan/vulkan_fence_helper.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/win/d3d_shared_fence.h"
-#endif
 
 namespace gpu {
 
@@ -835,16 +832,6 @@ WebNNTensorRepresentation::ScopedAccess::~ScopedAccess() {
   representation()->EndAccess();
 }
 
-#if BUILDFLAG(IS_WIN)
-scoped_refptr<gfx::D3DSharedFence>
-WebNNTensorRepresentation::ScopedAccess::GetAcquireFence() const {
-  return representation()->GetAcquireFence();
-}
-void WebNNTensorRepresentation::ScopedAccess::SetReleaseFence(
-    scoped_refptr<gfx::D3DSharedFence> release_fence) {
-  representation()->SetReleaseFence(std::move(release_fence));
-}
-#endif
 
 std::unique_ptr<WebNNTensorRepresentation::ScopedAccess>
 WebNNTensorRepresentation::BeginScopedAccess() {
@@ -859,12 +846,6 @@ bool WebNNTensorRepresentation::is_thread_safe() const {
   return backing()->is_thread_safe();
 }
 
-#if BUILDFLAG(IS_WIN)
-Microsoft::WRL::ComPtr<ID3D12Resource>
-WebNNTensorRepresentation::GetD3D12Buffer() const {
-  NOTREACHED();
-}
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 IOSurfaceRef WebNNTensorRepresentation::GetIOSurface() const {
@@ -875,22 +856,9 @@ IOSurfaceRef WebNNTensorRepresentation::GetIOSurface() const {
 ///////////////////////////////////////////////////////////////////////////////
 // OverlayImageRepresentation
 
-#if BUILDFLAG(IS_ANDROID)
-AHardwareBuffer* OverlayImageRepresentation::GetAHardwareBuffer() {
-  NOTREACHED();
-}
-std::unique_ptr<base::android::ScopedHardwareBufferFenceSync>
-OverlayImageRepresentation::GetAHardwareBufferFenceSync() {
-  NOTREACHED();
-}
-#elif BUILDFLAG(IS_OZONE)
+#if BUILDFLAG(IS_OZONE)
 scoped_refptr<gfx::NativePixmap> OverlayImageRepresentation::GetNativePixmap() {
   return backing()->GetNativePixmap();
-}
-#elif BUILDFLAG(IS_WIN)
-std::optional<gl::DCLayerOverlayImage>
-OverlayImageRepresentation::GetDCLayerOverlayImage() {
-  NOTREACHED();
 }
 #elif BUILDFLAG(IS_APPLE)
 gfx::ScopedIOSurface OverlayImageRepresentation::GetIOSurface() const {
@@ -1137,20 +1105,6 @@ RasterImageRepresentation::BeginScopedWriteAccess(
 ///////////////////////////////////////////////////////////////////////////////
 // VideoImageRepresentation
 
-#if BUILDFLAG(IS_WIN)
-D3D11TextureAndArrayIndex::D3D11TextureAndArrayIndex(
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> texture,
-    size_t array_index)
-    : texture(std::move(texture)), array_index(array_index) {}
-
-D3D11TextureAndArrayIndex::D3D11TextureAndArrayIndex(
-    const D3D11TextureAndArrayIndex& other) = default;
-
-D3D11TextureAndArrayIndex::D3D11TextureAndArrayIndex(
-    D3D11TextureAndArrayIndex&& other) = default;
-
-D3D11TextureAndArrayIndex::~D3D11TextureAndArrayIndex() = default;
-#endif  // BUILDFLAG(IS_WIN)
 
 VideoImageRepresentation::VideoImageRepresentation(SharedImageManager* manager,
                                                    SharedImageBacking* backing,

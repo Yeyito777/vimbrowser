@@ -20,13 +20,7 @@
 #include "crypto/secure_util.h"
 #include "ui/base/buildflags.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "chrome/app/chrome_exe_main_win.h"
-#else
 #include "chrome/app/packed_resources_integrity.h"  // nogncheck
-#endif
 
 namespace {
 
@@ -85,38 +79,11 @@ void CheckPakFileIntegrity() {
   // with the Grit resource allow-list generation. Instead, the hashes are
   // embedded in chrome.exe, which provides an exported function to
   // access them.
-#if BUILDFLAG(IS_WIN)
-  auto get_pak_file_hashes = reinterpret_cast<decltype(&GetPakFileHashes)>(
-      ::GetProcAddress(::GetModuleHandle(nullptr), "GetPakFileHashes"));
-  if (!get_pak_file_hashes) {
-    // This is only exported by chrome.exe and unit_tests.exe, so in
-    // other tests, like browser_tests.exe, this export will not be available.
-    return;
-  }
-
-  const uint8_t *resources_hash_raw = nullptr, *chrome_100_hash_raw = nullptr,
-                *chrome_200_hash_raw = nullptr;
-  get_pak_file_hashes(&resources_hash_raw, &chrome_100_hash_raw,
-                      &chrome_200_hash_raw);
-
-  UNSAFE_BUFFERS(
-      // SAFETY: these are compile-time constant data exposed via a C ABI
-      // function, which means they can't be directly returned as spans or
-      // std::arrays.
-      base::span resources_hash(
-          resources_hash_raw, base::fixed_extent<crypto::hash::kSha256Size>());
-      base::span chrome_100_hash(
-          chrome_100_hash_raw, base::fixed_extent<crypto::hash::kSha256Size>());
-      base::span chrome_200_hash(
-          chrome_200_hash_raw,
-          base::fixed_extent<crypto::hash::kSha256Size>());)
-#else
   base::span resources_hash = kSha256_resources_pak;
   base::span chrome_100_hash = kSha256_chrome_100_percent_pak;
 #if BUILDFLAG(ENABLE_HIDPI)
   base::span chrome_200_hash = kSha256_chrome_200_percent_pak;
 #endif
-#endif  // BUILDFLAG(IS_WIN)
 
   scoped_refptr<base::SequencedTaskRunner> task_runner =
       base::ThreadPool::CreateSequencedTaskRunner(

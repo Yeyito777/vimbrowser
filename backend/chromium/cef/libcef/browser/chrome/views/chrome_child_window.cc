@@ -9,10 +9,6 @@
 #include "cef/libcef/browser/views/window_impl.h"
 #include "ui/gfx/native_ui_types.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "cef/libcef/browser/native/browser_platform_delegate_native_win.h"
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 #if defined(USE_AURA)
 #include "cef/libcef/browser/native/browser_platform_delegate_native_aura.h"
@@ -65,9 +61,6 @@ class ChildWindowDelegate : public CefWindowDelegate {
   void OnWindowDestroyed(CefRefPtr<CefWindow> window) override {
     browser_view_ = nullptr;
     window_ = nullptr;
-#if BUILDFLAG(IS_WIN)
-    native_delegate_ = nullptr;
-#endif
   }
 
   CefRect GetInitialBounds(CefRefPtr<CefWindow> window) override {
@@ -99,34 +92,6 @@ class ChildWindowDelegate : public CefWindowDelegate {
     native_delegate_ = static_cast<CefBrowserPlatformDelegateNativeAura*>(
         chrome_delegate->native_delegate());
 
-#if BUILDFLAG(IS_WIN)
-    auto widget = static_cast<CefWindowImpl*>(window_.get())->widget();
-    DCHECK(widget);
-    const HWND widget_hwnd = HWNDForWidget(widget);
-    DCHECK(widget_hwnd);
-
-    // The Windows delegate needs state to perform some actions.
-    auto* delegate_win =
-        static_cast<CefBrowserPlatformDelegateNativeWin*>(native_delegate_);
-    delegate_win->set_widget(widget, widget_hwnd);
-
-    if (window_info_.ex_style & WS_EX_NOACTIVATE) {
-      const DWORD widget_ex_styles = GetWindowLongPtr(widget_hwnd, GWL_EXSTYLE);
-
-      // Add the WS_EX_NOACTIVATE style on the DesktopWindowTreeHostWin HWND
-      // so that HWNDMessageHandler::Show() called via Widget::Show() does not
-      // activate the window.
-      SetWindowLongPtr(widget_hwnd, GWL_EXSTYLE,
-                       widget_ex_styles | WS_EX_NOACTIVATE);
-
-      window_->Show();
-
-      // Remove the WS_EX_NOACTIVATE style so that future mouse clicks inside
-      // the browser correctly activate and focus the window.
-      SetWindowLongPtr(widget_hwnd, GWL_EXSTYLE, widget_ex_styles);
-      return;
-    }
-#endif  // BUILDFLAG(IS_WIN)
 #endif  // defined(USE_AURA)
 
     window_->Show();

@@ -5,6 +5,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <deque>
 
 namespace vimbrowser {
 
@@ -28,6 +29,7 @@ class IpcServer final {
  private:
   void Loop();
   void HandleClient(int client_fd);
+  void HealthLoop();
 
   BrowserWindow* owner_ = nullptr;
   std::string socket_path_;
@@ -37,6 +39,11 @@ class IpcServer final {
   std::mutex pending_command_mutex_;
   std::function<void()> cancel_pending_command_;
   std::thread thread_;
+  int health_fd_ = -1;
+  std::thread health_thread_;
+  // Snapshot only: the health thread never touches CEF/UI objects.
+  std::deque<std::function<std::string()>> operation_snapshots_;
+  uint64_t operation_sequence_ = 0;
 };
 
 }  // namespace vimbrowser

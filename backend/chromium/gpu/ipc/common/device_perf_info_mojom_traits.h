@@ -12,16 +12,6 @@
 
 namespace mojo {
 
-#if BUILDFLAG(IS_WIN)
-template <>
-struct GPU_IPC_COMMON_EXPORT EnumTraits<gpu::mojom::Direct3DFeatureLevel,
-                                        D3D_FEATURE_LEVEL> {
-  static gpu::mojom::Direct3DFeatureLevel ToMojom(
-      D3D_FEATURE_LEVEL d3d_feature_level);
-  static bool FromMojom(gpu::mojom::Direct3DFeatureLevel input,
-                        D3D_FEATURE_LEVEL* out);
-};
-#endif  // BUILDFLAG(IS_WIN)
 
 template <>
 struct GPU_IPC_COMMON_EXPORT EnumTraits<gpu::mojom::HasDiscreteGpu,
@@ -50,20 +40,6 @@ struct GPU_IPC_COMMON_EXPORT StructTraits<gpu::mojom::DevicePerfInfoDataView,
     return info.hardware_concurrency;
   }
 
-#if BUILDFLAG(IS_WIN)
-  static uint32_t system_commit_limit_mb(const gpu::DevicePerfInfo& info) {
-    return info.system_commit_limit_mb;
-  }
-
-  static D3D_FEATURE_LEVEL d3d11_feature_level(
-      const gpu::DevicePerfInfo& info) {
-    return info.d3d11_feature_level;
-  }
-
-  static gpu::HasDiscreteGpu has_discrete_gpu(const gpu::DevicePerfInfo& info) {
-    return info.has_discrete_gpu;
-  }
-#endif
 };
 
 }  // namespace mojo

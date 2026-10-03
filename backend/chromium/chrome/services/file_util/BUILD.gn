@@ -41,15 +41,6 @@ source_set("file_util") {
     deps += [ "//third_party/unrar" ]
   }
 
-  if (is_chromeos) {
-    sources += [
-      "zip_file_creator.cc",
-      "zip_file_creator.h",
-    ]
-
-    deps += [ "//components/services/filesystem/public/mojom" ]
-  }
-
   if (is_mac) {
     deps += [ "//chrome/utility/safe_browsing" ]
   }

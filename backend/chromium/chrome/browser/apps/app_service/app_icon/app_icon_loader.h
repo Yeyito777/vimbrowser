@@ -23,10 +23,6 @@
 #include "extensions/common/constants.h"
 #include "ui/gfx/image/image_skia.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/experiences/arc/mojom/intent_helper.mojom.h"
-#include "ui/base/resource/resource_scale_factor.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace arc {
 class IconDecodeRequest;
@@ -127,70 +123,12 @@ class AppIconLoader : public base::RefCounted<AppIconLoader>,
 
   void LoadIconFromResource(int icon_resource);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // For ARC icons, converts an icon png data to an ImageSkia using
-  // arc::IconDecodeRequest.
-  void LoadArcIconPngData(const std::vector<uint8_t>& icon_png_data);
-
-  // For ARC icons, composite the foreground image and the background image,
-  // then apply the mask.
-  void LoadCompositeImages(const std::vector<uint8_t>& foreground_data,
-                           const std::vector<uint8_t>& background_data);
-
-  // Loads icons for ARC activities.
-  void LoadArcActivityIcons(
-      const std::vector<arc::mojom::ActivityIconPtr>& icons);
-
-  // Requests a compressed icon data with `scale_factor` for an web app
-  // identified by `web_app_id`.
-  void GetWebAppCompressedIconData(const std::string& web_app_id,
-                                   ui::ResourceScaleFactor scale_factor,
-                                   web_app::WebAppIconManager& icon_manager);
-
-  // Requests a compressed icon data with `scale_factor` for a chrome app
-  // identified by `extension`.
-  void GetChromeAppCompressedIconData(const extensions::Extension* extension,
-                                      ui::ResourceScaleFactor scale_factor);
-
-  // Requests a compressed icon data with `scale_factor` for an ARC app
-  // identified by `app_id`.
-  void GetArcAppCompressedIconData(const std::string& app_id,
-                                   ArcAppListPrefs* arc_prefs,
-                                   ui::ResourceScaleFactor scale_factor);
-
-  // Requests a compressed icon data with `scale_factor` for a Guest OS app
-  // identified by `app_id`.
-  void GetGuestOSAppCompressedIconData(const std::string& app_id,
-                                       ui::ResourceScaleFactor scale_factor);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
  private:
   friend class base::RefCounted<AppIconLoader>;
 
   ~AppIconLoader() override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnGetArcAppCompressedIconData(AdaptiveIconPaths app_icon_paths,
-                                     arc::mojom::RawIconPngDataPtr icon);
-
-  void OnGetGuestOSAppCompressedIconData(base::FilePath png_path,
-                                         base::FilePath svg_path,
-                                         std::string icon_data);
-
-  void TranscodeIconFromSvg(base::FilePath svg_path, base::FilePath png_path);
-
-  std::unique_ptr<arc::IconDecodeRequest> CreateArcIconDecodeRequest(
-      base::OnceCallback<void(const gfx::ImageSkia& icon)> callback,
-      const std::vector<uint8_t>& icon_png_data);
-
-  void ApplyBackgroundAndMask(const gfx::ImageSkia& image);
-
-  void CompositeImagesAndApplyMask(bool is_foreground,
-                                   const gfx::ImageSkia& image);
-
-  void OnArcActivityIconLoaded(gfx::ImageSkia* arc_activity_icon,
-                               const gfx::ImageSkia& icon);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void MaybeApplyEffectsAndComplete(const gfx::ImageSkia image);
 
@@ -270,12 +208,6 @@ class AppIconLoader : public base::RefCounted<AppIconLoader>,
   base::OnceCallback<void(const std::vector<gfx::ImageSkia>& icon)>
       arc_activity_icons_callback_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<arc::IconDecodeRequest> arc_icon_decode_request_;
-  std::unique_ptr<arc::IconDecodeRequest> arc_foreground_icon_decode_request_;
-  std::unique_ptr<arc::IconDecodeRequest> arc_background_icon_decode_request_;
-  std::unique_ptr<SvgIconTranscoder> svg_icon_transcoder_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace apps

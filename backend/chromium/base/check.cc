@@ -202,26 +202,7 @@ class CheckLogMessage : public LogMessage {
   const base::NotFatalUntil fatal_milestone_;
 };
 
-#if BUILDFLAG(IS_WIN)
-class DCheckWin32ErrorLogMessage : public Win32ErrorLogMessage {
- public:
-  DCheckWin32ErrorLogMessage(const base::Location& location,
-                             SystemErrorCode err)
-      : Win32ErrorLogMessage(location.file_name(),
-                             location.line_number(),
-                             LOGGING_DCHECK,
-                             err),
-        location_(location) {}
-  ~DCheckWin32ErrorLogMessage() override {
-    HandleCheckErrorLogMessage(
-        GetDCheckCrashKey(), this, location_,
-        base::NotFatalUntil::NoSpecifiedMilestoneInternal);
-  }
-
- private:
-  const base::Location location_;
-};
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 class DCheckErrnoLogMessage : public ErrnoLogMessage {
  public:
   DCheckErrnoLogMessage(const base::Location& location, SystemErrorCode err)
@@ -311,9 +292,7 @@ LogMessage* CheckError::DumpWillBeCheckOp(char* log_message_str,
 CheckError CheckError::DPCheck(const char* condition,
                                const base::Location& location) {
   SystemErrorCode err_code = logging::GetLastSystemErrorCode();
-#if BUILDFLAG(IS_WIN)
-  auto* const log_message = new DCheckWin32ErrorLogMessage(location, err_code);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   auto* const log_message = new DCheckErrnoLogMessage(location, err_code);
 #endif
   log_message->stream() << "DCHECK failed: " << condition
@@ -394,10 +373,7 @@ LogMessage* CheckNoreturnError::CheckOp(char* log_message_str,
 CheckNoreturnError CheckNoreturnError::PCheck(const char* condition,
                                               const base::Location& location) {
   SystemErrorCode err_code = logging::GetLastSystemErrorCode();
-#if BUILDFLAG(IS_WIN)
-  auto* const log_message = new Win32ErrorLogMessage(
-      location.file_name(), location.line_number(), LOGGING_FATAL, err_code);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   auto* const log_message = new ErrnoLogMessage(
       location.file_name(), location.line_number(), LOGGING_FATAL, err_code);
 #endif

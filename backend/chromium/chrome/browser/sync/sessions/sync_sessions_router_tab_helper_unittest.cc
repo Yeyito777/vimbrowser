@@ -57,7 +57,6 @@ class SyncSessionsRouterTabHelperTest : public ChromeRenderViewHostTestHarness {
     sync_sessions_router_ =
         std::make_unique<sync_sessions::SyncSessionsRouterTabHelper>(
             web_contents(), router(),
-            ChromeTranslateClient::FromWebContents(web_contents()),
             favicon::ContentFaviconDriver::FromWebContents(web_contents()));
     router_->StartRoutingTo(handler());
 

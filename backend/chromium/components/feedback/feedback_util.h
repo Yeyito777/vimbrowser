@@ -28,13 +28,11 @@ std::string LogsToString(const FeedbackCommon::SystemLogsMap& sys_info);
 // Removes URL fields from the autofill logs.
 void RemoveUrlsFromAutofillData(std::string& autofill_metadata);
 
-#if !BUILDFLAG(IS_WIN)
 // Reads the data from the latter part of the file specified by `path`.
 // If the file size is greater than `max_size` in bytes, the data will be
 // truncated to `max_size`. Returns the file contents, or nullopt on failure.
 std::optional<std::string> ReadEndOfFile(const base::FilePath& path,
                                          size_t max_size);
-#endif
 
 }  // namespace feedback_util
 

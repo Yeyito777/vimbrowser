@@ -16,11 +16,6 @@
 #include "components/zucchini/mapped_file.h"
 #include "components/zucchini/patch_reader.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <ntstatus.h>
-
-#include "components/zucchini/exception_filter_helper_win.h"
-#endif
 
 namespace zucchini {
 
@@ -105,20 +100,12 @@ status::Code ApplyCommon(base::File old_file,
                          base::File new_file,
                          const FileNames& names,
                          bool force_keep) {
-#if BUILDFLAG(IS_WIN)
-  ExceptionFilterHelper exception_filter_helper;
-  __try {
-#endif
     MappedFileReader mapped_patch(std::move(patch_file));
     if (mapped_patch.HasError()) {
       LOG(ERROR) << "Error with file " << names.patch_name.value() << ": "
                  << mapped_patch.error();
       return status::kStatusFileReadError;
     }
-#if BUILDFLAG(IS_WIN)
-    exception_filter_helper.AddRange(
-        UNSAFE_TODO({mapped_patch.data(), mapped_patch.length()}));
-#endif
 
     auto patch_reader = EnsemblePatchReader::Create(mapped_patch.region());
     if (!patch_reader.has_value()) {
@@ -132,10 +119,6 @@ status::Code ApplyCommon(base::File old_file,
                  << mapped_old.error();
       return status::kStatusFileReadError;
     }
-#if BUILDFLAG(IS_WIN)
-    exception_filter_helper.AddRange(
-        UNSAFE_TODO({mapped_old.data(), mapped_old.length()}));
-#endif
 
     PatchHeader header = patch_reader->header();
     // By default, delete output on destruction, to avoid having lingering files
@@ -150,10 +133,6 @@ status::Code ApplyCommon(base::File old_file,
     if (force_keep) {
       mapped_new.Keep();
     }
-#if BUILDFLAG(IS_WIN)
-    exception_filter_helper.AddRange(
-        UNSAFE_TODO({mapped_new.data(), mapped_new.length()}));
-#endif
 
     status::Code result =
         ApplyBuffer(mapped_old.region(), *patch_reader, mapped_new.region());
@@ -165,19 +144,6 @@ status::Code ApplyCommon(base::File old_file,
     // Successfully patch |mapped_new|. Explicitly request file to be kept.
     return mapped_new.Keep() ? status::kStatusSuccess
                              : status::kStatusFileWriteError;
-#if BUILDFLAG(IS_WIN)
-  } __except (exception_filter_helper.FilterPageError(
-      GetExceptionInformation()->ExceptionRecord)) {
-    LOG(ERROR) << "EXCEPTION_IN_PAGE_ERROR while "
-               << (exception_filter_helper.is_write() ? "writing to"
-                                                      : "reading from")
-               << " mapped files; NTSTATUS = "
-               << exception_filter_helper.nt_status();
-    return exception_filter_helper.nt_status() == STATUS_DISK_FULL
-               ? status::kStatusDiskFull
-               : status::kStatusIoError;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 status::Code VerifyPatchCommon(base::File patch_file,

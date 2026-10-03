@@ -200,9 +200,7 @@ GURL GetParentAccessURL(
   static constexpr char kContinueUrl[] = "https://families.google.com";
 
   // Caller Ids for Desktop and iOS platforms.
-#if BUILDFLAG(IS_IOS)
-  static constexpr char kCallerId[] = "qSTnVRdQ";
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   static constexpr char kCallerId[] = "clwAA5XJ";
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
 

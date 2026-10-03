@@ -26,9 +26,6 @@
 #include "components/policy/core/common/cloud/cloud_policy_store.h"
 #include "components/policy/proto/device_management_backend.pb.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/device_signals/core/common/win/win_types.h"
-#endif
 
 namespace enterprise_connectors {
 
@@ -157,15 +154,6 @@ void BrowserSignalsDecorator::OnAggregatedSignalsReceived(
     }
   }
 
-#if BUILDFLAG(IS_WIN)
-  device_signals::InstalledAntivirusState antivirus_state{
-      device_signals::InstalledAntivirusState::kNone};
-  if (response.av_signal_response) {
-    antivirus_state = response.av_signal_response->antivirus_state;
-  }
-  signals.Set(device_signals::names::kAntivirusState,
-              static_cast<int>(antivirus_state));
-#endif
 
   std::move(done_closure).Run();
 }

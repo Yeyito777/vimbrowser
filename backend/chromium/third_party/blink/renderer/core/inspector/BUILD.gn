@@ -109,10 +109,6 @@ source_set("generated") {
                "//third_party/blink/renderer/core:core_include_dirs",
              ]
 
-  if (is_win) {
-    cflags = [ "/wd4702" ]  # Unreachable code.
-  }
-
   deps = [
     ":protocol_sources",
     "//skia",

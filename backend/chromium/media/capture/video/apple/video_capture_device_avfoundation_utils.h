@@ -13,9 +13,6 @@
 #include "media/capture/video/video_capture_device_descriptor.h"
 #include "media/capture/video_capture_types.h"
 
-#if BUILDFLAG(IS_IOS)
-#import <UIKit/UIKit.h>
-#endif
 
 @class DeviceNameAndTransportType;
 
@@ -33,11 +30,6 @@ std::string CAPTURE_EXPORT MacFourCCToString(OSType fourcc);
 gfx::Size CAPTURE_EXPORT GetPixelBufferSize(CVPixelBufferRef pixel_buffer);
 gfx::Size CAPTURE_EXPORT GetSampleBufferSize(CMSampleBufferRef sample_buffer);
 
-#if BUILDFLAG(IS_IOS)
-std::optional<int> MaybeGetVideoRotation(
-    UIDeviceOrientation orientation,
-    AVCaptureDevicePosition camera_position);
-#endif
 }  // namespace media
 
 #endif  // MEDIA_CAPTURE_VIDEO_APPLE_VIDEO_CAPTURE_DEVICE_AVFOUNDATION_UTILS_H_

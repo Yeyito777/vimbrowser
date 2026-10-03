@@ -11,10 +11,6 @@
 #include "components/services/app_service/public/cpp/capability_access.h"
 #include "components/services/app_service/public/cpp/package_id.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/apps/app_service/promise_apps/promise_app.h"
-#include "extensions/grit/extensions_browser_resources.h"
-#endif
 
 namespace apps {
 
@@ -60,18 +56,6 @@ void AppPublisher::LoadIcon(const std::string& app_id,
   std::move(callback).Run(std::make_unique<IconValue>());
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-int AppPublisher::DefaultIconResourceId() const {
-  return IDR_APP_DEFAULT_ICON;
-}
-
-void AppPublisher::GetCompressedIconData(const std::string& app_id,
-                                         int32_t size_in_dip,
-                                         ui::ResourceScaleFactor scale_factor,
-                                         LoadIconCallback callback) {
-  std::move(callback).Run(std::make_unique<IconValue>());
-}
-#endif
 
 void AppPublisher::LaunchAppWithFiles(const std::string& app_id,
                                       int32_t event_flags,
@@ -153,24 +137,6 @@ void AppPublisher::SetWindowMode(const std::string& app_id,
   NOTIMPLEMENTED();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void AppPublisher::SetAppLocale(const std::string& app_id,
-                                const std::string& locale_tag) {
-  NOTIMPLEMENTED();
-}
-
-// static
-PromiseAppPtr AppPublisher::MakePromiseApp(const PackageId& package_id) {
-  return std::make_unique<PromiseApp>(package_id);
-}
-
-void AppPublisher::PublishPromiseApp(PromiseAppPtr delta) {
-  if (!proxy_) {
-    NOTREACHED();
-  }
-  proxy_->OnPromiseApp(std::move(delta));
-}
-#endif
 
 void AppPublisher::Publish(AppPtr app) {
   if (!proxy_) {

@@ -237,16 +237,8 @@ class GuestStateProvider : public PrivateBaseStateProvider {
 
   // StateProvider:
   std::u16string GetText() const override {
-#if BUILDFLAG(IS_CHROMEOS)
-    // On ChromeOS all windows are either Guest or not Guest and the Guest
-    // avatar button is not actionable. Showing the number of open windows is
-    // not as helpful as on other desktop platforms. Please see
-    // crbug.com/1178520.
-    const int guest_window_count = 1;
-#else
     const int guest_window_count =
         static_cast<int>(chrome::GetGuestBrowserCount());
-#endif
     return l10n_util::GetPluralStringFUTF16(IDS_AVATAR_BUTTON_GUEST,
                                             guest_window_count);
   }

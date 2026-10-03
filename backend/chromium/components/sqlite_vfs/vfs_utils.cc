@@ -17,9 +17,6 @@
 #include "components/sqlite_vfs/sandboxed_file.h"
 #include "components/sqlite_vfs/sqlite_database_vfs_file_set.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace sqlite_vfs {
 
@@ -42,28 +39,10 @@ base::File DuplicateFile(const base::File& source_file,
     return source_file.Duplicate();
   }
 
-#if BUILDFLAG(IS_WIN)
-  // Duplicate the handle to the file with restricted rights.
-  HANDLE handle = nullptr;
-  if (!::DuplicateHandle(
-          /*hSourceProcessHandle=*/::GetCurrentProcess(),
-          /*hSourceHandle=*/source_file.GetPlatformFile(),
-          /*hTargetProcessHandle=*/::GetCurrentProcess(),
-          /*lpTargetHandle=*/&handle,
-          /*dwDesiredAccess=*/FILE_GENERIC_READ,
-          /*bInheritHandle=*/FALSE,
-          /*dwOptions=*/0)) {
-    // Duplication failed; return an invalid File.
-    DWORD error = ::GetLastError();
-    return base::File(base::File::OSErrorToFileError(error));
-  }
-  return base::File(handle);
-#else
   // It's not possible to get a new file descriptor with reduced permissions to
   // the same file description, so open the file anew with read-only access.
   return base::File(source_file_path,
                     base::File::FLAG_OPEN | base::File::FLAG_READ);
-#endif
 }
 
 }  // namespace

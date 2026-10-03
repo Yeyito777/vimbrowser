@@ -63,12 +63,6 @@ class SharedSampler : public base::RefCountedThreadSafe<SharedSampler> {
   // Triggers a refresh of the expensive process' stats, on the worker thread.
   void Refresh(base::ProcessId process_id, int64_t refresh_flags);
 
-#if BUILDFLAG(IS_WIN)
-  // Specifies a function to use in place of NtQuerySystemInformation.
-  typedef int (*QuerySystemInformationForTest)(base::span<uint8_t> buffer);
-  static void SetQuerySystemInformationForTesting(
-      QuerySystemInformationForTest query_system_information);
-#endif  // BUILDFLAG(IS_WIN)
 
  private:
   friend class base::RefCountedThreadSafe<SharedSampler>;
@@ -76,64 +70,6 @@ class SharedSampler : public base::RefCountedThreadSafe<SharedSampler> {
 
   typedef std::map<base::ProcessId, OnSamplingCompleteCallback> CallbacksMap;
 
-#if BUILDFLAG(IS_WIN)
-  // Contains all results of refresh for a single process.
-  struct ProcessIdAndSamplingResult {
-    base::ProcessId process_id;
-    SamplingResult data;
-  };
-  typedef std::vector<ProcessIdAndSamplingResult> AllSamplingResults;
-
-  // Posted on the worker thread to do the actual refresh.
-  AllSamplingResults RefreshOnWorkerThread();
-
-  // Called on UI thread when the refresh is done.
-  void OnRefreshDone(AllSamplingResults sampling_results);
-
-  // Clear cached data.
-  void ClearState();
-
-  // Used to filter process information.
-  static std::vector<base::FilePath> GetSupportedImageNames();
-  bool IsSupportedImageName(base::FilePath::StringViewType image_name) const;
-
-  // Captures a snapshot of data for all chrome processes.
-  // Runs on the worker thread.
-  std::unique_ptr<ProcessDataSnapshot> CaptureSnapshot();
-
-  // Produce refresh results by diffing two snapshots.
-  static AllSamplingResults MakeResultsFromTwoSnapshots(
-      const ProcessDataSnapshot& prev_snapshot,
-      const ProcessDataSnapshot& snapshot);
-
-  // Produce refresh results from one snapshot.
-  // This is used only the first time when only one snapshot is available.
-  static AllSamplingResults MakeResultsFromSnapshot(
-      const ProcessDataSnapshot& snapshot);
-
-  // Accumulates callbacks passed from TaskGroup objects passed via
-  // RegisterCallbacks calls.
-  CallbacksMap callbacks_map_;
-
-  // Refresh flags passed via Refresh.
-  int64_t refresh_flags_;
-
-  // Snapshot of previously captured resources used to calculate the delta.
-  std::unique_ptr<ProcessDataSnapshot> previous_snapshot_;
-
-  // Size of the buffer previously used to query system information.
-  size_t previous_buffer_size_;
-
-  // Image names that CaptureSnapshot uses to filter processes.
-  const std::vector<base::FilePath> supported_image_names_;
-
-  // The specific blocking pool SequencedTaskRunner that will be used to post
-  // the refresh tasks onto serially.
-  scoped_refptr<base::SequencedTaskRunner> blocking_pool_runner_;
-
-  // To assert we're running on the correct thread.
-  SEQUENCE_CHECKER(worker_pool_sequenced_checker_);
-#endif  // BUILDFLAG(IS_WIN)
 };
 
 }  // namespace task_manager

@@ -38,19 +38,6 @@ InkDropEventHandler::~InkDropEventHandler() = default;
 
 void InkDropEventHandler::AnimateToState(InkDropState state,
                                          const ui::LocatedEvent* event) {
-#if BUILDFLAG(IS_WIN)
-  // On Windows, don't initiate ink-drops for touch/gesture events.
-  // Additionally, certain event states should dismiss existing ink-drop
-  // animations. If the state is already other than HIDDEN, presumably from
-  // a mouse or keyboard event, then the state should be allowed. Conversely,
-  // if the requested state is ACTIVATED, then it should always be allowed.
-  if (event && (event->IsTouchEvent() || event->IsGestureEvent()) &&
-      delegate_->GetInkDrop()->GetTargetInkDropState() ==
-          InkDropState::HIDDEN &&
-      state != InkDropState::ACTIVATED) {
-    return;
-  }
-#endif
   last_ripple_triggering_event_.reset(
       event ? event->Clone().release()->AsLocatedEvent() : nullptr);
 

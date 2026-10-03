@@ -23,9 +23,6 @@
 #include <atomic>
 #endif
 
-#if PA_BUILDFLAG(IS_FUCHSIA)
-#include <zircon/process.h>
-#endif
 
 namespace partition_alloc::internal::base {
 
@@ -45,15 +42,6 @@ PlatformThreadId PlatformThread::CurrentId() {
   // the bug. If necessary we could cache it but we'd have to ensure it was
   // while we were inside PartitionAlloc itself for allocation already.
   return syscall(__NR_gettid);
-#elif PA_BUILDFLAG(IS_ANDROID)
-  // Note: do not cache the return value inside a thread_local variable on
-  // Android (as above). The reasons are:
-  // - thread_local is slow on Android (goes through emutls)
-  // - gettid() is fast, since its return value is cached in pthread (in the
-  //   thread control block of pthread). See gettid.c in bionic.
-  return gettid();
-#elif PA_BUILDFLAG(IS_FUCHSIA)
-  return zx_thread_self();
 #elif PA_BUILDFLAG(IS_ASMJS)
   return pthread_self();
 #elif PA_BUILDFLAG(IS_SOLARIS) || PA_BUILDFLAG(IS_QNX)

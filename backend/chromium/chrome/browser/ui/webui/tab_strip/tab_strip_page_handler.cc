@@ -66,9 +66,6 @@
 #include "ui/menus/simple_menu_model.h"
 #include "url/gurl.h"
 
-// Must be last.
-#include "base/win/windows_h_disallowed.h"
-
 namespace {
 
 // Delay in milliseconds of when the dragging UI should be shown for touch drag.

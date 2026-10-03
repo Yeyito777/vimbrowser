@@ -75,9 +75,6 @@
 #include "chrome/browser/segmentation_platform/ukm_database_client.h"
 #include "chrome/browser/signin/chrome_signin_client_factory.h"
 #include "chrome/browser/signin/test_signin_client_builder.h"
-#include "chrome/browser/spellchecker/spellcheck_custom_dictionary.h"
-#include "chrome/browser/spellchecker/spellcheck_factory.h"
-#include "chrome/browser/spellchecker/spellcheck_service.h"
 #include "chrome/browser/ssl/stateful_ssl_host_state_delegate_factory.h"
 #include "chrome/browser/storage/persistent_storage_permission_context.h"
 #include "chrome/browser/strike_database/strike_database_factory.h"
@@ -1212,13 +1209,6 @@ class ChromeBrowsingDataRemoverDelegateTest : public testing::Test {
         TestingProfile::TestingFactory{
             FaviconServiceFactory::GetInstance(),
             FaviconServiceFactory::GetDefaultFactory()},
-        TestingProfile::TestingFactory{
-            SpellcheckServiceFactory::GetInstance(),
-            base::BindRepeating([](content::BrowserContext* profile)
-                                    -> std::unique_ptr<KeyedService> {
-              return std::make_unique<SpellcheckService>(
-                  static_cast<Profile*>(profile));
-            })},
         TestingProfile::TestingFactory{
             TrustedVaultServiceFactory::GetInstance(),
             TrustedVaultServiceFactory::GetDefaultFactory()},
@@ -3915,38 +3905,6 @@ TEST_F(ChromeBrowsingDataRemoverDelegateTest, WipeCrashData) {
   EXPECT_FALSE(base::PathExists(upload_log_path));
 }
 #endif
-
-TEST_F(ChromeBrowsingDataRemoverDelegateTest, WipeCustomDictionaryData) {
-  base::FilePath dict_path =
-      GetProfile()->GetPath().Append(chrome::kCustomDictionaryFileName);
-  base::FilePath backup_path = dict_path.AddExtensionASCII("backup");
-
-  auto* spellcheck = SpellcheckServiceFactory::GetForContext(GetProfile());
-  ASSERT_NE(nullptr, spellcheck);
-  auto* dict = spellcheck->GetCustomDictionary();
-  ASSERT_NE(nullptr, dict);
-
-  auto change1 = std::make_unique<SpellcheckCustomDictionary::Change>();
-  change1->AddWord("wug");
-  dict->UpdateDictionaryFile(std::move(change1), dict_path);
-
-  auto change2 = std::make_unique<SpellcheckCustomDictionary::Change>();
-  change2->AddWord("spowing");
-  dict->UpdateDictionaryFile(std::move(change2), dict_path);
-
-  EXPECT_TRUE(base::PathExists(dict_path));
-  EXPECT_TRUE(base::PathExists(backup_path));
-
-  BlockUntilBrowsingDataRemoved(base::Time(), base::Time::Max(),
-                                constants::DATA_TYPE_LOCAL_CUSTOM_DICTIONARY,
-                                false);
-
-  std::string contents;
-  base::ReadFileToString(dict_path, &contents);
-  EXPECT_EQ(std::string::npos, contents.find("wug"));
-  EXPECT_EQ(std::string::npos, contents.find("spowing"));
-  EXPECT_FALSE(base::PathExists(backup_path));
-}
 
 TEST_F(ChromeBrowsingDataRemoverDelegateTest,
        WipeNotificationPermissionPromptOutcomesData) {

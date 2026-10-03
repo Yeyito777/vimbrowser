@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_STARTUP_DATA_H_
+#if !defined(CHROME_BROWSER_STARTUP_DATA_H_)
 #define CHROME_BROWSER_STARTUP_DATA_H_
 
 #include <memory>
@@ -12,11 +12,6 @@
 #include "components/leveldb_proto/public/proto_database_provider.h"
 #include "extensions/buildflags/buildflags.h"
 
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-namespace extensions {
-class ExtensionsBrowserClient;
-}
-#endif
 
 namespace user_prefs {
 class PrefRegistrySyncable;
@@ -92,11 +87,6 @@ class StartupData {
   TakeProtoDatabaseProvider();
 #endif
 
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-  // Passes ownership of the `extensions_browser_client_` to the caller.
-  std::unique_ptr<extensions::ExtensionsBrowserClient>
-  TakeExtensionsBrowserClient();
-#endif
 
   // TODO(martinkong): Remove this function and replace its usage with
   // ChromeFeatureListCreator::GetInstance()
@@ -120,10 +110,6 @@ class StartupData {
   std::unique_ptr<leveldb_proto::ProtoDatabaseProvider> proto_db_provider_;
 #endif
 
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-  std::unique_ptr<extensions::ExtensionsBrowserClient>
-      extensions_browser_client_;
-#endif
 };
 
 #endif  // CHROME_BROWSER_STARTUP_DATA_H_

@@ -86,16 +86,6 @@ inline constexpr char kAccessibilityCaptionsTextShadow[] =
 inline constexpr char kAccessibilityCaptionsBackgroundOpacity[] =
     "accessibility.captions.background_opacity";
 
-// Live Translate prefs.
-
-// Whether the Live Translate feature is enabled.
-inline constexpr char kLiveTranslateEnabled[] =
-    "accessibility.captions.live_translate_enabled";
-
-// The target language to translate the captions to.
-inline constexpr char kLiveTranslateTargetLanguageCode[] =
-    "accessibility.captions.live_translate_target_language";
-
 }  // namespace prefs
 
 #endif  // COMPONENTS_LIVE_CAPTION_PREF_NAMES_H_

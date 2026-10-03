@@ -14,10 +14,6 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/base/win/hwnd_metrics.h"
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "ui/accelerated_widget_mac/ca_transaction_observer.h"

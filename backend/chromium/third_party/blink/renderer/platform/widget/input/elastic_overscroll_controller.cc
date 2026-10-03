@@ -48,15 +48,9 @@ namespace {
 constexpr double kScrollVelocityZeroingTimeout = 0.10f;
 constexpr double kRubberbandMinimumRequiredDeltaBeforeStretch = 10;
 
-#if BUILDFLAG(IS_ANDROID)
-// On android, overscroll should not occur if the scroller is not scrollable in
-// the overscrolled direction.
-constexpr bool kOverscrollNonScrollableDirection = false;
-#else   // BUILDFLAG(IS_ANDROID)
 // On other platforms, overscroll can occur even if the scroller is not
 // scrollable.
 constexpr bool kOverscrollNonScrollableDirection = true;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
@@ -66,13 +60,7 @@ ElasticOverscrollController::ElasticOverscrollController(
 
 std::unique_ptr<ElasticOverscrollController>
 ElasticOverscrollController::Create(cc::ScrollElasticityHelper* helper) {
-#if BUILDFLAG(IS_WIN)
-  return base::FeatureList::IsEnabled(features::kElasticOverscroll)
-             ? std::make_unique<ElasticOverscrollControllerBezier>(helper)
-             : nullptr;
-#else
   return std::make_unique<ElasticOverscrollControllerExponential>(helper);
-#endif
 }
 
 void ElasticOverscrollController::ObserveRealScrollBegin(OverscrollEntry& entry,

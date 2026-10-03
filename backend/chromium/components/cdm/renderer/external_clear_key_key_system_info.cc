@@ -22,9 +22,6 @@ ExternalClearKeyKeySystemInfo::ExternalClearKeyKeySystemInfo()
           // Excludes kMediaFoundationClearKeyKeySystem to treat MediaFoundation
           // Clear Key key system as a separate one.
           {media::kExternalClearKeyInvalidKeySystem,
-#if BUILDFLAG(IS_WIN)
-           media::kMediaFoundationClearKeyKeySystem
-#endif  // BUILDFLAG(IS_WIN)
           },
           media::EME_CODEC_MP4_ALL | media::EME_CODEC_WEBM_ALL,
           std::nullopt,

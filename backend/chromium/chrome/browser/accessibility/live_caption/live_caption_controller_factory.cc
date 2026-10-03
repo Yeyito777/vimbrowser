@@ -9,9 +9,6 @@
 #include "chrome/browser/profiles/profile.h"
 #include "components/live_caption/live_caption_controller.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#endif
 
 namespace captions {
 

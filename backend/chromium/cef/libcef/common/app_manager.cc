@@ -9,11 +9,6 @@
 #include "cef/libcef/common/scheme_registrar_impl.h"
 #include "content/public/browser/child_process_security_policy.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/path_service.h"
-#endif
 
 namespace {
 
@@ -88,21 +83,3 @@ void CefAppManager::AddAdditionalSchemes(
 
   scheme_info_list_locked_ = true;
 }
-
-#if BUILDFLAG(IS_WIN)
-const wchar_t* CefAppManager::GetResourceDllName() {
-  static wchar_t file_path[MAX_PATH + 1] = {0};
-
-  if (file_path[0] == 0) {
-    // Retrieve the module path (usually libcef.dll).
-    base::FilePath module;
-    base::PathService::Get(base::FILE_MODULE, &module);
-    const std::wstring wstr = module.value();
-    size_t count = std::min(static_cast<size_t>(MAX_PATH), wstr.size());
-    wcsncpy(file_path, wstr.c_str(), count);
-    file_path[count] = 0;
-  }
-
-  return file_path;
-}
-#endif  // BUILDFLAG(IS_WIN)

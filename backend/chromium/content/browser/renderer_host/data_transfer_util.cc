@@ -40,15 +40,6 @@ namespace {
 // updates `entry_path` to the path that should be used by the File System
 // Access implementation.
 content::PathType MaybeRemapPath(base::FilePath* entry_path) {
-#if BUILDFLAG(IS_CHROMEOS)
-  base::FilePath virtual_path;
-  auto* external_mount_points =
-      storage::ExternalMountPoints::GetSystemInstance();
-  if (external_mount_points->GetVirtualPath(*entry_path, &virtual_path)) {
-    *entry_path = std::move(virtual_path);
-    return content::PathType::kExternal;
-  }
-#endif
   return content::PathType::kLocal;
 }
 

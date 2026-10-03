@@ -32,9 +32,6 @@
 #include "components/crx_file/id_util.h"
 #include "components/update_client/update_client.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "content/public/common/content_features.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace {
 
@@ -56,11 +53,7 @@ void OnDemandUpdateCompleted(update_client::Error err) {
 }
 
 component_updater::OnDemandUpdater::Priority GetOnDemandUpdatePriority() {
-#if BUILDFLAG(IS_WIN)
-  return component_updater::OnDemandUpdater::Priority::FOREGROUND;
-#else
   return component_updater::OnDemandUpdater::Priority::BACKGROUND;
-#endif
 }
 
 // Tells whether the component is supported on a particular platform wrt to
@@ -71,9 +64,7 @@ bool IsComponentSupported() {
   // being as a kill switch and will be retired shortly; on Mac/Linux, the
   // component logic is not fully supported, so it has to be kept separated from
   // the main IWA feature.
-#if BUILDFLAG(IS_WIN)
-  return base::FeatureList::IsEnabled(features::kIsolatedWebApps);
-#elif BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
   return base::FeatureList::IsEnabled(
       component_updater::kIwaKeyDistributionComponent);
 #else
@@ -96,11 +87,7 @@ namespace component_updater {
 
 #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 BASE_FEATURE(kIwaKeyDistributionComponent,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else   // !BUILDFLAG(IS_CHROMEOS)
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 );
 #endif  // BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 

@@ -33,31 +33,6 @@ Font* CreateTestFont(const AtomicString& family_name,
 
 Font* CreateAhemFont(float size);
 
-#if BUILDFLAG(IS_WIN)
-class TestFontPrewarmer : public WebFontPrewarmer {
- public:
-  void PrewarmFamily(const WebString& family_name) override;
-
-  const Vector<String>& PrewarmedFamilyNames() const { return family_names_; }
-
- private:
-  Vector<String> family_names_;
-};
-
-class ScopedTestFontPrewarmer {
- public:
-  ScopedTestFontPrewarmer();
-  ~ScopedTestFontPrewarmer();
-
-  const Vector<String>& PrewarmedFamilyNames() const {
-    return current_.PrewarmedFamilyNames();
-  }
-
- private:
-  TestFontPrewarmer current_;
-  raw_ptr<WebFontPrewarmer> saved_;
-};
-#endif
 
 }  // namespace test
 }  // namespace blink

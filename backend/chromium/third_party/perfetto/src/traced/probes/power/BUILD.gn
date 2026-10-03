@@ -21,15 +21,11 @@ source_set("power") {
     "../../../../gn:default_deps",
     "../../../../include/perfetto/ext/traced",
     "../../../../protos/perfetto/common:zero",
-    "../../../../protos/perfetto/config/power:zero",
     "../../../../protos/perfetto/trace:zero",
     "../../../../protos/perfetto/trace/power:zero",
-    "../../../android_internal:lazy_library_loader",
     "../../../base",
   ]
   sources = [
-    "android_power_data_source.cc",
-    "android_power_data_source.h",
     "linux_power_sysfs_data_source.cc",
     "linux_power_sysfs_data_source.h",
   ]

@@ -14,9 +14,7 @@
 #include "components/enterprise/obfuscation/core/download_obfuscator.h"
 #include "content/public/browser/download_item_utils.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/download/bubble/download_bubble_ui_controller.h"
-#endif
 
 namespace safe_browsing {
 

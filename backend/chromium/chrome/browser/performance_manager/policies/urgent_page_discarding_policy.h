@@ -50,12 +50,6 @@ class UrgentPageDiscardingPolicy : public GraphOwned,
   // Callback called when a discard attempt has completed.
   void PostDiscardAttemptCallback(bool success);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Called when the reclaim target is ready.
-  void OnReclaimTarget(
-      base::TimeTicks on_memory_pressure_at,
-      std::optional<memory_pressure::ReclaimTarget> reclaim_target_kb);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   std::optional<base::MemoryPressureListenerRegistration>
       memory_pressure_listener_registration_;

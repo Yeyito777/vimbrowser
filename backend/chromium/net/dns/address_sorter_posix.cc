@@ -21,15 +21,7 @@
 #include <net/if.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#if BUILDFLAG(IS_IOS)
-// The code in the following header file is copied from [1]. This file has the
-// minimum definitions needed to retrieve the IP attributes, since iOS SDK
-// doesn't include a necessary header <netinet/in_var.h>.
-// [1] https://chromium.googlesource.com/external/webrtc/+/master/rtc_base/mac_ifaddrs_converter.cc
-#include "net/dns/netinet_in_var_ios.h"
-#else
 #include <netinet/in_var.h>
-#endif  // BUILDFLAG(IS_IOS)
 #endif
 #include <vector>
 

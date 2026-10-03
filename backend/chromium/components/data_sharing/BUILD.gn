@@ -5,11 +5,6 @@
 import("//build/buildflag_header.gni")
 import("//third_party/protobuf/proto_library.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
-
 group("unit_tests") {
   testonly = true
 
@@ -64,26 +59,4 @@ source_set("test_support") {
     "//testing/gtest",
     "//url",
   ]
-}
-
-if (is_android) {
-  android_library("test_support_java") {
-    testonly = true
-    sources = [
-      "test_support/android/java/src/org/chromium/components/data_sharing/SharedGroupTestHelper.java",
-      "test_support/android/java/src/org/chromium/components/data_sharing/TestDataSharingService.java",
-    ]
-    deps = [
-      "//base:base_java",
-      "//components/collaboration/public:core_java",
-      "//components/data_sharing/public:logger_java",
-      "//components/data_sharing/public:public_java",
-      "//components/signin/public/android:java",
-      "//google_apis/gaia/android:java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-      "//third_party/jni_zero:jni_zero_java",
-      "//third_party/mockito:mockito_java",
-      "//url:gurl_java",
-    ]
-  }
 }

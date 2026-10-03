@@ -150,14 +150,9 @@
   <message name="IDS_CLOCK_ERROR_UPDATE_DATE_AND_TIME" desc="Button text. Context: error shown when the device clock is wrong. The button takes the user to the operating system date and time settings.">
     Update date and time
   </message>
-  <if expr="not is_android and not is_ios">
+  <if expr="not is_ios">
     <message name="IDS_CLOCK_ERROR_PRIMARY_PARAGRAPH" desc="Main paragraph of an error message. Context: error shown when the browser can't load a page because the computer's clock is wrong.">
       A private connection to <ph name="BEGIN_BOLD">&lt;strong&gt;</ph><ph name="DOMAIN">$1<ex>paypal.com</ex></ph><ph name="END_BOLD">&lt;/strong&gt;</ph> can't be established because your computer's date and time (<ph name="DATE_AND_TIME">$2<ex>Monday, January 1, 1970 2:44:30 PM</ex></ph>) are incorrect.
-    </message>
-  </if>
-  <if expr="is_android">
-    <message name="IDS_CLOCK_ERROR_PRIMARY_PARAGRAPH" desc="Main paragraph of an error message. Context: error shown when the browser can't load a page because the Android device's clock is wrong.">
-      A private connection to <ph name="BEGIN_BOLD">&lt;strong&gt;</ph><ph name="DOMAIN">$1<ex>paypal.com</ex></ph><ph name="END_BOLD">&lt;/strong&gt;</ph> can't be established because your device's date and time (<ph name="DATE_AND_TIME">$2<ex>Monday, January 1, 1970 2:44:30 PM</ex></ph>) are incorrect.
     </message>
   </if>
   <if expr="is_ios">
@@ -508,16 +503,9 @@
     You might also contact the site owner and suggest they upgrade to HTTPS. <ph name="BEGIN_LEARN_MORE_LINK">&lt;a href="#" id="learn-more-link"&gt;</ph>Learn more about this warning<ph name="END_LEARN_MORE_LINK">&lt;/a&gt;</ph>
   </message>
 
-  <if expr="not is_android">
     <message name="IDS_HTTPS_ONLY_MODE_WITH_ADVANCED_PROTECTION_PRIMARY_PARAGRAPH" desc="Main paragraph of the HTTPS-Only Mode warning. This warning is shown when the browser tries to upgrade a navigation to a site to HTTPS but the site does not support HTTPS. The user also has Advanced Protection enabled.">
       This site will remain blocked because you are under Google's Advanced Protection Program. <ph name="BEGIN_LEARN_MORE_LINK">&lt;a href="#" id="learn-more-link"&gt;</ph>Learn more about this warning<ph name="END_LEARN_MORE_LINK">&lt;/a&gt;</ph>
     </message>
-  </if>
-  <if expr="is_android">
-    <message name="IDS_HTTPS_ONLY_MODE_WITH_ADVANCED_PROTECTION_PRIMARY_PARAGRAPH_ANDROID" desc="Main paragraph of the HTTPS-Only Mode warning. This warning is shown when the browser tries to upgrade a navigation to a site to HTTPS but the site does not support HTTPS. The user also has Advanced Protection enabled.">
-        This site will remain blocked because you have Advanced Protection turned on in <ph name="BEGIN_ANDROID_SETTINGS_LINK">&lt;a href="#" id="android-advanced-protection-settings-link"&gt;</ph>Android settings<ph name="END_ANDROID_SETTINGS_LINK">&lt;/a&gt;</ph>. <ph name="BEGIN_LEARN_MORE_LINK">&lt;a href="#" id="learn-more-link"&gt;</ph>Learn more about this warning<ph name="END_LEARN_MORE_LINK">&lt;/a&gt;</ph>
-    </message>
-  </if>
 
   <message name="IDS_HTTPS_ONLY_MODE_WITH_SITE_ENGAGEMENT_PRIMARY_PARAGRAPH" desc="Main paragraph of the HTTPS-Only Mode warning. This warning is shown when the browser tries to upgrade a navigation to a site to HTTPS but the site does not support HTTPS. The user is seeing this warning because they typically visit HTTPS URLs.">
     You usually connect to this site securely, but Chrome couldn't use a secure connection this time. An attacker might be trying to eavesdrop or modify your network connection. <ph name="BEGIN_LEARN_MORE_LINK">&lt;a href="#" id="learn-more-link"&gt;</ph>Learn more about this warning<ph name="END_LEARN_MORE_LINK">&lt;/a&gt;</ph>

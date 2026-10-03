@@ -15,7 +15,6 @@
 #include "components/browsing_data/core/pref_names.h"
 #include "components/commerce/core/pref_names.h"
 #include "components/content_settings/core/common/pref_names.h"
-#include "components/desktop_to_mobile_promos/pref_names.h"
 #include "components/language/core/browser/pref_names.h"
 #include "components/metrics/demographics/user_demographics.h"
 #include "components/metrics/metrics_pref_names.h"
@@ -30,8 +29,6 @@
 #include "components/sync/base/data_type.h"
 #include "components/sync/base/features.h"
 #include "components/sync_preferences/cross_device_pref_tracker/prefs/cross_device_pref_names.h"
-#include "components/translate/core/browser/translate_pref_names.h"
-#include "components/translate/core/browser/translate_prefs.h"
 #include "components/variations/service/google_groups_manager_prefs.h"
 
 namespace sync_preferences {
@@ -97,18 +94,9 @@ enum {
   kCookieControlsMode = 47,
   kSafeBrowsingEnabled = 48,
   // kSyncedDefaultSearchProviderGUID = 49, (deprecated)
-  kPrefForceTriggerTranslateCount = 50,
+  // IDs 50-61 were used by removed page-translation preferences.
   // kPrefNeverPromptSitesDeprecated = 51, (deprecated)
-  kPrefTranslateAcceptedCount = 52,
-  kPrefTranslateAutoAlwaysCount = 53,
-  kPrefTranslateAutoNeverCount = 54,
-  kPrefTranslateDeniedCount = 55,
   // kPrefTranslateIgnoredCount = 56, (no longer synced)
-  kBlockedLanguages = 57,
-  kOfferTranslateEnabled = 58,
-  kPrefAlwaysTranslateList = 59,
-  kPrefNeverPromptSitesWithTime = 60,
-  kPrefTranslateRecentTarget = 61,
   kDogfoodGroupsSyncPrefName = 62,
   kSyncableMergeableDictPrefForTesting = 63,  // For tests.
   kAutofillPaymentCvcStorage = 64,
@@ -157,7 +145,7 @@ enum {
   kCrossDeviceMagicStackHomeModuleEnabled = 108,
   kShowAiModeOmniboxButton = 109,
   kAutofillAiSyncedOptInStatus = 110,
-  kIOSPromoReminder = 111,
+  // kIOSPromoReminder = 111, (deprecated)
   kAutofillAiReauthBeforeViewingSensitiveData = 112,
   // See components/sync_preferences/README.md about adding new entries here.
   // vvvvv IMPORTANT! vvvvv
@@ -328,48 +316,13 @@ constexpr auto kCommonSyncablePrefsAllowlist =
         {tab_groups::prefs::kAutoPinNewTabGroups,
          {syncable_prefs_ids::kAutoPinNewTabGroups, syncer::PREFERENCES,
           PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::TranslatePrefs::kPrefForceTriggerTranslateCount,
-         {syncable_prefs_ids::kPrefForceTriggerTranslateCount,
-          syncer::PREFERENCES, PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::TranslatePrefs::kPrefTranslateAcceptedCount,
-         {syncable_prefs_ids::kPrefTranslateAcceptedCount, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
-        {translate::TranslatePrefs::kPrefTranslateAutoAlwaysCount,
-         {syncable_prefs_ids::kPrefTranslateAutoAlwaysCount,
-          syncer::PREFERENCES, PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::TranslatePrefs::kPrefTranslateAutoNeverCount,
-         {syncable_prefs_ids::kPrefTranslateAutoNeverCount, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
-        {translate::TranslatePrefs::kPrefTranslateDeniedCount,
-         {syncable_prefs_ids::kPrefTranslateDeniedCount, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::prefs::kBlockedLanguages,
-         {syncable_prefs_ids::kBlockedLanguages, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::prefs::kOfferTranslateEnabled,
-         {syncable_prefs_ids::kOfferTranslateEnabled, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::prefs::kPrefAlwaysTranslateList,
-         {syncable_prefs_ids::kPrefAlwaysTranslateList, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {translate::prefs::kPrefNeverPromptSitesWithTime,
-         {syncable_prefs_ids::kPrefNeverPromptSitesWithTime,
-          syncer::PREFERENCES, PrefSensitivity::kSensitiveRequiresHistory,
-          MergeBehavior::kNone}},
-        {translate::prefs::kPrefTranslateRecentTarget,
-         {syncable_prefs_ids::kPrefTranslateRecentTarget, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
 // For Ash, the OS_PRIORITY_PREFERENCES equivalent is defined in
 // chrome/browser/sync/prefs/chrome_syncable_prefs_database.cc instead.
-#if !BUILDFLAG(IS_CHROMEOS)
         {variations::kDogfoodGroupsSyncPrefName,
          {syncable_prefs_ids::kDogfoodGroupsSyncPrefName,
           syncer::PRIORITY_PREFERENCES,
           PrefSensitivity::kExemptFromUserControlWhileSignedIn,
           MergeBehavior::kNone}},
-#endif
         {kSyncablePrefForTesting,
          {syncable_prefs_ids::kSyncablePrefForTesting, syncer::PREFERENCES,
           PrefSensitivity::kNone, MergeBehavior::kNone}},
@@ -404,23 +357,6 @@ constexpr auto kCommonSyncablePrefsAllowlist =
         {prefs::kSafeBrowsingEnhanced,
          {syncable_prefs_ids::kSafeBrowsingEnhanced, syncer::PREFERENCES,
           PrefSensitivity::kNone, MergeBehavior::kNone}},
-#if BUILDFLAG(IS_ANDROID)
-        {autofill::prefs::kFacilitatedPaymentsPix,
-         {syncable_prefs_ids::kFacilitatedPaymentsPix, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {autofill::prefs::kFacilitatedPaymentsEwallet,
-         {syncable_prefs_ids::kFacilitatedPaymentsEwallet, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {autofill::prefs::kFacilitatedPaymentsPixAccountLinking,
-         {syncable_prefs_ids::kFacilitatedPaymentsPixAccountLinking,
-          syncer::PREFERENCES, PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {autofill::prefs::kFacilitatedPaymentsA2AEnabled,
-         {syncable_prefs_ids::kFacilitatedPaymentsA2AEnabled,
-          syncer::PREFERENCES, PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {autofill::prefs::kFacilitatedPaymentsA2ATriggeredOnce,
-         {syncable_prefs_ids::kFacilitatedPaymentsA2ATriggeredOnce,
-          syncer::PREFERENCES, PrefSensitivity::kNone, MergeBehavior::kNone}},
-#endif  // BUILDFLAG(IS_ANDROID)
         {autofill::prefs::kAutofillBnplEnabled,
          {syncable_prefs_ids::kAutofillBnplEnabled, syncer::PREFERENCES,
           PrefSensitivity::kNone, MergeBehavior::kNone}},
@@ -455,9 +391,6 @@ constexpr auto kCommonSyncablePrefsAllowlist =
         {omnibox::kShowAiModeOmniboxButton,
          {syncable_prefs_ids::kShowAiModeOmniboxButton, syncer::PREFERENCES,
           PrefSensitivity::kNone, MergeBehavior::kNone}},
-        {prefs::kIOSPromoReminder,
-         {syncable_prefs_ids::kIOSPromoReminder, syncer::PREFERENCES,
-          PrefSensitivity::kNone, MergeBehavior::kMergeableDict}},
     });
 
 }  // namespace

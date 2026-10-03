@@ -12,9 +12,7 @@
 
 namespace switches {
 
-#if !BUILDFLAG(IS_CHROMEOS)
 extern const char kEnableChromeBrowserCloudManagement[];
-#endif
 
 }  // namespace switches
 

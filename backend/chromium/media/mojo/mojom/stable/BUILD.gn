@@ -10,8 +10,6 @@ import("//mojo/public/tools/bindings/mojom.gni")
 # the native_pixmap_handle.mojom file and its traits closer to the code
 # that uses them.
 mojom("native_pixmap_handle") {
-  generate_java = true
-
   sources = [ "native_pixmap_handle.mojom" ]
 
   if (is_linux || is_chromeos) {

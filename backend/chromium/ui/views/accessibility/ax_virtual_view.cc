@@ -31,9 +31,6 @@
 #include "ui/views/view.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 namespace views {
 
@@ -480,11 +477,6 @@ ui::AXPlatformNodeId AXVirtualView::GetUniqueId() const {
 // Virtual views need to implement this function in order for accessibility
 // events to be routed correctly.
 gfx::AcceleratedWidget AXVirtualView::GetTargetForNativeAccessibilityEvent() {
-#if BUILDFLAG(IS_WIN)
-  if (GetOwnerView()) {
-    return HWNDForView(GetOwnerView());
-  }
-#endif
   return gfx::kNullAcceleratedWidget;
 }
 
@@ -688,7 +680,6 @@ void AXVirtualView::UpdateIgnoredState() {
 // TODO(crbug.com/371237539): In ChromeOS, its not an expectation that being
 // a view unfocusable descendant of a focusable ancestor will make the view
 // ignored.
-#if !BUILDFLAG(IS_CHROMEOS)
   bool is_ignored =
       should_be_ignored_ || pruned_ ||
       GetCachedRole() == ax::mojom::Role::kNone ||
@@ -698,10 +689,6 @@ void AXVirtualView::UpdateIgnoredState() {
   if (should_be_focusable_.has_value()) {
     is_ignored = is_ignored && !should_be_focusable_.value();
   }
-#else
-  bool is_ignored =
-      should_be_ignored_ || pruned_ || data().role == ax::mojom::Role::kNone;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   SetState(ax::mojom::State::kIgnored, is_ignored);
   UpdateFocusableState();
 }

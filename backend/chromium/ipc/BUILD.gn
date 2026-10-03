@@ -81,15 +81,6 @@ component("message_support") {
     "ipc_mojo_message_helper.h",
   ]
 
-  if (is_win) {
-    sources += [
-      "handle_attachment_win.cc",
-      "handle_attachment_win.h",
-      "handle_win.cc",
-      "handle_win.h",
-    ]
-  }
-
   if (is_posix || is_fuchsia) {
     sources += [
       "ipc_platform_file_attachment_posix.cc",
@@ -103,13 +94,6 @@ component("message_support") {
       "mach_port_attachment_mac.h",
       "mach_port_mac.cc",
       "mach_port_mac.h",
-    ]
-  }
-
-  if (is_fuchsia) {
-    sources += [
-      "handle_attachment_fuchsia.cc",
-      "handle_attachment_fuchsia.h",
     ]
   }
 
@@ -218,10 +202,6 @@ if (use_blink) {
 
     if (is_posix || is_fuchsia) {
       sources += [ "ipc_message_attachment_set_posix_unittest.cc" ]
-    }
-
-    if (is_win) {
-      sources += [ "handle_win_unittest.cc" ]
     }
 
     deps = [

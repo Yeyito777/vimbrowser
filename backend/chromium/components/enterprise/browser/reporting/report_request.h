@@ -20,13 +20,8 @@ enum class ReportType;
 // queue for the uploader.
 class ReportRequest {
  public:
-#if BUILDFLAG(IS_CHROMEOS)
-  using DeviceReportRequestProto =
-      enterprise_management::ChromeOsUserReportRequest;
-#else
   using DeviceReportRequestProto =
       enterprise_management::ChromeDesktopReportRequest;
-#endif
 
   explicit ReportRequest(ReportType type);
   explicit ReportRequest(

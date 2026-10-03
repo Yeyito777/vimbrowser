@@ -39,15 +39,7 @@ enum class DownloadRestriction {
 
 namespace policy_prefs {
 
-#if BUILDFLAG(IS_WIN)
-// Integer pref that stores Azure Active Directory management authority.
-inline constexpr char kAzureActiveDirectoryManagement[] =
-    "management.platform.azure_active_directory";
-
-// Integer pref that stores the Windows enterprise MDM management authority.
-inline constexpr char kEnterpriseMDMManagementWindows[] =
-    "management.platform.enterprise_mdm_win";
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 // Integer pref that stores the Mac enterprise MDM management authority.
 inline constexpr char kEnterpriseMDMManagementMac[] =
     "management.platform.enterprise_mdm_mac";
@@ -121,14 +113,6 @@ inline constexpr char kNativeWindowOcclusionEnabled[] =
 inline constexpr char kIntensiveWakeUpThrottlingEnabled[] =
     "policy.intensive_wake_up_throttling_enabled";
 
-#if BUILDFLAG(IS_ANDROID)
-// Boolean policy preference to disable the BackForwardCache feature.
-inline constexpr char kBackForwardCacheEnabled[] =
-    "policy.back_forward_cache_enabled";
-
-// Boolean policy preference to disable the Read Aloud feature.
-inline constexpr char kReadAloudEnabled[] = "policy.read_aloud_enabled";
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 // Last time that a check for cloud policy management was done. This time is
@@ -138,14 +122,6 @@ inline constexpr char kReadAloudEnabled[] = "policy.read_aloud_enabled";
 inline constexpr char kLastPolicyCheckTime[] = "policy.last_policy_check_time";
 #endif
 
-#if BUILDFLAG(IS_IOS)
-inline constexpr char kUserPolicyNotificationWasShown[] =
-    "policy.user_policy_notification_was_shown";
-
-// A bool for storing whether the user has seen the sync disabled alert since
-// sync was disabled.
-inline constexpr char kSyncDisabledAlertShown[] = "sync.disabled_alert_shown";
-#endif
 
 // Boolean controlling whether SafeSearch is mandatory for Google Web Searches.
 inline constexpr char kForceGoogleSafeSearch[] =
@@ -229,16 +205,6 @@ inline constexpr char kForcePermissionPolicyUnloadDefaultEnabled[] =
 // 4 - Block malicious downloads
 inline constexpr char kDownloadRestrictions[] = "download_restrictions";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Allows user browser navigation access to the listed host patterns. Only
-// applied when a AlwaysOn VPN is active but not connected.
-inline constexpr char kAlwaysOnVpnPreConnectUrlAllowlist[] =
-    "policy.alwayson_vpn_pre_connect_url_allowlist";
-
-// Boolean value for the FloatingWorkspaceEnabled policy
-inline constexpr char kFloatingWorkspaceEnabled[] =
-    "ash.floating_workspace_enabled";
-#endif
 
 // A boolean value indicating whether the built-in AI APIs are enabled.
 inline constexpr char kBuiltInAIAPIsEnabled[] =

@@ -315,28 +315,6 @@ NET_EXPORT BASE_DECLARE_FEATURE(kShouldKillSessionOnAcceptChMalformed);
 
 NET_EXPORT BASE_DECLARE_FEATURE(kEnableWebsocketsOverHttp3);
 
-#if BUILDFLAG(IS_WIN)
-// Whether or not to use the GetNetworkConnectivityHint API on modern Windows
-// versions for the Network Change Notifier.
-NET_EXPORT BASE_DECLARE_FEATURE(kEnableGetNetworkConnectivityHintAPI);
-
-// Whether or not to enable TCP port randomization via SO_RANDOMIZE_PORT on
-// Windows for versions >= kTcpPortRandomizationWinVersionMinimum.
-// See crbug.com/40744069 for more details.
-// This was launched in M141, but the finch flag was kept around in case it
-// ever causes issues (as some may take time to detect due to rarity).
-NET_EXPORT BASE_DECLARE_FEATURE(kTcpPortRandomizationWin);
-NET_EXPORT BASE_DECLARE_FEATURE_PARAM(int,
-                                      kTcpPortRandomizationWinVersionMinimum);
-
-// Whether or not TCP port reuse timing metrics are recorded.
-// See crbug.com/40744069 for more details.
-NET_EXPORT BASE_DECLARE_FEATURE(kTcpPortReuseMetricsWin);
-
-// Whether to use a TCP socket implementation which uses an IO completion
-// handler to be notified of completed reads and writes, instead of an event.
-NET_EXPORT BASE_DECLARE_FEATURE(kTcpSocketIoCompletionPortWin);
-#endif
 
 #if BUILDFLAG(IS_MAC)
 // Whether or not to enable TCP port randomization on macOS by choosing a
@@ -601,10 +579,6 @@ NET_EXPORT extern const base::FeatureParam<base::TimeDelta>
 // When enabled HSTS upgrades will only apply to top-level navigations.
 NET_EXPORT BASE_DECLARE_FEATURE(kHstsTopLevelNavigationsOnly);
 
-#if BUILDFLAG(IS_WIN)
-// Whether or not to flush on MappedFile::Flush().
-NET_EXPORT BASE_DECLARE_FEATURE(kHttpCacheMappedFileFlushWin);
-#endif
 
 // Whether or not to apply No-Vary-Search processing in the HTTP disk cache.
 NET_EXPORT BASE_DECLARE_FEATURE(kHttpCacheNoVarySearch);
@@ -643,11 +617,6 @@ NET_EXPORT BASE_DECLARE_FEATURE(kExcludeLargeBodyReports);
 // https://github.com/explainers-by-googlers/related-website-partition-api.
 NET_EXPORT BASE_DECLARE_FEATURE(kRelatedWebsitePartitionAPI);
 
-#if BUILDFLAG(IS_ANDROID)
-// If enabled, Android OS's certificate verification (CertVerifyProcAndroid) is
-// done using the certificate transparency aware API.
-NET_EXPORT BASE_DECLARE_FEATURE(kUseCertTransparencyAwareApiForOsCertVerify);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Enables a special interstitial for self signed cert errors in local network
 // URLs.

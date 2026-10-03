@@ -17,7 +17,6 @@
 #include <limits>
 
 #include "GLSLANG/ShaderLang.h"
-#include "common/android_util.h"
 #include "common/mathutil.h"
 #include "common/platform.h"
 #include "common/string_utils.h"
@@ -2408,13 +2407,11 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
 
     ANGLE_FEATURE_CONDITION(features, queryCounterBitsGeneratesErrors, IsNexus5X(vendor, device));
 
-    bool isAndroidLessThan14 = IsAndroid() && GetAndroidSDKVersion() < 34;
-    bool isAndroidAtLeast14  = IsAndroid() && GetAndroidSDKVersion() >= 34;
     bool isIntelLinuxLessThanKernelVersion5 =
         isIntel && IsLinux() && GetLinuxOSVersion() < OSVersion(5, 0, 0);
     ANGLE_FEATURE_CONDITION(features, limitWebglMaxTextureSizeTo4096,
-                            isAndroidLessThan14 || isIntelLinuxLessThanKernelVersion5);
-    ANGLE_FEATURE_CONDITION(features, limitWebglMaxTextureSizeTo8192, isAndroidAtLeast14);
+                            isIntelLinuxLessThanKernelVersion5);
+    ANGLE_FEATURE_CONDITION(features, limitWebglMaxTextureSizeTo8192, false);
     // On Apple switchable graphics, GL_MAX_SAMPLES may differ between the GPUs.
     // 4 is a lowest common denominator that is always supported.
     ANGLE_FEATURE_CONDITION(features, limitMaxMSAASamplesTo4,
@@ -2493,9 +2490,8 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
 
     ANGLE_FEATURE_CONDITION(
         features, disableTimestampQueries,
-        (IsLinux() && isVMWare) || (IsAndroid() && isNvidia) ||
-            (IsAndroid() && GetAndroidSDKVersion() < 27 && IsAdreno5xxOrOlder(functions)) ||
-            (!isMesa && IsMaliT8xxOrOlder(functions)) || (!isMesa && IsMaliG31OrOlder(functions)));
+        (IsLinux() && isVMWare) || (!isMesa && IsMaliT8xxOrOlder(functions)) ||
+            (!isMesa && IsMaliG31OrOlder(functions)));
 
     ANGLE_FEATURE_CONDITION(features, decodeEncodeSRGBForGenerateMipmap, IsApple());
 
@@ -2596,21 +2592,6 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
 
     // Disable GL_EXT_multisampled_render_to_texture on a bunch of different configurations:
 
-    // http://crbug.com/490379
-    // http://crbug.com/767913
-    bool isAdreno4xxOnAndroidLessThan51 =
-        IsAndroid() && IsAdreno4xx(functions) && GetAndroidSDKVersion() < 22;
-
-    // http://crbug.com/612474
-    bool isAdreno4xxOnAndroid70 =
-        IsAndroid() && IsAdreno4xx(functions) && GetAndroidSDKVersion() == 24;
-    bool isAdreno5xxOnAndroidLessThan70 =
-        IsAndroid() && IsAdreno5xx(functions) && GetAndroidSDKVersion() < 24;
-
-    // http://crbug.com/663811
-    bool isAdreno5xxOnAndroid71 =
-        IsAndroid() && IsAdreno5xx(functions) && GetAndroidSDKVersion() == 25;
-
     // http://crbug.com/594016
     bool isLinuxVivante = IsLinux() && IsVivante(device);
 
@@ -2619,9 +2600,7 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
 
     // Temporarily disable on all of Android. http://crbug.com/1417485
     ANGLE_FEATURE_CONDITION(features, disableMultisampledRenderToTexture,
-                            isAdreno4xxOnAndroidLessThan51 || isAdreno4xxOnAndroid70 ||
-                                isAdreno5xxOnAndroidLessThan70 || isAdreno5xxOnAndroid71 ||
-                                isLinuxVivante || isWindowsNVIDIA);
+                            isLinuxVivante || isWindowsNVIDIA);
 
     // http://crbug.com/1181068
     ANGLE_FEATURE_CONDITION(features, uploadTextureDataInChunks, IsApple());

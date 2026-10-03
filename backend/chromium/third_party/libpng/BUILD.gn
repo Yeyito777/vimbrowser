@@ -16,15 +16,6 @@ config("libpng_config") {
   include_dirs = [ "." ]
 
   defines = []
-
-  if (is_win) {
-    if (is_component_build) {
-      defines += [
-        "PNG_USE_DLL",
-        "PNG_NO_MODULEDEF",
-      ]
-    }
-  }
 }
 
 # Must be in a config because of how GN orders flags (otherwise -Wall will
@@ -104,11 +95,6 @@ source_set("libpng_sources") {
   configs -= [ "//build/config/compiler:chromium_code" ]
   configs += [ "//build/config/compiler:no_chromium_code" ]
 
-  if (is_win) {
-    # Unary minus applied to unsigned type.
-    cflags += [ "/wd4146" ]
-  }
-
   if (is_win && is_component_build) {
     defines += [ "PNG_BUILD_DLL" ]
   }
@@ -120,14 +106,8 @@ source_set("libpng_sources") {
   configs += [ ":clang_warnings" ]
 }
 
-if (is_win) {
-  component("libpng") {
-    public_deps = [ ":libpng_sources" ]
-  }
-} else {
-  group("libpng") {
-    public_deps = [ ":libpng_sources" ]
-  }
+group("libpng") {
+  public_deps = [ ":libpng_sources" ]
 }
 
 group("libpng_for_testonly") {

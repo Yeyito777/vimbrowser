@@ -67,19 +67,10 @@ RcCoarseSystemProfile_Channel MapChannelToRcChannel(
 }
 
 Platform GetCurrentPlatform() {
-#if BUILDFLAG(IS_WIN)
-  return Platform::PLATFORM_WINDOWS;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return Platform::PLATFORM_MACOS;
 #elif BUILDFLAG(IS_LINUX)
   return Platform::PLATFORM_LINUX;
-#elif BUILDFLAG(IS_ANDROID)
-  // TODO(b/463580425): Differentiate between Android platforms.
-  return Platform::PLATFORM_ANDROID;
-#elif BUILDFLAG(IS_IOS)
-  return Platform::PLATFORM_IOS;
-#elif BUILDFLAG(IS_CHROMEOS)
-  return Platform::PLATFORM_CHROMEOS;
 #else
   return Platform::PLATFORM_OTHER;
 #endif

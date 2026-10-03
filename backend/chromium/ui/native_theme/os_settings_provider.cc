@@ -25,15 +25,8 @@
 
 // `OsSettingsProviderImpl` is an alias to a forward-declared type; to construct
 // it in `Get()` below, we must have the full type definition.
-#if BUILDFLAG(IS_ANDROID)
-#include "ui/native_theme/os_settings_provider_android.h"
-#elif BUILDFLAG(IS_CHROMEOS)
-#include "ui/native_theme/os_settings_provider_ash.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "ui/native_theme/os_settings_provider_mac.h"
-#elif BUILDFLAG(IS_WIN)
-#include "base/win/win_util.h"
-#include "ui/native_theme/os_settings_provider_win.h"
 #endif
 
 namespace ui {
@@ -111,15 +104,6 @@ OsSettingsProvider& OsSettingsProvider::Get() {
   // If there is no production provider, create one.
   const auto& providers = GetOsSettingsProviders(PriorityLevel::kProduction);
   if (providers.empty()) {
-#if BUILDFLAG(IS_WIN)
-    // `OsSettingsProviderWin` attempts calls to user32.dll, so avoid
-    // instantiating it if those calls are not possible.
-    if (!base::win::IsUser32AndGdi32Available()) {
-      static base::NoDestructor<OsSettingsProvider>
-          s_fallback_settings_provider(PriorityLevel::kProduction);
-      return *s_fallback_settings_provider;
-    }
-#endif
     // Construct an `OsSettingsProviderImpl` by default. This is conditional so
     // that if e.g. a test constructs a provider before the first call to
     // `Get()`, that provider won't be overridden.

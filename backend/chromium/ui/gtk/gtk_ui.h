@@ -24,10 +24,6 @@
 #include "ui/linux/window_frame_provider.h"
 #include "ui/views/window/frame_buttons.h"
 
-#if BUILDFLAG(ENABLE_PRINTING)
-#include "printing/printing_context_linux.h"  // nogncheck
-#endif
-
 typedef struct _GParamSpec GParamSpec;
 typedef struct _GdkDisplay GdkDisplay;
 typedef struct _GdkMonitor GdkMonitor;
@@ -67,11 +63,6 @@ class GtkUi : public ui::LinuxUiAndTheme {
                                    int size,
                                    float scale) const override;
   base::flat_map<std::string, std::string> GetKeyboardLayoutMap() override;
-#if BUILDFLAG(ENABLE_PRINTING)
-  std::unique_ptr<printing::PrintDialogLinuxInterface> CreatePrintDialog(
-      printing::PrintingContextLinux* context) override;
-  gfx::Size GetPdfPaperSize(printing::PrintingContextLinux* context) override;
-#endif
   ui::SelectFileDialog* CreateSelectFileDialog(
       void* listener,
       std::unique_ptr<ui::SelectFilePolicy> policy) const override;

@@ -44,9 +44,6 @@
 #include "net/dns/public/dns_query_type.h"
 #include "net/dns/public/host_resolver_source.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "net/base/winsock_init.h"
-#endif
 
 namespace net {
 
@@ -132,19 +129,7 @@ base::DictValue NetLogHostResolverSystemTaskFailedParams(
 
   if (os_error) {
     dict.Set("os_error", os_error);
-#if BUILDFLAG(IS_WIN)
-    // Map the error code to a human-readable string.
-    LPWSTR error_string = nullptr;
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-                  nullptr,  // Use the internal message table.
-                  os_error,
-                  0,  // Use default language.
-                  (LPWSTR)&error_string,
-                  0,         // Buffer size.
-                  nullptr);  // Arguments (unused).
-    dict.Set("os_error_string", base::WideToUTF8(error_string));
-    LocalFree(error_string);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
     dict.Set("os_error_string", gai_strerror(os_error));
 #endif
   }
@@ -516,9 +501,6 @@ void HostResolverSystemTask::CacheResult(
 
 void EnsureSystemHostResolverCallReady() {
   EnsureDnsReloaderInit();
-#if BUILDFLAG(IS_WIN)
-  EnsureWinsockInit();
-#endif
 }
 
 namespace {
@@ -545,31 +527,6 @@ int SystemHostResolverCall(const std::string& host,
   struct addrinfo hints = {0};
   hints.ai_family = AddressFamilyToAF(address_family);
 
-#if BUILDFLAG(IS_WIN)
-  // DO NOT USE AI_ADDRCONFIG ON WINDOWS.
-  //
-  // The following comment in <winsock2.h> is the best documentation I found
-  // on AI_ADDRCONFIG for Windows:
-  //   Flags used in "hints" argument to getaddrinfo()
-  //       - AI_ADDRCONFIG is supported starting with Vista
-  //       - default is AI_ADDRCONFIG ON whether the flag is set or not
-  //         because the performance penalty in not having ADDRCONFIG in
-  //         the multi-protocol stack environment is severe;
-  //         this defaulting may be disabled by specifying the AI_ALL flag,
-  //         in that case AI_ADDRCONFIG must be EXPLICITLY specified to
-  //         enable ADDRCONFIG behavior
-  //
-  // Not only is AI_ADDRCONFIG unnecessary, but it can be harmful.  If the
-  // computer is not connected to a network, AI_ADDRCONFIG causes getaddrinfo
-  // to fail with WSANO_DATA (11004) for "localhost", probably because of the
-  // following note on AI_ADDRCONFIG in the MSDN getaddrinfo page:
-  //   The IPv4 or IPv6 loopback address is not considered a valid global
-  //   address.
-  // See http://crbug.com/5234.
-  //
-  // OpenBSD does not support it, either.
-  hints.ai_flags = 0;
-#else
   // On other operating systems, AI_ADDRCONFIG may reduce the amount of
   // unnecessary DNS lookups, e.g. getaddrinfo() will not send a request for
   // AAAA records if the current machine has no IPv6 addresses configured and
@@ -577,7 +534,6 @@ int SystemHostResolverCall(const std::string& host,
   // routers, AAAA DNS queries won't be handled correctly and will cause
   // multiple retransmitions and large latency spikes.
   hints.ai_flags = AI_ADDRCONFIG;
-#endif
 
   // On Linux AI_ADDRCONFIG doesn't consider loopback addresses, even if only
   // loopback addresses are configured. So don't use it when there are only
@@ -591,13 +547,6 @@ int SystemHostResolverCall(const std::string& host,
   if (host_resolver_flags & HOST_RESOLVER_CANONNAME)
     hints.ai_flags |= AI_CANONNAME;
 
-#if BUILDFLAG(IS_WIN)
-  // See crbug.com/1176970. Flag not documented (other than the declaration
-  // comment in ws2def.h) but confirmed by Microsoft to work for this purpose
-  // and be safe.
-  if (host_resolver_flags & HOST_RESOLVER_AVOID_MULTICAST)
-    hints.ai_flags |= AI_DNS_ONLY;
-#endif  // BUILDFLAG(IS_WIN)
 
   // Restrict result set to only this socket type to avoid duplicates.
   hints.ai_socktype = SOCK_STREAM;

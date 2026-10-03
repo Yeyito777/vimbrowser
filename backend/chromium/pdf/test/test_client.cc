@@ -62,10 +62,6 @@ std::vector<PDFiumEngineClient::SearchStringResult> TestClient::SearchString(
   return std::vector<SearchStringResult>();
 }
 
-bool TestClient::IsPrintPreview() const {
-  return false;
-}
-
 SkColor TestClient::GetBackgroundColor() const {
   return SK_ColorTRANSPARENT;
 }

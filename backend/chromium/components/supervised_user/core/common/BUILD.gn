@@ -2,10 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 import("//build/buildflag_header.gni")
 import("//components/supervised_user/buildflags.gni")
 
@@ -44,7 +40,6 @@ source_set("features") {
 
   deps = [
     "//base",
-    "//build:android_buildflags",
     "//build:branding_buildflags",
     "//extensions/buildflags",
   ]

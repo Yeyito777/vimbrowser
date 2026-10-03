@@ -399,11 +399,7 @@ void MediaStreamDispatcherHost::CheckRequestAllScreensAllowed(
                                          std::move(result_callback));
   } else {
     MediaStreamRequestResult error_value;
-#if BUILDFLAG(IS_CHROMEOS)
-    error_value = MediaStreamRequestResult::CAPTURE_NOT_ALLOWED_BY_POLICY;
-#else
     error_value = MediaStreamRequestResult::MULTI_CAPTURE_NOT_SUPPORTED;
-#endif
     std::move(result_callback).Run(base::unexpected(error_value));
   }
 }

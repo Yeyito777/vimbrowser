@@ -13,10 +13,6 @@
 #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"
 #include "components/tabs/public/tab_interface.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ui/browser.h"
-#include "chrome/browser/ui/browser_window.h"
-#endif
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -41,15 +37,6 @@ bool BrowserMatchesHelper(BrowserWindowInterface& browser,
     return false;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (restrict_to_current_workspace) {
-    Browser* browser_for_migration = browser.GetBrowserForMigrationOnly();
-    if (!browser_for_migration->window() ||
-        !browser_for_migration->window()->IsOnCurrentWorkspace()) {
-      return false;
-    }
-  }
-#endif
 
   return true;
 }

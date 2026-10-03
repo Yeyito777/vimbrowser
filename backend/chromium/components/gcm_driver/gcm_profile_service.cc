@@ -16,10 +16,6 @@
 #include "components/prefs/pref_service.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
-#if BUILDFLAG(USE_GCM_FROM_PLATFORM)
-#include "base/task/sequenced_task_runner.h"
-#include "components/gcm_driver/gcm_driver_android.h"
-#else
 #include "base/files/file_path.h"
 #include "base/functional/bind.h"
 #include "base/memory/weak_ptr.h"
@@ -29,18 +25,9 @@
 #include "components/gcm_driver/gcm_desktop_utils.h"
 #include "components/gcm_driver/gcm_driver_desktop.h"
 #include "components/signin/public/identity_manager/identity_manager.h"
-#endif
 
 namespace gcm {
 
-#if BUILDFLAG(USE_GCM_FROM_PLATFORM)
-GCMProfileService::GCMProfileService(
-    base::FilePath path,
-    scoped_refptr<base::SequencedTaskRunner>& blocking_task_runner) {
-  driver_ = std::make_unique<GCMDriverAndroid>(
-      path.Append(gcm_driver::kGCMStoreDirname), blocking_task_runner);
-}
-#else
 GCMProfileService::GCMProfileService(
     PrefService* prefs,
     base::FilePath path,
@@ -76,7 +63,6 @@ GCMProfileService::GCMProfileService(
     gcm_account_tracker_->Start();
   }
 }
-#endif  // BUILDFLAG(USE_GCM_FROM_PLATFORM)
 
 GCMProfileService::GCMProfileService(std::unique_ptr<GCMDriver> gcm_driver)
     : driver_(std::move(gcm_driver)) {
@@ -85,12 +71,10 @@ GCMProfileService::GCMProfileService(std::unique_ptr<GCMDriver> gcm_driver)
 GCMProfileService::~GCMProfileService() = default;
 
 void GCMProfileService::Shutdown() {
-#if !BUILDFLAG(USE_GCM_FROM_PLATFORM)
   if (gcm_account_tracker_) {
     gcm_account_tracker_->Shutdown();
     gcm_account_tracker_.reset();
   }
-#endif  // !BUILDFLAG(USE_GCM_FROM_PLATFORM)
   if (driver_) {
     driver_->Shutdown();
     driver_.reset();

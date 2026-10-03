@@ -230,20 +230,6 @@ class WebAppUiManager {
                             LaunchWebAppDebugValueCallback callback,
                             WithAppResources& app_resources) = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Migrates launcher state, such as parent folder id, position in App Launcher
-  // and pin position on the shelf from one app to another app.
-  // Avoids migrating if the to_app_id is already pinned.
-  virtual void MigrateLauncherState(const webapps::AppId& from_app_id,
-                                    const webapps::AppId& to_app_id,
-                                    base::OnceClosure callback) = 0;
-
-  // Displays a notification for web apps launched on login via the RunOnOsLogin
-  // feature on the provided |profile|.
-  virtual void DisplayRunOnOsLoginNotification(
-      const base::flat_map<webapps::AppId, RoolNotificationBehavior>& apps,
-      base::WeakPtr<Profile> profile) = 0;
-#endif
 
   // Displays the user about the status of a force app relaunch. This happens
   // when a placeholder with `placeholder_app_id` is installed and running, and

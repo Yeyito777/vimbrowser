@@ -142,10 +142,6 @@ static_library("libzip") {
     "src/zip_err_str.c",
     "src/zipconf.h",
   ]
-  if (is_win) {
-    sources -= [ "src/lib/zip_random_unix.c" ]
-    sources += [ "src/lib/zip_random_win32.c" ]
-  }
 
   deps = [ "//third_party/zlib" ]
 

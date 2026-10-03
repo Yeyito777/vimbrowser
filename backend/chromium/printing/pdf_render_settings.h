@@ -16,16 +16,7 @@ namespace printing {
 struct PdfRenderSettings {
   enum Mode {
     NORMAL = 0,
-#if BUILDFLAG(IS_WIN)
-    TEXTONLY,
-    POSTSCRIPT_LEVEL2,
-    POSTSCRIPT_LEVEL3,
-    EMF_WITH_REDUCED_RASTERIZATION,
-    POSTSCRIPT_LEVEL3_WITH_TYPE42_FONTS,
-    LAST = POSTSCRIPT_LEVEL3_WITH_TYPE42_FONTS
-#else
     LAST = NORMAL
-#endif
   };
 
   PdfRenderSettings()

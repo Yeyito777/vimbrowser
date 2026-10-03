@@ -52,10 +52,8 @@ inline constexpr char kExtensionInstallPoliciesId[] = "extensionInstall";
 inline constexpr char kExtensionInstallPoliciesName[] =
     "Extension Install Policies";
 
-#if !BUILDFLAG(IS_CHROMEOS)
 inline constexpr char kPrecedencePoliciesId[] = "precedence";
 inline constexpr char kPrecedencePoliciesName[] = "Policy Precedence";
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 // A convenience class to retrieve all policies values.
 // Usage example:
@@ -156,9 +154,6 @@ class POLICY_EXPORT DefaultPolicyConversions
   base::DictValue GetExtensionPolicies(PolicyDomain policy_domain);
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  base::DictValue GetDeviceLocalAccountPolicies();
-#endif
 };
 
 // Used to export all Chrome policies. It also splits precedence
@@ -175,9 +170,7 @@ class POLICY_EXPORT ChromePolicyConversions
 
  private:
   base::DictValue GetChromePolicies();
-#if !BUILDFLAG(IS_CHROMEOS)
   base::DictValue GetPrecedencePolicies();
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace policy

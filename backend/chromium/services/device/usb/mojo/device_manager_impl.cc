@@ -23,10 +23,6 @@
 #include "services/device/usb/usb_device.h"
 #include "services/device/usb/usb_service.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/dbus/permission_broker/permission_broker_client.h"  // nogncheck
-#include "services/device/usb/usb_device_linux.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace device::usb {
 
@@ -82,94 +78,7 @@ void DeviceManagerImpl::GetSecurityKeyDevice(
                            /*allow_security_key_requests=*/true);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void DeviceManagerImpl::RefreshDeviceInfo(const std::string& guid,
-                                          RefreshDeviceInfoCallback callback) {
-  scoped_refptr<UsbDevice> device = usb_service_->GetDevice(guid);
-  if (!device) {
-    std::move(callback).Run(nullptr);
-    return;
-  }
 
-  if (device->permission_granted()) {
-    std::move(callback).Run(device->device_info().Clone());
-    return;
-  }
-
-  device->RequestPermission(
-      base::BindOnce(&DeviceManagerImpl::OnPermissionGrantedToRefresh,
-                     weak_factory_.GetWeakPtr(), device, std::move(callback)));
-}
-
-void DeviceManagerImpl::OnPermissionGrantedToRefresh(
-    scoped_refptr<UsbDevice> device,
-    RefreshDeviceInfoCallback callback,
-    bool granted) {
-  DCHECK_EQ(granted, device->permission_granted());
-  if (!device->permission_granted()) {
-    std::move(callback).Run(nullptr);
-    return;
-  }
-
-  std::move(callback).Run(device->device_info().Clone());
-}
-#endif  // BUILDFLAG(IS_ANDROID)
-
-#if BUILDFLAG(IS_CHROMEOS)
-void DeviceManagerImpl::CheckAccess(const std::string& guid,
-                                    CheckAccessCallback callback) {
-  scoped_refptr<UsbDevice> device = usb_service_->GetDevice(guid);
-  if (device) {
-    device->CheckUsbAccess(std::move(callback));
-  } else {
-    LOG(ERROR) << "Was asked to check access to non-existent USB device: "
-               << guid;
-    std::move(callback).Run(false);
-  }
-}
-
-void DeviceManagerImpl::OpenFileDescriptor(
-    const std::string& guid,
-    uint32_t drop_privileges_mask,
-    mojo::PlatformHandle lifeline_fd,
-    OpenFileDescriptorCallback callback) {
-  scoped_refptr<UsbDevice> device = usb_service_->GetDevice(guid);
-  if (!device) {
-    LOG(ERROR) << "Was asked to open non-existent USB device: " << guid;
-    std::move(callback).Run(base::File());
-  } else {
-    auto split_callback = base::SplitOnceCallback(std::move(callback));
-    auto devpath =
-        static_cast<device::UsbDeviceLinux*>(device.get())->device_path();
-
-    // The |lifeline_fd| passed through D-Bus gets is duped, so we need to close
-    // our original.
-    chromeos::PermissionBrokerClient::Get()->ClaimDevicePath(
-        devpath, drop_privileges_mask, lifeline_fd.GetFD().get(),
-        base::BindOnce(&DeviceManagerImpl::OnOpenFileDescriptor,
-                       weak_factory_.GetWeakPtr(),
-                       std::move(split_callback.first)),
-        base::BindOnce(&DeviceManagerImpl::OnOpenFileDescriptorError,
-                       weak_factory_.GetWeakPtr(),
-                       std::move(split_callback.second)));
-  }
-}
-
-void DeviceManagerImpl::OnOpenFileDescriptor(
-    OpenFileDescriptorCallback callback,
-    base::ScopedFD fd) {
-  std::move(callback).Run(base::File(std::move(fd)));
-}
-
-void DeviceManagerImpl::OnOpenFileDescriptorError(
-    OpenFileDescriptorCallback callback,
-    const std::string& error_name,
-    const std::string& message) {
-  LOG(ERROR) << "Failed to open USB device file: " << error_name << " "
-             << message;
-  std::move(callback).Run(base::File());
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void DeviceManagerImpl::SetClient(
     mojo::PendingAssociatedRemote<mojom::UsbDeviceManagerClient> client) {

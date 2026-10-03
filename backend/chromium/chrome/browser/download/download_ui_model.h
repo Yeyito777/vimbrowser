@@ -25,9 +25,7 @@
 #include "ui/color/color_id.h"
 #include "ui/gfx/vector_icon_types.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/download/download_commands.h"
-#endif
 
 using offline_items_collection::ContentId;
 
@@ -183,10 +181,8 @@ class DownloadUIModel {
 
   // Returns a short one-line status string for the download.
   std::u16string GetStatusText() const;
-#if !BUILDFLAG(IS_ANDROID)
   std::u16string GetStatusTextForLabel(const gfx::FontList& font_list,
                                        float available_pixel_width) const;
-#endif
 
   // Returns a string suitable for use as a tooltip. For a regular download, the
   // tooltip is the filename. For an interrupted download, the string states the
@@ -317,15 +313,6 @@ class DownloadUIModel {
   // ShouldPreferOpeningInBrowser().
   virtual void OpenUsingPlatformHandler();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Returns the Media App action (open or edit) we should show for the item if
-  // one should be shown.
-  virtual std::optional<DownloadCommands::Command> MaybeGetMediaAppAction()
-      const;
-
-  // Open the download using the media app ('Gallery').
-  virtual void OpenUsingMediaApp();
-#endif
 
   // Whether the download was removed and this is currently being undone.
   virtual bool IsBeingRevived() const;
@@ -441,7 +428,6 @@ class DownloadUIModel {
   // security reasons.
   virtual bool ShouldPromoteOrigin() const;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Methods related to DownloadCommands.
   // Returns whether the given download command is enabled for this download.
   virtual bool IsCommandEnabled(const DownloadCommands* download_commands,
@@ -477,7 +463,6 @@ class DownloadUIModel {
   // Returns the UI pattern to be used for the download, e.g. dangerous or
   // suspicious. Returns kNoWarning if the download has no warning.
   virtual DangerUiPattern GetDangerUiPattern() const;
-#endif
 
   // Ephemeral warnings are ones that are quickly removed from the UI if the
   // user has not acted on them, and later deleted altogether. Is this that kind

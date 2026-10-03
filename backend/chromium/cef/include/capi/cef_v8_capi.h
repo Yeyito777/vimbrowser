@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=dc2df3036811a967197cfdae3b67270980420f1b$
+// $hash=ded6a2cfb2033e10c65385f5c874c26f4036abc8$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_V8_CAPI_H_
@@ -850,13 +850,13 @@ CEF_EXPORT cef_v8_value_t* cef_v8_value_create_array_buffer_with_copy(void* buff
 #if CEF_API_ADDED(14600)
 ///
 /// Create a new cef_v8_value_t object of type ArrayBuffer from a backing store
-/// previously created with cef_v8_backing_store_t::cef_translator_test_scoped_l
-/// ibrary_child_child_create(). This is a zero-copy operation - the ArrayBuffer
-/// uses the memory already allocated by the backing store. The backing store is
-/// consumed and becomes invalid after this call. This function should only be
-/// called from within the scope of a cef_render_process_handler_t,
-/// cef_v8_handler_t or cef_v8_accessor_t callback, or in combination with
-/// calling enter() and exit() on a stored cef_v8_context_t reference.
+/// previously created with cef_v8_backing_store_t::cef_zip_reader_create().
+/// This is a zero-copy operation - the ArrayBuffer uses the memory already
+/// allocated by the backing store. The backing store is consumed and becomes
+/// invalid after this call. This function should only be called from within the
+/// scope of a cef_render_process_handler_t, cef_v8_handler_t or
+/// cef_v8_accessor_t callback, or in combination with calling enter() and
+/// exit() on a stored cef_v8_context_t reference.
 ///
 CEF_EXPORT cef_v8_value_t* cef_v8_value_create_array_buffer_from_backing_store(cef_v8_backing_store_t* backing_store);
 #endif

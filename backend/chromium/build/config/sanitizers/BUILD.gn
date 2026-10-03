@@ -10,10 +10,6 @@ import("//build/config/sanitizers/sanitizers.gni")
 import("//build/toolchain/toolchain.gni")
 import("//build_overrides/build.gni")
 
-if (is_ios) {
-  import("//build/config/apple/mobile_config.gni")
-}
-
 declare_args() {
   # Allow building official with ASAN enabled to help with
   # debugging https://crbug.com/371135823.
@@ -43,17 +39,11 @@ group("deps") {
       # to add the ldflags here as well as in default_sanitizer_flags.
       ":default_sanitizer_ldflags",
     ]
-    if (!is_fuchsia) {
-      if (is_win) {
-        exe = ".exe"
-      } else {
-        exe = ""
-      }
-      data += [
-        "//tools/valgrind/asan/",
-        "$clang_base_path/bin/llvm-symbolizer${exe}",
-      ]
-    }
+    exe = ""
+    data += [
+      "//tools/valgrind/asan/",
+      "$clang_base_path/bin/llvm-symbolizer${exe}",
+    ]
     if (is_asan || is_lsan || is_msan || is_tsan || is_ubsan_any) {
       public_configs += [ ":sanitizer_options_link_helper" ]
       deps += [ ":options_sources" ]
@@ -94,25 +84,9 @@ if ((is_apple || is_win) && (is_asan || is_ubsan_any)) {
   _clang_rt_dso_full_path =
       "$clang_base_path/lib/clang/$clang_version/lib/$clang_rt_dso_path"
 
-  if (!is_ios) {
-    copy("copy_sanitizer_runtime") {
-      sources = [ _clang_rt_dso_full_path ]
-      outputs = [ "$root_out_dir/{{source_file_part}}" ]
-    }
-  } else {
-    # On iOS, the runtime library need to be code signed (adhoc signature)
-    # starting with Xcode 8, so use an action instead of a copy on iOS.
-    action("copy_sanitizer_runtime") {
-      script = "//build/config/apple/codesign.py"
-      sources = [ _clang_rt_dso_full_path ]
-      outputs = [ "$root_out_dir/" + get_path_info(sources[0], "file") ]
-      args = [
-        "code-sign-file",
-        "--identity=" + ios_code_signing_identity,
-        "--output=" + rebase_path(outputs[0], root_build_dir),
-        rebase_path(sources[0], root_build_dir),
-      ]
-    }
+  copy("copy_sanitizer_runtime") {
+    sources = [ _clang_rt_dso_full_path ]
+    outputs = [ "$root_out_dir/{{source_file_part}}" ]
   }
 
   if (is_apple) {
@@ -127,7 +101,7 @@ if ((is_apple || is_win) && (is_asan || is_ubsan_any)) {
 config("sanitizer_options_link_helper") {
   if (is_apple) {
     ldflags = [ "-Wl,-u,__sanitizer_options_link_helper" ]
-  } else if (!is_win) {
+  } else {
     ldflags = [ "-Wl,-u_sanitizer_options_link_helper" ]
   }
 }
@@ -307,36 +281,6 @@ config("default_sanitizer_ldflags") {
         }
       }
     }
-  } else if (is_win) {
-    # Windows directly calls link.exe instead of the compiler driver when
-    # linking.  Hence, pass the runtime libraries instead of -fsanitize=address
-    # or -fsanitize=fuzzer.
-    ldflags = []
-    if (is_asan) {
-      assert(current_cpu == "x64", "WinASan unsupported architecture")
-      _clang_lib_dir = "$clang_base_path/lib/clang/$clang_version/lib/windows"
-      libs = [ "$_clang_lib_dir/clang_rt.asan_dynamic-x86_64.lib" ]
-      if (is_component_build) {
-        ldflags +=
-            [ "-wholearchive:clang_rt.asan_dynamic_runtime_thunk-x86_64.lib" ]
-        libs +=
-            [ "$_clang_lib_dir/clang_rt.asan_dynamic_runtime_thunk-x86_64.lib" ]
-      } else {
-        ldflags +=
-            [ "-wholearchive:clang_rt.asan_static_runtime_thunk-x86_64.lib" ]
-        libs +=
-            [ "$_clang_lib_dir/clang_rt.asan_static_runtime_thunk-x86_64.lib" ]
-      }
-    }
-    if (use_libfuzzer) {
-      assert(current_cpu == "x64", "LibFuzzer unsupported architecture")
-      assert(!is_component_build,
-             "LibFuzzer only supports non-component builds on Windows")
-
-      # Incremental linking causes padding that messes up SanitizerCoverage.
-      # Don't do it.
-      ldflags += [ "/INCREMENTAL:NO" ]
-    }
   }
   if (use_dlcloseshim) {
     ldflags += [ "-Wl,-wrap,dlclose" ]
@@ -380,13 +324,6 @@ config("asan_flags") {
       # Clang recently turned it on by default for all ELF targets (it was
       # already on for Fuchsia). Pass the flag to turn it back off.
       cflags += [ "-fno-sanitize-address-globals-dead-stripping" ]
-    }
-    if (is_win) {
-      if (!defined(asan_win_blocklist_path)) {
-        asan_win_blocklist_path =
-            rebase_path("//tools/memory/asan/blocklist_win.txt", root_build_dir)
-      }
-      cflags += [ "-fsanitize-ignorelist=$asan_win_blocklist_path" ]
     }
   }
 }
@@ -435,19 +372,12 @@ config("cfi_flags") {
 
     if (use_cfi_diag) {
       cflags += [ "-fno-sanitize-trap=cfi" ]
-      if (is_win) {
-        cflags += [
-          "/Oy-",
-          "/Ob0",
-        ]
-      } else {
-        cflags += [
-          "-fno-inline-functions",
-          "-fno-inline",
-          "-fno-omit-frame-pointer",
-          "-O1",
-        ]
-      }
+      cflags += [
+        "-fno-inline-functions",
+        "-fno-inline",
+        "-fno-omit-frame-pointer",
+        "-O1",
+      ]
       if (use_cfi_recover) {
         cflags += [ "-fsanitize-recover=cfi" ]
       }
@@ -481,9 +411,6 @@ config("coverage_flags") {
         # TODO(crbug.com/40611636): on macOS, dead code stripping does not work
         # well with `pc-table` instrumentation enabled by `fuzzer-no-link`.
         cflags += [ "-fno-sanitize-coverage=pc-table" ]
-      }
-      if (is_android) {
-        cflags += [ "-fno-sanitize-coverage=stack-depth" ]
       }
     } else {
       cflags += [
@@ -731,14 +658,7 @@ config("alloc_token") {
       "-fsanitize=alloc-token",
       "-fsanitize-alloc-token-fast-abi",
     ]
-    if (is_win) {
-      cflags += [
-        "-Xclang",
-        "-falloc-token-max=2",
-      ]
-    } else {
-      cflags += [ "-falloc-token-max=2" ]
-    }
+    cflags += [ "-falloc-token-max=2" ]
     if (is_linux) {
       if (!defined(alloc_token_linux_ignorelist_path)) {
         alloc_token_linux_ignorelist_path =
@@ -754,14 +674,6 @@ config("alloc_token") {
                         root_build_dir)
       }
       cflags += [ "-fsanitize-ignorelist=$alloc_token_apple_ignorelist_path" ]
-    }
-    if (is_android) {
-      if (!defined(alloc_token_android_ignorelist_path)) {
-        alloc_token_android_ignorelist_path =
-            rebase_path("//tools/clang/alloc_token/ignores_android.txt",
-                        root_build_dir)
-      }
-      cflags += [ "-fsanitize-ignorelist=$alloc_token_android_ignorelist_path" ]
     }
     if (is_linux || is_chromeos) {
       ldflags = [

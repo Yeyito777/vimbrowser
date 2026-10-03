@@ -11,9 +11,7 @@
 #include "base/trace_event/typed_macros.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_IOS)
-#include <CoreGraphics/CoreGraphics.h>
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 

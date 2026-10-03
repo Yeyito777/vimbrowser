@@ -39,13 +39,11 @@
 #include "net/http/http_cache.h"
 #include "third_party/blink/public/common/features.h"
 
-#if !BUILDFLAG(IS_FUCHSIA)
 #include "components/persistent_cache/client.h"
 #include "components/persistent_cache/entry_metadata.h"
 #include "components/persistent_cache/pending_backend.h"
 #include "components/persistent_cache/persistent_cache_collection.h"
 #include "components/persistent_cache/transaction_error.h"
-#endif
 
 namespace content {
 
@@ -107,10 +105,8 @@ void GeneratedCodeCacheContext::InitializeOnThread(const base::FilePath& path,
   base::FilePath generated_js_code_cache_path = path.AppendASCII("js");
   base::FilePath webui_js_code_cache_path = path.AppendASCII("webui_js");
   base::FilePath generated_wasm_code_cache_path = path.AppendASCII("wasm");
-#if !BUILDFLAG(IS_FUCHSIA)
   // Use a short name for the root directory due to max path length limits.
   base::FilePath persistent_cache_collection_path = path.AppendASCII("pc");
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 
   const bool use_persistent_cache =
       blink::features::IsPersistentCacheForCodeCacheEnabled();
@@ -159,7 +155,6 @@ void GeneratedCodeCacheContext::InitializeOnThread(const base::FilePath& path,
                                GeneratedCodeCache::CodeCacheType::kWebAssembly),
         base::OnTaskRunnerDeleter(task_runner_)};
 
-#if !BUILDFLAG(IS_FUCHSIA)
     // Delete the PersistentCache files that won't be used to avoid wasting
     // space.
     base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()})
@@ -167,9 +162,7 @@ void GeneratedCodeCacheContext::InitializeOnThread(const base::FilePath& path,
             FROM_HERE,
             base::BindOnce(base::IgnoreResult(base::DeletePathRecursively),
                            persistent_cache_collection_path));
-#endif  // !BUILDFLAG(IS_FUCHSIA)
   } else {
-#if !BUILDFLAG(IS_FUCHSIA)
     // Target the same amount of disk space used for persistent_cache as is used
     // for disk_cache or use `max_bytes` if provided.
     int64_t disk_cache_max_size =
@@ -199,9 +192,6 @@ void GeneratedCodeCacheContext::InitializeOnThread(const base::FilePath& path,
                        },
                        generated_js_code_cache_path, webui_js_code_cache_path,
                        generated_wasm_code_cache_path));
-#else   // !BUILDFLAG(IS_FUCHSIA)
-    NOTREACHED();
-#endif  // !BUILDFLAG(IS_FUCHSIA)
   }
 }
 
@@ -213,15 +203,12 @@ void GeneratedCodeCacheContext::Shutdown() {
 }
 
 void GeneratedCodeCacheContext::ClearAndDeletePersistentCacheCollection() {
-#if !BUILDFLAG(IS_FUCHSIA)
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   if (persistent_cache_collection_) {
     persistent_cache_collection_->DeleteAllFiles();
   }
-#endif
 }
 
-#if !BUILDFLAG(IS_FUCHSIA)
 std::optional<persistent_cache::PendingBackend>
 GeneratedCodeCacheContext::ShareReadOnlyConnection(
     const std::string& context_key) {
@@ -292,13 +279,10 @@ GeneratedCodeCacheContext::FindInPersistentCacheCollection(
   // Cache hit.
   return MetadataAndContent{*std::move(metadata), std::move(content_buffer)};
 }
-#endif  // !BUILDFLAG(IS_FUCHSIA)
 
 void GeneratedCodeCacheContext::ShutdownOnThread() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-#if !BUILDFLAG(IS_FUCHSIA)
   persistent_cache_collection_.reset();
-#endif  // !BUILDFLAG(IS_FUCHSIA)
   generated_js_code_cache_.reset();
   generated_wasm_code_cache_.reset();
   generated_webui_js_code_cache_.reset();

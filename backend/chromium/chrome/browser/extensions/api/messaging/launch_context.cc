@@ -180,13 +180,9 @@ LaunchContext::BackgroundLaunchResult LaunchContext::LaunchInBackground(
   if (!host_path.IsAbsolute()) {
     // On Windows host path is allowed to be relative to the location of the
     // manifest file. On all other platforms the path must be absolute.
-#if BUILDFLAG(IS_WIN)
-    host_path = manifest_path.DirName().Append(host_path);
-#else   // BUILDFLAG(IS_WIN)
     LOG(WARNING) << "Native messaging host path must be absolute for "
                  << native_host_name;
     return BackgroundLaunchResult(NativeProcessLauncher::RESULT_NOT_FOUND);
-#endif  // BUILDFLAG(IS_WIN)
   }
 
   // In case when the manifest file is there, but the host binary doesn't exist
@@ -207,10 +203,6 @@ LaunchContext::BackgroundLaunchResult LaunchContext::LaunchInBackground(
 
   // Pass handle of the native view window to the native messaging host. This
   // way the host will be able to create properly focused UI windows.
-#if BUILDFLAG(IS_WIN)
-  command_line.AppendArg(
-      base::StringPrintf("--parent-window=%" PRIdPTR, window_handle));
-#endif  // !BUILDFLAG(IS_WIN)
 
   bool send_connect_id = false;
   if (!error_arg.empty()) {
@@ -234,18 +226,9 @@ LaunchContext::BackgroundLaunchResult LaunchContext::LaunchInBackground(
                                             profile_directory.BaseName());
     reconnect_command_line.AppendSwitchPath(::switches::kUserDataDir,
                                             profile_directory.DirName());
-#if BUILDFLAG(IS_WIN)
-    reconnect_command_line.AppendArgNative(
-        app_launch_prefetch::GetPrefetchSwitch(
-            app_launch_prefetch::SubprocessType::kBrowserBackground));
-#endif
     base::ListValue args;
     for (const auto& arg : reconnect_command_line.argv()) {
-#if BUILDFLAG(IS_WIN)
-      args.Append(base::WideToUTF8(arg));
-#else
       args.Append(arg);
-#endif
     }
     std::string encoded_reconnect_command;
     bool success =

@@ -38,11 +38,7 @@ base::FilePath GetPrefixedName(const base::FilePath& path,
   const std::string index_str = base::StringPrintf("_%03d", index);
   const base::FilePath::StringType filename = base::StrCat({
     FILE_PATH_LITERAL("old_"), basename.path().value(),
-#if BUILDFLAG(IS_WIN)
-        base::ASCIIToWide(index_str)
-#else
         index_str
-#endif
   });
   return path.Append(filename);
 }
@@ -185,11 +181,9 @@ int PreferredCacheSize(int64_t available, net::CacheType type) {
 
 // See go/change-disk-cache-size-results-2024 for an explanation of why the
 // size varies by platform.
-#if !BUILDFLAG(IS_WIN)
   if (type == net::DISK_CACHE) {
     percent_relative_size = 400;
   }
-#endif
 
   if (base::FeatureList::IsEnabled(
           disk_cache::kChangeGeneratedCodeCacheSizeExperiment) &&

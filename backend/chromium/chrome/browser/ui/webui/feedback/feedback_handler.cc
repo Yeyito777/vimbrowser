@@ -79,12 +79,6 @@ void FeedbackHandler::RegisterMessages() {
   web_ui()->RegisterMessageCallback(
       "showDialog", base::BindRepeating(&FeedbackHandler::HandleShowDialog,
                                         base::Unretained(this)));
-#if BUILDFLAG(IS_CHROMEOS)
-  web_ui()->RegisterMessageCallback(
-      "showAssistantLogsInfo",
-      base::BindRepeating(&FeedbackHandler::HandleShowAssistantLogsInfo,
-                          base::Unretained(this)));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   web_ui()->RegisterMessageCallback(
       "showAutofillMetadataInfo",
@@ -105,15 +99,6 @@ void FeedbackHandler::HandleShowDialog(const base::ListValue& args) {
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void FeedbackHandler::HandleShowAssistantLogsInfo(const base::ListValue& args) {
-  ShowChildPage(Profile::FromWebUI(web_ui()), dialog_,
-                ChildPageURL("html/assistant_logs_info.html"), std::u16string(),
-                std::string(),
-                /*dialog_width=*/400, /*dialog_height=*/120,
-                /*can_resize=*/false, /*can_minimize=*/false);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void FeedbackHandler::HandleShowAutofillMetadataInfo(
     const base::ListValue& args) {

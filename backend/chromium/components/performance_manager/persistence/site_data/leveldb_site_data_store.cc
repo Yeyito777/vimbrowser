@@ -35,10 +35,8 @@ std::string Md5AsHexForDatabaseKey(std::string_view input) {
 
 namespace {
 
-#if !BUILDFLAG(IS_ANDROID)
 // Disable some testing features in Android to reduce APK size.
 std::atomic<bool> g_use_in_memory_db_for_testing = false;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // Attempt to repair the database stored in |db_path|.
 bool RepairDatabase(const std::string& db_path) {
@@ -159,12 +157,10 @@ class LevelDBSiteDataStore::AsyncHelper {
   // Implementation for the ClearDatabase function.
   void ClearDatabaseImpl();
 
-#if !BUILDFLAG(IS_ANDROID)
   // A levelDB environment that gets used for testing. This allows using an
   // in-memory database when needed.
   std::unique_ptr<leveldb::Env> env_for_testing_
       GUARDED_BY_CONTEXT(sequence_checker_);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // The on disk location of the database.
   const base::FilePath db_path_ GUARDED_BY_CONTEXT(sequence_checker_);
@@ -319,21 +315,7 @@ DatabaseSizeResult LevelDBSiteDataStore::AsyncHelper::GetDatabaseSize() {
   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
                                                 base::BlockingType::MAY_BLOCK);
   DatabaseSizeResult ret;
-#if BUILDFLAG(IS_WIN)
-  // Windows has an annoying mis-feature that the size of an open file is not
-  // written to the parent directory until the file is closed. Since this is a
-  // diagnostic interface that should be rarely called, go to the trouble of
-  // closing and re-opening the database in order to get an up-to date size to
-  // report.
-  db_.reset();
-#endif
   ret.on_disk_size = base::ByteCount(base::ComputeDirectorySize(db_path_));
-#if BUILDFLAG(IS_WIN)
-  OpenOrCreateDatabase();
-  if (!db_) {
-    return DatabaseSizeResult();
-  }
-#endif
 
   // Default read options will fill the cache as we go.
   std::unique_ptr<leveldb::Iterator> iterator(
@@ -363,12 +345,10 @@ LevelDBSiteDataStore::AsyncHelper::OpenOrCreateDatabaseImpl() {
   leveldb_env::Options options;
   options.create_if_missing = true;
 
-#if !BUILDFLAG(IS_ANDROID)
   if (g_use_in_memory_db_for_testing.load(std::memory_order_relaxed)) {
     env_for_testing_ = leveldb_chrome::NewMemEnv("LevelDBSiteDataStore");
     options.env = env_for_testing_.get();
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   const std::string db_path_str = db_path_.AsUTF8Unsafe();
   const leveldb::Status status =
@@ -494,7 +474,6 @@ void LevelDBSiteDataStore::GetStoreSize(GetStoreSizeCallback callback) {
 
 void LevelDBSiteDataStore::SetInitializationCallbackForTesting(
     base::OnceClosure callback) {
-#if !BUILDFLAG(IS_ANDROID)
   // This testing function cannot be optimized out by linker for unknown reason.
   // Manually exclude it on Android to reduce APK size.
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -503,7 +482,6 @@ void LevelDBSiteDataStore::SetInitializationCallbackForTesting(
                                     SetInitializationCallbackForTesting,
                                 base::Unretained(async_helper_.get()),
                                 std::move(callback)));
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void LevelDBSiteDataStore::DatabaseIsInitializedForTesting(
@@ -533,14 +511,10 @@ void LevelDBSiteDataStore::RunTaskWithRawDBForTesting(
 
 // static
 base::ScopedClosureRunner LevelDBSiteDataStore::UseInMemoryDBForTesting() {
-#if !BUILDFLAG(IS_ANDROID)
   g_use_in_memory_db_for_testing.store(true, std::memory_order_relaxed);
   return base::ScopedClosureRunner(base::BindOnce([] {
     g_use_in_memory_db_for_testing.store(false, std::memory_order_relaxed);
   }));
-#else
-  return base::ScopedClosureRunner();
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 }  // namespace performance_manager

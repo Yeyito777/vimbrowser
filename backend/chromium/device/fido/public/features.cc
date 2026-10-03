@@ -62,12 +62,6 @@ constexpr base::FeatureParam<PasskeyUnlockErrorUiExperimentArm>
         &kPasskeyUnlockErrorUiExperimentArms};
 #endif
 
-#if BUILDFLAG(IS_WIN)
-// Permanent flag
-BASE_FEATURE(kWebAuthUseNativeWinApi,
-             "WebAuthenticationUseNativeWinApi",
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_WIN)
 
 // Permanent flag
 BASE_FEATURE(kWebAuthCableExtensionAnywhere,
@@ -119,11 +113,6 @@ BASE_FEATURE(kWebAuthnAmbientSignin,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
 // Deprecation flag. Disabled by default in M145. Remove in or after M148.
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kWebAuthnPublishPrelinkingInfo,
-             "WebAuthenticationPublishPrelinkingInfo",
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // Disabled by default.
 BASE_FEATURE(kWebAuthnHelloSignal,
@@ -220,9 +209,5 @@ COMPONENT_EXPORT(FIDO_PUBLIC)
 BASE_FEATURE(kWebAuthnCreatePinWhenSystemUvDisabled,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-// Enabled by default in M147. Remove in or after M150.
-BASE_FEATURE(kWebAuthnWinPrfOnCreate, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace device

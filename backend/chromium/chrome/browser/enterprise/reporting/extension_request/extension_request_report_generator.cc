@@ -51,12 +51,8 @@ std::unique_ptr<ExtensionsWorkflowEvent> GenerateReport(
   } else {
     report->set_removed(true);
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  report->set_client_type(ExtensionsWorkflowEvent::CHROME_OS_USER);
-#else
   report->set_client_type(ExtensionsWorkflowEvent::BROWSER_DEVICE);
   report->set_device_name(policy::GetMachineName());
-#endif  // BUILDFLAG(IS_CHROMEOS)
   return report;
 }
 

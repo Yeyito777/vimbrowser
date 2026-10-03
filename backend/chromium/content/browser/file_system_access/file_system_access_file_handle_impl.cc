@@ -43,15 +43,7 @@
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_file_modification_host.mojom.h"
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_transfer_token.mojom.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/path_service.h"
-#include "base/strings/escape.h"
-#include "content/public/common/content_paths.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include <sys/clonefile.h>
@@ -78,22 +70,12 @@ std::pair<base::File, base::FileErrorOr<int64_t>> GetFileLengthOnBlockingThread(
   return {std::move(file), std::move(file_length)};
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void EnsureSwapDirExists(base::FilePath swap_dir) {
-  if (!base::PathExists(swap_dir)) {
-    if (!base::CreateDirectory(swap_dir)) {
-      DLOG(ERROR) << "Error creating swap dir " << swap_dir;
-    }
-  }
-}
-#endif
 
 bool HasWritePermission(const base::FilePath& path) {
   if (!base::PathExists(path)) {
     return true;
   }
 
-#if BUILDFLAG(IS_POSIX)
   int mode;
   if (!base::GetPosixFilePermissions(path, &mode)) {
     return true;
@@ -102,15 +84,6 @@ bool HasWritePermission(const base::FilePath& path) {
   if (!(mode & base::FILE_PERMISSION_WRITE_BY_USER)) {
     return false;
   }
-#elif BUILDFLAG(IS_WIN)
-  DWORD attrs = ::GetFileAttributes(path.value().c_str());
-  if (attrs == INVALID_FILE_ATTRIBUTES) {
-    return true;
-  }
-  if (attrs & FILE_ATTRIBUTE_READONLY) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_POSIX)
 
   return true;
 }
@@ -540,14 +513,6 @@ void FileSystemAccessFileHandleImpl::CreateFileWriterImpl(
   // TODO(crbug.com/40194651): Expand this check to all backends.
   if (url().type() == storage::kFileSystemTypeLocal) {
     auto checks = base::BindOnce(&HasWritePermission, url().path());
-#if BUILDFLAG(IS_ANDROID)
-    if (url().path().IsContentUri()) {
-      swap_dir_ =
-          base::PathService::CheckedGet(content::DIR_FILE_SYSTEM_API_SWAP);
-      checks = base::BindOnce(&EnsureSwapDirExists, swap_dir_)
-                   .Then(std::move(checks));
-    }
-#endif
     base::ThreadPool::PostTaskAndReplyWithResult(
         FROM_HERE, {base::MayBlock()}, std::move(checks),
         base::BindOnce(
@@ -631,24 +596,7 @@ void FileSystemAccessFileHandleImpl::StartCreateSwapFile(
     std::optional<base::SafeBaseName> opt_swap_name =
         base::SafeBaseName::Create(swap_name);
     CHECK(opt_swap_name.has_value());
-#if BUILDFLAG(IS_ANDROID)
-    //  For content-URIs (e.g. content://com.android.../doc/msf%3A123), we will
-    //  write the swap file to the local cache dir
-    //  (e.g. /data/user/0/com.chrome.dev/cache/FileSystemAPISwap) and then
-    //  copy back to the original content-URI when done.
-    storage::FileSystemURL swap_url;
-    if (url().path().IsContentUri()) {
-      // We must escape 'content://com.android...' to use it as the file name.
-      std::string file_name = base::EscapeAllExceptUnreserved(
-          url().path().DirName().Append(*opt_swap_name).value());
-      swap_url = manager()->CreateFileSystemURLFromPath(
-          PathInfo(swap_dir_.Append(file_name)));
-    } else {
-      swap_url = url().CreateSibling(*opt_swap_name);
-    }
-#else
     storage::FileSystemURL swap_url = url().CreateSibling(*opt_swap_name);
-#endif
     CHECK(swap_url.is_valid());
 
     // Check if this swap file is not in use. If it isn't, take a lock on it.

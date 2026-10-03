@@ -27,9 +27,6 @@ template("generate_profile_test") {
   script_test(target_name) {
     script = "//tools/pgo/generate_profile.py"
 
-    # Stream logcat from device (doesn't seem to fully work yet).
-    enable_android_wrapper = true
-
     args = [
       # Assume that we are running this script from the output directory.
       "--builddir",
@@ -69,9 +66,6 @@ if (defined(android_app_secondary_abi)) {
 
   script_test("generate_profile_android_webview_64") {
     script = "//tools/pgo/generate_profile_webview.py"
-
-    # Stream logcat from device (doesn't seem to fully work yet).
-    enable_android_wrapper = true
 
     args = [
       # Assume that we are running this script from the output directory.

@@ -78,11 +78,6 @@
 #include "ui/base/clipboard/file_info.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/ui/android/extensions/extension_developer_private_bridge.h"
-#include "chrome/common/extensions/api/developer_private.h"
-#include "extensions/browser/extension_function.h"
-#else  // BUILDFLAG(IS_ANDROID)
 #include "base/check_is_test.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
@@ -140,7 +135,6 @@
 #include "ui/shell_dialogs/selected_file_info.h"
 #include "url/gurl.h"
 #include "url/origin.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
@@ -149,9 +143,7 @@ namespace extensions {
 namespace developer = api::developer_private;
 
 namespace {
-#if !BUILDFLAG(IS_ANDROID)
 constexpr char kUnpackedAppsFolder[] = "apps_target";
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 const char kCannotUpdateChildAccountProfileSettingsError[] =
     "Cannot change settings for a child account profile.";
@@ -363,11 +355,9 @@ bool MatchesExtension(ui::FileInfo& file_info,
 
 }  // namespace
 
-#if !BUILDFLAG(IS_ANDROID)
 namespace ChoosePath = api::developer_private::ChoosePath;
 namespace PackDirectory = api::developer_private::PackDirectory;
 namespace Reload = api::developer_private::Reload;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 namespace api {
 
@@ -938,17 +928,6 @@ void DeveloperPrivateLoadUnpackedFunction::FileSelectionCanceled() {
 
 void DeveloperPrivateLoadUnpackedFunction::StartFileLoad(
     base::FilePath file_path) {
-#if BUILDFLAG(IS_ANDROID)
-  // SelectFileDialog returns a content URI so on Android we need to further
-  // resolve it to a virtual document path
-  std::optional<base::FilePath> vp =
-      base::ResolveToVirtualDocumentPath(file_path);
-  if (!vp) {
-    OnLoadComplete(nullptr, file_path, u"Failed to resolve (removed?)");
-    return;
-  }
-  file_path = *vp;
-#endif  // BUILDFLAG(IS_ANDROID)
   scoped_refptr<UnpackedInstaller> installer(
       UnpackedInstaller::Create(browser_context()));
   installer->set_be_noisy_on_failure(!fail_quietly_);
@@ -1009,13 +988,6 @@ DeveloperPrivateInstallDroppedFileFunction::Run() {
     return RespondNow(Error(kCouldNotFindWebContentsError));
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  base::expected<void, std::string> result =
-      SetDroppedPath(web_contents, browser_context());
-  if (!result.has_value()) {
-    return RespondNow(Error(result.error()));
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   DeveloperPrivateAPI* api = DeveloperPrivateAPI::Get(browser_context());
   ui::FileInfo file = api->GetDraggedFile(web_contents);
@@ -1063,7 +1035,6 @@ DeveloperPrivateNotifyDragInstallInProgressFunction::
 ExtensionFunction::ResponseAction
 DeveloperPrivateNotifyDragInstallInProgressFunction::Run() {
 // Drop data is available only on drop on android.
-#if !BUILDFLAG(IS_ANDROID)
   content::WebContents* web_contents = GetSenderWebContents();
   if (!web_contents) {
     return RespondNow(Error(kCouldNotFindWebContentsError));
@@ -1074,7 +1045,6 @@ DeveloperPrivateNotifyDragInstallInProgressFunction::Run() {
   if (!result.has_value()) {
     return RespondNow(Error(result.error()));
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   return RespondNow(NoArguments());
 }
@@ -1805,18 +1775,6 @@ ExtensionFunction::ResponseAction DeveloperPrivatePackDirectoryFunction::Run() {
 
   developer::PackDirectoryResponse response;
 
-#if BUILDFLAG(IS_ANDROID)
-  // SelectFileDialog returns a content URI so on Android we need to further
-  // resolve it to a virtual document path
-  std::optional<base::FilePath> virtual_path =
-      base::ResolveToVirtualDocumentPath(root_directory);
-  if (!virtual_path) {
-    response.message = "Failed to resolve (removed?)";
-    response.status = developer::PackStatus::kError;
-    return RespondNow(WithArguments(response.ToValue()));
-  }
-  root_directory = *virtual_path;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   if (root_directory.empty()) {
     if (item_path_str_.empty()) {
@@ -1918,12 +1876,6 @@ ExtensionFunction::ResponseAction DeveloperPrivateChoosePathFunction::Run() {
 
   select_file_dialog_ = ui::SelectFileDialog::Create(
       this, std::make_unique<ChromeSelectFilePolicy>(web_contents));
-#if BUILDFLAG(IS_ANDROID)
-  // On Android, although we are not actually writing to the file, we still need
-  // to set this flag to trigger ACTION_OPEN_DOCUMENT intent to bypass the
-  // file chooser dialog.
-  select_file_dialog_->SetOpenWritable(true);
-#endif  // BUILDFLAG(IS_ANDROID)
   select_file_dialog_->SelectFile(file_type, select_title, last_directory,
                                   &file_type_info, file_type_index,
                                   base::FilePath::StringType(), owning_window);
@@ -2291,23 +2243,6 @@ void DeveloperPrivateUploadExtensionToAccountFunction::OnDialogCancelled() {
   Respond(WithArguments(false));
 }
 
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_UNIMPLEMENTED_EXTENSION_FUNCTION(DeveloperPrivateLoadDirectoryFunction,
-                                        "developerPrivate.loadDirectory")
-DEFINE_UNIMPLEMENTED_EXTENSION_FUNCTION(
-    DeveloperPrivateDismissMv2DeprecationNoticeForExtensionFunction,
-    "developerPrivate.dismissMv2DeprecationNoticeForExtension")
-
-ExtensionFunction::ResponseAction
-DeveloperPrivateShowSiteSettingsFunction::Run() {
-  std::optional<developer_private::ShowSiteSettings::Params> params =
-      developer_private::ShowSiteSettings::Params::Create(args());
-  EXTENSION_FUNCTION_VALIDATE(params);
-  const std::string& extension_id = params->extension_id;
-  ExtensionDeveloperPrivateBridge::ShowSiteSettings(extension_id);
-  return RespondNow(NoArguments());
-}
-#else   // BUILDFLAG(IS_ANDROID)
 ExtensionFunction::ResponseAction DeveloperPrivateLoadDirectoryFunction::Run() {
   // In theory `extension()` can be null when an ExtensionFunction is invoked
   // from WebUI, but this should never be the case for this particular API.
@@ -2651,7 +2586,6 @@ void DeveloperPrivateDismissMv2DeprecationNoticeForExtensionFunction::
 
   Respond(NoArguments());
 }
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace api
 }  // namespace extensions

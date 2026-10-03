@@ -25,10 +25,6 @@
 #include "chrome/common/extensions/api/url_handlers/url_handlers_parser.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/common/extensions/api/file_browser_handlers/file_browser_handler.h"
-#include "chrome/common/extensions/api/file_system_provider_capabilities/file_system_provider_capabilities_handler.h"
-#endif
 
 namespace extensions {
 
@@ -49,11 +45,6 @@ void RegisterChromeManifestHandlers(ManifestHandlerRegistry* registry) {
   registry->RegisterHandler(std::make_unique<UrlHandlersParser>());
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  registry->RegisterHandler(std::make_unique<FileBrowserHandlerParser>());
-  registry->RegisterHandler(
-      std::make_unique<FileSystemProviderCapabilitiesHandler>());
-#endif
 }
 
 }  // namespace extensions

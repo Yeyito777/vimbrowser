@@ -53,12 +53,6 @@
 #include "sandbox/policy/linux/bpf_speech_recognition_policy_linux.h"
 #include "sandbox/policy/linux/bpf_utility_policy_linux.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "sandbox/policy/features.h"
-#include "sandbox/policy/linux/bpf_ime_policy_linux.h"
-#include "sandbox/policy/linux/bpf_nearby_policy_linux.h"
-#include "sandbox/policy/linux/bpf_tts_policy_linux.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "media/gpu/buildflags.h"    // nogncheck
@@ -66,10 +60,6 @@
 #if BUILDFLAG(ALLOW_OOP_VIDEO_DECODER)
 #include "sandbox/policy/linux/bpf_hardware_video_decoding_policy_linux.h"
 #endif  // BUILDFLAG(ALLOW_OOP_VIDEO_DECODER)
-#endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
-
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
-#include "sandbox/policy/linux/bpf_on_device_translation_policy_linux.h"
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
 using sandbox::bpf_dsl::Allow;
@@ -95,11 +85,7 @@ namespace {
 // in its dependencies. Make sure to not link things that are not needed.
 #if !defined(IN_NACL_HELPER)
 inline bool IsChromeOS() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return true;
-#else
   return false;
-#endif
 }
 
 inline bool UseChromecastSandboxAllowlist() {
@@ -207,8 +193,6 @@ std::unique_ptr<BPFBasePolicy> SandboxSeccompBPF::PolicyForSandboxType(
     case sandbox::mojom::Sandbox::kSpeechRecognition:
       return std::make_unique<SpeechRecognitionProcessPolicy>();
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
-    case sandbox::mojom::Sandbox::kOnDeviceTranslation:
-      return std::make_unique<OnDeviceTranslationProcessPolicy>();
     case sandbox::mojom::Sandbox::kScreenAI:
       return std::make_unique<ScreenAIProcessPolicy>();
     case sandbox::mojom::Sandbox::kShapeDetection:
@@ -227,14 +211,6 @@ std::unique_ptr<BPFBasePolicy> SandboxSeccompBPF::PolicyForSandboxType(
       return GetGpuProcessSandbox(options, MremapPolicy::kBlock);
 #endif  // BUILDFLAG(USE_LINUX_VIDEO_ACCELERATION)
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_CHROMEOS)
-    case sandbox::mojom::Sandbox::kIme:
-      return std::make_unique<ImeProcessPolicy>();
-    case sandbox::mojom::Sandbox::kTts:
-      return std::make_unique<TtsProcessPolicy>();
-    case sandbox::mojom::Sandbox::kNearby:
-      return std::make_unique<NearbyProcessPolicy>();
-#endif  // BUILDFLAG(IS_CHROMEOS)
     case sandbox::mojom::Sandbox::kZygoteIntermediateSandbox:
     case sandbox::mojom::Sandbox::kNoSandbox:
       NOTREACHED();
@@ -285,15 +261,9 @@ void SandboxSeccompBPF::RunSandboxSanityChecks(
 #if BUILDFLAG(USE_LINUX_VIDEO_ACCELERATION)
     case sandbox::mojom::Sandbox::kHardwareVideoEncoding:
 #endif  // BUILDFLAG(USE_LINUX_VIDEO_ACCELERATION)
-#if BUILDFLAG(IS_CHROMEOS)
-    case sandbox::mojom::Sandbox::kIme:
-    case sandbox::mojom::Sandbox::kTts:
-    case sandbox::mojom::Sandbox::kNearby:
-#endif  // BUILDFLAG(IS_CHROMEOS)
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
     case sandbox::mojom::Sandbox::kShapeDetection:
     case sandbox::mojom::Sandbox::kScreenAI:
-    case sandbox::mojom::Sandbox::kOnDeviceTranslation:
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
     case sandbox::mojom::Sandbox::kAudio:
     case sandbox::mojom::Sandbox::kService:
@@ -326,10 +296,6 @@ bool SandboxSeccompBPF::StartSandboxWithExternalPolicy(
     SandboxBPF sandbox(std::move(policy));
     sandbox.SetProcFd(std::move(proc_fd));
     bool enable_ibpb = true;
-#if BUILDFLAG(IS_CHROMEOS)
-    enable_ibpb =
-        base::FeatureList::IsEnabled(features::kSpectreVariant2Mitigation);
-#endif  // BUILDFLAG(IS_CHROMEOS)
     CHECK(sandbox.StartSandbox(seccomp_level, enable_ibpb));
     return true;
   }

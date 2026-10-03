@@ -119,34 +119,6 @@ class ComponentLoader : public KeyedService {
   // Return ids of all registered extensions.
   std::vector<ExtensionId> GetRegisteredComponentExtensionsIds() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Whether the given extension is being loaded in the file task runner.
-  bool IsPendingAdd(const ExtensionId& extension_id) const;
-
-  // Convenience wrapper of `Exists` and `IsPendingAdd` since most callers do
-  // not need to differentiate the two cases.
-  bool ExistsOrPendingAdd(const ExtensionId& extension_id) const;
-
-  // Identical to AddComponentFromDir() except allows for the caller to supply
-  // the name of the manifest file.
-  void AddComponentFromDirWithManifestFilename(
-      const base::FilePath& root_directory,
-      const ExtensionId& extension_id,
-      const base::FilePath::CharType* manifest_file_name,
-      const base::FilePath::CharType* guest_manifest_file_name,
-      base::OnceClosure done_cb,
-      base::OnceClosure error_cb);
-
-  // Add a component extension from a specific directory. Assumes that the
-  // extension uses a different manifest file when this is a guest session
-  // and that the manifest file lives in `root_directory`. Calls `done_cb`
-  // on success, unless the component loader is shut down during loading.
-  void AddComponentFromDir(const base::FilePath& root_directory,
-                           const ExtensionId& extension_id,
-                           base::OnceClosure done_cb);
-
-  void AddChromeOsSpeechSynthesisExtensions();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   void set_ignore_allowlist_for_testing(bool value) {
     ignore_allowlist_for_testing_ = value;
@@ -216,29 +188,6 @@ class ComponentLoader : public KeyedService {
                                  const std::string& description_string);
   void AddWebStoreApp();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void AddChromeApp();
-  void AddFileManagerExtension();
-  void AddGalleryExtension();
-  void AddImageLoaderExtension();
-  void AddGuestModeTestExtension(const base::FilePath& path);
-  void AddKeyboardApp();
-
-  // Used as a reply callback by `AddComponentFromDir`.
-  // Called with a `root_directory` and parsed `manifest` and invokes
-  // `done_cb` after adding the extension.
-  void FinishAddComponentFromDir(
-      const base::FilePath& root_directory,
-      const ExtensionId& extension_id,
-      const std::optional<std::string>& name_string,
-      const std::optional<std::string>& description_string,
-      base::OnceClosure done_cb,
-      base::OnceClosure error_cb,
-      std::optional<base::DictValue> manifest);
-
-  // Finishes loading an extension tts engine.
-  void FinishLoadSpeechSynthesisExtension(const ExtensionId& extension_id);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   scoped_refptr<const Extension> CreateExtension(
       const ComponentExtensionInfo& info,
@@ -257,10 +206,6 @@ class ComponentLoader : public KeyedService {
 
   bool ignore_allowlist_for_testing_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Ids of extensions that are being loaded on file task runner.
-  ExtensionIdSet pending_extension_ids_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   base::WeakPtrFactory<ComponentLoader> weak_factory_{this};
 };

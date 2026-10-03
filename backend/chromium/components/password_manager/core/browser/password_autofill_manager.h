@@ -60,10 +60,6 @@ class PasswordAutofillManager : public autofill::AutofillSuggestionDelegate,
   ~PasswordAutofillManager() override;
 
   // PasswordManagerDelegate:
-#if BUILDFLAG(IS_ANDROID)
-  void ShowKeyboardReplacingSurface(
-      const autofill::PasswordSuggestionRequest& request) override;
-#endif  // BUILDFLAG(IS_ANDROID)
   void ShowSuggestions(
       const autofill::TriggeringField& triggering_field) override;
   void SelectSuggestion(const autofill::Suggestion& suggestion) override;

@@ -538,15 +538,6 @@ using u16cstring_view = basic_cstring_view<char16_t>;
 // See basic_cstring_view for more.
 using u32cstring_view = basic_cstring_view<char32_t>;
 
-#if BUILDFLAG(IS_WIN)
-// wcstring_view provides a view of a NUL-terminated string. It is a
-// replacement for all use of `const wchar_t*`, in order to provide bounds
-// checks and prevent unsafe pointer usage (otherwise prevented by
-// `-Wunsafe-buffer-usage`).
-//
-// See basic_cstring_view for more.
-using wcstring_view = basic_cstring_view<wchar_t>;
-#endif
 
 // Writes the contents of the cstring view to the stream.
 template <class Char, class Traits>

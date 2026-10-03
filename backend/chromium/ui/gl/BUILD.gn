@@ -20,12 +20,6 @@ declare_args() {
   use_webgpu_on_vulkan_via_gl_interop = enable_vulkan && is_linux && use_dawn
 }
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-  import("//third_party/jni_zero/jni_zero.gni")
-}
-
 buildflag_header("buildflags") {
   header = "buildflags.h"
   flags = [
@@ -203,16 +197,14 @@ component("gl") {
   }
 
   if (use_ozone) {
-    if (!is_fuchsia) {
-      if (!use_static_angle) {
-        data_deps += [
-          "//third_party/angle:libEGL",
-          "//third_party/angle:libGLESv2",
-        ]
-      }
-      if (angle_shared_libvulkan && !is_chromeos) {
-        data_deps += [ "//third_party/vulkan-loader/src:libvulkan" ]
-      }
+    if (!use_static_angle) {
+      data_deps += [
+        "//third_party/angle:libEGL",
+        "//third_party/angle:libGLESv2",
+      ]
+    }
+    if (angle_shared_libvulkan && !is_chromeos) {
+      data_deps += [ "//third_party/vulkan-loader/src:libvulkan" ]
     }
   }
 
@@ -231,79 +223,6 @@ component("gl") {
       "//ui/gfx/linux:gbm_support_x11",
     ]
 
-    if (!use_static_angle) {
-      data_deps += [
-        "//third_party/angle:libEGL",
-        "//third_party/angle:libGLESv2",
-      ]
-    }
-    if (angle_shared_libvulkan && !is_chromeos) {
-      data_deps += [ "//third_party/vulkan-loader/src:libvulkan" ]
-    }
-  }
-
-  if (is_win) {
-    sources += [
-      "child_window_win.cc",
-      "child_window_win.h",
-      "dc_layer_overlay_image.cc",
-      "dc_layer_overlay_image.h",
-      "dc_layer_overlay_params.cc",
-      "dc_layer_overlay_params.h",
-      "dc_layer_tree.cc",
-      "dc_layer_tree.h",
-      "dcomp_presenter.cc",
-      "dcomp_presenter.h",
-      "dcomp_surface_proxy.h",
-      "dcomp_surface_registry.cc",
-      "dcomp_surface_registry.h",
-      "debug_utils.cc",
-      "debug_utils.h",
-      "delegated_ink_point_renderer_gpu.cc",
-      "delegated_ink_point_renderer_gpu.h",
-      "direct_composition_support.cc",
-      "direct_composition_support.h",
-      "gl_angle_util_win.cc",
-      "gl_angle_util_win.h",
-      "gl_fence_win.cc",
-      "gl_fence_win.h",
-      "hdr_metadata_helper_win.cc",
-      "hdr_metadata_helper_win.h",
-      "os_compositor_tree_base.h",
-      "swap_chain_presenter.cc",
-      "swap_chain_presenter.h",
-      "vsync_provider_win.cc",
-      "vsync_provider_win.h",
-      "vsync_provider_win_dcomp.cc",
-      "vsync_provider_win_dcomp.h",
-      "vsync_thread_win.cc",
-      "vsync_thread_win.h",
-      "vsync_thread_win_dcomp.cc",
-      "vsync_thread_win_dcomp.h",
-      "vsync_thread_win_dxgi.cc",
-      "vsync_thread_win_dxgi.h",
-    ]
-
-    libs = [
-      "dcomp.lib",
-      "dxgi.lib",
-      "dxguid.lib",
-      "dwmapi.lib",
-    ]
-    ldflags = [
-      "/DELAYLOAD:dwmapi.dll",
-      "/DELAYLOAD:dxgi.dll",
-    ]
-    deps += [
-      "//ui/base",
-      "//ui/display",
-      "//ui/gfx/mojom:dxgi_info",
-    ]
-
-    data_deps += [
-      "//third_party/swiftshader/src/Vulkan:icd_file",
-      "//third_party/swiftshader/src/Vulkan:swiftshader_libvulkan",
-    ]
     if (!use_static_angle) {
       data_deps += [
         "//third_party/angle:libEGL",
@@ -358,38 +277,7 @@ component("gl") {
     defines += [ "GL_SILENCE_DEPRECATION" ]
   }
 
-  if (is_android) {
-    sources += [
-      "android/egl_fence_utils.cc",
-      "android/egl_fence_utils.h",
-      "android/scoped_a_native_window.cc",
-      "android/scoped_a_native_window.h",
-      "android/scoped_java_surface.cc",
-      "android/scoped_java_surface.h",
-      "android/scoped_java_surface_control.cc",
-      "android/scoped_java_surface_control.h",
-      "android/surface_texture.cc",
-      "android/surface_texture.h",
-      "android/surface_texture_listener.cc",
-      "android/surface_texture_listener.h",
-      "gl_surface_egl_surface_control.cc",
-      "gl_surface_egl_surface_control.h",
-    ]
-
-    defines += [
-      "GL_GLEXT_PROTOTYPES",
-      "EGL_EGLEXT_PROTOTYPES",
-    ]
-
-    libs = [ "android" ]
-
-    deps += [
-      ":gl_jni_headers",
-      "//third_party/angle:angle_gpu_info_util",
-    ]
-  }
-
-  if (is_android || is_chromeos || is_linux) {
+  if (is_chromeos || is_linux) {
     # Windows doesn't support base::FileDescriptor.
     # libsync isn't supported or needed on MacOSX.
     # Fuchsia is excluded due to a libsync dependency and because it's
@@ -405,10 +293,6 @@ component("gl") {
 
   if (is_linux || is_chromeos) {
     deps += [ "//third_party/angle:angle_gpu_info_util" ]
-  }
-
-  if (is_chromeos) {
-    deps += [ "//ash/constants" ]
   }
 }
 
@@ -549,17 +433,6 @@ test("gl_unittests") {
     sources += [ "gl_surface_egl_unittest.cc" ]
   }
 
-  if (is_win) {
-    sources += [
-      "dcomp_presenter_unittest.cc",
-      "dcomp_surface_registry_unittest.cc",
-      "delegated_ink_point_renderer_gpu_unittest.cc",
-      "gl_fence_win_unittest.cc",
-      "hdr_metadata_helper_win_unittest.cc",
-      "os_compositor_tree_base_unittest.cc",
-    ]
-  }
-
   deps = [
     ":gl",
     ":gl_headers",
@@ -581,14 +454,6 @@ test("gl_unittests") {
 
   data_deps = [ "//testing/buildbot/filters:gl_unittests_filters" ]
 
-  if (is_win) {
-    deps += [
-      "//media/base/win:test_support",
-      "//ui/base:pixel_diff_test_support",
-    ]
-    libs = [ "dxguid.lib" ]
-  }
-
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
   }
@@ -602,21 +467,4 @@ test("gl_unittests") {
 group("gl_unittests_ozone") {
   testonly = true
   data_deps = [ ":gl_unittests" ]
-}
-
-if (is_android) {
-  generate_jar_jni("surface_jni_headers") {
-    classes = [
-      "android/view/Surface.class",
-      "android/window/InputTransferToken.class",
-    ]
-  }
-
-  generate_jni("gl_jni_headers") {
-    sources = [
-      "../android/java/src/org/chromium/ui/gl/ChromeSurfaceTexture.java",
-      "../android/java/src/org/chromium/ui/gl/ScopedJavaSurfaceControl.java",
-    ]
-    public_deps = [ ":surface_jni_headers" ]
-  }
 }

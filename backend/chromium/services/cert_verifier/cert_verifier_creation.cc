@@ -24,10 +24,6 @@
 #include "net/cert/multi_log_ct_verifier.h"
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "net/cert/cert_verify_proc_builtin.h"
-#include "net/cert/internal/system_trust_store.h"
-#endif
 
 #if BUILDFLAG(CHROME_ROOT_STORE_SUPPORTED)
 #include "net/cert/cert_verify_proc_builtin.h"
@@ -100,15 +96,8 @@ class CertVerifyProcFactoryImpl : public net::CertVerifyProcFactory {
       scoped_refptr<net::CTPolicyEnforcer> ct_policy_enforcer,
       const net::CertVerifyProc::InstanceParams& instance_params,
       std::optional<network_time::TimeTracker> time_tracker) {
-#if BUILDFLAG(IS_FUCHSIA)
-    return net::CreateCertVerifyProcBuiltin(
-        std::move(cert_net_fetcher), std::move(crl_set), std::move(ct_verifier),
-        std::move(ct_policy_enforcer), net::CreateSslSystemTrustStore(),
-        instance_params, std::move(time_tracker));
-#else
     return net::CertVerifyProc::CreateSystemVerifyProc(
         std::move(cert_net_fetcher), std::move(crl_set));
-#endif
   }
 #endif  // !BUILDFLAG(CHROME_ROOT_STORE_ONLY)
 
@@ -129,9 +118,6 @@ class CertVerifyProcFactoryImpl : public net::CertVerifyProcFactory {
                                                 root_store_mtc_metadata);
 
     std::unique_ptr<net::SystemTrustStore> trust_store;
-#if BUILDFLAG(IS_CHROMEOS)
-    trust_store = net::CreateChromeOnlySystemTrustStore(std::move(chrome_root));
-#else
     if (instance_params.include_system_trust_store) {
       trust_store =
           net::CreateSslSystemTrustStoreChromeRoot(std::move(chrome_root));
@@ -139,22 +125,7 @@ class CertVerifyProcFactoryImpl : public net::CertVerifyProcFactory {
       trust_store =
           net::CreateChromeOnlySystemTrustStore(std::move(chrome_root));
     }
-#endif
 
-#if BUILDFLAG(IS_WIN)
-    // Start initialization of TrustStoreWin on a separate thread if it hasn't
-    // been done already. We do this here instead of in the TrustStoreWin
-    // constructor to avoid any unnecessary threading in unit tests that don't
-    // use threads otherwise.
-    net::InitializeTrustStoreWinSystem();
-#endif
-#if BUILDFLAG(IS_ANDROID)
-    // Start initialization of TrustStoreAndroid on a separate thread if it
-    // hasn't been done already. We do this here instead of in the
-    // TrustStoreAndroid constructor to avoid any unnecessary threading in unit
-    // tests that don't use threads otherwise.
-    net::InitializeTrustStoreAndroid();
-#endif
     return net::CreateCertVerifyProcBuiltin(
         std::move(cert_net_fetcher), std::move(crl_set), std::move(ct_verifier),
         std::move(ct_policy_enforcer), std::move(trust_store), instance_params,
@@ -241,10 +212,8 @@ void UpdateCertVerifierInstanceParams(
   instance_params->additional_distrusted_spkis =
       additional_certificates->distrusted_spkis;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   instance_params->include_system_trust_store =
       additional_certificates->include_system_trust_store;
-#endif
 
   instance_params->additional_trust_anchors_with_constraints =
       ConvertMojoListToInternalList(

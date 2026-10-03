@@ -114,9 +114,6 @@ void LaunchAudioServiceOutOfProcess(
   // UI MessageLoop type, to run AVFoundation and CoreAudio code.
   // See https://crbug.com/834581.
   switches.push_back(switches::kMessageLoopTypeUi);
-#elif BUILDFLAG(IS_WIN)
-  if (GetContentClient()->browser()->ShouldEnableAudioProcessHighPriority())
-    switches.push_back(switches::kAudioProcessHighPriority);
 #endif  // BUILDFLAG(IS_WIN)
 #ifdef PASS_EDID_ON_COMMAND_LINE
   switches.push_back(base::StrCat({switches::kAudioCodecsFromEDID, "=",

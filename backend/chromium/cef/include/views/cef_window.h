@@ -323,38 +323,6 @@ class CefWindow : public CefPanel {
   virtual CefWindowHandle GetWindowHandle() = 0;
 
   ///
-  /// Simulate a key press. |key_code| is the VKEY_* value from Chromium's
-  /// ui/events/keycodes/keyboard_codes.h header (VK_* values on Windows).
-  /// |event_flags| is some combination of EVENTFLAG_SHIFT_DOWN,
-  /// EVENTFLAG_CONTROL_DOWN and/or EVENTFLAG_ALT_DOWN. This method is exposed
-  /// primarily for testing purposes.
-  ///
-  /*--cef()--*/
-  virtual void SendKeyPress(int key_code, uint32_t event_flags) = 0;
-
-  ///
-  /// Simulate a mouse move. The mouse cursor will be moved to the specified
-  /// (screen_x, screen_y) position. This method is exposed primarily for
-  /// testing purposes.
-  ///
-  /*--cef()--*/
-  virtual void SendMouseMove(int screen_x, int screen_y) = 0;
-
-  ///
-  /// Simulate mouse down and/or mouse up events. |button| is the mouse button
-  /// type. If |mouse_down| is true a mouse down event will be sent. If
-  /// |mouse_up| is true a mouse up event will be sent. If both are true a mouse
-  /// down event will be sent followed by a mouse up event (equivalent to
-  /// clicking the mouse button). The events will be sent using the current
-  /// cursor position so make sure to call SendMouseMove() first to position the
-  /// mouse. This method is exposed primarily for testing purposes.
-  ///
-  /*--cef()--*/
-  virtual void SendMouseEvents(cef_mouse_button_type_t button,
-                               bool mouse_down,
-                               bool mouse_up) = 0;
-
-  ///
   /// Set the keyboard accelerator for the specified |command_id|. |key_code|
   /// can be any virtual key or character value. Required modifier keys are
   /// specified by |shift_pressed|, |ctrl_pressed| and/or |alt_pressed|.

@@ -21,9 +21,6 @@
 #include "net/base/apple/guarded_fd.h"
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace net {
 
@@ -72,9 +69,6 @@ void FileStream::Context::Orphan() {
   if (!async_in_progress_) {
     CloseAndDelete();
   } else if (file_.IsValid()) {
-#if BUILDFLAG(IS_WIN)
-    CancelIo(file_.GetPlatformFile());
-#endif
   }
 }
 
@@ -157,19 +151,14 @@ bool FileStream::Context::IsOpen() const {
 
 FileStream::Context::OpenResult FileStream::Context::OpenFileImpl(
     const base::FilePath& path, int open_flags) {
-#if BUILDFLAG(IS_POSIX)
   // Always use blocking IO.
   open_flags &= ~base::File::FLAG_ASYNC;
-#endif
   // FileStream::Context actually closes the file asynchronously,
   // independently from FileStream's destructor. It can cause problems for
   // users wanting to delete the file right after FileStream deletion. Thus
   // we are always adding SHARE_DELETE flag to accommodate such use case.
   // TODO(rvargas): This sounds like a bug, as deleting the file would
   // presumably happen on the wrong thread. There should be an async delete.
-#if BUILDFLAG(IS_WIN)
-  open_flags |= base::File::FLAG_WIN_SHARE_DELETE;
-#endif
   base::File file(path, open_flags);
   if (!file.IsValid()) {
     return OpenResult(base::File(),

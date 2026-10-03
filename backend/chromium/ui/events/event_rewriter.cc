@@ -115,11 +115,5 @@ void EventRewriter::SetEventTarget(Event& event, EventTarget* target) {
   Event::DispatcherApi(&event).set_target(target);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void EventRewriter::SetNativeEvent(Event& event,
-                                   const PlatformEvent& native_event) {
-  event.native_event_ = native_event;
-}
-#endif
 
 }  // namespace ui

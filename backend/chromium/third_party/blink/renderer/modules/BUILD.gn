@@ -11,14 +11,6 @@ import("//third_party/blink/renderer/bindings/bindings.gni")
 import("//third_party/blink/renderer/build/scripts/scripts.gni")
 import("//third_party/blink/renderer/modules/modules.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
-if (is_ios) {
-  import("//build/config/ios/bundle_data_from_filelist.gni")
-}
-
 visibility = [ "//third_party/blink/renderer/*" ]
 
 config("modules_implementation") {
@@ -171,24 +163,16 @@ component("modules") {
   # generating the snapshot for android, blink is compiled with
   # current_os="linux" and target_os="android". Using target_os is necessary as
   # we need to compile in the same way as would happen when current_os="android".
-  if (target_os_is_android) {
-    sub_modules += [ "//third_party/blink/renderer/modules/remote_objects" ]
-  } else {
-    sub_modules += [
-      "//third_party/blink/renderer/modules/direct_sockets",
-      "//third_party/blink/renderer/modules/printing",
-      "//third_party/blink/renderer/modules/smart_card",
-    ]
-  }
-  if (!is_ios && !target_os_is_android) {
-    sub_modules += [ "//third_party/blink/renderer/modules/awc" ]
-  }
+  sub_modules += [
+    "//third_party/blink/renderer/modules/direct_sockets",
+    "//third_party/blink/renderer/modules/smart_card",
+  ]
+
+  sub_modules += [ "//third_party/blink/renderer/modules/awc" ]
 
   # Installed App (getInstalledRelatedApps) is excluded on iOS because the
   # webapp infrastructure required for this API is not yet implemented.
-  if (!is_ios) {
-    sub_modules += [ "//third_party/blink/renderer/modules/installedapp" ]
-  }
+  sub_modules += [ "//third_party/blink/renderer/modules/installedapp" ]
 
   if (enable_compute_pressure) {
     sub_modules += [ "//third_party/blink/renderer/modules/compute_pressure" ]
@@ -196,7 +180,6 @@ component("modules") {
 
   deps = [
     ":make_modules_generated",
-    "//build:android_buildflags",
     "//cc",
     "//components/webrtc:thread_wrapper",
     "//gin",
@@ -211,11 +194,6 @@ component("modules") {
 
   public_deps = sub_modules
   allow_circular_includes_from = sub_modules
-
-  if (is_win) {
-    cflags =
-        [ "/wd4334" ]  # Result of 32-bit shift implicitly converted to 64 bits.
-  }
 
   configs -= [ "//build/config/compiler:default_symbols" ]
   configs += blink_symbols_config
@@ -662,27 +640,21 @@ source_set("unit_tests") {
     ]
   }
 
-  if (!is_android) {
-    sources += [
-      # Inline text box tests do not apply to Android, which only loads
-      # AXInlineTextBox tests for the focused node.
-      "accessibility/ax_inline_text_box_test.cc",
-    ]
-  }
+  sources += [
+    # Inline text box tests do not apply to Android, which only loads
+    # AXInlineTextBox tests for the focused node.
+    "accessibility/ax_inline_text_box_test.cc",
+  ]
 
-  if (!is_android && !is_ios) {
-    sources += [
-      # CaptureController is not Web-exposed on Android and iOS,
-      # so most of the logic is compile-guarded away on Android and iOS,
-      # preventing meaningful testing.
-      "mediastream/capture_controller_test.cc",
-    ]
-  }
+  sources += [
+    # CaptureController is not Web-exposed on Android and iOS,
+    # so most of the logic is compile-guarded away on Android and iOS,
+    # preventing meaningful testing.
+    "mediastream/capture_controller_test.cc",
+  ]
 
   # Installed App is excluded on iOS (see sub_modules above).
-  if (!is_ios) {
-    sources += [ "installedapp/installed_app_controller_test.cc" ]
-  }
+  sources += [ "installedapp/installed_app_controller_test.cc" ]
 
   configs += [
     "//third_party/blink/renderer:config",
@@ -759,13 +731,11 @@ source_set("unit_tests") {
   # generating the snapshot for android, blink is compiled with
   # current_os="linux" and target_os="android". Using target_os is necessary as
   # we need to compile in the same way as would happen when current_os="android".
-  if (!target_os_is_android) {
-    deps += [
-      "//third_party/blink/renderer/modules/direct_sockets:unit_tests",
-      "//third_party/blink/renderer/modules/serial:unit_tests",
-      "//third_party/blink/renderer/modules/smart_card:unit_tests",
-    ]
-  }
+  deps += [
+    "//third_party/blink/renderer/modules/direct_sockets:unit_tests",
+    "//third_party/blink/renderer/modules/serial:unit_tests",
+    "//third_party/blink/renderer/modules/smart_card:unit_tests",
+  ]
 
   data_deps = [
     ":accessibility_unittests_data",
@@ -775,13 +745,6 @@ source_set("unit_tests") {
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.
   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
-}
-
-if (is_ios) {
-  bundle_data_from_filelist("accessibility_selection_test_bundle_data") {
-    testonly = true
-    filelist_name = "accessibility/testing/data/selection/accessibility_selection_test_bundle_data.filelist"
-  }
 }
 
 group("accessibility_unittests_data") {

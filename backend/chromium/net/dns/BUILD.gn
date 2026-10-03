@@ -123,14 +123,6 @@ source_set("dns") {
     "test_dns_config_service.h",
   ]
 
-  if (is_win) {
-    sources += [
-      "address_sorter_win.cc",
-      "dns_config_service_win.cc",
-      "dns_config_service_win.h",
-    ]
-  }
-
   if (is_mac) {
     sources += [
       "dns_config_watcher_mac.cc",
@@ -140,21 +132,7 @@ source_set("dns") {
     ]
   }
 
-  if (is_fuchsia) {
-    sources += [
-      "dns_config_service_fuchsia.cc",
-      "dns_config_service_fuchsia.h",
-    ]
-  }
-
-  if (is_android) {
-    sources += [
-      "dns_config_service_android.cc",
-      "dns_config_service_android.h",
-      "platform_dns_query_executor_android.cc",
-      "platform_dns_query_executor_android.h",
-    ]
-  } else if (is_linux) {
+  if (is_linux) {
     sources += [
       "dns_config_service_linux.cc",
       "dns_config_service_linux.h",
@@ -464,16 +442,7 @@ source_set("tests") {
     "system_dns_config_change_notifier_unittest.cc",
   ]
 
-  if (is_win) {
-    sources += [ "dns_config_service_win_unittest.cc" ]
-  }
-
-  if (is_android) {
-    sources += [
-      "dns_config_service_android_unittest.cc",
-      "platform_dns_query_executor_android_unittest.cc",
-    ]
-  } else if (is_linux) {
+  if (is_linux) {
     sources += [ "dns_config_service_linux_unittest.cc" ]
   } else if (is_posix) {
     sources += [ "dns_config_service_posix_unittest.cc" ]
@@ -668,17 +637,4 @@ fuzzer_test("net_host_resolver_manager_fuzzer") {
   ]
   dict = "//net/data/fuzzer_dictionaries/net_host_resolver_manager_fuzzer.dict"
   libfuzzer_options = [ "max_len=4096" ]
-}
-
-if (is_win) {
-  fuzzer_test("net_dns_parse_domain_ascii_win_fuzzer") {
-    sources = [ "dns_parse_domain_ascii_win_fuzzer.cc" ]
-    deps = [
-      "//base",
-      "//net",
-      "//net:net_fuzzer_test_support",
-    ]
-    dict = "//net/data/fuzzer_dictionaries/net_dns_hosts_parse_fuzzer.dict"
-    seed_corpus = "//net/data/fuzzer_data/dns_parse_domain_ascii_win_fuzzer"
-  }
 }

@@ -48,10 +48,6 @@ class BASE_EXPORT WorkerThread : public RefCountedThreadSafe<WorkerThread>,
     POOLED,
     SHARED,
     DEDICATED,
-#if BUILDFLAG(IS_WIN)
-    SHARED_COM,
-    DEDICATED_COM,
-#endif  // BUILDFLAG(IS_WIN)
   };
 
   // Delegate interface for WorkerThread. All methods are called from the
@@ -240,12 +236,6 @@ class BASE_EXPORT WorkerThread : public RefCountedThreadSafe<WorkerThread>,
   void RunBackgroundSharedWorker();
   void RunDedicatedWorker();
   void RunBackgroundDedicatedWorker();
-#if BUILDFLAG(IS_WIN)
-  void RunSharedCOMWorker();
-  void RunBackgroundSharedCOMWorker();
-  void RunDedicatedCOMWorker();
-  void RunBackgroundDedicatedCOMWorker();
-#endif  // BUILDFLAG(IS_WIN)
 
   // The real main, invoked through :
   //     ThreadMain() -> RunLabeledWorker() -> RunWorker().

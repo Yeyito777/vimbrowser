@@ -233,10 +233,8 @@ class COMPONENT_EXPORT(SODA_INSTALLER) SodaInstaller {
   // Any new feature using SODA should add its pref here.
   bool IsAnyFeatureUsingSodaEnabled(PrefService* prefs) const;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   bool IsLanguageActiveDefault(std::string_view language,
                                PrefService* profile_prefs) const;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace speech

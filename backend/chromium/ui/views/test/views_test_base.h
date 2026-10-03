@@ -20,9 +20,6 @@
 #include "ui/views/test/test_views_delegate.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/base/win/scoped_ole_initializer.h"
-#endif
 
 #if defined(USE_AURA)
 #include "ui/aura/test/aura_test_helper.h"
@@ -169,9 +166,6 @@ class ViewsTestBase : public PlatformTest {
           views::Widget::InitParams::TYPE_WINDOW_FRAMELESS);
 
  private:
-#if BUILDFLAG(IS_WIN)
-  ui::ScopedOleInitializer ole_initializer_;
-#endif
 
   std::unique_ptr<base::test::TaskEnvironment> task_environment_;
   std::optional<ui::AXPlatformForTest> ax_platform_;

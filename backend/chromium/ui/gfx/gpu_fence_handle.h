@@ -9,29 +9,15 @@
 #include "base/memory/ref_counted.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include "base/files/scoped_file.h"
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/event.h>
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#endif
 
 namespace gfx {
 
 // TODO(crbug.com/40728014): Make this a class instead of struct.
 struct COMPONENT_EXPORT(GFX) GpuFenceHandle {
-#if BUILDFLAG(IS_POSIX)
   using ScopedPlatformFence = base::ScopedFD;
-#elif BUILDFLAG(IS_FUCHSIA)
-  using ScopedPlatformFence = zx::event;
-#elif BUILDFLAG(IS_WIN)
-  using ScopedPlatformFence = base::win::ScopedHandle;
-#endif
 
   GpuFenceHandle(const GpuFenceHandle&) = delete;
   GpuFenceHandle& operator=(const GpuFenceHandle&) = delete;
@@ -61,13 +47,8 @@ struct COMPONENT_EXPORT(GFX) GpuFenceHandle {
 
   // Helper functions for platforms with unscoped underlying fence
   // representations.
-#if BUILDFLAG(IS_POSIX)
   // Returns fd but the returned fd is not owned.
   int Peek() const;
-#elif BUILDFLAG(IS_WIN)
-  // Returns HANDLE but the returned HANDLE is not owned.
-  HANDLE Peek() const;
-#endif
 
   // Returns global total number of clones since last call.
   static uint32_t GetAndClearNumberOfClones();

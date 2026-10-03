@@ -17,11 +17,6 @@
 #include "content/public/browser/browser_child_process_host.h"
 #include "content/public/browser/browser_thread.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include <psapi.h>
-#endif
 
 namespace task_manager {
 
@@ -135,15 +130,7 @@ double TaskGroupSampler::RefreshCpuUsage() {
 base::ByteSize TaskGroupSampler::RefreshSwappedMem() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(worker_pool_sequenced_checker_);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  auto info = process_metrics_->GetMemoryInfo();
-  if (!info.has_value()) {
-    return base::ByteSize(0);
-  }
-  return base::ByteSize(info->vm_swap_bytes);
-#else
   return base::ByteSize(0);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 int TaskGroupSampler::RefreshIdleWakeupsPerSecond() {

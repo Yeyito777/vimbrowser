@@ -30,16 +30,7 @@
 #include "media/mojo/buildflags.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/browser/media/key_system_support_android.h"
-#include "media/base/android/media_drm_bridge.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "content/browser/gpu/gpu_data_manager_impl.h"
-#include "content/browser/media/key_system_support_win.h"
-#include "gpu/config/gpu_driver_bug_workaround_type.h"
-#endif
 
 namespace content {
 
@@ -208,27 +199,6 @@ GetHardwareSecureCapabilityOverriddenFromCommandLine() {
                               base::Version("0.1.0.0"));
 }
 
-#if BUILDFLAG(IS_WIN)
-bool IsMediaFoundationHardwareSecurityDisabledByGpuFeature() {
-  auto* gpu_data_manager = GpuDataManagerImpl::GetInstance();
-  DCHECK(gpu_data_manager->IsGpuFeatureInfoAvailable());
-  return gpu_data_manager->GetGpuFeatureInfo().IsWorkaroundEnabled(
-      gpu::DISABLE_MEDIA_FOUNDATION_HARDWARE_SECURITY);
-}
-
-bool IsGpuHardwareCompositionDisabled() {
-  auto* gpu_data_manager = GpuDataManagerImpl::GetInstance();
-  return gpu_data_manager->IsGpuCompositingDisabled() ||
-         !gpu_data_manager->GetGPUInfo().overlay_info.direct_composition;
-}
-
-bool IsGpuSoftwareEmulated() {
-  auto* gpu_data_manager = GpuDataManagerImpl::GetInstance();
-  const bool is_gpu_software_emulated =
-      gpu_data_manager->GetGPUInfo().active_gpu().IsSoftwareRenderer();
-  return is_gpu_software_emulated;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -244,15 +214,9 @@ CdmRegistryImpl* CdmRegistryImpl::GetInstance() {
 }
 
 CdmRegistryImpl::CdmRegistryImpl() {
-#if BUILDFLAG(IS_WIN)
-  GpuDataManagerImpl::GetInstance()->AddObserver(this);
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 CdmRegistryImpl::~CdmRegistryImpl() {
-#if BUILDFLAG(IS_WIN)
-  GpuDataManagerImpl::GetInstance()->RemoveObserver(this);
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void CdmRegistryImpl::Init() {
@@ -324,11 +288,6 @@ void CdmRegistryImpl::OnGpuInfoUpdate() {
   DVLOG(2) << __func__;
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-#if BUILDFLAG(IS_WIN)
-  if (IsGpuHardwareCompositionDisabled()) {
-    SetHardwareSecureCdmStatus(CdmInfo::Status::kGpuCompositionDisabled);
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 const std::vector<CdmInfo>& CdmRegistryImpl::GetRegisteredCdms() const {
@@ -423,28 +382,6 @@ CdmRegistryImpl::GetCapability(const std::string& key_system,
       return {std::nullopt, Status::kAcceleratedVideoDecodeDisabled};
     }
 
-#if BUILDFLAG(IS_WIN)
-    // Check if the GPU is disabled from gpu/config/gpu_driver_bug_list.json.
-    if (IsMediaFoundationHardwareSecurityDisabledByGpuFeature()) {
-      DVLOG(1) << "Hardware security not supported: GPU workarounds";
-      return {std::nullopt, Status::kGpuFeatureDisabled};
-    }
-
-    if (IsGpuHardwareCompositionDisabled()) {
-      DVLOG(1) << "Hardware security not supported: GPU composition disabled";
-      return {std::nullopt, Status::kGpuCompositionDisabled};
-    }
-
-    // Due to the bugs (crbug.com/41496376 and crbug.com/41497095),
-    // `disable_media_foundation_hardware_security` workaround flag cannot be
-    // enabled for the vendor ID 0x0000 and 0x1414. All software emulated GPUs
-    // are considered as disabled for the media foundation hardware security.
-    if (IsGpuSoftwareEmulated()) {
-      DVLOG(1)
-          << "Hardware security not supported: software emulated GPU enabled";
-      return {std::nullopt, Status::kDisabledBySoftwareEmulatedGpu};
-    }
-#endif  // BUILDFLAG(IS_WIN)
   }
 
   auto cdm_info = GetCdmInfo(key_system, robustness);
@@ -564,25 +501,8 @@ void CdmRegistryImpl::LazyInitializeCapability(
     return;
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (robustness == CdmInfo::Robustness::kHardwareSecure) {
-    auto cdm_info =
-        GetCdmInfo(key_system, CdmInfo::Robustness::kHardwareSecure);
-    DCHECK(cdm_info && !cdm_info->capability);
-    GetMediaFoundationServiceCdmCapability(
-        key_system, cdm_info->type, cdm_info->path,
-        /*is_hw_secure=*/true, std::move(cdm_capability_cb));
-  } else {
-    // kSoftwareSecure should have been determined from the manifest.
-    std::move(cdm_capability_cb)
-        .Run(base::unexpected(media::CdmCapabilityQueryStatus::kUnknown));
-  }
-#elif BUILDFLAG(IS_ANDROID)
-  GetAndroidCdmCapability(key_system, robustness, std::move(cdm_capability_cb));
-#else
   std::move(cdm_capability_cb)
       .Run(base::unexpected(media::CdmCapabilityQueryStatus::kUnknown));
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void CdmRegistryImpl::OnCapabilityInitialized(

@@ -61,10 +61,6 @@ MojoCdm::MojoCdm(mojo::Remote<mojom::ContentDecryptionModule> remote_cdm,
     : remote_cdm_(std::move(remote_cdm)),
       cdm_id_(cdm_context->cdm_id),
       decryptor_remote_(std::move(cdm_context->decryptor)),
-#if BUILDFLAG(IS_WIN)
-      requires_media_foundation_renderer_(
-          cdm_context->requires_media_foundation_renderer),
-#endif  // BUILDFLAG(IS_WIN)
       cdm_config_(cdm_config),
       session_message_cb_(session_message_cb),
       session_closed_cb_(session_closed_cb),
@@ -311,14 +307,6 @@ std::optional<base::UnguessableToken> MojoCdm::GetCdmId() const {
   return cdm_id_;
 }
 
-#if BUILDFLAG(IS_WIN)
-bool MojoCdm::RequiresMediaFoundationRenderer() {
-  base::AutoLock auto_lock(lock_);
-  DVLOG(2) << __func__ << ": requires_media_foundation_renderer_="
-           << requires_media_foundation_renderer_;
-  return requires_media_foundation_renderer_;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void MojoCdm::OnSessionMessage(const std::string& session_id,
                                MessageType message_type,

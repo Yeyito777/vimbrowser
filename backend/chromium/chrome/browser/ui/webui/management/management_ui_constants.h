@@ -18,33 +18,6 @@ extern const char kManagementScreenCaptureData[];
 extern const char kManagementDeviceSignalsDisclosure[];
 #endif  // #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_CHROMEOS)
-extern const char kManagementLogUploadEnabled[];
-extern const char kManagementLogUploadEnabledNoLink[];
-extern const char kManagementReportActivityTimes[];
-extern const char kManagementReportDeviceAudioStatus[];
-extern const char kManagementReportDeviceGraphicsStatus[];
-extern const char kManagementReportDevicePeripherals[];
-extern const char kManagementReportNetworkData[];
-extern const char kManagementReportHardwareData[];
-extern const char kManagementReportUsers[];
-extern const char kManagementReportCrashReports[];
-extern const char kManagementReportAppInfoAndActivity[];
-extern const char kManagementReportPrintJobs[];
-extern const char kManagementReportDlpEvents[];
-extern const char kManagementReportLoginLogout[];
-extern const char kManagementReportCRDSessions[];
-extern const char kManagementReportAllWebsiteInfoAndActivity[];
-extern const char kManagementReportWebsiteInfoAndActivity[];
-extern const char kManagementPrinting[];
-extern const char kManagementCrostini[];
-extern const char kManagementCrostiniContainerConfiguration[];
-extern const char kManagementReportExtensions[];
-extern const char kManagementReportAndroidApplications[];
-extern const char kManagementOnFileTransferEvent[];
-extern const char kManagementOnFileTransferVisibleData[];
-extern const char kManagementReportFileEvents[];
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 extern const char kOnPremReportingExtensionStableId[];
 extern const char kOnPremReportingExtensionBetaId[];

@@ -61,24 +61,20 @@ source_set("browser") {
   # PostMessage method with a macro of the same name, so hide the targets that
   # use it and all that depend on it behind a platform check.
   # TODO(crbug.com/1357085): Resolve this and remove this exception.
-  if (!is_win) {
-    # TODO(crbug.com/40181416): Remove cast_message_port_impl code from this
-    # component and replace with a more general interface.
-    sources += [
-      "cast_message_port_impl.cc",
-      "cast_message_port_impl.h",
-    ]
-    deps += [
-      ":network_context",
-      "//components/cast/message_port",
-      "//components/openscreen_platform",
-      "//mojo/public/cpp/bindings",
-      "//third_party/openscreen/src/cast/common:public",
-      "//third_party/openscreen/src/platform:base",
-    ]
-  } else {
-    sources += [ "cast_message_port_converter_trivial.cc" ]
-  }
+  # TODO(crbug.com/40181416): Remove cast_message_port_impl code from this
+  # component and replace with a more general interface.
+  sources += [
+    "cast_message_port_impl.cc",
+    "cast_message_port_impl.h",
+  ]
+  deps += [
+    ":network_context",
+    "//components/cast/message_port",
+    "//components/openscreen_platform",
+    "//mojo/public/cpp/bindings",
+    "//third_party/openscreen/src/cast/common:public",
+    "//third_party/openscreen/src/platform:base",
+  ]
 
   friend = [ ":unit_tests" ]
 }
@@ -94,15 +90,13 @@ source_set("unit_tests") {
     "//components/cast_streaming/browser/frame:unit_tests",
   ]
 
-  if (!is_win) {
-    sources += [ "cast_message_port_impl_unittest.cc" ]
-    deps += [
-      "//base/test:test_support",
-      "//components/cast/message_port",
-      "//components/cast/message_port:test_message_port_receiver",
-      "//components/cast_streaming/common:conversions",
-      "//testing/gtest",
-      "//third_party/openscreen/src/cast/common:public",
-    ]
-  }
+  sources += [ "cast_message_port_impl_unittest.cc" ]
+  deps += [
+    "//base/test:test_support",
+    "//components/cast/message_port",
+    "//components/cast/message_port:test_message_port_receiver",
+    "//components/cast_streaming/common:conversions",
+    "//testing/gtest",
+    "//third_party/openscreen/src/cast/common:public",
+  ]
 }

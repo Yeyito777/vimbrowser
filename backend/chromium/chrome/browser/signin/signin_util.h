@@ -142,8 +142,6 @@ void ResetForceSigninForTesting();
 // Returns true if profile deletion is allowed.
 bool IsProfileDeletionAllowed(Profile* profile);
 
-#if !BUILDFLAG(IS_ANDROID)
-#if !BUILDFLAG(IS_CHROMEOS)
 
 // Returns true if managed accounts signin are required to create a new profile
 // by policies set in `profile`. This will check the by default check the
@@ -168,12 +166,10 @@ bool ProfileSeparationAllowsKeepingUnmanagedBrowsingDataInManagedProfile(
 
 bool IsAccountExemptedFromEnterpriseProfileSeparation(Profile* profile,
                                                       const std::string& email);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 // Records a UMA metric if the user accepts or not to create an enterprise
 // profile.
 void RecordEnterpriseProfileCreationUserChoice(bool enforced_by_policy,
                                                bool created);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // TODO(b/339214136): Add a standalone unit for this function.
 // Add an account with `user_email` and `gaia_id` to `profile`, and then set it

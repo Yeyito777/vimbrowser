@@ -71,13 +71,9 @@ static_library("lens") {
     "lens_bitmap_processing.h",
   ]
   deps += [ "//ui/gfx" ]
-  if (!is_ios) {
-    deps += [ "//skia" ]
-  }
+  deps += [ "//skia" ]
 
-  if (!is_android) {
-    deps += [ "//third_party/zstd:compress" ]
-  }
+  deps += [ "//third_party/zstd:compress" ]
 
   if (enable_pdf) {
     public_deps += [
@@ -158,13 +154,11 @@ source_set("unit_tests") {
     "//url",
   ]
 
-  if (!is_ios) {
-    sources += [ "lens_bitmap_processing_unittest.cc" ]
-    deps += [
-      "//skia",
-      "//ui/gfx",
-    ]
-  }
+  sources += [ "lens_bitmap_processing_unittest.cc" ]
+  deps += [
+    "//skia",
+    "//ui/gfx",
+  ]
 }
 
 source_set("enterprise_policy") {

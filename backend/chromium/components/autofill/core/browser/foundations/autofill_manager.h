@@ -20,7 +20,6 @@
 #include "base/memory/raw_ref.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "base/scoped_observation.h"
 #include "base/sequence_checker.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/task/thread_pool.h"
@@ -40,7 +39,6 @@
 #include "components/autofill/core/common/mojom/autofill_types.mojom.h"
 #include "components/autofill/core/common/signatures.h"
 #include "components/autofill/core/common/unique_ids.h"
-#include "components/translate/core/browser/translate_driver.h"
 
 namespace autofill {
 
@@ -67,8 +65,7 @@ class FormInteractionsUkmLogger;
 // - BrowserAutofillManager for Chrome.
 //
 // It is owned by the AutofillDriver.
-class AutofillManager
-    : public translate::TranslateDriver::LanguageDetectionObserver {
+class AutofillManager {
  public:
   using LifecycleState = AutofillDriver::LifecycleState;
 
@@ -239,7 +236,7 @@ class AutofillManager
   AutofillManager(const AutofillManager&) = delete;
   AutofillManager& operator=(const AutofillManager&) = delete;
 
-  ~AutofillManager() override;
+  virtual ~AutofillManager();
 
   // Notifies `Observer`s and calls Reset() if applicable.
   void OnAutofillDriverLifecycleStateChanged(
@@ -308,17 +305,6 @@ class AutofillManager
   // Other events.
 
   virtual void ReportAutofillWebOTPMetrics(bool used_web_otp) = 0;
-
-  // translate::TranslateDriver::LanguageDetectionObserver:
-  void OnTranslateDriverDestroyed(
-      translate::TranslateDriver* translate_driver) override;
-  // Invoked when the language has been detected by the Translate component.
-  // As this usually happens after Autofill has parsed the forms for the first
-  // time, the heuristics need to be re-run by this function in order to use
-  // language-specific patterns. Since the ML model doesn't depend on the page
-  // language, its predictions are not recomputed.
-  void OnLanguageDetermined(
-      const translate::LanguageDetectionDetails& details) override;
 
   class FormMutationPassKey {
    private:
@@ -581,11 +567,6 @@ class AutofillManager
   // Provides driver-level context to the shared code of the component.
   // `*driver_` owns this object.
   const raw_ref<AutofillDriver> driver_;
-
-  // Observer needed to re-run heuristics when the language has been detected.
-  base::ScopedObservation<translate::TranslateDriver,
-                          translate::TranslateDriver::LanguageDetectionObserver>
-      translate_observation_{this};
 
   // Our copy of the form data.
   std::map<FormGlobalId, std::unique_ptr<FormStructure>> form_structures_;

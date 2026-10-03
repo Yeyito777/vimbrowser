@@ -15,12 +15,6 @@
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_entry.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/android/chrome_jni_headers/TaskTabHelper_jni.h"
-#include "chrome/browser/android/tab_android.h"
-
-using base::android::JavaRef;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace {
 bool DoesTransitionContinueTask(ui::PageTransition transition) {
@@ -101,57 +95,14 @@ void TaskTabHelper::UpdateAndRecordTaskIds(
 }
 
 int64_t TaskTabHelper::GetParentTaskId() {
-#if BUILDFLAG(IS_ANDROID)
-  TabAndroid* tab_android = TabAndroid::FromWebContents(web_contents());
-  return tab_android && Java_TaskTabHelper_getParentTaskId(
-                            base::android::AttachCurrentThread(),
-                            tab_android->GetJavaObject());
-#else
   return -1;
-#endif
 }
 
 int64_t TaskTabHelper::GetParentRootTaskId() {
-#if BUILDFLAG(IS_ANDROID)
-  TabAndroid* tab_android = TabAndroid::FromWebContents(web_contents());
-  return tab_android && Java_TaskTabHelper_getParentRootTaskId(
-                            base::android::AttachCurrentThread(),
-                            tab_android->GetJavaObject());
-#else
-  return -1;
-#endif
-}
-
-#if BUILDFLAG(IS_ANDROID)
-static int64_t JNI_TaskTabHelper_GetTaskId(
-    JNIEnv* env,
-    const JavaRef<jobject>& jweb_contents) {
-  sessions::NavigationTaskId* navigation_task_id =
-      TaskTabHelper::GetCurrentTaskId(
-          content::WebContents::FromJavaWebContents(jweb_contents));
-  if (navigation_task_id) {
-    return navigation_task_id->id();
-  }
   return -1;
 }
 
-static int64_t JNI_TaskTabHelper_GetRootTaskId(
-    JNIEnv* env,
-    const JavaRef<jobject>& jweb_contents) {
-  sessions::NavigationTaskId* navigation_task_id =
-      TaskTabHelper::GetCurrentTaskId(
-          content::WebContents::FromJavaWebContents(jweb_contents));
-  if (navigation_task_id) {
-    return navigation_task_id->root_id();
-  }
-  return -1;
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(TaskTabHelper);
 
 }  // namespace tasks
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(TaskTabHelper)
-#endif

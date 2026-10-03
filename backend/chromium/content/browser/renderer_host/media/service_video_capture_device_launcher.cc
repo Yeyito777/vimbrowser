@@ -20,9 +20,6 @@
 #include "services/video_capture/public/cpp/receiver_media_to_mojo_adapter.h"
 #include "services/video_capture/public/mojom/video_frame_handler.mojom.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "media/base/media_switches.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "content/browser/gpu/gpu_data_manager_impl.h"
@@ -153,12 +150,7 @@ void ServiceVideoCaptureDeviceLauncher::LaunchDeviceAsync(
 
   // GpuMemoryBuffer-based VideoCapture buffer works only on the Chrome OS,
   // Windows and Linux VideoCaptureDevice implementations.
-#if BUILDFLAG(IS_WIN)
-  if (media::IsMediaFoundationD3D11VideoCaptureEnabled() &&
-      params.requested_format.pixel_format == media::PIXEL_FORMAT_NV12) {
-    new_params.buffer_type = media::VideoCaptureBufferType::kGpuMemoryBuffer;
-  }
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   // For mac(https://crbug.com/1175142), zero-copy is always enabled unless the
   // user explicitly asks to disable it.
   if (media::ShouldEnableGpuMemoryBuffer(device_id)) {

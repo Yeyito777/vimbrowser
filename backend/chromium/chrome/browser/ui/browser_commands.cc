@@ -51,7 +51,6 @@
 #include "chrome/browser/sessions/tab_restore_service_factory.h"
 #include "chrome/browser/sharing_hub/sharing_hub_features.h"
 #include "chrome/browser/tab_group_sync/tab_group_sync_service_factory.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
 #include "chrome/browser/ui/accelerator_utils.h"
 #include "chrome/browser/ui/autofill/address_bubbles_controller.h"
 #include "chrome/browser/ui/autofill/payments/filled_card_information_bubble_controller_impl.h"
@@ -165,8 +164,6 @@
 #include "components/tabs/public/tab_group.h"
 #include "components/tabs/public/tab_group_tab_collection.h"
 #include "components/tabs/public/tab_interface.h"
-#include "components/translate/core/browser/language_state.h"
-#include "components/translate/core/browser/translate_manager.h"
 #include "components/user_education/common/feature_promo/feature_promo_controller.h"
 #include "components/web_modal/web_contents_modal_dialog_manager.h"
 #include "components/webapps/common/web_app_id.h"
@@ -224,13 +221,8 @@
 #include "components/rlz/rlz_tracker.h"  // nogncheck
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/chromeos/printing/print_preview/print_view_manager_common.h"
-#endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/apps/link_capturing/enable_link_capturing_infobar_delegate.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/web_applications/extensions/launch.h"
@@ -242,11 +234,9 @@
 #include "components/lens/lens_features.h"
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/ui/toasts/api/toast_id.h"
 #include "chrome/browser/ui/toasts/toast_controller.h"
 #include "chrome/browser/ui/toasts/toast_features.h"
-#endif
 
 namespace {
 
@@ -1818,7 +1808,6 @@ void MoveTabsToReadLater(Browser* browser,
     return;
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   if (toast_features::IsEnabled(toast_features::kReadingListToast)) {
     // Don't show the reading list toast if the side panel is visible.
     if (browser->GetFeatures().side_panel_ui()->IsSidePanelEntryShowing(
@@ -1834,7 +1823,6 @@ void MoveTabsToReadLater(Browser* browser,
       toast_controller->MaybeShowToast(std::move(params));
     }
   }
-#endif
 }
 
 bool MarkCurrentTabAsReadInReadLater(Browser* browser) {
@@ -1937,51 +1925,6 @@ void StartTabOrganizationRequest(Browser* browser) {
       TabOrganizationServiceFactory::GetForProfile(browser->profile());
 
   service->RestartSessionAndShowUI(browser);
-}
-
-void ShowTranslateBubble(BrowserWindowInterface* bwi) {
-  if (!bwi->GetWindow()->IsActive()) {
-    return;
-  }
-
-  WebContents* const web_contents =
-      bwi->GetTabStripModel()->GetActiveWebContents();
-  ChromeTranslateClient* chrome_translate_client =
-      ChromeTranslateClient::FromWebContents(web_contents);
-
-  if (!chrome_translate_client) {
-    return;
-  }
-
-  // The Translate bubble will not show if a text field is focused, so we clear
-  // focus here as the user has intentionally opened the bubble.
-  web_contents->ClearFocusedElement();
-
-  std::string source_language;
-  std::string target_language;
-  chrome_translate_client->GetTranslateLanguages(web_contents, &source_language,
-                                                 &target_language);
-
-  // If the source language matches the target language, we change the source
-  // language to unknown, so that we display "Detected Language".
-  if (source_language == target_language) {
-    source_language = language_detection::kUnknownLanguageCode;
-  }
-
-  translate::TranslateStep step = translate::TRANSLATE_STEP_BEFORE_TRANSLATE;
-  auto* language_state =
-      chrome_translate_client->GetTranslateManager()->GetLanguageState();
-
-  if (language_state->translation_pending()) {
-    step = translate::TRANSLATE_STEP_TRANSLATING;
-  } else if (language_state->translation_error()) {
-    step = translate::TRANSLATE_STEP_TRANSLATE_ERROR;
-  } else if (language_state->IsPageTranslated()) {
-    step = translate::TRANSLATE_STEP_AFTER_TRANSLATE;
-  }
-  bwi->GetBrowserForMigrationOnly()->window()->ShowTranslateBubble(
-      web_contents, step, source_language, target_language,
-      translate::TranslateErrors::NONE, true);
 }
 
 void ManagePasswordsForPage(BrowserWindowInterface* bwi) {
@@ -2091,22 +2034,9 @@ void Print(BrowserWindowInterface* bwi) {
 
   // Launch ChromeOS print preview only if in a ChromeOS build and
   // `kPrintPreviewCrosPrimary` enabled. Otherwise use browser print preview.
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(::features::kPrintPreviewCrosPrimary)) {
-    chromeos::printing::StartPrint(
-        web_contents,
-        /*print_renderer=*/mojo::NullAssociatedRemote(),
-        bwi->GetProfile()->GetPrefs()->GetBoolean(prefs::kPrintPreviewDisabled),
-        /*has_selection=*/false);
-    return;
-  }
-#endif
 
   printing::StartPrint(
       web_contents,
-#if BUILDFLAG(IS_CHROMEOS)
-      /*print_renderer=*/mojo::NullAssociatedRemote(),
-#endif
       bwi->GetProfile()->GetPrefs()->GetBoolean(prefs::kPrintPreviewDisabled),
       /*has_selection=*/false);
 #endif  // BUILDFLAG(ENABLE_PRINTING)
@@ -2299,22 +2229,14 @@ void ToggleDevToolsWindow(BrowserWindowInterface* bwi,
 }
 
 bool CanOpenTaskManager() {
-#if !BUILDFLAG(IS_ANDROID)
   return true;
-#else
-  return false;
-#endif
 }
 
 void OpenTaskManager(BrowserWindowInterface* bwi,
                      task_manager::StartAction start_action) {
-#if !BUILDFLAG(IS_ANDROID)
   base::RecordAction(UserMetricsAction("TaskManager"));
   chrome::ShowTaskManager(bwi ? bwi->GetBrowserForMigrationOnly() : nullptr,
                           start_action);
-#else
-  NOTREACHED();
-#endif
 }
 
 void OpenFeedbackDialog(BrowserWindowInterface* bwi,
@@ -2483,7 +2405,6 @@ void CopyURL(BrowserWindowInterface* bwi, content::WebContents* web_contents) {
   ui::ScopedClipboardWriter scw(ui::ClipboardBuffer::kCopyPaste);
   scw.WriteText(base::UTF8ToUTF16(web_contents->GetVisibleURL().spec()));
 
-#if !BUILDFLAG(IS_ANDROID)
   if (toast_features::IsEnabled(toast_features::kLinkCopiedToast)) {
     ToastController* const toast_controller =
         bwi->GetFeatures().toast_controller();
@@ -2491,7 +2412,6 @@ void CopyURL(BrowserWindowInterface* bwi, content::WebContents* web_contents) {
       toast_controller->MaybeShowToast(ToastParams(ToastId::kLinkCopied));
     }
   }
-#endif
 }
 
 bool CanCopyUrl(BrowserWindowInterface* bwi) {
@@ -2586,11 +2506,6 @@ void PromptToNameWindow(Browser* browser) {
   chrome::ShowWindowNamePrompt(browser);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void ToggleMultitaskMenu(Browser* browser) {
-  browser->window()->ToggleMultitaskMenu();
-}
-#endif
 
 #if !defined(TOOLKIT_VIEWS)
 std::optional<int> GetKeyboardFocusedTabIndex(const Browser* browser) {

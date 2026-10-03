@@ -26,19 +26,10 @@
 #include "extensions/common/mojom/view_type.mojom.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/session_manager/core/session_manager.h"
-#endif
 
 namespace {
 
 bool IsUserSessionBlocked() {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (session_manager::SessionManager::Get() &&
-      session_manager::SessionManager::Get()->IsUserSessionBlocked()) {
-    return true;
-  }
-#endif
   return false;
 }
 

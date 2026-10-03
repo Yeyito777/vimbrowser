@@ -55,11 +55,13 @@ class BrowserWindow final : public CefWindowDelegate,
                             public CefTextfieldDelegate {
  public:
   BrowserWindow(std::vector<std::string> initial_urls,
+                std::vector<uint64_t> initial_tab_ids,
                 std::vector<uint64_t> initial_tab_folder_ids,
                 std::vector<uint64_t> initial_tab_sort_orders,
                 std::vector<bool> initial_tab_pinned,
                 std::vector<std::string> initial_tab_contexts,
                 size_t active_index,
+                uint64_t next_tab_id,
                 bool show_mode_indicator,
                 bool show_fps_indicator,
                 bool show_statusline,
@@ -396,6 +398,7 @@ class BrowserWindow final : public CefWindowDelegate,
               std::string context_name = {});
   void AddTabAfterSelection(std::string url, bool activate);
   std::optional<size_t> NewTabInsertionAnchorIndex() const;
+  uint64_t AllocateTabId(uint64_t restored_id = 0);
   void InsertTab(std::string url,
                  size_t index,
                  bool activate,
@@ -403,7 +406,8 @@ class BrowserWindow final : public CefWindowDelegate,
                  uint64_t folder_id = 0,
                  uint64_t sidebar_sort_order = 0,
                  bool pinned = false,
-                 std::string context_name = {});
+                 std::string context_name = {},
+                 uint64_t restored_id = 0);
   bool AddContextTab(std::string context_name,
                      std::string url,
                      bool activate,
@@ -412,6 +416,10 @@ class BrowserWindow final : public CefWindowDelegate,
       const std::string& context_name,
       std::string* error = nullptr);
   bool EnsureTabBrowser(size_t index, bool load_deferred_now);
+  bool SetTabActivity(uint64_t tab_id, int duration_ms = 60000,
+                      bool extend_only = true);
+  void ApplyTabActivity(uint64_t tab_id);
+  void ExpireTabActivity(uint64_t tab_id, uint64_t generation);
   void InsertPopupTab(CefRefPtr<CefBrowserView> popup_browser_view,
                       CefRefPtr<BrowserClient> popup_client,
                       std::string url,
@@ -492,6 +500,19 @@ class BrowserWindow final : public CefWindowDelegate,
   void HandleNetworkReplayIpcCommand(uint64_t tab_id,
                                      uint64_t request_id,
                                      IpcReplyCallback reply);
+  void HandleNetworkExecuteIpcCommand(uint64_t tab_id,
+                                      std::string encoded_payload,
+                                      IpcReplyCallback reply);
+  void HandleNetworkWaitIpcCommand(uint64_t tab_id,
+                                   std::string url_prefix,
+                                   int timeout_ms,
+                                   uint64_t after_request_id,
+                                   IpcReplyCallback reply);
+  void PollNetworkWait(uint64_t tab_id,
+                       std::string url_prefix,
+                       uint64_t after_request_id,
+                       std::chrono::steady_clock::time_point deadline,
+                       IpcReplyCallback reply);
   void HandleScreenshotIpcCommand(uint64_t tab_id, IpcReplyCallback reply);
   std::string ArmFileChooserUpload(uint64_t tab_id,
                                    std::vector<std::string> paths);
@@ -745,6 +766,7 @@ class BrowserWindow final : public CefWindowDelegate,
                                    const std::string& image_url);
 
   std::vector<std::string> initial_urls_;
+  std::vector<uint64_t> initial_tab_ids_;
   std::vector<uint64_t> initial_tab_folder_ids_;
   std::vector<uint64_t> initial_tab_sort_orders_;
   std::vector<bool> initial_tab_pinned_;

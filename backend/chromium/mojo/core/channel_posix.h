@@ -54,10 +54,6 @@ class ChannelPosix : public Channel,
   ~ChannelPosix() override;
   virtual void StartOnIOThread() LOCKS_EXCLUDED(write_lock_);
   virtual void ShutDownOnIOThread() LOCKS_EXCLUDED(write_lock_
-#if BUILDFLAG(IS_IOS)
-                                                   ,
-                                                   fds_to_close_lock_
-#endif  // BUILDFLAG(IS_IOS)
   );
   virtual void OnWriteError(Error error) LOCKS_EXCLUDED(write_lock_);
 
@@ -86,16 +82,9 @@ class ChannelPosix : public Channel,
   // ASAP on the I/O thread.
   bool WriteNoLock(MessageView message_view)
       EXCLUSIVE_LOCKS_REQUIRED(write_lock_)
-#if BUILDFLAG(IS_IOS)
-          LOCKS_EXCLUDED(fds_to_close_lock_)
-#endif  // BUILDFLAG(IS_IOS)
               ;
   bool FlushOutgoingMessagesNoLock() EXCLUSIVE_LOCKS_REQUIRED(write_lock_);
 
-#if BUILDFLAG(IS_IOS)
-  bool CloseHandles(const int* fds, size_t num_fds)
-      LOCKS_EXCLUDED(fds_to_close_lock_);
-#endif  // BUILDFLAG(IS_IOS)
 
   // The socket over which to communicate.
   base::ScopedFD socket_;
@@ -117,10 +106,6 @@ class ChannelPosix : public Channel,
 
   bool leak_handle_ = false;
 
-#if BUILDFLAG(IS_IOS)
-  base::Lock fds_to_close_lock_;
-  std::vector<base::ScopedFD> fds_to_close_ GUARDED_BY(fds_to_close_lock_);
-#endif  // BUILDFLAG(IS_IOS)
 };
 
 }  // namespace core

@@ -42,7 +42,6 @@ std::atomic<uint64_t> g_align_wake_ups_and_leeway =
 
 MessagePump::MessagePumpFactory* message_pump_for_ui_factory_ = nullptr;
 
-#if BUILDFLAG(IS_POSIX)
 class MessagePumpForIOFdWatchImpl : public IOWatcher::FdWatch,
                                     public MessagePumpForIO::FdWatcher {
  public:
@@ -69,24 +68,12 @@ class MessagePumpForIOFdWatchImpl : public IOWatcher::FdWatch,
   const raw_ptr<IOWatcher::FdWatcher> fd_watcher_;
   MessagePumpForIO::FdWatchController controller_;
 };
-#endif
 
 class IOWatcherForCurrentIOThread : public IOWatcher {
  public:
   IOWatcherForCurrentIOThread() : thread_(CurrentIOThread::Get()) {}
 
   // IOWatcher:
-#if BUILDFLAG(IS_WIN)
-  bool RegisterIOHandlerImpl(HANDLE file,
-                             MessagePumpForIO::IOHandler* handler) override {
-    return thread_.RegisterIOHandler(file, handler);
-  }
-
-  bool RegisterJobObjectImpl(HANDLE job,
-                             MessagePumpForIO::IOHandler* handler) override {
-    return thread_.RegisterJobObject(job, handler);
-  }
-#elif BUILDFLAG(IS_POSIX)
   std::unique_ptr<FdWatch> WatchFileDescriptorImpl(
       int fd,
       FdWatchDuration duration,
@@ -114,7 +101,6 @@ class IOWatcherForCurrentIOThread : public IOWatcher {
     }
     return watch;
   }
-#endif
 #if BUILDFLAG(IS_MAC) || \
     (BUILDFLAG(IS_IOS) && !BUILDFLAG(CRONET_BUILD) && !BUILDFLAG(IS_IOS_TVOS))
   bool WatchMachReceivePortImpl(
@@ -122,15 +108,6 @@ class IOWatcherForCurrentIOThread : public IOWatcher {
       MessagePumpForIO::MachPortWatchController* controller,
       MessagePumpForIO::MachPortWatcher* delegate) override {
     return thread_.WatchMachReceivePort(port, controller, delegate);
-  }
-#elif BUILDFLAG(IS_FUCHSIA)
-  bool WatchZxHandleImpl(zx_handle_t handle,
-                         bool persistent,
-                         zx_signals_t signals,
-                         MessagePumpForIO::ZxHandleWatchController* controller,
-                         MessagePumpForIO::ZxHandleWatcher* delegate) override {
-    return thread_.WatchZxHandle(handle, persistent, signals, controller,
-                                 delegate);
   }
 #endif  // BUILDFLAG(IS_FUCHSIA)
 
@@ -172,12 +149,6 @@ std::unique_ptr<MessagePump> MessagePump::Create(MessagePumpType type) {
 #elif BUILDFLAG(IS_AIX)
       // Currently AIX doesn't have a UI MessagePump.
       NOTREACHED();
-#elif BUILDFLAG(IS_ANDROID)
-      {
-        auto message_pump = std::make_unique<MessagePumpAndroid>();
-        message_pump->set_is_type_ui(true);
-        return message_pump;
-      }
 #else
       return std::make_unique<MessagePumpForUI>();
 #endif
@@ -185,10 +156,6 @@ std::unique_ptr<MessagePump> MessagePump::Create(MessagePumpType type) {
     case MessagePumpType::IO:
       return std::make_unique<MessagePumpForIO>();
 
-#if BUILDFLAG(IS_ANDROID)
-    case MessagePumpType::JAVA:
-      return std::make_unique<MessagePumpAndroid>();
-#endif
 
 #if BUILDFLAG(IS_APPLE)
     case MessagePumpType::NS_RUNLOOP:
@@ -199,21 +166,13 @@ std::unique_ptr<MessagePump> MessagePump::Create(MessagePumpType type) {
       NOTREACHED();
 
     case MessagePumpType::DEFAULT:
-#if BUILDFLAG(IS_IOS)
-      // On iOS, a native runloop is always required to pump system work.
-      return std::make_unique<MessagePumpCFRunLoop>();
-#else
       return std::make_unique<MessagePumpDefault>();
-#endif
   }
 }
 
 // static
 void MessagePump::InitializeFeatures() {
   ResetAlignWakeUpsState();
-#if BUILDFLAG(IS_WIN)
-  MessagePumpWin::InitializeFeatures();
-#endif
 }
 
 // static
@@ -257,28 +216,12 @@ TimeTicks MessagePump::AdjustDelayedRunTime(TimeTicks earliest_time,
                                             TimeTicks latest_time) {
   const TimeDelta leeway = GetLeewayForCurrentThread();
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, we can rely on the low-res clock if we want the wakeup within
-  // kMinLowResolutionThresholdMs (16ms).
-  if (GetAlignWakeUpsEnabled() &&
-      leeway > Milliseconds(Time::kMinLowResolutionThresholdMs)) {
-    TimeTicks aligned_run_time =
-        earliest_time.SnappedToNextTick(TimeTicks(), leeway);
-    return std::min(aligned_run_time, latest_time);
-  }
-  // We need to return `earliest_time` to honor the above dependency on the
-  // low-res clock. Note: If this wakeup has a DelayPolicy::kPrecise, then
-  // `earliest_time == run_time` and we're thus fine returning `earliest_time`
-  // even though `run_time` is semantically what we want...
-  return earliest_time;
-#else
   if (GetAlignWakeUpsEnabled()) {
     TimeTicks aligned_run_time =
         earliest_time.SnappedToNextTick(TimeTicks(), leeway);
     return std::min(aligned_run_time, latest_time);
   }
   return run_time;
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 IOWatcher* MessagePump::GetIOWatcher() {

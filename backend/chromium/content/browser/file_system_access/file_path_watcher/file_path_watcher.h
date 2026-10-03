@@ -187,12 +187,6 @@ class CONTENT_EXPORT FilePathWatcher {
     // allow to shut down properly while the object is still alive.
     virtual void Cancel() = 0;
 
-#if BUILDFLAG(IS_WIN)
-    // Gets the Lock associated with the content::FilePathWatcher
-    // implementation's Watch thread. Tests can use this to block that thread
-    // and cause a buffer overflow.
-    virtual base::Lock& GetWatchThreadLockForTest() = 0;
-#endif
 
    protected:
     friend class FilePathWatcher;
@@ -256,12 +250,6 @@ class CONTENT_EXPORT FilePathWatcher {
       const CallbackWithChangeInfo& callback,
       const UsageChangeCallback& usage_callback);
 
-#if BUILDFLAG(IS_WIN)
-  // Gets the Lock associated with the content::FilePathWatcher implementation's
-  // Watch thread. Tests can use this to block that thread and cause a buffer
-  // overflow.
-  base::Lock& GetWatchThreadLockForTest();
-#endif
 
   static base::AutoReset<size_t> SetQuotaLimitForTesting(
       size_t quota_limit_override) {

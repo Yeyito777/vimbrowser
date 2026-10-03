@@ -118,9 +118,6 @@
 #include "third_party/blink/renderer/platform/media/multi_buffer_data_source_factory.h"
 #endif  // BUILDFLAG(ENABLE_HLS_DEMUXER)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "media/base/android/media_codec_util.h"
-#endif
 
 namespace blink {
 
@@ -407,30 +404,6 @@ WebMediaPlayer::NetworkState PipelineErrorToNetworkState(
   return WebMediaPlayer::kNetworkStateFormatError;
 }
 
-#if BUILDFLAG(IS_WIN)
-bool HasMediaTimeSufficentlyElapsed(base::TimeDelta previous_media_time,
-                                    base::TimeDelta current_media_time) {
-  const auto kTimeDifferenceTolerance = base::Milliseconds(100);
-  const auto time_difference = current_media_time - previous_media_time;
-  return time_difference > kTimeDifferenceTolerance;
-}
-
-void ReportLastPipelineStatusForHardwareContextResetRecoveryUMAs(
-    media::PipelineStatus last_status,
-    std::optional<base::TimeDelta> media_time_diff) {
-  DVLOG(1) << __func__ << ":status=" << last_status << ", media_time_diff="
-           << media_time_diff.value_or(base::TimeDelta());
-  base::UmaHistogramExactLinear(
-      "Media.PipelineStatus.HardwareContextResetRecovery.LastPipelineStatus",
-      last_status.code(), media::PIPELINE_STATUS_MAX + 1);
-  if (media_time_diff.has_value()) {
-    base::UmaHistogramTimes(
-        "Media.PipelineStatus.HardwareContextResetRecovery."
-        "TimeDeltaSinceLastHardwareContextReset",
-        media_time_diff.value());
-  }
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -626,11 +599,6 @@ WebMediaPlayerImpl::WebMediaPlayerImpl(
   // it's not interested in recording these events.
   playback_events_recorder_.reset_on_disconnect();
 
-#if BUILDFLAG(IS_ANDROID)
-  renderer_factory_selector_->SetRemotePlayStateChangeCB(
-      base::BindPostTaskToCurrentDefault(blink::BindRepeating(
-          &WebMediaPlayerImpl::OnRemotePlayStateChange, weak_this_)));
-#endif  // defined (IS_ANDROID)
 }
 
 WebMediaPlayerImpl::~WebMediaPlayerImpl() {
@@ -2000,43 +1968,6 @@ void WebMediaPlayerImpl::OnError(media::PipelineStatus status) {
   if (suppress_destruction_errors_)
     return;
 
-#if BUILDFLAG(IS_WIN)
-  // An error or another hardware context reset (HCR) occurred within a very
-  // short media time window from the previous HCR and the video is not paused
-  // (playing). In this case we consider the recovery attempt from the previous
-  // HCR failed. To avoid infinite loop of retrying, we will trigger an error
-  // and will not ScheduleRestart(). We gate the logic on short elapsed media
-  // time to have more confidence that the error (or another HCR) are related to
-  // the previous HCR. We check the paused state because if the video is paused,
-  // the media time can't advance.
-  if (media_time_on_last_hardware_context_reset_.has_value() && !paused_ &&
-      !HasMediaTimeSufficentlyElapsed(
-          media_time_on_last_hardware_context_reset_.value(),
-          pipeline_controller_->GetMediaTime())) {
-    DVLOG(1) << __func__
-             << ": Consider this error as an unrecoverable hardware context "
-                "reset error, so giving up!";
-    status = media::PIPELINE_ERROR_HARDWARE_CONTEXT_RESET;
-  } else if (status == media::PIPELINE_ERROR_HARDWARE_CONTEXT_RESET) {
-    media_time_on_last_hardware_context_reset_ =
-        pipeline_controller_->GetMediaTime();
-
-    // Hardware context reset is not an error. Restart to recover.
-    ScheduleRestart();
-    return;
-  }
-
-  // If there was a hardware context reset but we haven't reported the last
-  // pipeline status, we consider this as the unsuccessful recovery from the
-  // hardware context reset.
-  if (media_time_on_last_hardware_context_reset_.has_value() &&
-      !has_reported_hardware_context_reset_recovery_umas_) {
-    ReportLastPipelineStatusForHardwareContextResetRecoveryUMAs(
-        status, pipeline_controller_->GetMediaTime() -
-                    media_time_on_last_hardware_context_reset_.value());
-    has_reported_hardware_context_reset_recovery_umas_ = true;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   MaybeSetContainerNameForMetrics();
   simple_watch_timer_.Stop();
@@ -2796,48 +2727,6 @@ void WebMediaPlayerImpl::RequestMediaRemoting() {
   }
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void WebMediaPlayerImpl::FlingingStarted() {
-  DCHECK(main_task_runner_->BelongsToCurrentThread());
-  DCHECK(!disable_pipeline_auto_suspend_);
-  disable_pipeline_auto_suspend_ = true;
-
-  is_flinging_ = true;
-
-  // Capabilities reporting should only be performed for local playbacks.
-  video_decode_stats_reporter_.reset();
-
-  // Requests to restart media pipeline. A flinging renderer will be created via
-  // the `renderer_factory_selector_`.
-  ScheduleRestart();
-}
-
-void WebMediaPlayerImpl::FlingingStopped() {
-  DCHECK(main_task_runner_->BelongsToCurrentThread());
-  DCHECK(disable_pipeline_auto_suspend_);
-  disable_pipeline_auto_suspend_ = false;
-
-  is_flinging_ = false;
-
-  CreateVideoDecodeStatsReporter();
-
-  ScheduleRestart();
-}
-
-void WebMediaPlayerImpl::OnRemotePlayStateChange(
-    media::MediaStatus::State state) {
-  DCHECK(is_flinging_);
-  DCHECK(main_task_runner_->BelongsToCurrentThread());
-
-  if (state == media::MediaStatus::State::kPlaying && Paused()) {
-    DVLOG(1) << __func__ << " requesting PLAY.";
-    client_->ResumePlayback();
-  } else if (state == media::MediaStatus::State::kPaused && !Paused()) {
-    DVLOG(1) << __func__ << " requesting PAUSE.";
-    client_->PausePlayback(PauseReason::kRemotePlayStateChange);
-  }
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void WebMediaPlayerImpl::SetPoster(const WebURL& poster) {
   has_poster_ = !poster.IsEmpty();
@@ -2976,11 +2865,6 @@ std::unique_ptr<media::Renderer> WebMediaPlayerImpl::CreateRenderer(
     EnableOverlay();
 
   media::RequestOverlayInfoCB request_overlay_info_cb;
-#if BUILDFLAG(IS_ANDROID)
-  request_overlay_info_cb =
-      base::BindPostTaskToCurrentDefault(blink::BindRepeating(
-          &WebMediaPlayerImpl::OnOverlayInfoRequested, weak_this_));
-#endif
 
   if (renderer_type) {
     DVLOG(1) << __func__
@@ -3519,11 +3403,6 @@ void WebMediaPlayerImpl::ScheduleIdlePauseTimer() {
     return;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // Don't pause videos casted as part of RemotePlayback.
-  if (is_flinging_)
-    return;
-#endif
 
   // Idle timeout chosen arbitrarily.
   background_pause_timer_.Start(
@@ -3960,12 +3839,6 @@ void WebMediaPlayerImpl::WriteSplitHistogram(
     if (is_encrypted_) {
       UmaFunction(base::StrCat({strkey, ".EME"}), values...);
     }
-#if BUILDFLAG(IS_WIN)
-    if (renderer_type_ == media::RendererType::kMediaFoundation) {
-      UmaFunction(base::StrCat({strkey, ".MediaFoundationRenderer"}),
-                  values...);
-    }
-#endif  // BUILDFLAG(IS_WIN)
   }
 
   if constexpr (Flags & kTotal) {
@@ -4190,16 +4063,6 @@ void WebMediaPlayerImpl::ReportSessionUMAs() const {
     base::UmaHistogramBoolean(uma_name, has_waiting_for_key_);
   }
 
-#if BUILDFLAG(IS_WIN)
-  // If there was a hardware context reset but we haven't reported the last
-  // pipeline status, we consider this as the successful recovery from the
-  // hardware context reset.
-  if (media_time_on_last_hardware_context_reset_.has_value() &&
-      !has_reported_hardware_context_reset_recovery_umas_) {
-    ReportLastPipelineStatusForHardwareContextResetRecoveryUMAs(
-        media::PIPELINE_OK, std::nullopt);
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void WebMediaPlayerImpl::DidMediaMetadataChange() {

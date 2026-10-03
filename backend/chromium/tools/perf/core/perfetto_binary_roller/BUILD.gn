@@ -16,11 +16,7 @@ generate_wrapper("upload_trace_processor") {
     "//.vpython3",
   ]
 
-  if (is_win) {
-    binary_name = "trace_processor_shell.exe"
-  } else {
-    binary_name = "trace_processor_shell"
-  }
+  binary_name = "trace_processor_shell"
 
   executable = "upload_trace_processor.py"
   wrapper_script = "$root_build_dir/bin/run_upload_trace_processor"

@@ -47,6 +47,7 @@ CEF_EXPORT bool vimbrowser_activate_element_handle(
     int browser_id,
     const char* handle,
     size_t handle_size,
+    bool grant_user_activation,
     uint64_t* activation_nonce_high,
     uint64_t* activation_nonce_low,
     vimbrowser_element_activation_callback_t callback,

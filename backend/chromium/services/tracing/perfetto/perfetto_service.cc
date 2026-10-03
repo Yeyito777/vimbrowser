@@ -28,15 +28,9 @@ namespace {
 // Parses the PID from |pid_as_string| and stores the result in |pid|.
 // Returns true if the PID was parsed successfully.
 bool ParseProcessId(const std::string& pid_as_string, base::ProcessId* pid) {
-#if BUILDFLAG(IS_FUCHSIA)
-  // Fuchsia zx_koid_t is a 64-bit int.
-  static_assert(sizeof(base::ProcessId) == 8);
-  return base::StringToUint64(pid_as_string, pid);
-#else
   // All other platforms use 32-bit ints for their PIDs.
   static_assert(sizeof(base::ProcessId) == 4);
   return base::StringToUint(pid_as_string, reinterpret_cast<uint32_t*>(pid));
-#endif
 }
 
 }  // namespace

@@ -31,9 +31,6 @@ namespace {
 class CrashesDOMHandler;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-class ChromeCameraAppUIDelegate;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace browser_sync {
 class ChromeSyncClient;
@@ -182,13 +179,8 @@ class ChromeMetricsServiceAccessor : public metrics::MetricsServiceAccessor {
   friend class CampaignsManagerClientImpl;
   friend class readaloud::SyntheticTrial;
   friend class tab_groups::TabGroupTrial;
-#if !BUILDFLAG(IS_ANDROID)
   friend class DefaultBrowserPromptTrial;
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  friend class ChromeCameraAppUIDelegate;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Testing related friends.
   friend class first_run::FirstRunMasterPrefsVariationsSeedTest;

@@ -221,11 +221,6 @@ if (build_with_chromium) {
     sources -= [ "src/crypto/test/gtest_main.cc" ]
     sources += [ "gtest_main_chromium.cc" ]
     deps += [ "//base/test:test_support" ]
-
-    if (is_fuchsia) {
-      additional_manifest_fragments =
-          [ "//build/config/fuchsia/test/network.shard.test-cml" ]
-    }
   }
 
   test("boringssl_ssl_tests") {

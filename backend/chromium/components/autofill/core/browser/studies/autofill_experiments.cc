@@ -255,12 +255,6 @@ bool ShouldShowIbanOnSettingsPage(const std::string& user_country_code,
 
 bool IsDeviceAuthAvailable(
     device_reauth::DeviceAuthenticator* device_authenticator) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!base::FeatureList::IsEnabled(
-          features::kAutofillEnablePaymentsMandatoryReauthChromeOs)) {
-    return false;
-  }
-#endif
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
   CHECK(device_authenticator);
@@ -271,12 +265,7 @@ bool IsDeviceAuthAvailable(
 }
 
 bool IsTouchToFillPaymentMethodSupported() {
-#if BUILDFLAG(IS_ANDROID)
-  // Touch To Fill is only supported on Android.
-  return true;
-#else
   return false;
-#endif
 }
 
 void SetUserOptedInWalletSyncTransport(PrefService* prefs,

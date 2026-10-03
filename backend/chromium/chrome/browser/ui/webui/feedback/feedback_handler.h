@@ -22,9 +22,6 @@ class FeedbackHandler : public content::WebUIMessageHandler {
 
  private:
   void HandleShowDialog(const base::ListValue& args);
-#if BUILDFLAG(IS_CHROMEOS)
-  void HandleShowAssistantLogsInfo(const base::ListValue& args);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   void HandleShowAutofillMetadataInfo(const base::ListValue& args);
   void HandleShowMetrics(const base::ListValue& args);
   void HandleShowSystemInfo(const base::ListValue& args);

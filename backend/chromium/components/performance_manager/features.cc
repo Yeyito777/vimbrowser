@@ -14,7 +14,6 @@
 
 namespace performance_manager::features {
 
-#if !BUILDFLAG(IS_ANDROID)
 BASE_FEATURE(kPerformanceControlsPPMSurvey, base::FEATURE_DISABLED_BY_DEFAULT);
 
 BASE_FEATURE_PARAM(base::TimeDelta,
@@ -137,11 +136,7 @@ BASE_FEATURE_PARAM(int,
                    "string_version",
                    1);
 
-#if BUILDFLAG(IS_CHROMEOS)
-BASE_FEATURE(kUnthrottledTabProcessReporting, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#endif
 
 BASE_FEATURE(kEnableBestEffortTaskInhibitingPolicy,
              base::FEATURE_DISABLED_BY_DEFAULT);
@@ -255,11 +250,7 @@ BASE_FEATURE(kUnimportantFramesPriority, base::FEATURE_DISABLED_BY_DEFAULT);
 BASE_FEATURE(kThrottleUnimportantFrameRate, base::FEATURE_DISABLED_BY_DEFAULT);
 
 BASE_FEATURE(kKeepDefaultSearchEngineRendererAlive,
-#if BUILDFLAG(IS_ANDROID)
-             base::FEATURE_DISABLED_BY_DEFAULT
-#else
              base::FEATURE_ENABLED_BY_DEFAULT
-#endif
 );
 
 BASE_FEATURE(kBoostClosingTabs, base::FEATURE_DISABLED_BY_DEFAULT);
@@ -289,13 +280,6 @@ BASE_FEATURE_PARAM(size_t,
 
 BASE_FEATURE(kExtensionServiceWorkerVoter, base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-// A feature to use ABOVE_NORMAL_PRIORITY_CLASS for Browser on Windows by
-// setting base::Priority::kUserBlocking. This should be used together with
-// kUserBlockingAboveNormalPriority.
-BASE_FEATURE(kBrowserProcessAboveNormalPriority,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 // When enabled, this feature prevents the browser from proactively discarding
 // tabs to save memory. This is used to measure the impact of tab discarding on
 // memory usage and user experience compared to other memory saving features.

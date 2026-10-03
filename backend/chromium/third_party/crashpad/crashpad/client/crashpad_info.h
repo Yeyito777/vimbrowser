@@ -23,17 +23,11 @@
 #include "client/simple_string_dictionary.h"
 #include "util/misc/tri_state.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace crashpad {
 
 namespace internal {
 
-#if BUILDFLAG(IS_IOS)
-class InProcessIntermediateDumpHandler;
-#endif
 
 //! \brief A linked list of blocks representing custom streams in the minidump,
 //!     with addresses (and size) stored as uint64_t to simplify reading from
@@ -100,34 +94,6 @@ struct CrashpadInfo {
     return extra_memory_ranges_;
   }
 
-#if BUILDFLAG(IS_IOS)
-  //! \brief Sets the bag of extra memory ranges to be included in the iOS
-  //! intermediate dump. This memory is not included in the minidump.
-  //!
-  //! Extra memory ranges may exist in \a address_range_bag at the time that
-  //! this method is called, or they may be added, removed, or modified in \a
-  //! address_range_bag after this method is called.
-  //!
-  //! This is only supported on iOS.
-  //!
-  //! \param[in] address_range_bag A bag of address ranges. The CrashpadInfo
-  //!     object does not take ownership of the SimpleAddressRangeBag object.
-  //!     It is the caller’s responsibility to ensure that this pointer remains
-  //!     valid while it is in effect for a CrashpadInfo object.
-  //!
-  //! \sa extra_memory_ranges()
-  void set_intermediate_dump_extra_memory_ranges(
-      SimpleAddressRangeBag* address_range_bag) {
-    intermediate_dump_extra_memory_ranges_ = address_range_bag;
-  }
-
-  //! \return The simple extra memory ranges SimpleAddressRangeBag object.
-  //!
-  //! \sa set_extra_memory_ranges()
-  SimpleAddressRangeBag* intermediate_dump_extra_memory_ranges() const {
-    return intermediate_dump_extra_memory_ranges_;
-  }
-#endif
 
   //! \brief Sets the simple annotations dictionary.
   //!
@@ -302,9 +268,6 @@ struct CrashpadInfo {
   };
 
  protected:
-#if BUILDFLAG(IS_IOS)
-  friend class internal::InProcessIntermediateDumpHandler;
-#endif
 
   uint32_t signature() const { return signature_; }
   uint32_t version() const { return version_; }
@@ -334,9 +297,6 @@ struct CrashpadInfo {
   SimpleStringDictionary* simple_annotations_;  // weak
   internal::UserDataMinidumpStreamListEntry* user_data_minidump_stream_head_;
   AnnotationList* annotations_list_;  // weak
-#if BUILDFLAG(IS_IOS)
-  SimpleAddressRangeBag* intermediate_dump_extra_memory_ranges_;  // weak
-#endif
 
   // It’s generally safe to add new fields without changing
   // kCrashpadInfoVersion, because readers should check size_ and ignore fields

@@ -14,14 +14,3 @@ static_library("about") {
     "//ui/resources",
   ]
 }
-
-if (is_android) {
-  static_library("about_ui_android") {
-    sources = [ "credit_utils_android.cc" ]
-    deps = [
-      ":about",
-      "//base",
-      "//components/webui/about/android:about_ui_jni_headers",
-    ]
-  }
-}

@@ -36,11 +36,6 @@ BASE_FEATURE(kSkipDiscardsDrivenByStaleSignal,
 
 const char kDescriberName[] = "PageDiscardingHelper";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// A 25% compression ratio is very conservative, and it matches the
-// value used by resourced when calculating available memory.
-static const uint64_t kSwapFootprintDiscount = 4;
-#endif
 
 using NodeFootprintMap = base::flat_map<const PageNode*, base::ByteSize>;
 
@@ -78,9 +73,6 @@ NodeFootprintMap GetPageNodeFootprintEstimate(
     // Get the footprint of the process and split it equally across its
     // frames.
     base::ByteSize footprint = process_node->GetResidentSet();
-#if BUILDFLAG(IS_CHROMEOS)
-    footprint += process_node->GetPrivateSwap() / kSwapFootprintDiscount;
-#endif
     footprint /= process_frames.size();
     for (const FrameNode* frame_node : process_frames) {
       // Check if the frame belongs to a discardable page, if so update the

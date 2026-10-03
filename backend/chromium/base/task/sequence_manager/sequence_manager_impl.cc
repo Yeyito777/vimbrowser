@@ -127,7 +127,6 @@ void ReclaimMemoryFromQueue(internal::TaskQueueImpl* queue, LazyNow* lazy_now) {
 // Writes |address| in hexadecimal ("0x11223344") form starting from |output|
 // and moving backwards in memory. Returns a pointer to the first digit of the
 // result. Does *not* NUL-terminate the number.
-#if !BUILDFLAG(IS_ANDROID)
 char* PrependHexAddress(char* output, const void* address) {
   uintptr_t value = reinterpret_cast<uintptr_t>(address);
   static const std::string_view kHexChars = "0123456789ABCDEF";
@@ -139,7 +138,6 @@ char* PrependHexAddress(char* output, const void* address) {
   *output = '0';
   return output;
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // Atomic to avoid TSAN flags when a test  tries to access the value before the
 // feature list is available.
@@ -190,12 +188,6 @@ SequenceManagerImpl::~SequenceManagerImpl() {
     ScopedBestEffortExecutionFence::RemoveSequenceManager(this);
   }
 
-#if BUILDFLAG(IS_IOS)
-  if (settings_.message_loop_type == MessagePumpType::UI &&
-      associated_thread_->IsBound()) {
-    controller_->DetachFromMessagePump();
-  }
-#endif
 
   // Make sure no Task is running as given that RunLoop does not support the
   // Delegate being destroyed from a Task and
@@ -293,19 +285,8 @@ void SequenceManagerImpl::BindToMessagePump(std::unique_ptr<MessagePump> pump) {
   CompleteInitializationOnBoundThread();
 
   // On Android attach to the native loop when there is one.
-#if BUILDFLAG(IS_ANDROID)
-  if (settings_.message_loop_type == MessagePumpType::UI ||
-      settings_.message_loop_type == MessagePumpType::JAVA) {
-    controller_->AttachToMessagePump();
-  }
-#endif
 
   // On iOS attach to the native loop when there is one.
-#if BUILDFLAG(IS_IOS)
-  if (settings_.message_loop_type == MessagePumpType::UI) {
-    controller_->AttachToMessagePump();
-  }
-#endif
 }
 
 void SequenceManagerImpl::BindToCurrentThread() {
@@ -688,27 +669,6 @@ void SequenceManagerImpl::MaybeAddLeewayToTask(Task& task) const {
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-bool SequenceManagerImpl::NextWakeUpNeedsHighRes() {
-  // Only consider high-res tasks in the |wake_up_queue| (ignore the
-  // |non_waking_wake_up_queue|).
-  std::optional<WakeUp> wake_up =
-      main_thread_only().wake_up_queue->GetNextDelayedWakeUp();
-  if (!wake_up) {
-    return false;
-  }
-  // Rely on leeway being larger than the minimum time of a low resolution timer
-  // (16ms). This guarantees that we only need high-res if the next wakeup is
-  // kPrecise as wakeups are sorted by their latest deadline and a flexible
-  // wakeup being in front of the queue implies that there isn't a kPrecise
-  // wakeup within [now, now + leeway] (as any flexible wakeup with a latest
-  // deadline within that range would have been eligible to run just now, before
-  // going idle).
-  DCHECK_GE(MessagePump::GetLeewayIgnoringThreadOverride(),
-            Milliseconds(Time::kMinLowResolutionThresholdMs));
-  return wake_up->delay_policy == subtle::DelayPolicy::kPrecise;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void SequenceManagerImpl::OnBeginWork() {
   work_tracker_.OnBeginWork();
@@ -1062,11 +1022,6 @@ bool SequenceManagerImpl::IsTaskExecutionAllowedInNativeNestedLoop() const {
   return controller_->IsTaskExecutionAllowed();
 }
 
-#if BUILDFLAG(IS_IOS)
-void SequenceManagerImpl::AttachToMessagePump() {
-  return controller_->AttachToMessagePump();
-}
-#endif
 
 bool SequenceManagerImpl::IsIdleForTesting() {
   ReloadEmptyWorkQueues();
@@ -1147,17 +1102,14 @@ bool SequenceManagerImpl::IsType(MessagePumpType type) const {
 
 void SequenceManagerImpl::EnableCrashKeys(const char* async_stack_crash_key) {
   DCHECK(!main_thread_only().async_stack_crash_key);
-#if !BUILDFLAG(IS_ANDROID)
   main_thread_only().async_stack_crash_key = debug::AllocateCrashKeyString(
       async_stack_crash_key, debug::CrashKeySize::Size64);
   static_assert(sizeof(main_thread_only().async_stack_buffer) ==
                     static_cast<size_t>(debug::CrashKeySize::Size64),
                 "Async stack buffer size must match crash key size.");
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void SequenceManagerImpl::RecordCrashKeys(const PendingTask& pending_task) {
-#if !BUILDFLAG(IS_ANDROID)
   // SetCrashKeyString is a no-op even if the crash key is null, but we'd still
   // have construct the std::string_view that is passed in.
   if (!main_thread_only().async_stack_crash_key) {
@@ -1190,7 +1142,6 @@ void SequenceManagerImpl::RecordCrashKeys(const PendingTask& pending_task) {
   debug::SetCrashKeyString(
       main_thread_only().async_stack_crash_key,
       std::string_view(pos, static_cast<size_t>(buffer_end - pos)));
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 internal::TaskQueueImpl* SequenceManagerImpl::currently_executing_task_queue()

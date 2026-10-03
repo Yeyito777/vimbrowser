@@ -25,9 +25,6 @@
 #include "base/mac/mac_util.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 #ifndef EGL_ANGLE_create_context_passthrough_shaders
 #define EGL_ANGLE_create_context_passthrough_shaders 1
@@ -62,14 +59,6 @@ bool ChangeContextAttributes(std::vector<EGLint>& context_attributes,
 bool IsARMSwiftShaderPlatform() {
 #if BUILDFLAG(IS_MAC)
   return base::mac::GetCPUType() == base::mac::CPUType::kArm;
-#elif BUILDFLAG(IS_IOS)
-  return true;
-#elif BUILDFLAG(IS_WIN)
-  base::win::OSInfo::WindowsArchitecture windows_architecture =
-      base::win::OSInfo::GetInstance()->GetArchitecture();
-  base::win::OSInfo* os_info = base::win::OSInfo::GetInstance();
-  return windows_architecture == base::win::OSInfo::ARM64_ARCHITECTURE ||
-         os_info->IsWowX86OnARM64() || os_info->IsWowAMD64OnARM64();
 #else
   // SwiftShader is not used on Android
   return false;

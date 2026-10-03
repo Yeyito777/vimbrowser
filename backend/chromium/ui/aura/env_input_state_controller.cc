@@ -50,16 +50,6 @@ void EnvInputStateController::UpdateStateForTouchEvent(
       break;
 
     case ui::EventType::kTouchCancelled:
-#if BUILDFLAG(IS_CHROMEOS)
-      // Handle EventType::kTouchCancelled only if it has a native event.
-      // ChromeOS exo touch drag relies on the ability to cancel touch
-      // downs with synthetic events when handing off to the new consumer,
-      // without losing the global env touch down state.
-      if (!event.HasNativeEvent()) {
-        break;
-      }
-      [[fallthrough]];
-#endif  // BUILDFLAG(IS_CHROMEOS)
     case ui::EventType::kTouchReleased:
       touch_ids_down_ = (touch_ids_down_ | (1 << event.pointer_details().id)) ^
                         (1 << event.pointer_details().id);

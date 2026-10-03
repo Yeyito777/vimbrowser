@@ -20,9 +20,6 @@
 #include "build/build_config.h"
 #include "util/file/file_io.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "util/ios/ios_intermediate_dump_format.h"
-#endif
 
 namespace crashpad {
 

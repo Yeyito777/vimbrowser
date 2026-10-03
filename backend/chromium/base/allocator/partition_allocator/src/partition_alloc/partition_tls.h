@@ -11,13 +11,8 @@
 #include "partition_alloc/partition_alloc_base/immediate_crash.h"
 #include "partition_alloc/partition_alloc_check.h"
 
-#if PA_BUILDFLAG(IS_POSIX)
 #include <pthread.h>
-#endif
 
-#if PA_BUILDFLAG(IS_WIN)
-#include "partition_alloc/partition_alloc_base/win/windows_types.h"
-#endif
 
 // Barebones TLS implementation for use in PartitionAlloc. This doesn't use the
 // general chromium TLS handling to avoid dependencies, but more importantly
@@ -80,45 +75,6 @@ PA_ALWAYS_INLINE void PartitionTlsSet(PartitionTlsKey key, void* value) {
   int ret = pthread_setspecific(key, value);
   PA_DCHECK(!ret);
 }
-
-#elif PA_BUILDFLAG(IS_WIN)
-// Note: supports only a single TLS key on Windows. Not a hard constraint, may
-// be lifted.
-using PartitionTlsKey = unsigned long;
-
-PA_COMPONENT_EXPORT(PARTITION_ALLOC)
-bool PartitionTlsCreate(PartitionTlsKey* key, void (*destructor)(void*));
-
-PA_ALWAYS_INLINE void* PartitionTlsGet(PartitionTlsKey key) {
-  // Accessing TLS resets the last error, which then makes |GetLastError()|
-  // return something misleading. While this means that properly using
-  // |GetLastError()| is difficult, there is currently code in Chromium which
-  // expects malloc() to *not* reset it. Meaning that we either have to fix this
-  // code, or pay the cost of saving/restoring it.
-  //
-  // Source:
-  // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-tlsgetvalue
-  // "Functions that return indications of failure call SetLastError() when they
-  // fail. They generally do not call SetLastError() when they succeed. The
-  // TlsGetValue() function is an exception to this general rule. The
-  // TlsGetValue() function calls SetLastError() to clear a thread's last error
-  // when it succeeds."
-  DWORD saved_error = GetLastError();
-  void* ret = TlsGetValue(key);
-  // Only non-zero errors need to be restored.
-  if (saved_error) [[unlikely]] {
-    SetLastError(saved_error);
-  }
-  return ret;
-}
-
-PA_ALWAYS_INLINE void PartitionTlsSet(PartitionTlsKey key, void* value) {
-  BOOL ret = TlsSetValue(key, value);
-  PA_DCHECK(ret);
-}
-
-// Registers a callback for DLL_PROCESS_DETACH events.
-void PartitionTlsSetOnDllProcessDetach(void (*callback)());
 
 #else
 // Not supported.

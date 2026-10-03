@@ -22,9 +22,6 @@
 #include "components/feature_engagement/public/default_session_controller.h"
 #include "components/keyed_service/core/keyed_service.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_android.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace base {
 class Clock;
@@ -145,11 +142,6 @@ class Tracker : public KeyedService, public base::SupportsUserData {
     bool should_show_snooze_;
   };
 
-#if BUILDFLAG(IS_ANDROID)
-  // Returns a Java object of the type Tracker for the given Tracker.
-  static base::android::ScopedJavaLocalRef<jobject> GetJavaObject(
-      Tracker* feature_engagement);
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Invoked when the tracker has been initialized. The |success| parameter
   // indicates that the initialization was a success and the tracker is ready to
@@ -184,7 +176,6 @@ class Tracker : public KeyedService, public base::SupportsUserData {
   // Must be called whenever an event happens.
   virtual void NotifyEvent(const std::string& event) = 0;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Notifies that the "used" event for `feature` has happened.
   virtual void NotifyUsedEvent(const base::Feature& feature) = 0;
 
@@ -198,7 +189,6 @@ class Tracker : public KeyedService, public base::SupportsUserData {
   // with a feature. The count will reflect the time window in EventConfig.
   using EventList = std::vector<std::pair<EventConfig, int>>;
   virtual EventList ListEvents(const base::Feature& feature) const = 0;
-#endif
 
   // This function must be called whenever the triggering condition for a
   // specific feature happens. Returns true iff the display of the in-product
@@ -308,15 +298,6 @@ class Tracker : public KeyedService, public base::SupportsUserData {
   // invoked exactly one time.
   virtual void AddOnInitializedCallback(OnInitializedCallback callback) = 0;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Updates the config of a specific feature after initialization. The new
-  // config will replace the existing config.
-  // Calling this method requires the Tracker to already have been initialized.
-  // See IsInitialized() and AddOnInitializedCallback(...) for how to ensure
-  // the call to this is delayed.
-  virtual void UpdateConfig(const base::Feature& feature,
-                            const ConfigurationProvider* provider) = 0;
-#endif
 
   // Returns the configuration associated with the tracker for testing purposes.
   virtual const Configuration* GetConfigurationForTesting() const = 0;

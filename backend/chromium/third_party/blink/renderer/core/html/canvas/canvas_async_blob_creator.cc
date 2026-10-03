@@ -56,15 +56,9 @@ const double kIdleTaskStartTimeoutDelayMs = 4000.0;  // For ChromeOS, Mobile
 /* The value is based on user statistics on May 2018. */
 // We should be more lenient on completion timeout delay to ensure that the
 // switch from idle to main thread only happens to a minority of toBlob calls
-#if !BUILDFLAG(IS_ANDROID)
 // Png image encoding on 4k by 4k canvas on Mac HDD takes 5.7+ seconds
 // We see that 99% users require less than 5 seconds.
 const double kIdleTaskCompleteTimeoutDelayMs = 5700.0;
-#else
-// Png image encoding on 4k by 4k canvas on Android One takes 9.0+ seconds
-// We see that 99% users require less than 9 seconds.
-const double kIdleTaskCompleteTimeoutDelayMs = 9000.0;
-#endif
 
 bool IsCreateBlobDeadlineNearOrPassed(base::TimeTicks deadline) {
   return base::TimeTicks::Now() >= deadline - kCreateBlobSlackBeforeDeadline;

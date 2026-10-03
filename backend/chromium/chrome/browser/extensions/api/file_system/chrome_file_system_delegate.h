@@ -16,9 +16,6 @@
 #include "extensions/browser/extension_function.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "extensions/browser/api/file_system/consent_provider.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace content {
 class BrowserContext;
@@ -26,20 +23,6 @@ class BrowserContext;
 
 namespace extensions {
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace file_system_api {
-
-extern const char kConsentImpossible[];
-extern const char kNotSupportedOnNonKioskSessionError[];
-extern const char kRequiresFileSystemWriteError[];
-extern const char kSecurityError[];
-extern const char kVolumeNotFoundError[];
-
-// Returns error message, or null if none.
-const char* ConsentResultToError(ConsentProvider::Consent result);
-
-}  // namespace file_system_api
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 class ChromeFileSystemDelegate : public FileSystemDelegate {
  public:
@@ -68,20 +51,6 @@ class ChromeFileSystemDelegate : public FileSystemDelegate {
                                        base::OnceClosure on_accept,
                                        base::OnceClosure on_cancel) override;
   int GetDescriptionIdForAcceptType(const std::string& accept_type) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  // |consent_provider| must at least live as long as |requester|.
-  void RequestFileSystem(content::BrowserContext* browser_context,
-                         scoped_refptr<ExtensionFunction> requester,
-                         ConsentProvider* consent_provider,
-                         const Extension& extension,
-                         std::string volume_id,
-                         bool writable,
-                         FileSystemCallback success_callback,
-                         ErrorCallback error_callback) override;
-  void GetVolumeList(content::BrowserContext* browser_context,
-                     VolumeListCallback success_callback,
-                     ErrorCallback error_callback) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   SavedFilesServiceInterface* GetSavedFilesService(
       content::BrowserContext* browser_context) override;
 };

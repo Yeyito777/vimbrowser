@@ -23,9 +23,6 @@
 #include "crypto/obsolete/md5.h"
 #include "extensions/common/extension_id.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/disks/disk_mount_manager.h"
-#endif
 
 namespace image_writer_api = extensions::api::image_writer_private;
 
@@ -40,9 +37,7 @@ inline constexpr int kProgressComplete = 100;
 
 class OperationManager;
 
-#if !BUILDFLAG(IS_CHROMEOS)
 class ImageWriterUtilityClient;
-#endif
 
 // Encapsulates an operation being run on behalf of the
 // OperationManager.  Construction of the operation does not start
@@ -167,7 +162,6 @@ class Operation : public base::RefCountedThreadSafe<Operation> {
   friend class ImageWriterUtilityClientTest;
   friend class WriteFromUrlOperationForTest;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   // Ensures the client is started.  This may be called many times but will only
   // instantiate one client which should exist for the lifetime of the
   // Operation.
@@ -181,27 +175,7 @@ class Operation : public base::RefCountedThreadSafe<Operation> {
   virtual void WriteImageProgress(int64_t total_bytes, int64_t curr_bytes);
 
   scoped_refptr<ImageWriterUtilityClient> image_writer_client_;
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Unmounts all volumes on `device_path_`.
-  void UnmountVolumes(base::OnceClosure continuation);
-  // Starts the write after unmounting.
-  void UnmountVolumesCallback(base::OnceClosure continuation,
-                              ash::MountError error_code);
-  // Starts the ImageBurner write.  Note that target_path is the file path of
-  // the device where device_path has been a system device path.
-  void StartWriteOnUIThread(const std::string& target_path,
-                            base::OnceClosure continuation);
-  void OnBurnFinished(base::OnceClosure continuation,
-                      const std::string& target_path,
-                      bool success,
-                      const std::string& error);
-  void OnBurnProgress(const std::string& target_path,
-                      int64_t num_bytes_burnt,
-                      int64_t total_size);
-  void OnBurnError();
-#endif
 
   // Incrementally calculates the MD5 sum of a file.
   void MD5Chunk(base::File file,

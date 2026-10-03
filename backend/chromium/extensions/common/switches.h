@@ -67,15 +67,6 @@ extern const char kLoadApps[];
 // Comma-separated list of paths to extensions to load at startup.
 extern const char kLoadExtension[];
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Path to the unpacked test extension to load into the signin profile. The ID
-// extension loaded must match kTestSigninProfileExtensionId.
-extern const char kLoadSigninProfileTestExtension[];
-
-// Path to the unpacked test extension to load into guest mode. The extension ID
-// must match kGuestModeTestExtensionId.
-extern const char kLoadGuestModeTestExtension[];
-#endif
 
 // Allows the use of the `testing` reason in offscreen documents.
 extern const char kOffscreenDocumentTesting[];

@@ -14,13 +14,6 @@
 #include "content/public/browser/web_contents.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/multi_user/multi_user_window_manager.h"
-#include "ash/shell.h"
-#include "chrome/browser/ui/ash/multi_user/multi_user_util.h"
-#include "components/account_id/account_id.h"
-#include "ui/base/base_window.h"
-#endif
 
 namespace chrome {
 
@@ -58,16 +51,6 @@ Profile* GetFeedbackProfile(BrowserWindowInterface* bwi) {
   profile = profile->GetOriginalProfile();
   DCHECK(profile);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Obtains the display profile ID on which the Feedback window should show.
-  auto* const window_manager = ash::Shell::Get()->multi_user_window_manager();
-  const AccountId display_account_id =
-      window_manager && bwi ? window_manager->GetUserPresentingWindow(
-                                  bwi->GetWindow()->GetNativeWindow())
-                            : EmptyAccountId();
-  if (display_account_id.is_valid())
-    profile = multi_user_util::GetProfileFromAccountId(display_account_id);
-#endif
   return profile;
 }
 

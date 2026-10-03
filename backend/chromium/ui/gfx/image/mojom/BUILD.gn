@@ -5,7 +5,6 @@
 import("//mojo/public/tools/bindings/mojom.gni")
 
 mojom("mojom") {
-  generate_java = true
   sources = [ "image.mojom" ]
 
   webui_module_path = "chrome://resources/mojo/ui/gfx/image/mojom"

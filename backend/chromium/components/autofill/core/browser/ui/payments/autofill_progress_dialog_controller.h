@@ -24,13 +24,8 @@ class AutofillProgressDialogController {
  public:
   virtual ~AutofillProgressDialogController() = default;
 
-#if BUILDFLAG(IS_IOS)
-  using CreateAndShowViewCallback =
-      base::OnceCallback<base::WeakPtr<AutofillProgressDialogView>()>;
-#else
   using CreateAndShowViewCallback =
       base::OnceCallback<std::unique_ptr<AutofillProgressDialogView>()>;
-#endif
 
   // Show a progress dialog for underlying authorization processes. The
   // `create_and_show_view_callback` will be invoked immediately to create a

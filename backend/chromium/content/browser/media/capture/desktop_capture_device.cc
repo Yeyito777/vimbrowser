@@ -57,9 +57,6 @@
 #include "third_party/webrtc_overrides/rtc_base/diagnostic_logging.h"
 #include "ui/gfx/icc_profile.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 namespace content {
 
@@ -144,42 +141,6 @@ void LogDesktopCaptureRequestRefreshRate(DesktopMediaID::Type capturer_type,
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-bool IsWgcEnabledForScreenCapture() {
-  bool enabled =
-      base::FeatureList::IsEnabled(features::kWebRtcAllowWgcScreenCapturer);
-  if (enabled) {
-    return true;
-  }
-
-  if (base::FeatureList::GetInstance() &&
-      base::FeatureList::GetInstance()->IsFeatureOverridden(
-          features::kWebRtcAllowWgcScreenCapturer.name)) {
-    return enabled;
-  }
-
-  // Starting from WIN11 24H2 (build 26100), the Capture API returns empty
-  // frame when the captured content is unchanged, helping to maintain
-  // performance for 0Hz capture scenarios.
-  enabled = (base::win::GetVersion() >= base::win::Version::WIN11_24H2);
-  return enabled;
-}
-
-bool IsWgcZeroHzEnabledForScreenCapture() {
-  bool enabled =
-      base::FeatureList::IsEnabled(features::kWebRtcAllowWgcScreenZeroHz);
-  if (enabled) {
-    return true;
-  }
-
-  if (base::FeatureList::GetInstance() &&
-      base::FeatureList::GetInstance()->IsFeatureOverridden(
-          features::kWebRtcAllowWgcScreenZeroHz.name)) {
-    return enabled;
-  }
-  return IsWgcEnabledForScreenCapture();
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 // Helper class which request that the system-global Windows timer interrupt
 // frequency be raised at construction. The corresponding deactivation is done
@@ -187,23 +148,7 @@ bool IsWgcZeroHzEnabledForScreenCapture() {
 // power state and possibly other options. Only supported on Windows.
 class ScopedHighResolutionTimer {
  public:
-#if !BUILDFLAG(IS_WIN)
   ScopedHighResolutionTimer() {}
-#else
-  ScopedHighResolutionTimer() {
-    if (!base::Time::IsHighResolutionTimerInUse()) {
-      enabled_ = base::Time::ActivateHighResolutionTimer(true);
-    }
-  }
-  ~ScopedHighResolutionTimer() {
-    if (enabled_) {
-      base::Time::ActivateHighResolutionTimer(false);
-    }
-  }
-
- private:
-  bool enabled_ = false;
-#endif
 };
 
 // Helper class to temporarily hook webrtc RTC_LOG macro to
@@ -943,56 +888,6 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
   std::unique_ptr<webrtc::DesktopCapturer> capturer;
   std::unique_ptr<media::VideoCaptureDevice> result;
 
-#if BUILDFLAG(IS_WIN)
-  options.set_allow_cropping_window_capturer(true);
-
-  // We prefer to allow the WGC and DXGI capturers to embed the cursor when
-  // possible. The DXGI implementation uses this switch in combination with
-  // internal checks for support of if it is possible to embed the cursor.
-  // Note that, very few graphical adapters support embedding the cursor into
-  // the captured frame in combination with DXGI; hence most cursors will be
-  // added separately by a desktop and cursor composer even if this option is
-  // set to true. GDI does not use this option.
-  options.set_prefer_cursor_embedded(true);
-
-  if (IsWgcEnabledForScreenCapture()) {
-    options.set_allow_wgc_screen_capturer(true);
-
-    // 0Hz support is enabled for WGC window capture but disabled by default for
-    // screen capture through the `kWebRtcAllowWgcScreenZeroHz` feature flag.
-    // When 0Hz is enabled, the WGC capturer will compare the pixel values of
-    // the new frame and the previous frame and update the DesktopRegion part of
-    // the frame to reflect if the content has changed or not.
-    // DesktopFrame::updated_region() will be empty if nothing has changed and
-    // contain one (damage) region corresponding to the complete screen or
-    // window being captured if any change is detected.
-    if (source.type == DesktopMediaID::TYPE_SCREEN) {
-      options.set_allow_wgc_zero_hertz(IsWgcZeroHzEnabledForScreenCapture());
-    }
-  }
-  options.set_allow_wgc_window_capturer(true);
-  if (source.type == DesktopMediaID::TYPE_WINDOW) {
-    options.set_allow_wgc_zero_hertz(true);
-  }
-
-  options.set_wgc_require_border(
-      base::FeatureList::IsEnabled(features::kWebRtcWgcRequireBorder));
-
-  std::ostringstream string_stream;
-  string_stream << "DesktopCaptureOptions: options={prefer_cursor_embedded: "
-                << options.prefer_cursor_embedded()
-                << ", allow_wgc_screen_capturer: "
-                << options.allow_wgc_screen_capturer()
-                << ", allow_wgc_window_capturer: "
-                << options.allow_wgc_window_capturer()
-                << ", allow_wgc_zero_hertz: " << options.allow_wgc_zero_hertz()
-                << ", wgc_require_border: " << options.wgc_require_border()
-                << "}";
-  VLOG(1) << string_stream.str();
-  if (device_client) {
-    device_client->OnLog(string_stream.str());
-  }
-#endif
 
   // For browser tests, to create a fake desktop capturer.
   if (source.id == DesktopMediaID::kFakeId) {
@@ -1104,20 +999,7 @@ DesktopCaptureDevice::DesktopCaptureDevice(
   DVLOG(1) << __func__ << "(type=" << DesktopMediaTypeToString(type) << ")";
 
   bool zero_hertz_is_supported = true;
-#if BUILDFLAG(IS_WIN)
-  // On Windows, 0Hz might be disabled for screen capture when using the
-  // Windows.Graphics.Capture (WGC) API.  See comment in
-  // `DesktopCaptureDevice::Create()` above for details.
-  if (IsWgcEnabledForScreenCapture()) {
-    zero_hertz_is_supported = IsWgcZeroHzEnabledForScreenCapture();
-  }
-  VLOG(1) << __func__ << " [zero_hertz_is_supported=" << zero_hertz_is_supported
-          << "]";
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-  thread_.Start();
-#else
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
   // On Windows/OSX the thread must be a UI thread.
   base::MessagePumpType thread_type = base::MessagePumpType::UI;
@@ -1125,7 +1007,6 @@ DesktopCaptureDevice::DesktopCaptureDevice(
   base::MessagePumpType thread_type = base::MessagePumpType::DEFAULT;
 #endif
   thread_.StartWithOptions(base::Thread::Options(thread_type, 0));
-#endif
 
   core_ = std::make_unique<Core>(thread_.task_runner(), std::move(capturer),
                                  type, zero_hertz_is_supported);

@@ -16,11 +16,7 @@
 #include "base/strings/string_util.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include "base/strings/utf_string_conversions.h"
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #include <stdlib.h>
 #endif
 
@@ -63,18 +59,7 @@ class EnvironmentImpl : public Environment {
 
  private:
   std::optional<std::string> GetVarImpl(cstring_view variable_name) {
-#if BUILDFLAG(IS_WIN)
-    std::wstring wide_name = UTF8ToWide(variable_name);
-    // Documented to be the maximum environment variable size in characters.
-    static constexpr size_t kMaxLength = 32767;
-    auto value = base::HeapArray<wchar_t>::Uninit(kMaxLength);
-    const DWORD value_length =
-        ::GetEnvironmentVariable(wide_name.c_str(), value.data(), kMaxLength);
-    if (value_length == 0 || value_length >= kMaxLength) {
-      return std::nullopt;  // Ignore errors and excessively large values.
-    }
-    return WideToUTF8(std::wstring_view(value.data(), value_length));
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
     const char* env_value = getenv(variable_name.c_str());
     if (!env_value) {
       return std::nullopt;
@@ -84,21 +69,14 @@ class EnvironmentImpl : public Environment {
   }
 
   bool SetVarImpl(cstring_view variable_name, const std::string& new_value) {
-#if BUILDFLAG(IS_WIN)
-    // On success, a nonzero value is returned.
-    return !!SetEnvironmentVariable(UTF8ToWide(variable_name).c_str(),
-                                    UTF8ToWide(new_value).c_str());
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
     // On success, zero is returned.
     return !setenv(variable_name.c_str(), new_value.c_str(), 1);
 #endif
   }
 
   bool UnSetVarImpl(cstring_view variable_name) {
-#if BUILDFLAG(IS_WIN)
-    // On success, a nonzero value is returned.
-    return !!SetEnvironmentVariable(UTF8ToWide(variable_name).c_str(), nullptr);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
     // On success, zero is returned.
     return !unsetenv(variable_name.c_str());
 #endif

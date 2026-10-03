@@ -41,9 +41,7 @@
 #include "components/update_client/unpacker.h"
 #include "components/update_client/unzip/unzip_impl.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include <errno.h>
-#endif
 
 namespace component_updater {
 
@@ -117,18 +115,9 @@ void RecoveryComponentActionHandler::RunCommand(
   VLOG(1) << "run command: " << cmdline.GetCommandLineString();
   auto process_or_error = [&cmdline]() -> base::expected<base::Process, int> {
     base::LaunchOptions options;
-#if BUILDFLAG(IS_WIN)
-    options.start_hidden = true;
-#endif
     base::Process process = base::LaunchProcess(cmdline, options);
     if (!process.IsValid()) {
-#if BUILDFLAG(IS_WIN)
-      return base::unexpected(::GetLastError());
-#elif BUILDFLAG(IS_POSIX)
       return base::unexpected(errno);
-#else
-      return base::unexpected(0);
-#endif
     }
     return std::move(process);
   }();

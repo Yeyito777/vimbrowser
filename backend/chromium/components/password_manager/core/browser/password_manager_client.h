@@ -37,9 +37,6 @@
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) ||
         // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/password_manager/core/browser/first_cct_page_load_passwords_ukm_recorder.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 class PrefService;
 
@@ -93,17 +90,11 @@ enum class Channel;
 }
 
 namespace webauthn {
-#if BUILDFLAG(IS_ANDROID)
-class WebAuthnCredManDelegate;
-#endif  // BUILDFLAG(IS_ANDROID)
 }  // namespace webauthn
 
 namespace password_manager {
 
 class FieldInfoManager;
-#if BUILDFLAG(IS_ANDROID)
-class FirstCctPageLoadPasswordsUkmRecorder;
-#endif  // BUILDFLAG(IS_ANDROID)
 class HttpAuthManager;
 enum class LeakDetectionInitiator;
 class OtpManager;
@@ -211,20 +202,6 @@ class PasswordManagerClient {
       const url::Origin& origin,
       CredentialsCallback callback) = 0;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Shows the error message that suggests the user to sign in to "save" or
-  // "use" passwords, depending on the |flow_type|. If the |error_type|
-  // indicates that signing in again won't help, the message won't be shown.
-  virtual void ShowPasswordManagerErrorMessage(
-      ErrorMessageFlowType flow_type,
-      password_manager::PasswordStoreBackendErrorType error_type);
-
-  // Instructs the client to show a keyboard replacing surface UI (e.g.
-  // TouchToFill).
-  virtual void ShowKeyboardReplacingSurface(
-      PasswordManagerDriver* driver,
-      const autofill::PasswordSuggestionRequest& request);
-#endif
 
   // Checks whether user re-authentication should be triggered before password
   // filling.
@@ -464,21 +441,6 @@ class PasswordManagerClient {
   // does not support metrics recording.
   virtual PasswordManagerMetricsRecorder* GetMetricsRecorder() = 0;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Returns a metrics recorder created specifically for the first CCT page
-  // load. This can return nullptr if the current tab is not a CCT, or if
-  // the user already navigated away from the first page.
-  // It records metrics on destruction, which happens on the first navigation
-  // away from the first loaded page. Callers should  not hold on to the
-  // pointer.
-  virtual FirstCctPageLoadPasswordsUkmRecorder*
-  GetFirstCctPageLoadUkmRecorder() = 0;
-
-  // Signals that a password form eligible for saving was submitted. Note that
-  // this gets called for form submissions that might not necessarily be
-  // successful logins.
-  virtual void PotentialSaveFormSubmitted() = 0;
-#endif
   // Gets the PasswordRequirementsService associated with the client. It is
   // valid that this method returns a nullptr if the PasswordRequirementsService
   // has not been implemented for a specific platform or the context is an
@@ -512,9 +474,6 @@ class PasswordManagerClient {
   virtual void NavigateToManagePasswordsPage(ManagePasswordsReferrer referrer) {
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  virtual void NavigateToManagePasskeysPage(ManagePasswordsReferrer referrer) {}
-#endif
 
   virtual bool IsIsolationForPasswordSitesEnabled() const = 0;
 
@@ -525,15 +484,6 @@ class PasswordManagerClient {
   virtual WebAuthnCredentialsDelegate* GetWebAuthnCredentialsDelegateForDriver(
       PasswordManagerDriver* driver);
 
-#if BUILDFLAG(IS_ANDROID)
-  // Returns the WebAuthnCredManDelegate for the driver.
-  virtual webauthn::WebAuthnCredManDelegate*
-  GetWebAuthnCredManDelegateForDriver(PasswordManagerDriver* driver);
-
-  // Marks all credentials that have been loaded for this page and have been
-  // received via the password sharing feature as notified.
-  virtual void MarkSharedCredentialsAsNotified(const GURL& url);
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Returns the Chrome channel for the installation.
   virtual version_info::Channel GetChannel() const;
@@ -556,7 +506,6 @@ class PasswordManagerClient {
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) ||
         // BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_IOS)
   // Creates and show the cross domain confirmation popup.
   virtual std::unique_ptr<PasswordCrossDomainConfirmationPopupController>
   ShowCrossDomainConfirmationPopup(const gfx::RectF& element_bounds,
@@ -565,15 +514,12 @@ class PasswordManagerClient {
                                    const std::u16string& password_hostname,
                                    bool show_warning_text,
                                    base::OnceClosure confirmation_callback) = 0;
-#endif  // !BUILDFLAG(IS_IOS)
 
   virtual password_manager::LeakDetectionInitiator GetLeakDetectionInitiator();
 
   virtual UndoPasswordChangeController* GetUndoPasswordChangeController();
 
-#if !BUILDFLAG(IS_ANDROID)
   virtual bool IsActorTaskActive();
-#endif  // !BUILDFLAG(IS_ANDROID)
 };
 
 }  // namespace password_manager

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef COMPONENTS_GCM_DRIVER_GCM_PROFILE_SERVICE_H_
+#if !defined(COMPONENTS_GCM_DRIVER_GCM_PROFILE_SERVICE_H_)
 #define COMPONENTS_GCM_DRIVER_GCM_PROFILE_SERVICE_H_
 
 #include <memory>
@@ -15,7 +15,6 @@
 #include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
 #include "build/build_config.h"
-#include "components/gcm_driver/gcm_buildflags.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "components/version_info/channel.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
@@ -52,11 +51,6 @@ class GCMProfileService : public KeyedService {
   using GetProxyResolvingFactoryCallback = base::RepeatingCallback<void(
       mojo::PendingReceiver<network::mojom::ProxyResolvingSocketFactory>)>;
 
-#if BUILDFLAG(USE_GCM_FROM_PLATFORM)
-  GCMProfileService(
-      base::FilePath path,
-      scoped_refptr<base::SequencedTaskRunner>& blocking_task_runner);
-#else
   GCMProfileService(
       PrefService* prefs,
       base::FilePath path,
@@ -74,7 +68,6 @@ class GCMProfileService : public KeyedService {
       const scoped_refptr<base::SequencedTaskRunner>& io_task_runner,
       scoped_refptr<base::SequencedTaskRunner>& blocking_task_runner,
       os_crypt_async::OSCryptAsync* os_crypt_async);
-#endif
 
   GCMProfileService(const GCMProfileService&) = delete;
   GCMProfileService& operator=(const GCMProfileService&) = delete;
@@ -93,13 +86,11 @@ class GCMProfileService : public KeyedService {
  private:
   std::unique_ptr<GCMDriver> driver_;
 
-#if !BUILDFLAG(USE_GCM_FROM_PLATFORM)
   raw_ptr<signin::IdentityManager> identity_manager_;
 
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
 
   std::unique_ptr<GCMAccountTracker> gcm_account_tracker_;
-#endif
 
   GetProxyResolvingFactoryCallback get_socket_factory_callback_;
 

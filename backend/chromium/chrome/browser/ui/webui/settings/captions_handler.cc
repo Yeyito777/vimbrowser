@@ -13,22 +13,17 @@
 #include "base/values.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
 #include "chrome/grit/branded_strings.h"
 #include "chrome/grit/generated_resources.h"
 #include "components/live_caption/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/soda/constants.h"
 #include "components/soda/soda_installer.h"
-#include "components/translate/core/browser/translate_prefs.h"
 #include "content/public/browser/web_ui.h"
 #include "media/base/media_switches.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 #include "chrome/browser/accessibility/caption_settings_dialog.h"
@@ -59,10 +54,6 @@ base::ListValue SortByDisplayName(std::vector<base::DictValue> language_packs) {
 namespace settings {
 
 CaptionsHandler::CaptionsHandler(PrefService* prefs) : prefs_(prefs) {
-#if BUILDFLAG(IS_CHROMEOS)
-  soda_available_ =
-      base::FeatureList::IsEnabled(ash::features::kOnDeviceSpeechRecognition);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 CaptionsHandler::~CaptionsHandler() {
@@ -178,20 +169,6 @@ base::ListValue CaptionsHandler::GetAvailableLanguagePacks() {
   // On ChromeOS we have already checked config availability on disk via the
   // installer, so we don't need to check the speech::kLanguageComponentConfigs
   // list.
-#if BUILDFLAG(IS_CHROMEOS)
-  for (const auto& language_name : enabled_and_available_languages) {
-    base::DictValue available_language_pack;
-    available_language_pack.Set(kCodeKey, language_name);
-    available_language_pack.Set(
-        kDisplayNameKey,
-        speech::GetLanguageDisplayName(
-            language_name, g_browser_process->GetApplicationLocale()));
-    available_language_pack.Set(
-        kNativeDisplayNameKey,
-        speech::GetLanguageDisplayName(language_name, language_name));
-    available_language_packs.push_back(std::move(available_language_pack));
-  }
-#else
   for (const auto& config : speech::kLanguageComponentConfigs) {
     if (config.language_code != speech::LanguageCode::kNone &&
         std::ranges::contains(enabled_and_available_languages,
@@ -209,7 +186,6 @@ base::ListValue CaptionsHandler::GetAvailableLanguagePacks() {
       available_language_packs.push_back(std::move(available_language_pack));
     }
   }
-#endif
   return SortByDisplayName(std::move(available_language_packs));
 }
 

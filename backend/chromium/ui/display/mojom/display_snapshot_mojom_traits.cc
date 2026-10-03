@@ -170,11 +170,6 @@ bool StructTraits<display::mojom::DisplaySnapshotDataView,
     return false;
 
   display::DrmFormatsAndModifiers drm_formats_and_modifiers;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!data.ReadDrmFormatsAndModifiers(&drm_formats_and_modifiers)) {
-    return false;
-  }
-#endif
 
   *out = std::make_unique<display::DisplaySnapshot>(
       data.display_id(), data.port_display_id(), data.edid_display_id(),

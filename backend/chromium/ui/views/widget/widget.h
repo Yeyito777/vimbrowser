@@ -447,12 +447,6 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
     // TODO(crbug.com/40287810): can we use screen coordinates universally?
     gfx::Rect bounds;
 
-#if BUILDFLAG(IS_CHROMEOS)
-    // If specified and the `bounds` is inside the specified display, the widget
-    // will be created on this display. Otherwise, the display matching the
-    // `bounds` will be used.
-    std::optional<int64_t> display_id;
-#endif
 
     // The initial workspace of the Widget. Default is "", which means the
     // current workspace.
@@ -482,14 +476,6 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
     // the default desktop for new windows.
     gfx::NativeWindow context = gfx::NativeWindow();
 
-#if BUILDFLAG(IS_WIN)
-    // If true, force the window not to be shown in the taskbar, even for
-    // window types that do appear in the taskbar by default.
-    bool dont_show_in_taskbar = false;
-
-    // If true, adds the WS_SYSMENU style to TYPE_WINDOW_FRAMELESS windows.
-    bool force_system_menu_for_frameless = false;
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX)
     // Only used by X11, for root level windows. Specifies the res_name and

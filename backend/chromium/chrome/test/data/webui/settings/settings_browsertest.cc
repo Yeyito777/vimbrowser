@@ -1811,39 +1811,6 @@ IN_PROC_BROWSER_TEST_F(SettingsSecurityPageV2Test, SecureDnsBundling) {
           "runMochaSuite('SecureDnsBundling')");
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
-using SettingsSpellCheckPageTest = SettingsBrowserTest;
-
-IN_PROC_BROWSER_TEST_F(SettingsSpellCheckPageTest, AllBuilds) {
-  RunTest("settings/spell_check_page_test.js",
-          "runMochaSuite('SpellCheck AllBuilds')");
-}
-
-IN_PROC_BROWSER_TEST_F(SettingsSpellCheckPageTest, Metrics) {
-  RunTest("settings/spell_check_page_metrics_test_browser.js",
-          "runMochaSuite('SpellCheckPageMetricsBrowser Metrics')");
-}
-
-#if !BUILDFLAG(IS_MAC)
-IN_PROC_BROWSER_TEST_F(SettingsSpellCheckPageTest, MetricsNotMacOS) {
-  RunTest("settings/spell_check_page_metrics_test_browser.js",
-          "runMochaSuite('SpellCheckPageMetricsBrowser MetricsNotMacOS')");
-}
-#endif
-
-#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-IN_PROC_BROWSER_TEST_F(SettingsSpellCheckPageTest, MetricsOfficialBuild) {
-  RunTest("settings/spell_check_page_metrics_test_browser.js",
-          "runMochaSuite('SpellCheckPageMetricsBrowser MetricsOfficialBuild')");
-}
-
-IN_PROC_BROWSER_TEST_F(SettingsSpellCheckPageTest, OfficialBuild) {
-  RunTest("settings/spell_check_page_test.js",
-          "runMochaSuite('SpellCheck OfficialBuild')");
-}
-#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
-#endif  // !BUILDFLAG(IS_CHROMEOS)
-
 class SettingsSiteDetailsTest : public SettingsBrowserTest {};
 
 // Disabling on debug due to flaky timeout on Win7 Tests (dbg)(1) bot.

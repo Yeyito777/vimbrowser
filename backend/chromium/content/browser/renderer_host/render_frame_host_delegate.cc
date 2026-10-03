@@ -133,12 +133,6 @@ bool RenderFrameHostDelegate::ShouldAllowRunningInsecureContent(
   return false;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-base::android::ScopedJavaLocalRef<jobject>
-RenderFrameHostDelegate::GetJavaRenderFrameHostDelegate() {
-  return nullptr;
-}
-#endif
 
 Visibility RenderFrameHostDelegate::GetVisibility() {
   return Visibility::HIDDEN;

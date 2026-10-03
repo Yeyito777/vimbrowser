@@ -44,11 +44,7 @@ void AddFile(const std::string& value_name,
   request_body->AppendCopyOfBytes(base::as_byte_span(mime_header));
 
   request_body->AppendFileRange(
-#if BUILDFLAG(IS_WIN)
-      base::FilePath::FromUTF8Unsafe(file_uri),
-#else
       base::FilePath(file_uri),
-#endif
       0, -1, base::Time());
 
   request_body->AppendCopyOfBytes(base::byte_span_from_cstring(delimiter));

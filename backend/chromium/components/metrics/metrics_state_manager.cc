@@ -234,17 +234,6 @@ MetricsStateManager::MetricsStateManager(
   if (enabled_state_provider_->IsConsentGiven()) {
     ForceClientIdCreation();
   } else {
-#if BUILDFLAG(IS_ANDROID)
-    // If on start up we determine that the client has not given their consent
-    // to report their metrics, the new sampling trial should be used to
-    // determine whether the client is sampled in or out (if the user ever
-    // enables metrics reporting). This covers users that are going through
-    // the first run, as well as users that have metrics reporting disabled.
-    //
-    // See crbug/1306481 and the comment above |kUsePostFREFixSamplingTrial| in
-    // components/metrics/metrics_pref_names.cc for more details.
-    local_state_->SetBoolean(metrics::prefs::kUsePostFREFixSamplingTrial, true);
-#endif  // BUILDFLAG(IS_ANDROID)
   }
 
   // Generate and store a provisional client ID if necessary. This ID will be
@@ -375,9 +364,6 @@ void MetricsStateManager::ForceClientIdCreation() {
   // kMetricsRecordingOnly is used by Chromedriver tests.
   DCHECK(enabled_state_provider_->IsConsentGiven() ||
          IsMetricsReportingForceEnabled() || IsMetricsRecordingOnlyEnabled());
-#if BUILDFLAG(IS_CHROMEOS)
-  std::string previous_client_id = client_id_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   {
     std::string client_id_from_prefs = ReadClientId(local_state_);
     // If client id in prefs matches the cached copy, return early.
@@ -522,9 +508,6 @@ void MetricsStateManager::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterStringPref(prefs::kMetricsClientID, std::string());
   registry->RegisterInt64Pref(prefs::kMetricsReportingEnabledTimestamp, 0);
   registry->RegisterInt64Pref(prefs::kInstallDate, 0);
-#if BUILDFLAG(IS_ANDROID)
-  registry->RegisterBooleanPref(prefs::kUsePostFREFixSamplingTrial, false);
-#endif  // BUILDFLAG(IS_ANDROID)
 
   EntropyState::RegisterPrefs(registry);
   ClonedInstallDetector::RegisterPrefs(registry);
@@ -619,19 +602,6 @@ void MetricsStateManager::ResetMetricsIDsIfNecessary() {
 }
 
 bool MetricsStateManager::ShouldGenerateProvisionalClientId(bool is_first_run) {
-#if BUILDFLAG(IS_WIN)
-  // We do not want to generate a provisional client ID on Windows because
-  // there's no UMA checkbox on first run. Instead it comes from the install
-  // page. So if UMA is not enabled at this point, it's unlikely it will be
-  // enabled in the same session since that requires the user to manually do
-  // that via settings page after they unchecked it on the download page.
-  //
-  // Note: Windows first run is covered by browser tests
-  // FirstRunMasterPrefsVariationsSeedTest.PRE_SecondRun and
-  // FirstRunMasterPrefsVariationsSeedTest.SecondRun. If the platform ifdef
-  // for this logic changes, the tests should be updated as well.
-  return false;
-#else
   // We should only generate a provisional client ID on the first run. If for
   // some reason there is already a client ID, we do not generate one either.
   // This can happen if metrics reporting is managed by a policy.
@@ -666,7 +636,6 @@ bool MetricsStateManager::ShouldGenerateProvisionalClientId(bool is_first_run) {
   }
 
   return true;
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 }  // namespace metrics

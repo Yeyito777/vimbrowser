@@ -51,9 +51,6 @@ static_library("core") {
     "//services/passage_embeddings/public/mojom",
   ]
 
-  if (is_android) {
-    deps += [ "//components/download/public/background_service:public" ]
-  }
   public_deps = [ ":passage_embeddings_types" ]
 }
 
@@ -98,10 +95,6 @@ source_set("unit_tests") {
     "//services/passage_embeddings/public/mojom",
     "//testing/gtest",
   ]
-
-  if (is_ios) {
-    deps += [ "//components/test:passage_embeddings_test_bundle_data" ]
-  }
 
   data = [ "//components/test/data/passage_embeddings/" ]
 }

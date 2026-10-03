@@ -15,10 +15,6 @@ namespace user_prefs {
 namespace {
 
 constexpr uint32_t kSyncablePrefFlags =
-#if BUILDFLAG(IS_CHROMEOS)
-    PrefRegistrySyncable::SYNCABLE_OS_PREF |
-    PrefRegistrySyncable::SYNCABLE_OS_PRIORITY_PREF |
-#endif
     PrefRegistrySyncable::SYNCABLE_PREF |
     PrefRegistrySyncable::SYNCABLE_PRIORITY_PREF;
 
@@ -39,11 +35,6 @@ void PrefRegistrySyncable::OnPrefRegistered(std::string_view path,
   // SYNCABLE_PRIORITY_PREF flags at the same time.
   DCHECK(!(flags & PrefRegistrySyncable::SYNCABLE_PREF) ||
          !(flags & PrefRegistrySyncable::SYNCABLE_PRIORITY_PREF));
-#if BUILDFLAG(IS_CHROMEOS)
-  // Ditto for the mutually exclusive OS pref flags.
-  DCHECK(!(flags & PrefRegistrySyncable::SYNCABLE_OS_PREF) ||
-         !(flags & PrefRegistrySyncable::SYNCABLE_OS_PRIORITY_PREF));
-#endif
 
   if (flags & kSyncablePrefFlags) {
     if (callback_)

@@ -64,17 +64,6 @@ class OverlayImageRepresentationImpl : public OverlayImageRepresentation {
   }
   void EndReadAccess(gfx::GpuFenceHandle release_fence) override {}
 
-#if BUILDFLAG(IS_WIN)
-  std::optional<gl::DCLayerOverlayImage> GetDCLayerOverlayImage() override {
-    // This should only be called for the backing which references the Y plane,
-    // eg. plane_index=0, of an NV12 shmem GMB - see allow_shm_overlay in
-    // SharedImageFactory. This allows access to both Y and UV planes.
-    const auto& shm_wrapper = static_cast<SharedMemoryImageBacking*>(backing())
-                                  ->shared_memory_wrapper();
-    return std::make_optional<gl::DCLayerOverlayImage>(
-        size(), shm_wrapper.GetMemoryPlanes(), shm_wrapper.GetStride(0));
-  }
-#endif
 };
 
 std::vector<SkPixmap> GetSkPixmaps(viz::SharedImageFormat format,

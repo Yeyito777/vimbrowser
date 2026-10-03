@@ -61,20 +61,13 @@
 #include "extensions/common/url_pattern.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "google_apis/gaia/gaia_auth_util.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "chrome/browser/themes/theme_service.h"
 #include "chrome/browser/themes/theme_service_factory.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#else
 #include "components/enterprise/browser/reporting/common_pref_names.h"
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 #include "chrome/browser/extensions/management/management_util.h"
@@ -99,9 +92,6 @@ ExtensionManagement::ExtensionManagement(Profile* profile)
     : profile_(profile), pref_service_(profile_->GetPrefs()) {
   TRACE_EVENT0("browser,startup",
                "ExtensionManagement::ExtensionManagement::ctor");
-#if BUILDFLAG(IS_CHROMEOS)
-  is_signin_profile_ = ash::ProfileHelper::IsSigninProfile(profile);
-#endif
   pref_change_registrar_.Init(pref_service_);
   base::RepeatingClosure pref_change_callback = base::BindRepeating(
       &ExtensionManagement::OnExtensionPrefChanged, base::Unretained(this));
@@ -118,10 +108,8 @@ ExtensionManagement::ExtensionManagement(Profile* profile)
                              pref_change_callback);
   pref_change_registrar_.Add(prefs::kCloudExtensionRequestEnabled,
                              pref_change_callback);
-#if !BUILDFLAG(IS_CHROMEOS)
   pref_change_registrar_.Add(enterprise_reporting::kCloudReportingEnabled,
                              pref_change_callback);
-#endif
   pref_change_registrar_.Add(pref_names::kManifestV2Availability,
                              pref_change_callback);
   pref_change_registrar_.Add(pref_names::kExtensionUnpublishedAvailability,
@@ -177,33 +165,10 @@ ManagedInstallationMode ExtensionManagement::GetInstallationMode(
                              update_url ? *update_url : std::string());
 }
 
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-bool ExtensionManagement::ExtensionsEnabledForDesktopAndroid() const {
-  std::string user_name = profile_->GetProfileUserName();
-  // Crude check to avoid passing invalid strings to `ExtractDomainName`.
-  if (user_name.contains("@")) {
-    std::string domain = gaia::ExtractDomainName(user_name);
-    if (domain == "google.com" || domain == "managedchrome.com") {
-      return base::FeatureList::IsEnabled(
-              extensions_features::kEnableExtensionsForCorpDesktopAndroid);
-    }
-  }
-  return true;
-}
-#endif  // BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
 
 ManagedInstallationMode ExtensionManagement::GetInstallationMode(
     const ExtensionId& extension_id,
     const std::string& update_url) {
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-  // Block extensions for managed profiles on Desktop Android. This is
-  // temporary until extensions are ready for dogfooding.
-  // TODO(crbug.com/422307625): Remove this check once extensions are ready for
-  // dogfooding.
-  if (!ExtensionsEnabledForDesktopAndroid()) {
-    return ManagedInstallationMode::kRemoved;
-  }
-#endif  // BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
 
   // Check per-extension installation mode setting first.
   auto* setting = GetSettingsForId(extension_id);

@@ -91,8 +91,6 @@ BlobStorageLimits CalculateBlobStorageLimitsImpl(
 #if !BUILDFLAG(IS_CHROMEOS) && !BUILDFLAG(IS_ANDROID) && \
     defined(ARCH_CPU_64_BITS)
     limits.max_blob_in_memory_space = base::GiB(2).InBytesUnsigned();
-#elif BUILDFLAG(IS_ANDROID)
-    limits.max_blob_in_memory_space = static_cast<size_t>(memory_size / 100);
 #else
     limits.max_blob_in_memory_space = static_cast<size_t>(memory_size / 5);
 #endif
@@ -105,13 +103,7 @@ BlobStorageLimits CalculateBlobStorageLimitsImpl(
 
   // Don't do specialty configuration for error size (-1). Allow no disk.
   if (disk_size >= 0) {
-#if BUILDFLAG(IS_CHROMEOS)
-    limits.desired_max_disk_space = static_cast<uint64_t>(disk_size / 2ll);
-#elif BUILDFLAG(IS_ANDROID)
-    limits.desired_max_disk_space = static_cast<uint64_t>(3ll * disk_size / 50);
-#else
     limits.desired_max_disk_space = static_cast<uint64_t>(disk_size / 10ll);
-#endif
   }
 
   limits.effective_max_disk_space = limits.desired_max_disk_space;

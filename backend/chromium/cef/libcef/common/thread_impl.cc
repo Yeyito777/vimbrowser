@@ -99,14 +99,6 @@ bool CefThreadImpl::Create(const CefString& display_name,
 
   options.joinable = stoppable;
 
-#if BUILDFLAG(IS_WIN)
-  if (com_init_mode != COM_INIT_MODE_NONE) {
-    if (com_init_mode == COM_INIT_MODE_STA) {
-      options.message_pump_type = base::MessagePumpType::UI;
-    }
-    thread_->init_com_with_mta(com_init_mode == COM_INIT_MODE_MTA);
-  }
-#endif
 
   if (!thread_->StartWithOptions(std::move(options))) {
     thread_.reset();

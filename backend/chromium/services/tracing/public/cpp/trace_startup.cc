@@ -24,9 +24,6 @@
 #include "services/tracing/public/cpp/tracing_features.h"
 #include "third_party/perfetto/include/perfetto/tracing/track.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "components/tracing/common/etw_export_win.h"
-#endif
 
 namespace tracing {
 namespace {
@@ -140,9 +137,6 @@ void InitTracing(
   StartupTrackEventConfigObserver::GetInstance();
   base::trace_event::TraceSessionObserverList::Initialize();
 
-#if BUILDFLAG(IS_WIN)
-  tracing::EnableETWExport();
-#endif  // BUILDFLAG(IS_WIN)
 
   auto& startup_config = TraceStartupConfig::GetInstance();
 

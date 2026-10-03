@@ -14,13 +14,7 @@
 #include "build/blink_buildflags.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/process.h>
-#endif
 
 #if BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN)
 #include "base/feature_list.h"
@@ -32,15 +26,6 @@
 
 namespace base {
 
-#if BUILDFLAG(IS_CHROMEOS)
-// FlattenCpuCgroups feature uses /sys/fs/cgroup/cpu/chrome_renderers and
-// /sys/fs/cgroup/cpu/chrome_renderers_background cpu cgroups for renderer
-// processes instead of nested cpu cgroups. Nested cpu cgroups has an overhead
-// on task scheduling.
-BASE_EXPORT BASE_DECLARE_FEATURE(kFlattenCpuCgroups);
-
-class ProcessPriorityDelegate;
-#endif
 
 // Provides a move-only encapsulation of a process.
 //
@@ -87,11 +72,6 @@ class BASE_EXPORT Process {
   // address space and duplicate handles).
   static Process OpenWithExtraPrivileges(ProcessId pid);
 
-#if BUILDFLAG(IS_WIN)
-  // Returns a Process for the given |pid|, using some |desired_access|.
-  // See ::OpenProcess documentation for valid |desired_access|.
-  static Process OpenWithAccess(ProcessId pid, DWORD desired_access);
-#endif
 
   // Returns true if changing the priority of processes through `SetPriority()`
   // is possible.
@@ -137,11 +117,6 @@ class BASE_EXPORT Process {
   // (and maybe Fuchsia?), because the ProcessHandle will keep the zombie
   // process information available until itself has been released. But on Posix,
   // the OS may reuse the ProcessId.
-#if BUILDFLAG(IS_WIN)
-  bool IsRunning() const {
-    return !WaitForExitWithTimeout(base::TimeDelta(), nullptr);
-  }
-#endif
 
   // Terminates the process with extreme prejudice. The given |exit_code| will
   // be the exit code of the process. If |wait| is true, this method will wait
@@ -150,20 +125,6 @@ class BASE_EXPORT Process {
   // NOTE: |exit_code| is only used on OS_WIN.
   bool Terminate(int exit_code, bool wait) const;
 
-#if BUILDFLAG(IS_WIN)
-  enum class WaitExitStatus {
-    PROCESS_EXITED,
-    STOP_EVENT_SIGNALED,
-    FAILED,
-  };
-
-  // Waits for the process to exit, or the specified |stop_event_handle| to be
-  // set. Returns value indicating which event was set. The given |exit_code|
-  // will be the exit code of the process.
-  WaitExitStatus WaitForExitOrEvent(
-      const base::win::ScopedHandle& stop_event_handle,
-      int* exit_code) const;
-#endif  // BUILDFLAG(IS_WIN)
 
   // Waits for the process to exit. Returns true on success.
   // On POSIX, if the process has been signaled then |exit_code| is set to -1.
@@ -235,43 +196,12 @@ class BASE_EXPORT Process {
   // of this value is OS dependent.
   int GetOSPriority() const;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Get the PID in its PID namespace.
-  // If the process is not in a PID namespace or /proc/<pid>/status does not
-  // report NSpid, kNullProcessId is returned.
-  ProcessId GetPidInNamespace() const;
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
   // Returns true if the process has any seccomp policy applied.
   bool IsSeccompSandboxed();
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Sets a delegate which handles process priority changes. This
-  // must be externally synchronized with any call to base::Process methods.
-  static void SetProcessPriorityDelegate(ProcessPriorityDelegate* delegate);
-
-  // Initializes the process's priority.
-  //
-  // This should be called before SetPriority().
-  //
-  // If SchedQoSOnResourcedForChrome is enabled, this creates a cache entry for
-  // the process priority. The returned `base::Process::PriorityEntry` should be
-  // freed when the process is terminated so that the cached entry is freed from
-  // the internal map.
-  //
-  // If OneGroupPerRenderer is enabled, it also creates a unique cgroup for the
-  // process.
-  // This is a no-op if the Process is not valid or if it has already been
-  // called.
-  void InitializePriority();
-
-  // Clears the entities initialized by InitializePriority().
-  //
-  // This is no-op if SchedQoSOnResourcedForChrome is disabled.
-  void ForgetPriority();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_APPLE)
   // Sets the priority of the current process to its default value.
@@ -308,13 +238,7 @@ class BASE_EXPORT Process {
                                   base::TimeDelta timeout) const;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  win::ScopedHandle process_;
-#elif BUILDFLAG(IS_FUCHSIA)
-  zx::process process_;
-#else
   ProcessHandle process_;
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_FUCHSIA)
   bool is_current_process_;
@@ -332,13 +256,6 @@ class BASE_EXPORT Process {
 BASE_EXPORT const char* ProcessPriorityToString(
     Process::Priority process_priority);
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Exposed for testing.
-// Given the contents of the /proc/<pid>/cgroup file, determine whether the
-// process is backgrounded or not.
-BASE_EXPORT Process::Priority GetProcessPriorityCGroup(
-    std::string_view cgroup_contents);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace base
 

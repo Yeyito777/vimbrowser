@@ -36,10 +36,6 @@ const char kVideosDir[] = "Videos";
 bool GetUserMediaDirectory(const std::string& xdg_name,
                            const std::string& fallback_name,
                            base::FilePath* result) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // No local media directories on CrOS.
-  return false;
-#else
   *result = GetXDGUserDirectory(xdg_name.c_str(), fallback_name.c_str());
 
   base::FilePath home;
@@ -55,7 +51,6 @@ bool GetUserMediaDirectory(const std::string& xdg_name,
 
   *result = home.Append(fallback_name);
   return true;
-#endif
 }
 
 }  // namespace

@@ -4,7 +4,7 @@
 
 import("//components/safe_browsing/buildflags.gni")
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 source_set("file_system_access") {
   sources = [
@@ -47,26 +47,24 @@ source_set("impl") {
   public_deps = [ "//chrome/browser:browser_public_dependencies" ]
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [
-      "file_system_access_permission_dialog_browsertest.cc",
-      "file_system_access_restricted_directory_dialog_browsertest.cc",
-    ]
-    deps = [
-      ":file_system_access",
-      "//base/test:test_support",
-      "//chrome/test:test_support",
-      "//components/permissions",
-      "//content/test:test_support",
-      "//url",
-    ]
+source_set("browser_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = [
+    "file_system_access_permission_dialog_browsertest.cc",
+    "file_system_access_restricted_directory_dialog_browsertest.cc",
+  ]
+  deps = [
+    ":file_system_access",
+    "//base/test:test_support",
+    "//chrome/test:test_support",
+    "//components/permissions",
+    "//content/test:test_support",
+    "//url",
+  ]
 
-    if (safe_browsing_mode != 0) {
-      sources += [ "file_system_access_dangerous_file_dialog_browsertest.cc" ]
-    }
+  if (safe_browsing_mode != 0) {
+    sources += [ "file_system_access_dangerous_file_dialog_browsertest.cc" ]
   }
 }
 

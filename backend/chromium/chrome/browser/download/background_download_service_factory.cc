@@ -45,13 +45,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/storage_partition.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/download/android/service/download_task_scheduler.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/plugin_vm/plugin_vm_image_download_client.h"
-#endif
 
 namespace {
 
@@ -60,12 +54,6 @@ std::unique_ptr<download::Client> CreateBackgroundFetchDownloadClient(
   return std::make_unique<background_fetch::DownloadClient>(profile);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::unique_ptr<download::Client> CreatePluginVmImageDownloadClient(
-    Profile* profile) {
-  return std::make_unique<plugin_vm::PluginVmImageDownloadClient>(profile);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 std::unique_ptr<download::Client>
 CreateOptimizationGuidePredictionModelDownloadClient(Profile* profile) {
@@ -170,14 +158,6 @@ BackgroundDownloadServiceFactory::BuildServiceInstanceFor(
       std::make_unique<download::DeferredClientWrapper>(
           base::BindOnce(&CreateBackgroundFetchDownloadClient), key)));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!key->IsOffTheRecord()) {
-    clients->insert(std::make_pair(
-        download::DownloadClient::PLUGIN_VM_IMAGE,
-        std::make_unique<download::DeferredClientWrapper>(
-            base::BindOnce(&CreatePluginVmImageDownloadClient), key)));
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   if (!key->IsOffTheRecord()) {
     clients->insert(std::make_pair(
@@ -211,17 +191,12 @@ BackgroundDownloadServiceFactory::BuildServiceInstanceFor(
             {base::MayBlock(), base::TaskPriority::BEST_EFFORT});
 
     std::unique_ptr<download::TaskScheduler> task_scheduler;
-#if BUILDFLAG(IS_ANDROID)
-    task_scheduler =
-        std::make_unique<download::android::DownloadTaskScheduler>();
-#else
     task_scheduler =
         std::make_unique<download::BasicTaskScheduler>(base::BindRepeating(
             [](SimpleFactoryKey* key) {
               return BackgroundDownloadServiceFactory::GetForKey(key);
             },
             key));
-#endif
     // Some tests doesn't initialize DownloadManager when profile is created,
     // and cause the download service to fail. Call
     // InitializeSimpleDownloadManager() to initialize the DownloadManager

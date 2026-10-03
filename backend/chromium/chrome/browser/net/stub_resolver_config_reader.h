@@ -105,12 +105,6 @@ class StubResolverConfigReader {
   // Returns true if there are parental controls detected on the device.
   virtual bool ShouldDisableDohForParentalControls();
 
-#if BUILDFLAG(IS_ANDROID)
-  // Updates the android owned state and network service if the device/prfile is
-  // owned.
-  void OnAndroidOwnedStateCheckComplete(bool has_profile_owner,
-                                        bool has_device_owner);
-#endif
 
   void OverrideParentalControlsForTesting(bool parental_controls_override) {
     parental_controls_testing_override_ = parental_controls_override;
@@ -122,16 +116,6 @@ class StubResolverConfigReader {
   void SetOverrideDnsOverHttpsConfigSource(
       std::unique_ptr<DnsOverHttpsConfigSource> doh_source);
 
-#if BUILDFLAG(IS_WIN)
-  // Set flag for testing Zero Trust DNS scenario
-  static void SetZTDNSEnabledForTesting(bool is_ztdns_enabled_for_testing) {
-    is_ztdns_enabled_for_testing_ = is_ztdns_enabled_for_testing;
-  }
-
-  static bool IsZTDNSEnabledForTesting() {
-    return is_ztdns_enabled_for_testing_;
-  }
-#endif
 
   static std::vector<net::IPEndPoint> GetFallbackDohNameservers();
 
@@ -176,16 +160,7 @@ class StubResolverConfigReader {
 
   PrefChangeRegistrar pref_change_registrar_;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Whether or not an Android device or profile is owned.
-  // A nullopt indicates this value has not been determined yet.
-  std::optional<bool> android_has_owner_ = std::nullopt;
-#endif
 
-#if BUILDFLAG(IS_WIN)
-  // Flag used for testing Zero Trust DNS scenario.
-  static bool is_ztdns_enabled_for_testing_;
-#endif
 
   base::WeakPtrFactory<StubResolverConfigReader> weak_factory_{this};
 };

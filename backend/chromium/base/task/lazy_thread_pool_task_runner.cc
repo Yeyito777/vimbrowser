@@ -56,13 +56,6 @@ LazyThreadPoolTaskRunner<SingleThreadTaskRunner, false>::Create() {
   return ThreadPool::CreateSingleThreadTaskRunner(traits_, thread_mode_);
 }
 
-#if BUILDFLAG(IS_WIN)
-template <>
-scoped_refptr<SingleThreadTaskRunner>
-LazyThreadPoolTaskRunner<SingleThreadTaskRunner, true>::Create() {
-  return ThreadPool::CreateCOMSTATaskRunner(traits_, thread_mode_);
-}
-#endif
 
 // static
 template <typename TaskRunnerType, bool com_sta>
@@ -102,9 +95,6 @@ LazyThreadPoolTaskRunner<TaskRunnerType, com_sta>::Get() {
 template class LazyThreadPoolTaskRunner<SequencedTaskRunner, false>;
 template class LazyThreadPoolTaskRunner<SingleThreadTaskRunner, false>;
 
-#if BUILDFLAG(IS_WIN)
-template class LazyThreadPoolTaskRunner<SingleThreadTaskRunner, true>;
-#endif
 
 ScopedLazyTaskRunnerListForTesting::ScopedLazyTaskRunnerListForTesting() {
   DCHECK(!g_scoped_lazy_task_runner_list_for_testing);

@@ -14,9 +14,7 @@
 #include "components/prefs/pref_value_map.h"
 #include "components/strings/grit/components_strings.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "components/enterprise/browser/controller/browser_dm_token_storage.h"
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 namespace enterprise_reporting {
 
@@ -33,13 +31,11 @@ bool CloudReportingPolicyHandler::CheckPolicySettings(
     return true;
   if (!TypeCheckingPolicyHandler::CheckPolicySettings(policies, errors))
     return false;
-#if !BUILDFLAG(IS_CHROMEOS)
   // We don't return false here because machine enrollment status change may
   // not trigger this PolicyHandler later.
   if (!policy::BrowserDMTokenStorage::Get()->RetrieveDMToken().is_valid())
     errors->AddError(policy_name(),
                      IDS_POLICY_CLOUD_MANAGEMENT_ENROLLMENT_ONLY_ERROR);
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   return true;
 }
 

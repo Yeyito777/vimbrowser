@@ -209,13 +209,6 @@ bool CanUseGpuMemoryBufferReadback(media::VideoPixelFormat format,
     DVLOG(1) << "YUV readback not supported.";
     return false;
   }
-#if BUILDFLAG(IS_WIN)
-  // CopyToGpuMemoryBuffer is only supported for D3D shared images on Windows.
-  if (!sii->GetCapabilities().shared_image_d3d) {
-    DVLOG(1) << "CopyToGpuMemoryBuffer not supported.";
-    return false;
-  }
-#endif  // BUILDFLAG(IS_WIN)
   return WebGraphicsContext3DVideoFramePool::
       IsGpuMemoryBufferReadbackFromTextureEnabled();
 }
@@ -284,21 +277,6 @@ WebRtcVideoFrameAdapter::SharedResources::ConstructVideoFrameFromTexture(
         auto* ri = raster_context_provider->RasterInterface();
         DCHECK(ri);
 
-#if BUILDFLAG(IS_WIN)
-        // For shared memory GMBs on Windows we needed to explicitly request a
-        // copy from the shared image GPU texture to the GMB.
-        CHECK(dst_frame->HasMappableSharedImage());
-        CHECK(!dst_frame->HasNativeMappableSharedImage());
-
-        auto* sii = raster_context_provider->SharedImageInterface();
-
-        const auto& mailbox = dst_frame->shared_image()->mailbox();
-        sii->CopyToGpuMemoryBuffer(*blit_done_sync_token, mailbox);
-
-        // Synchronize RasterInterface with SharedImageInterface.
-        auto copy_to_gmb_done_sync_token = sii->GenUnverifiedSyncToken();
-        ri->WaitSyncTokenCHROMIUM(copy_to_gmb_done_sync_token.GetData());
-#endif  // BUILDFLAG(IS_WIN)
 
         // RI::Finish() makes sure that CopyRGBATextureToVideoFrame() finished
         // texture copy before we call ConstructVideoFrameFromGpu(). It's not

@@ -7,7 +7,7 @@ import("//build/config/ui.gni")
 # Unhandled Tap enable means Contextual Search aka Touch to Search.
 # TODO(donnd): remove all unhandled-tap handling after the Long-press experiment
 #              is fully launched.
-enable_unhandled_tap = is_android
+enable_unhandled_tap = false
 
 # Use Minikin hyphenation engine.
 use_minikin_hyphenation = !is_apple

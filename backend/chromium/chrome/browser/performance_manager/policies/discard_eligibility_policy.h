@@ -35,14 +35,8 @@ inline constexpr base::TimeDelta kNonVisiblePagesUrgentProtectionTime =
     base::Minutes(10);
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-// TODO(crbug.com/412839833): kTabAudioProtectionTime may be needed on Android
-// as well.
-inline constexpr base::TimeDelta kTabAudioProtectionTime = base::TimeDelta();
-#else
 // Time during which a tab cannot be discarded after having played audio.
 inline constexpr base::TimeDelta kTabAudioProtectionTime = base::Minutes(1);
-#endif
 
 // LINT.IfChange(CanDiscardResult)
 // Whether a page can be discarded. These values are persisted to logs. Entries

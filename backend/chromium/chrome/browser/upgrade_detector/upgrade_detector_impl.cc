@@ -42,9 +42,6 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/installer/util/google_update_settings.h"
-#endif
 
 namespace {
 
@@ -239,15 +236,6 @@ void UpgradeDetectorImpl::StartOutdatedBuildDetector() {
     if (!ShouldDetectOutdatedBuilds())
       return;
 
-#if BUILDFLAG(IS_WIN)
-    // Only check to if autoupdates are enabled if the user has not already been
-    // asked about re-enabling them.
-    if (!g_browser_process->local_state() ||
-        !g_browser_process->local_state()->GetBoolean(
-            prefs::kAttemptedToEnableAutoupdate)) {
-      is_auto_update_enabled_ = GoogleUpdateSettings::AreAutoupdatesEnabled();
-    }
-#endif
   }
 
   DetectOutdatedInstall();

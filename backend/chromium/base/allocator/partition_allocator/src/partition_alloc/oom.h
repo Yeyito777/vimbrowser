@@ -12,9 +12,6 @@
 #include "partition_alloc/partition_alloc_base/compiler_specific.h"
 #include "partition_alloc/partition_alloc_base/component_export.h"
 
-#if PA_BUILDFLAG(IS_WIN)
-#include "partition_alloc/partition_alloc_base/win/windows_types.h"
-#endif
 
 namespace partition_alloc {
 
@@ -30,19 +27,6 @@ namespace partition_alloc {
 // TODO: this can be removed when Breakpad is no longer supported.
 PA_COMPONENT_EXPORT(PARTITION_ALLOC) extern size_t g_oom_size;
 
-#if PA_BUILDFLAG(IS_WIN)
-namespace win {
-
-// Custom Windows exception code chosen to indicate an out of memory error.
-// See https://msdn.microsoft.com/en-us/library/het71c37.aspx.
-// "To make sure that you do not define a code that conflicts with an existing
-// exception code" ... "The resulting error code should therefore have the
-// highest four bits set to hexadecimal E."
-// 0xe0000008 was chosen arbitrarily, as 0x00000008 is ERROR_NOT_ENOUGH_MEMORY.
-const DWORD kOomExceptionCode = 0xe0000008;
-
-}  // namespace win
-#endif
 
 namespace internal {
 
@@ -52,7 +36,6 @@ namespace internal {
 [[noreturn]] PA_NOT_TAIL_CALLED PA_COMPONENT_EXPORT(
     PARTITION_ALLOC) void OnNoMemory(size_t size);
 
-#if PA_BUILDFLAG(IS_POSIX)
 // See above for annotations.
 //
 // THis is used to identify cases where the kernel return ENOMEM for memory
@@ -60,7 +43,6 @@ namespace internal {
 // Linux that the current process has exceeded the per-process VMA limit.
 [[noreturn]] PA_NOT_TAIL_CALLED PA_COMPONENT_EXPORT(
     PARTITION_ALLOC) void OnErrnoNoMem();
-#endif
 
 // OOM_CRASH(size) - Specialization of IMMEDIATE_CRASH which will raise a custom
 // exception on Windows to signal this is OOM and not a normal assert.

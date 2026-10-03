@@ -154,11 +154,7 @@ static_assert(sizeof(void*) == 8);
 // Lazy commit should only be enabled on Windows, because commit charge is
 // only meaningful and limited on Windows. It affects performance on other
 // platforms and is simply not needed there due to OS supporting overcommit.
-#if PA_BUILDFLAG(IS_WIN)
-constexpr bool kUseLazyCommit = true;
-#else
 constexpr bool kUseLazyCommit = false;
-#endif
 
 // See the comment in PartitionBucket::SlotSpanCommittedSize(). This should not
 // be enabled on Windows (because it increases committed memory, which is a

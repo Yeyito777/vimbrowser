@@ -368,15 +368,10 @@ LocationProviderManager::NewNetworkLocationProvider(
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
     const std::string& api_key) {
   DCHECK(url_loader_factory);
-#if BUILDFLAG(IS_ANDROID)
-  // Android uses its own SystemLocationProvider.
-  return nullptr;
-#else
   return std::make_unique<NetworkLocationProvider>(
       std::move(url_loader_factory), api_key, position_cache_.get(),
       internals_updated_closure_, network_request_callback_,
       network_response_callback_);
-#endif
 }
 
 std::unique_ptr<LocationProvider>

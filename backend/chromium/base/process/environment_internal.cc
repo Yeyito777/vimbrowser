@@ -15,9 +15,6 @@
 #include <string.h>
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/check_op.h"
-#endif
 
 namespace base::internal {
 
@@ -97,43 +94,6 @@ base::HeapArray<char*> AlterEnvironment(const char* const* const env,
   }
   result[result_indices.size()] = 0;  // Null terminator.
 
-  return result;
-}
-
-#elif BUILDFLAG(IS_WIN)
-
-NativeEnvironmentString AlterEnvironment(const wchar_t* env,
-                                         const EnvironmentMap& changes) {
-  NativeEnvironmentString result;
-
-  // First build up all of the unchanged environment strings.
-  const wchar_t* ptr = env;
-  while (*ptr) {
-    std::wstring key;
-    size_t line_length = ParseEnvLine(ptr, &key);
-
-    // Keep only values not specified in the change vector.
-    if (changes.find(key) == changes.end()) {
-      result.append(ptr, line_length);
-    }
-    UNSAFE_TODO(ptr += line_length);
-  }
-
-  // Now append all modified and new values.
-  for (const auto& i : changes) {
-    // Windows environment blocks cannot handle keys or values with NULs.
-    CHECK_EQ(std::wstring::npos, i.first.find(L'\0'));
-    CHECK_EQ(std::wstring::npos, i.second.find(L'\0'));
-    if (!i.second.empty()) {
-      result += i.first;
-      result.push_back('=');
-      result += i.second;
-      result.push_back('\0');
-    }
-  }
-
-  // Add the terminating NUL.
-  result.push_back('\0');
   return result;
 }
 

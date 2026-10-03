@@ -16,9 +16,6 @@
 #include "base/memory/raw_ptr_exclusion.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#endif
 
 namespace base {
 
@@ -53,13 +50,6 @@ class BASE_EXPORT MemoryMappedFile {
     // in the process address space.
     READ_WRITE_EXTEND,
 
-#if BUILDFLAG(IS_WIN)
-    // This provides read access, but as executable code used for prefetching
-    // DLLs into RAM to avoid inefficient hard fault patterns such as during
-    // process startup. The accessing thread could be paused while data from
-    // the file is read into memory (if needed).
-    READ_CODE_IMAGE,
-#endif
   };
 
   // The default constructor sets all members to invalid/null values.
@@ -133,11 +123,6 @@ class BASE_EXPORT MemoryMappedFile {
                                            size_t* aligned_size,
                                            int32_t* offset);
 
-#if BUILDFLAG(IS_WIN)
-  // Maps the executable file to memory, point `bytes_` to the memory range.
-  // Return true on success.
-  bool MapImageToMemory(Access access);
-#endif
 
   // Map the file to memory, point `bytes_` to that memory address. Return true
   // on success, false on any kind of failure. This is a helper for
@@ -153,9 +138,6 @@ class BASE_EXPORT MemoryMappedFile {
   // there is no benefit to using a raw_span, only cost.
   RAW_PTR_EXCLUSION span<uint8_t> bytes_;
 
-#if BUILDFLAG(IS_WIN)
-  win::ScopedHandle file_mapping_;
-#endif
 };
 
 }  // namespace base

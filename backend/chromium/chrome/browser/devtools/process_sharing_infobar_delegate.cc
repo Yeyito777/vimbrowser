@@ -4,6 +4,7 @@
 
 #include "chrome/browser/devtools/process_sharing_infobar_delegate.h"
 
+#include "base/task/single_thread_task_runner.h"
 #include "chrome/browser/about_flags.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/devtools/devtools_window.h"
@@ -96,13 +97,7 @@ bool ProcessSharingInfobarDelegate::Accept() {
       views::DISTANCE_MODAL_DIALOG_PREFERRED_WIDTH));
   delegate->SetAcceptCallback(base::BindOnce(
       [](base::WeakPtr<content::WebContents> inspected_web_contents) {
-#if BUILDFLAG(IS_CHROMEOS)
-        PrefService* prefs = Profile::FromBrowserContext(
-                                 inspected_web_contents->GetBrowserContext())
-                                 ->GetPrefs();
-#else
         PrefService* prefs = g_browser_process->local_state();
-#endif
         //  Note: Both ChromeOS owner and non-owner use PrefServiceFlagsStorage
         //  under the hood. OwnersFlagsStorage has additional functionalities
         //  for setting flags but since we are just reading the storage assume

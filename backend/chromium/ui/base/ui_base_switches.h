@@ -12,22 +12,6 @@
 
 namespace switches {
 
-#if BUILDFLAG(IS_ANDROID)
-// Disable overscroll edge effects like those found in Android views.
-inline constexpr char kDisableOverscrollEdgeEffect[] =
-    "disable-overscroll-edge-effect";
-
-// Disable the pull-to-refresh effect when vertically overscrolling content.
-inline constexpr char kDisablePullToRefreshEffect[] =
-    "disable-pull-to-refresh-effect";
-
-// Enables drawing debug layers for edge-to-edge components to highlight the
-// system insets those components are drawing into.
-// LINT.IfChange(EnableEdgeToEdgeDebugLayers)
-inline constexpr char kEnableEdgeToEdgeDebugLayers[] =
-    "enable-edge-to-edge-debug-layers";
-// LINT.ThenChange(//ui/android/java/src/org/chromium/ui/UiSwitches.java:EnableEdgeToEdgeDebugLayers)
-#endif
 
 #if BUILDFLAG(IS_MAC)
 // Disable animations for showing and hiding modal dialogs.

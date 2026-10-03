@@ -19,9 +19,7 @@ namespace segmentation_platform::home_modules {
 namespace {
 
 std::vector<std::string> GetFixedModuleList() {
-#if BUILDFLAG(IS_IOS)
-  return {};
-#elif BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_ANDROID)
   return {kPriceChange, kSingleTab, kSafetyHub, kAuxiliarySearch};
 #else
   return {
@@ -30,15 +28,9 @@ std::vector<std::string> GetFixedModuleList() {
 #endif
 }
 
-#if BUILDFLAG(IS_IOS)
-constexpr auto* kModuleFeatureFlag =
-    &features::kSegmentationPlatformIosModuleRanker;
-const char* kModuleRankerKey = kIosModuleRankerKey;
-#else
 constexpr auto* kModuleFeatureFlag =
     &features::kSegmentationPlatformAndroidHomeModuleRanker;
 const char* kModuleRankerKey = kAndroidHomeModuleRankerKey;
-#endif
 
 void RunFixedRankingResult(ClassificationResultCallback callback) {
   ClassificationResult result(PredictionStatus::kSucceeded);

@@ -234,11 +234,7 @@ template("pdfium_fuzzer") {
     configs += [ ":fuzzer_config" ]
     if (is_component_build) {
       # |export| should be consistent with FPDF_EXPORT In public/fpdfview.h.
-      if (is_win) {
-        export = "__declspec(dllexport)"
-      } else {
-        export = "__attribute__((visibility(\"default\")))"
-      }
+      export = "__attribute__((visibility(\"default\")))"
       defines += [ "LLVMFuzzerTestOneInput=${export} ${template_target_name}" ]
       deps += [ "../../:pdfium_public_headers" ]
     } else {

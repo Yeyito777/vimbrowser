@@ -51,9 +51,7 @@ class BASE_EXPORT Environment {
   virtual bool UnSetVar(cstring_view variable_name) = 0;
 };
 
-#if BUILDFLAG(IS_WIN)
-using NativeEnvironmentString = std::wstring;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 using NativeEnvironmentString = std::string;
 #endif
 using EnvironmentMap =

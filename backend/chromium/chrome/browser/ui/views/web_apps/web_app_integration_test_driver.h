@@ -38,9 +38,7 @@
 #include "ui/views/widget/any_widget_observer.h"
 #include "url/gurl.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/ui/webui/app_home/app_home_page_handler.h"
-#endif
 
 class Browser;
 class IconLabelBubbleView;
@@ -286,9 +284,6 @@ class WebAppIntegrationTestDriver {
   void EnableFileHandling(Site site);
   void DisableWindowControlsOverlay(Site site);
   void EnableWindowControlsOverlay(Site site);
-#if BUILDFLAG(IS_CHROMEOS)
-  void CreateShortcut(Site site, WindowOptions window_options);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   void InstallMenuOption(Site site);
   void InstallLocally(Site site);
   void InstallOmniboxIcon(InstallableSite site);
@@ -525,10 +520,8 @@ class WebAppIntegrationTestDriver {
 
   const net::EmbeddedTestServer& GetTestServerForSiteMode(Site site_mode) const;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   webapps::AppHomePageHandler GetTestAppHomePageHandler(
       content::TestWebUI* web_ui);
-#endif
 
   base::ScopedTempDir scoped_temp_dir_;
 

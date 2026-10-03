@@ -277,15 +277,9 @@ void UpdateClientImpl::CleanupStaleDownloads(base::Time older_than,
       base::BindOnce(
           [](const base::FilePath::StringType& prod_id, base::Time older_than) {
             base::FilePath temp_dir;
-#if BUILDFLAG(IS_WIN)
-            if (!base::GetSecureTempDirectory(&temp_dir)) {
-              return;
-            }
-#else   // BUILDFLAG(IS_WIN)
             if (!base::GetTempDir(&temp_dir)) {
               return;
             }
-#endif  // BUILDFLAG(IS_WIN)
 
             CleanupDirectoriesOlderThan(
                 temp_dir,

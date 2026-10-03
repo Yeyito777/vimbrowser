@@ -73,9 +73,6 @@
 #include "third_party/perfetto/include/perfetto/tracing/traced_proto.h"
 #include "third_party/sqlite/sqlite3.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/utf_string_conversions.h"
-#endif
 
 namespace sql {
 
@@ -228,9 +225,7 @@ bool ValidAttachmentPoint(std::string_view attachment_point) {
 }
 
 std::string AsUTF8ForSQL(const base::FilePath& path) {
-#if BUILDFLAG(IS_WIN)
-  return base::WideToUTF8(path.value());
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   return path.value();
 #endif
 }
@@ -807,9 +802,7 @@ base::FilePath Database::DbPath() const {
     return base::FilePath();
   }
   const std::string_view db_path(path);
-#if BUILDFLAG(IS_WIN)
-  return base::FilePath(base::UTF8ToWide(db_path));
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   return base::FilePath(db_path);
 #else
   NOTREACHED();
@@ -851,13 +844,7 @@ std::string Database::CollectErrorInfo(int sqlite_error_code,
 
 // System error information.  Interpretation of Windows errors is different
 // from posix.
-#if BUILDFLAG(IS_WIN)
-  int last_errno = GetLastErrno();
-  base::StringAppendF(&debug_info, "LastError: %d\n", last_errno);
-  if (diagnostics) {
-    diagnostics->last_errno = last_errno;
-  }
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   int last_errno = GetLastErrno();
   base::StringAppendF(&debug_info, "errno: %d\n", last_errno);
   if (diagnostics) {
@@ -1118,19 +1105,6 @@ bool Database::RazeInternal() {
     return false;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // Android compiles with SQLITE_DEFAULT_AUTOVACUUM.  Unfortunately,
-  // in-memory databases do not respect this define.
-  // TODO(shess): Figure out a way to set this without using platform
-  // specific code.  AFAICT from sqlite3.c, the only way to do it
-  // would be to create an actual filesystem database, which is
-  // unfortunate.
-  if (!null_db.Execute("PRAGMA auto_vacuum = 1")) {
-    RecordRazeDatabaseFailureReason(
-        histogram_tag_, RazeDatabaseFailedReason::kAutoVacuumFailed);
-    return false;
-  }
-#endif
 
   // The page size doesn't take effect until a database has pages, and
   // at this point the null database has none.  Changing the schema
@@ -1156,14 +1130,6 @@ bool Database::RazeInternal() {
   // page_size" can be used to query such a database.
   ScopedWritableSchema writable_schema(weak_factory_.GetWeakPtr());
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, truncate silently fails when applied to memory-mapped files.
-  // Disable memory-mapping so that the truncate succeeds.  Note that other
-  // Database connections may have memory-mapped the file, so this may not
-  // entirely prevent the problem.
-  // [Source: <https://sqlite.org/mmap.html> plus experiments.]
-  std::ignore = Execute("PRAGMA mmap_size = 0");
-#endif
 
   SqliteResultCode sqlite_result_code = BackupDatabaseForRaze(null_db.db_, db_);
 
@@ -1483,11 +1449,7 @@ bool Database::AttachDatabase(const base::FilePath& other_db_path,
   DCHECK(ValidAttachmentPoint(attachment_point));
 
   Statement statement(GetUniqueStatement("ATTACH ? AS ?"));
-#if BUILDFLAG(IS_WIN)
-  statement.BindString16(0, base::AsStringPiece16(other_db_path.value()));
-#else
   statement.BindString(0, other_db_path.value());
-#endif
   statement.BindString(1, attachment_point);
   return statement.Run();
 }
@@ -2098,23 +2060,8 @@ bool Database::OpenInternal(const std::string& db_file_path) {
 
   std::string uri_file_path = db_file_path;
   if (options_.exclusive_database_file_lock_) {
-#if BUILDFLAG(IS_WIN)
-    const bool in_memory = db_file_path == kSqliteOpenInMemoryPath;
-    if (!in_memory) {
-      // Do not allow query injection.
-      if (db_file_path.contains('?')) {
-        RecordOpenDatabaseFailureReason(
-            histogram_tag_, OpenDatabaseFailedReason::kIncorrectPath);
-        return false;
-      }
-      open_flags |= SQLITE_OPEN_URI;
-      uri_file_path = base::StrCat(
-          {"file:", base::EscapePath(db_file_path), "?exclusive=true"});
-    }
-#else
     NOTREACHED()
         << "exclusive_database_file_lock is only supported on Windows.";
-#endif  // BUILDFLAG(IS_WIN)
   }
 
   sqlite3* db = nullptr;
@@ -2684,15 +2631,7 @@ bool Database::ReportMemoryUsage(base::trace_event::ProcessMemoryDump* pmd,
 }
 
 bool Database::UseWALMode() const {
-#if BUILDFLAG(IS_FUCHSIA)
-  // WAL mode is only enabled on Fuchsia for databases with exclusive
-  // locking, because this case does not require shared memory support.
-  // At the time this was implemented (May 2020), Fuchsia's shared
-  // memory support was insufficient for SQLite's needs.
-  return options_.wal_mode_ && options_.exclusive_locking_;
-#else
   return options_.wal_mode_;
-#endif  // BUILDFLAG(IS_FUCHSIA)
 }
 
 bool Database::CheckpointDatabase(bool truncate) {

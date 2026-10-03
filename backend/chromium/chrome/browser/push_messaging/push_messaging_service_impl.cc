@@ -81,21 +81,7 @@
 #include "components/keep_alive_registry/scoped_keep_alive.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_android.h"
-#include "base/android/jni_string.h"
-#include "chrome/android/chrome_jni_headers/PushMessagingServiceBridge_jni.h"
-#include "chrome/android/chrome_jni_headers/PushMessagingServiceObserver_jni.h"
-#include "chrome/browser/android/shortcut_helper.h"
-#include "chrome/browser/notifications/notification_platform_bridge.h"
-#include "chrome/browser/profiles/profile_manager.h"
-#include "components/permissions/android/android_permission_util.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-using base::android::ConvertJavaStringToUTF8;
-using base::android::JavaRef;
-#endif
 
 using instance_id::InstanceID;
 
@@ -129,15 +115,6 @@ const char kSenderIdRegistrationDeprecatedMessage[] =
     "will be supported in the future. For more information check "
     "https://crbug.com/41468162.";
 
-#if BUILDFLAG(IS_ANDROID)
-// The serialized base::Time used for Notifications permission revocation grace
-// period checks. This is usually the time at which the first push message was
-// received without app-level Notifications permission. An empty
-// (default-constructed) base::Time if there is no known time without app-level
-// Notifications permission.
-const char kNotificationsPermissionRevocationGracePeriodDate[] =
-    "notifications_permission_revocation_grace_period";
-#endif
 
 void RecordDeliveryStatus(blink::mojom::PushEventStatus status) {
   UMA_HISTOGRAM_ENUMERATION("PushMessaging.DeliveryStatus", status);
@@ -702,10 +679,6 @@ void PushMessagingServiceImpl::DidHandleMessage(
   if (message_callback_for_testing_)
     message_callback_for_testing_.Run();
 
-#if BUILDFLAG(IS_ANDROID)
-  chrome::android::Java_PushMessagingServiceObserver_onMessageHandled(
-      base::android::AttachCurrentThread());
-#endif
 
   push_messaging::AppIdentifier app_identifier =
       PushMessagingAppIdentifier::FindByAppId(profile_, app_id);
@@ -928,71 +901,6 @@ blink::mojom::PermissionStatus PushMessagingServiceImpl::GetPermissionStatus(
   }
 }
 
-#if BUILDFLAG(IS_ANDROID)
-// static
-void PushMessagingServiceImpl::RegisterPrefs(PrefRegistrySimple* registry) {
-  registry->RegisterTimePref(kNotificationsPermissionRevocationGracePeriodDate,
-                             base::Time());
-}
-
-static void
-JNI_PushMessagingServiceBridge_VerifyAndRevokeNotificationsPermission(
-    JNIEnv* env,
-    const std::string& origin,
-    const std::string& profile_id,
-    bool app_level_notifications_enabled) {
-  ProfileManager* profile_manager = g_browser_process->profile_manager();
-  DCHECK(profile_manager);
-
-  profile_manager->LoadProfile(
-      NotificationPlatformBridge::GetProfileBaseNameFromProfileId(profile_id),
-      /*incognito=*/false,
-      base::BindOnce(&PushMessagingServiceImpl::RevokePermissionIfPossible,
-                     GURL(origin), app_level_notifications_enabled,
-                     g_browser_process->local_state()));
-}
-
-void PushMessagingServiceImpl::RevokePermissionIfPossible(
-    GURL origin,
-    bool app_level_notifications_enabled,
-    PrefService* prefs,
-    Profile* profile) {
-  if (app_level_notifications_enabled) {
-    // Chrome has app-level Notifications permission. Reset the grace period
-    // flag and continue as normal.
-    prefs->ClearPref(kNotificationsPermissionRevocationGracePeriodDate);
-    return;
-  }
-
-  if (prefs->GetTime(kNotificationsPermissionRevocationGracePeriodDate) ==
-      base::Time()) {
-    prefs->SetTime(kNotificationsPermissionRevocationGracePeriodDate,
-                   base::Time::Now());
-    return;
-  }
-
-  base::TimeDelta permission_revocation_activated_duration =
-      base::Time::Now() -
-      prefs->GetTime(kNotificationsPermissionRevocationGracePeriodDate);
-
-  // The grace period that will be applied before site-level Notifications
-  // permissions will be revoked and FCM unsubscribed.
-  constexpr int kNotificationsRevocationGracePeriodInDays = 3;
-
-  if (permission_revocation_activated_duration.InDays() >=
-      kNotificationsRevocationGracePeriodInDays) {
-    content::PermissionController* permission_controller =
-        profile->GetPermissionController();
-
-    // As soon as permission is reset,
-    // `PushMessagingServiceImpl::OnContentSettingChanged` is notified and it
-    // revokes a push message registration token.
-    permission_controller->ResetPermission(blink::PermissionType::NOTIFICATIONS,
-                                           url::Origin::Create(origin));
-  }
-}
-
-#endif
 
 bool PushMessagingServiceImpl::SupportNonVisibleMessages() {
   return false;
@@ -1358,20 +1266,7 @@ void PushMessagingServiceImpl::DidClearPushSubscriptionId(
     auto unregister_callback =
         base::BindOnce(&PushMessagingServiceImpl::DidUnregister,
                        weak_factory_.GetWeakPtr(), was_subscribed);
-#if BUILDFLAG(IS_ANDROID)
-    // On Android the backend is different, and requires the original sender_id.
-    // DidGetSenderIdUnexpectedUnsubscribe and
-    // DidDeleteServiceWorkerRegistration sometimes call us with an empty one.
-    if (sender_id.empty()) {
-      std::move(unregister_callback).Run(gcm::GCMClient::INVALID_PARAMETER);
-    } else {
-      GetGCMDriver()->UnregisterWithSenderId(
-          app_id, push_messaging::NormalizeSenderInfo(sender_id),
-          std::move(unregister_callback));
-    }
-#else
     GetGCMDriver()->Unregister(app_id, std::move(unregister_callback));
-#endif
   }
 }
 
@@ -1572,10 +1467,6 @@ void PushMessagingServiceImpl::UnexpectedUnsubscribe(
   // GetPushSubscriptionFromAppIdentifier callback and do not get the info from
   // IO twice
   bool need_sender_id = false;
-#if BUILDFLAG(IS_ANDROID)
-  need_sender_id =
-      !push_messaging::AppIdentifier::UseInstanceID(app_identifier.app_id());
-#endif
     if (need_sender_id) {
       GetSenderId(
           profile_, app_identifier.origin(),
@@ -1943,8 +1834,3 @@ PushMessagingServiceImpl::GetDevToolsContext(const GURL& origin) const {
 
   return devtools_context;
 }
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(PushMessagingServiceBridge)
-DEFINE_JNI(PushMessagingServiceObserver)
-#endif

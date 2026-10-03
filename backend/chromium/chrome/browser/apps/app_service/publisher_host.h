@@ -12,17 +12,6 @@ class PublisherHost {
  public:
   virtual ~PublisherHost() = default;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Called when ArcApps is registered to AppServiceProxy.
-  virtual void SetArcIsRegistered() = 0;
-
-  // Shuts down the publishers.
-  virtual void Shutdown() = 0;
-
-  // Testing methods.
-  virtual void ReInitializeCrostiniForTesting() = 0;
-  virtual void RegisterPublishersForTesting() = 0;
-#endif
 };
 
 }  // namespace apps

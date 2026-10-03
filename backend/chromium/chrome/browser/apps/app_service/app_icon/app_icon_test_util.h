@@ -13,12 +13,6 @@
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkColor.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/apps/app_service/app_service_proxy.h"
-#include "chrome/browser/apps/app_service/publishers/app_publisher.h"
-#include "components/services/app_service/public/cpp/app_launch_util.h"
-#include "components/services/app_service/public/cpp/icon_loader.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace gfx {
 class ImageSkia;
@@ -40,53 +34,6 @@ void VerifyCompressedIcon(const std::vector<uint8_t>& src_data,
 
 gfx::ImageSkia CreateSquareIconImageSkia(int size_dp, SkColor solid_color);
 
-#if BUILDFLAG(IS_CHROMEOS)
-struct AppLaunchParams;
-
-class FakeIconLoader : public apps::IconLoader {
- public:
-  explicit FakeIconLoader(apps::AppServiceProxy* proxy);
-
- private:
-  std::unique_ptr<apps::IconLoader::Releaser> LoadIconFromIconKey(
-      const std::string& id,
-      const apps::IconKey& icon_key,
-      apps::IconType icon_type,
-      int32_t size_in_dip,
-      bool allow_placeholder_icon,
-      apps::LoadIconCallback callback) override;
-
-  raw_ptr<apps::AppServiceProxy> proxy_ = nullptr;
-};
-
-class FakePublisherForIconTest : public apps::AppPublisher {
- public:
-  FakePublisherForIconTest(apps::AppServiceProxy* proxy,
-                           apps::AppType app_type);
-
-  ~FakePublisherForIconTest() override = default;
-
-  void Launch(const std::string& app_id,
-              int32_t event_flags,
-              apps::LaunchSource launch_source,
-              apps::WindowInfoPtr window_info) override {}
-
-  void LaunchAppWithParams(apps::AppLaunchParams&& params,
-                           apps::LaunchCallback callback) override {}
-
-  void LoadIcon(const std::string& app_id,
-                const apps::IconKey& icon_key,
-                apps::IconType icon_type,
-                int32_t size_hint_in_dip,
-                bool allow_placeholder_icon,
-                apps::LoadIconCallback callback) override {}
-
-  void GetCompressedIconData(const std::string& app_id,
-                             int32_t size_in_dip,
-                             ui::ResourceScaleFactor scale_factor,
-                             apps::LoadIconCallback callback) override;
-};
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace apps
 

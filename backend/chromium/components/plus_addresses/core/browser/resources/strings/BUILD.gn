@@ -6,10 +6,6 @@ import("//build/config/chrome_build.gni")
 import("//build/config/locales.gni")
 import("//tools/grit/grit_rule.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 grit_strings("strings") {
   if (is_internal_chrome_branded) {
     source = "../internal/strings/plus_addresses_internal_strings.grd"
@@ -19,15 +15,5 @@ grit_strings("strings") {
 
   outputs = [ "../../grit/plus_addresses_strings.h" ]
 
-  if (is_android) {
-    create_android_resources = true
-  }
-
   output_prefix = "plus_addresses_strings_"
-}
-
-if (is_android) {
-  java_strings_grd_prebuilt("strings_grd") {
-    generating_target = ":strings"
-  }
 }

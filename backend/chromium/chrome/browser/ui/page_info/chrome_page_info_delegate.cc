@@ -51,10 +51,6 @@
 #include "ui/base/window_open_disposition_utils.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/grit/branded_strings.h"
-#include "ui/base/l10n/l10n_util.h"
-#else
 #include "chrome/browser/certificate_viewer.h"
 #include "chrome/browser/hid/hid_chooser_context.h"
 #include "chrome/browser/hid/hid_chooser_context_factory.h"
@@ -75,16 +71,7 @@
 #include "chrome/browser/web_applications/web_app_tab_helper.h"
 #include "components/webapps/common/web_app_id.h"
 #include "ui/events/event.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "chrome/browser/ash/floating_sso/floating_sso_service.h"
-#include "chrome/browser/ash/floating_sso/floating_sso_service_factory.h"
-#include "chrome/browser/smart_card/smart_card_permission_context.h"
-#include "chrome/browser/smart_card/smart_card_permission_context_factory.h"
-#include "chrome/browser/ui/webui/ash/settings/app_management/app_management_uma.h"
-#endif
 
 namespace {
 
@@ -102,10 +89,8 @@ constexpr UrlIdentity::FormatOptions kUrlIdentityOptions{
 ChromePageInfoDelegate::ChromePageInfoDelegate(
     content::WebContents* web_contents)
     : web_contents_(web_contents) {
-#if !BUILDFLAG(IS_ANDROID)
   sentiment_service_ =
       TrustSafetySentimentServiceFactory::GetForProfile(GetProfile());
-#endif
   base::UmaHistogramBoolean("Security.PageInfo.AboutThisSiteLanguageSupported",
                             page_info::IsAboutThisSiteFeatureEnabled(
                                 g_browser_process->GetApplicationLocale()));
@@ -127,23 +112,10 @@ ChromePageInfoDelegate::GetChooserContext(ContentSettingsType type) {
       }
       return nullptr;
     case ContentSettingsType::SERIAL_CHOOSER_DATA:
-#if !BUILDFLAG(IS_ANDROID)
       return SerialChooserContextFactory::GetForProfile(GetProfile());
-#else
-      NOTREACHED();
-#endif
     case ContentSettingsType::HID_CHOOSER_DATA:
-#if !BUILDFLAG(IS_ANDROID)
       return HidChooserContextFactory::GetForProfile(GetProfile());
-#else
-      NOTREACHED();
-#endif
     case ContentSettingsType::SMART_CARD_DATA:
-#if BUILDFLAG(IS_CHROMEOS)
-      if (base::FeatureList::IsEnabled(blink::features::kSmartCard)) {
-        return &SmartCardPermissionContextFactory::GetForProfile(*GetProfile());
-      }
-#endif
       return nullptr;
     default:
       NOTREACHED();
@@ -206,7 +178,6 @@ content::PermissionResult ChromePageInfoDelegate::GetPermissionResult(
   }
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void ChromePageInfoDelegate::FocusWebContents() {
   Browser* browser = chrome::FindBrowserWithTab(web_contents_);
   browser->ActivateContents(web_contents_);
@@ -382,7 +353,6 @@ void ChromePageInfoDelegate::OnUIClosing() {
     sentiment_service_->PageInfoClosed();
   }
 }
-#endif
 
 std::u16string ChromePageInfoDelegate::GetSubjectName(const GURL& url) {
   CHECK(web_contents_);
@@ -421,11 +391,6 @@ bool ChromePageInfoDelegate::IsSubresourceFilterActivated(
 }
 
 bool ChromePageInfoDelegate::HasAutoPictureInPictureBeenRegistered() {
-#if BUILDFLAG(IS_ANDROID)
-  if (!base::FeatureList::IsEnabled(media::kAutoPictureInPictureAndroid)) {
-    return false;
-  }
-#endif
   auto* auto_pip_tab_helper =
       AutoPictureInPictureTabHelper::FromWebContents(web_contents_);
   return auto_pip_tab_helper &&
@@ -484,11 +449,6 @@ ChromePageInfoDelegate::GetPageSpecificContentSettingsDelegate() {
   return std::move(delegate);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-const std::u16string ChromePageInfoDelegate::GetClientApplicationName() {
-  return l10n_util::GetStringUTF16(IDS_SHORT_PRODUCT_NAME);
-}
-#endif
 
 bool ChromePageInfoDelegate::IsHttpsFirstModeEnabled() {
   bool https_first_mode_fully_enabled =
@@ -517,18 +477,3 @@ void ChromePageInfoDelegate::SetSecurityStateForTests(
   security_level_for_tests_ = security_level;
   visible_security_state_for_tests_ = visible_security_state;
 }
-
-#if BUILDFLAG(IS_CHROMEOS)
-bool ChromePageInfoDelegate::ShouldSyncCookiesForUrl(const GURL& url) {
-  if (!ash::features::IsFloatingSsoAllowed()) {
-    return false;
-  }
-  // Floating SSO is an internal name for the feature which can sync cookies for
-  // ChromeOS enterprise users.
-  auto* floating_sso_service =
-      ash::floating_sso::FloatingSsoServiceFactory::GetForProfile(GetProfile());
-  // Even when cookie sync is enabled, it isn't applied to every site.
-  return floating_sso_service && floating_sso_service->IsFloatingSsoEnabled() &&
-         floating_sso_service->ShouldSyncCookiesForUrl(url);
-}
-#endif

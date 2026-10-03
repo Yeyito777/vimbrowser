@@ -187,11 +187,7 @@ class ReadAnythingAppController
   void OnReadabilityDistillationStateChanged(
       read_anything::mojom::ReadAnythingDistillationState new_state) override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnDeviceLocked() override;
-#else
   void OnTtsEngineInstalled() override;
-#endif
 
   // ui::AXTreeObserver:
   void OnNodeWillBeDeleted(ui::AXTree* tree, ui::AXNode* node) override;

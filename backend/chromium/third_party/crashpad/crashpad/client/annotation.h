@@ -31,11 +31,6 @@
 #include "util/synchronization/scoped_spin_guard.h"
 
 namespace crashpad {
-#if BUILDFLAG(IS_IOS)
-namespace internal {
-class InProcessIntermediateDumpHandler;
-}  // namespace internal
-#endif
 class AnnotationList;
 
 //! \brief Base class for an annotation, which records a name-value pair of
@@ -241,9 +236,6 @@ class Annotation {
         spin_guard_state_() {}
 
   friend class AnnotationList;
-#if BUILDFLAG(IS_IOS)
-  friend class internal::InProcessIntermediateDumpHandler;
-#endif
 
   std::atomic<Annotation*>& link_node() { return link_node_; }
 

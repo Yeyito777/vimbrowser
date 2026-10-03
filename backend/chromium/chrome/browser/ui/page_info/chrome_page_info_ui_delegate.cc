@@ -40,14 +40,12 @@
 #include "ui/events/event.h"
 #include "url/gurl.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/extensions/window_controller_list.h"  // nogncheck
 #include "chrome/browser/page_info/about_this_site_service_factory.h"
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/page_info/about_this_site_side_panel.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/web_applications/web_app_ui_utils.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
@@ -122,7 +120,6 @@ std::u16string ChromePageInfoUiDelegate::GetAutomaticallyBlockedReason(
   return std::u16string();
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 std::optional<page_info::proto::SiteInfo>
 ChromePageInfoUiDelegate::GetAboutThisSiteInfo() {
   Browser* browser = chrome::FindBrowserWithTab(web_contents_);
@@ -147,13 +144,11 @@ void ChromePageInfoUiDelegate::OpenMoreAboutThisPageUrl(
   DCHECK(page_info::IsAboutThisSiteFeatureEnabled());
   ShowAboutThisSiteSidePanel(web_contents_, url);
 }
-#endif
 
 bool ChromePageInfoUiDelegate::ShouldShowAsk(ContentSettingsType type) {
   return permissions::PermissionUtil::IsGuardContentSetting(type);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 bool ChromePageInfoUiDelegate::ShouldShowSiteSettings(int* link_text_id,
                                                       int* tooltip_text_id) {
   if (GetProfile()->IsGuestSession()) {
@@ -274,18 +269,6 @@ bool ChromePageInfoUiDelegate::ShouldShowSettingsLinkForPermission(
         return true;
       }
       return false;
-#if BUILDFLAG(IS_CHROMEOS)
-    case ContentSettingsType::GEOLOCATION:
-      if (base::FeatureList::IsEnabled(
-              content_settings::features::
-                  kCrosSystemLevelPermissionBlockedWarnings) &&
-          system_permission_settings::IsDenied(type)) {
-        *text_id = IDS_PAGE_INFO_LOCATION_SYSTEM_SETTINGS_DESCRIPTION;
-        *link_id = IDS_PAGE_INFO_SETTINGS_OF_A_SYSTEM_LINK;
-        return true;
-      }
-      return false;
-#endif
     case ContentSettingsType::CLIPBOARD_READ_WRITE:
       if (base::FeatureList::IsEnabled(
               content_settings::features::kLeftHandSideActivityIndicators) &&
@@ -307,7 +290,6 @@ void ChromePageInfoUiDelegate::SettingsLinkClicked(ContentSettingsType type) {
 bool ChromePageInfoUiDelegate::IsBlockAutoPlayEnabled() {
   return GetProfile()->GetPrefs()->GetBoolean(prefs::kBlockAutoplayEnabled);
 }
-#endif
 
 content::PermissionResult ChromePageInfoUiDelegate::GetPermissionResult(
     blink::PermissionType permission) {
@@ -326,12 +308,10 @@ ChromePageInfoUiDelegate::GetEmbargoResult(ContentSettingsType type) {
       ->GetEmbargoResult(site_url_, type);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 void ChromePageInfoUiDelegate::OpenMerchantTrustSidePanel(const GURL& url) {
   DCHECK(page_info::IsMerchantTrustFeatureEnabled());
   ShowMerchantTrustSidePanel(web_contents_, url);
 }
-#endif
 
 void ChromePageInfoUiDelegate::GetMerchantTrustInfo(
     page_info::MerchantDataCallback callback) {

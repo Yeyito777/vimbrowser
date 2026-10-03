@@ -24,10 +24,6 @@ class COMPONENT_EXPORT(STORAGE_MONITOR) StorageInfo {
     REMOVABLE_MASS_STORAGE_NO_DCIM,
     // A fixed mass storage device.
     FIXED_MASS_STORAGE,
-#if BUILDFLAG(IS_CHROMEOS)
-    // A MTP or PTP device.
-    MTP_OR_PTP,
-#endif
   };
 
   StorageInfo();

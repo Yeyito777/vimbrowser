@@ -76,10 +76,8 @@ class SyncPrefs {
   bool IsInitialSyncFeatureSetupComplete() const;
 
   // ChromeOS Ash, IsInitialSyncFeatureSetupComplete() always returns true.
-#if !BUILDFLAG(IS_CHROMEOS)
   void SetInitialSyncFeatureSetupComplete();
   void ClearInitialSyncFeatureSetupComplete();
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // Whether the "Sync everything" toggle is enabled. This flag only has an
   // effect if Sync-the-feature is enabled. Note that even if this is true, some
@@ -143,30 +141,6 @@ class SyncPrefs {
   void KeepAccountSettingsPrefsOnlyForUsers(
       const std::vector<GaiaId>& available_gaia_ids);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Functions to deal with the Ash-specific state where sync-the-feature is
-  // disabled because the user reset sync via dashboard.
-  bool IsSyncFeatureDisabledViaDashboard() const;
-  void SetSyncFeatureDisabledViaDashboard();
-  void ClearSyncFeatureDisabledViaDashboard();
-
-  // Chrome OS provides a separate settings UI surface for sync of OS types,
-  // including a separate "Sync All" toggle for OS types.
-  bool IsSyncAllOsTypesEnabled() const;
-  UserSelectableOsTypeSet GetSelectedOsTypes() const;
-  bool IsOsTypeManagedByPolicy(UserSelectableOsType type) const;
-  void SetSelectedOsTypes(bool sync_all_os_types,
-                          UserSelectableOsTypeSet registered_types,
-                          UserSelectableOsTypeSet selected_types);
-
-  // Maps `type` to its corresponding preference name.
-  static const char* GetPrefNameForOsTypeForTesting(UserSelectableOsType type);
-
-  // Sets `type` as disabled in the given `policy_prefs`, which should
-  // correspond to the "managed" (aka policy-controlled) pref store.
-  static void SetOsTypeDisabledByPolicy(PrefValueMap* policy_prefs,
-                                        UserSelectableOsType type);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Whether Sync is disabled on the client for all profiles and accounts.
   bool IsSyncClientDisabledByPolicy() const;
@@ -287,9 +261,6 @@ class SyncPrefs {
                                        UserSelectableType type);
 
   static const char* GetPrefNameForType(UserSelectableType type);
-#if BUILDFLAG(IS_CHROMEOS)
-  static const char* GetPrefNameForOsType(UserSelectableOsType type);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   static bool IsTypeSupportedInTransportMode(UserSelectableType type);
 

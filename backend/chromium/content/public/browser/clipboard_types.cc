@@ -107,8 +107,6 @@ WebContents* ClipboardEndpoint::web_contents() const {
 const ui::ClipboardFormatType& SourceRFHTokenType() {
 #if BUILDFLAG(IS_APPLE)
   constexpr char kTypeName[] = "org.chromium.internal.source-rfh-token";
-#elif BUILDFLAG(IS_WIN)
-  constexpr char kTypeName[] = "Chromium internal source RFH token";
 #else
   constexpr char kTypeName[] = "chromium/x-internal-source-rfh-token";
 #endif

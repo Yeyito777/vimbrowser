@@ -37,9 +37,6 @@ class TestViewsDelegate : public ViewsDelegate {
 // When running on ChromeOS, NativeWidgetAura requires the parent and/or context
 // to be non-null. Some test views provide neither, so we do it here. Normally
 // this is done by the browser-specific ViewsDelegate.
-#if BUILDFLAG(IS_CHROMEOS)
-  void set_context(gfx::NativeWindow context) { context_ = context; }
-#endif
 
 #if BUILDFLAG(IS_MAC)
   // Allows tests to provide a ContextFactory via the ViewsDelegate interface.
@@ -56,9 +53,6 @@ class TestViewsDelegate : public ViewsDelegate {
   }
 
   // ViewsDelegate:
-#if BUILDFLAG(IS_WIN)
-  HICON GetSmallWindowIcon() const override;
-#endif
   void OnBeforeWidgetInit(Widget::InitParams* params,
                           internal::NativeWidgetDelegate* delegate) override;
 #if BUILDFLAG(IS_MAC)
@@ -73,9 +67,6 @@ class TestViewsDelegate : public ViewsDelegate {
   bool use_transparent_windows_ = false;
   std::unique_ptr<LayoutProvider> layout_provider_ =
       std::make_unique<LayoutProvider>();
-#if BUILDFLAG(IS_CHROMEOS)
-  gfx::NativeWindow context_ = gfx::NativeWindow();
-#endif
 };
 
 }  // namespace views

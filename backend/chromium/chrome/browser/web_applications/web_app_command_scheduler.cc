@@ -103,15 +103,7 @@
 #include "content/public/browser/storage_partition_config.h"
 #include "content/public/browser/web_contents.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/web_applications/isolated_web_apps/commands/cleanup_bundle_cache_command.h"
-#include "chrome/browser/web_applications/isolated_web_apps/commands/copy_bundle_to_cache_command.h"
-#include "chrome/browser/web_applications/isolated_web_apps/commands/get_bundle_cache_path_command.h"
-#include "chrome/browser/web_applications/isolated_web_apps/commands/remove_obsolete_bundle_versions_cache_command.h"
-#include "chrome/browser/web_applications/isolated_web_apps/policy/isolated_web_app_cache_client.h"
-#else  // !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/web_applications/jobs/link_capturing.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/web_applications/commands/rewrite_diy_icons_command.h"
@@ -400,54 +392,6 @@ void WebAppCommandScheduler::CheckIsolatedWebAppBundleUserInstallability(
       call_location);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void WebAppCommandScheduler::GetIsolatedWebAppBundleCachePath(
-    const IsolatedWebAppUrlInfo& url_info,
-    const std::optional<IwaVersion>& version,
-    IwaCacheClient::SessionType session_type,
-    base::OnceCallback<void(base::expected<GetBundleCachePathSuccess,
-                                           GetBundleCachePathError>)> callback,
-    const base::Location& call_location) {
-  provider_->command_manager().ScheduleCommand(
-      std::make_unique<GetBundleCachePathCommand>(
-          url_info, version, session_type, std::move(callback)),
-      call_location);
-}
-
-void WebAppCommandScheduler::CopyIsolatedWebAppBundleToCache(
-    const IsolatedWebAppUrlInfo& url_info,
-    IwaCacheClient::SessionType session_type,
-    base::OnceCallback<void(CopyBundleToCacheResult)> callback,
-    const base::Location& call_location) {
-  provider_->command_manager().ScheduleCommand(
-      std::make_unique<CopyBundleToCacheCommand>(
-          url_info, session_type, *profile_, std::move(callback)),
-      call_location);
-}
-
-void WebAppCommandScheduler::CleanupIsolatedWebAppBundleCache(
-    const std::vector<web_package::SignedWebBundleId>& iwas_to_keep_in_cache,
-    IwaCacheClient::SessionType session_type,
-    base::OnceCallback<void(CleanupBundleCacheResult)> callback,
-    const base::Location& call_location) {
-  provider_->command_manager().ScheduleCommand(
-      std::make_unique<CleanupBundleCacheCommand>(
-          iwas_to_keep_in_cache, session_type, std::move(callback)),
-      call_location);
-}
-
-void WebAppCommandScheduler::RemoveObsoleteIsolatedWebAppVersionsCache(
-    const IsolatedWebAppUrlInfo& url_info,
-    IwaCacheClient::SessionType session_type,
-    base::OnceCallback<void(RemoveObsoleteBundleVersionsResult)> callback,
-    const base::Location& call_location) {
-  provider_->command_manager().ScheduleCommand(
-      std::make_unique<RemoveObsoleteBundleVersionsCacheCommand>(
-          url_info, session_type, std::move(callback)),
-      call_location);
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void WebAppCommandScheduler::GetIsolatedWebAppBrowsingData(
     base::OnceCallback<void(base::flat_map<url::Origin, uint64_t>)> callback,
@@ -744,15 +688,11 @@ void WebAppCommandScheduler::SetAppCapturesSupportedLinksDisableOverlapping(
     bool set_to_preferred,
     base::OnceClosure done,
     const base::Location& location) {
-#if BUILDFLAG(IS_CHROMEOS)
-  NOTREACHED() << "Preferred apps in ChromeOS are implemented in AppService";
-#else
   ScheduleCallback(
       "SetAppCapturesSupporedLinks", AllAppsLockDescription(),
       base::BindOnce(::web_app::SetAppCapturesSupportedLinksDisableOverlapping,
                      app_id, set_to_preferred),
       std::move(done), location);
-#endif
 }
 
 void WebAppCommandScheduler::RunIconDiagnosticsForApp(

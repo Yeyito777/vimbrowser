@@ -873,10 +873,6 @@ class BufferHelper : public ReadWriteResource
     angle::Result init(ErrorContext *context,
                        const VkBufferCreateInfo &createInfo,
                        VkMemoryPropertyFlags memoryPropertyFlags);
-    angle::Result initExternal(ErrorContext *context,
-                               VkMemoryPropertyFlags memoryProperties,
-                               const VkBufferCreateInfo &requestedCreateInfo,
-                               GLeglClientBufferEXT clientBuffer);
     angle::Result initAndAcquireFromExternalMemory(
         Context *context,
         VkMemoryPropertyFlags memoryProperties,
@@ -1088,9 +1084,6 @@ class BufferHelper : public ReadWriteResource
     BufferSerial mSerial;
     // Manages the descriptorSet cache that created with this BufferHelper object.
     DescriptorSetCacheManager mDescriptorSetCacheManager;
-    // For external buffer
-    GLeglClientBufferEXT mClientBuffer;
-
     // Whether ANGLE currently has ownership of this resource or it's released to external.
     bool mIsReleasedToExternal;
 };

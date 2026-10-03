@@ -40,9 +40,7 @@
 #include "ui/gfx/paint_vector_icon.h"
 #include "ui/native_theme/native_theme.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/themes/theme_properties.h"  // nogncheck crbug.com/1125897
-#endif
 
 namespace {
 
@@ -387,7 +385,6 @@ ProfileAttributesEntry::GetAvatarIconWithType(
   }
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_ANDROID)
   // Use the high resolution version of the avatar if it exists. Mobile doesn't
   // need the high resolution version so no need to fetch it.
   if (use_high_res_file) {
@@ -395,21 +392,8 @@ ProfileAttributesEntry::GetAvatarIconWithType(
       return {*image, AvatarIconType::kNonPlaceholder};
     }
   }
-#endif
 
   const int icon_index = GetAvatarIconIndex();
-#if BUILDFLAG(IS_WIN)
-  if (!profiles::IsModernAvatarIconIndex(icon_index)) {
-    // Return the 2x version of the old avatar, defined specifically for
-    // Windows. No special treatment is needed for modern avatars as they
-    // already have high enough resolution.
-    const int win_resource_id =
-        profiles::GetOldDefaultAvatar2xIconResourceIDAtIndex(icon_index);
-    return {ui::ResourceBundle::GetSharedInstance().GetNativeImageNamed(
-                win_resource_id),
-            AvatarIconType::kNonPlaceholder};
-  }
-#endif
   int resource_id = profiles::GetDefaultAvatarIconResourceIDAtIndex(icon_index);
   return {
       ui::ResourceBundle::GetSharedInstance().GetNativeImageNamed(resource_id),
@@ -565,16 +549,11 @@ ProfileAttributesEntry::GetProfileThemeColorsIfSet() const {
 }
 
 ProfileThemeColors ProfileAttributesEntry::GetProfileThemeColors() const {
-#if BUILDFLAG(IS_ANDROID)
-  // Profile theme colors shouldn't be queried on Android.
-  NOTREACHED();
-#else
   std::optional<ProfileThemeColors> theme_colors = GetProfileThemeColorsIfSet();
   if (theme_colors)
     return *theme_colors;
 
   return GetDefaultProfileThemeColors();
-#endif
 }
 
 size_t ProfileAttributesEntry::GetMetricsBucketIndex() {

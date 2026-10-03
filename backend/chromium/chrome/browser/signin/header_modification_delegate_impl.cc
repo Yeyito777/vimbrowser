@@ -38,9 +38,6 @@
 #include "extensions/browser/guest_view/web_view/web_view_renderer_state.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/account_manager_core/pref_names.h"
-#endif
 
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 #include "base/containers/flat_set.h"
@@ -125,18 +122,9 @@ void ProcessBoundSessionResponseHeaders(
 }  // namespace
 #endif  // BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 
-#if BUILDFLAG(IS_ANDROID)
-HeaderModificationDelegateImpl::HeaderModificationDelegateImpl(
-    Profile* profile,
-    bool incognito_enabled)
-    : profile_(profile),
-      cookie_settings_(CookieSettingsFactory::GetForProfile(profile_)),
-      incognito_enabled_(incognito_enabled) {}
-#else
 HeaderModificationDelegateImpl::HeaderModificationDelegateImpl(Profile* profile)
     : profile_(profile),
       cookie_settings_(CookieSettingsFactory::GetForProfile(profile_)) {}
-#endif
 
 HeaderModificationDelegateImpl::~HeaderModificationDelegateImpl() = default;
 
@@ -182,21 +170,12 @@ void HeaderModificationDelegateImpl::ProcessRequest(
       SyncServiceFactory::GetForProfile(profile_);
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-  bool is_secondary_account_addition_allowed = true;
-  if (!prefs->GetBoolean(
-          ::account_manager::prefs::kSecondaryGoogleAccountSigninAllowed)) {
-    is_secondary_account_addition_allowed = false;
-  }
-#endif
 
   ConsentLevel consent_level = ConsentLevel::kSignin;
-#if !BUILDFLAG(IS_ANDROID)
   if (!base::FeatureList::IsEnabled(
           syncer::kReplaceSyncPromosWithSignInPromos)) {
     consent_level = ConsentLevel::kSync;
   }
-#endif
 
   IdentityManager* identity_manager =
       IdentityManagerFactory::GetForProfile(profile_);
@@ -208,21 +187,12 @@ void HeaderModificationDelegateImpl::ProcessRequest(
 
   int incognito_mode_availability =
       prefs->GetInteger(policy::policy_prefs::kIncognitoModeAvailability);
-#if BUILDFLAG(IS_ANDROID)
-  incognito_mode_availability =
-      incognito_enabled_
-          ? incognito_mode_availability
-          : static_cast<int>(policy::IncognitoModeAvailability::kDisabled);
-#endif
 
   FixAccountConsistencyRequestHeader(
       request_adapter, redirect_url, profile_->IsOffTheRecord(),
       incognito_mode_availability,
       AccountConsistencyModeManager::GetMethodForProfile(profile_),
       account.gaia, is_child_account,
-#if BUILDFLAG(IS_CHROMEOS)
-      is_secondary_account_addition_allowed,
-#endif
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
       // This usage of `IsSyncFeatureEnabled()` needs to be kept until the Sync
       // users are migrated to kSignin state. It tells the Gaia server whether

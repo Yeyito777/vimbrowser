@@ -158,13 +158,7 @@ void AppendOrRemoveMirrorRequestHeader(
   ChromeConnectedHeaderHelper chrome_connected_helper(account_consistency);
   std::string chrome_connected_header_value;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  bool is_secondary_account_addition_disallowed =
-      (profile_mode_mask & PROFILE_MODE_ADD_ACCOUNT_DISABLED) != 0 &&
-      account_consistency == AccountConsistencyMethod::kMirror;
-#else
   bool is_secondary_account_addition_disallowed = false;
-#endif
 
   // If Gaia cookies are not allowed, the signin will fail anyway. Do not attach
   // the header, so that the signin goes through the web and the page can show a

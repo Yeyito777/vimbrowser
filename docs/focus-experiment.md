@@ -111,7 +111,8 @@ Initial experimental behavior:
   - Default mode is website-normal.
   - Website-normal is the future home for hints, scrolling, and page commands.
   - `i` / `a` in website-normal or regular Vim normal enter insert mode.
-  - Escape in insert mode enters regular Vim normal mode.
+  - Escape in insert mode enters regular Vim normal mode when a page editable is
+    focused, and otherwise returns directly to website-normal.
   - Escape in regular Vim normal or visual mode returns to website-normal.
   - Regular Vim normal and visual modes are skeleton states for now: they swallow
     plain printable keys but do not perform edits/operators yet.
@@ -163,14 +164,9 @@ that behavior.
 When open:
 
 - focus becomes `kCommandLine`.
-- command row starts in insert mode and displays a terminal-style block cursor.
-- `Escape` from command insert mode switches to command normal mode without
-  closing the command line.
-- `Escape` from command normal mode closes/cancels the command line.
-- `i` / `a` from command normal mode re-enter command insert mode.
-- `h` / `l` move the command cursor in command normal mode.
-- `x` deletes at the command cursor in command normal mode.
-- `Enter` sends the command from either command insert or normal mode.
+- command editing is insert-only and displays the native insertion caret.
+- `Escape` closes/cancels the command line immediately.
+- `Enter` sends the command.
 - command row top border should be focus color `#1c94e5`.
 - command text uses existing command styling:
   - `:open` / `:open tab`: `#aed6fe`

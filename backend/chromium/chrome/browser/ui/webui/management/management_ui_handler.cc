@@ -106,14 +106,12 @@ enum class ReportingType {
 
 namespace {
 
-#if !BUILDFLAG(IS_CHROMEOS)
 
 bool IsBrowserManaged() {
   return g_browser_process->browser_policy_connector()
       ->HasMachineLevelPolicies();
 }
 
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 base::ListValue GetPermissionsForExtension(
     scoped_refptr<const extensions::Extension> extension) {
@@ -198,21 +196,17 @@ ManagementUIHandler::ManagementUIHandler(Profile* profile) {
   reporting_extension_ids_ = {kOnPremReportingExtensionStableId,
                               kOnPremReportingExtensionBetaId};
   UpdateAccountManagedState(profile);
-#if !BUILDFLAG(IS_CHROMEOS)
   UpdateBrowserManagedState();
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 }
 
 ManagementUIHandler::~ManagementUIHandler() {
   DisallowJavascript();
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 std::unique_ptr<ManagementUIHandler> ManagementUIHandler::Create(
     Profile* profile) {
   return std::make_unique<ManagementUIHandler>(profile);
 }
-#endif  //  !BUILDFLAG(IS_CHROMEOS)
 
 void ManagementUIHandler::RegisterMessages() {
   web_ui()->RegisterMessageCallback(
@@ -419,7 +413,6 @@ void ManagementUIHandler::AddReportingInfo(base::ListValue* report_sources,
 base::DictValue ManagementUIHandler::GetContextualManagedData(
     Profile* profile) {
   base::DictValue response;
-#if !BUILDFLAG(IS_CHROMEOS)
   int message_id = IDS_MANAGEMENT_NOT_MANAGED_NOTICE;
   if (browser_managed_) {
     message_id = IDS_MANAGEMENT_BROWSER_NOTICE;
@@ -444,7 +437,6 @@ base::DictValue ManagementUIHandler::GetContextualManagedData(
       l10n_util::GetStringUTF16(IDS_MANAGEMENT_MANAGED_WEBSITES_EXPLANATION));
 
   response.Set("managed", managed());
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   return response;
 }
@@ -466,10 +458,6 @@ base::DictValue ManagementUIHandler::GetThreatProtectionInfo(Profile* profile) {
        kManagementOnBulkDataEntryVisibleData},
       {enterprise_connectors::PRINT, kManagementOnPrintEvent,
        kManagementOnPrintVisibleData},
-#if BUILDFLAG(IS_CHROMEOS)
-      {enterprise_connectors::FILE_TRANSFER, kManagementOnFileTransferEvent,
-       kManagementOnFileTransferVisibleData},
-#endif
   };
   auto* connectors_service =
       enterprise_connectors::ConnectorsServiceFactory::GetForBrowserContext(
@@ -501,16 +489,6 @@ base::DictValue ManagementUIHandler::GetThreatProtectionInfo(Profile* profile) {
                                   &info);
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const auto* multi_capture_data_service =
-      multi_capture::MultiCaptureDataServiceFactory::GetForBrowserContext(
-          profile);
-  if (multi_capture_data_service &&
-      multi_capture_data_service->IsMultiCaptureAllowedForAnyApp()) {
-    AddThreatProtectionPermission(kManagementScreenCaptureEvent,
-                                  kManagementScreenCaptureData, &info);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   const std::string enterprise_manager =
       connectors_service->GetManagementDomain();
@@ -628,14 +606,12 @@ void ManagementUIHandler::RegisterPrefChange(
 }
 
 void ManagementUIHandler::UpdateManagedState() {
-#if !BUILDFLAG(IS_CHROMEOS)
   bool is_account_updated =
       UpdateAccountManagedState(Profile::FromWebUI(web_ui()));
   bool is_browser_updated = UpdateBrowserManagedState();
   if (is_account_updated || is_browser_updated) {
     FireWebUIListener("managed_data_changed");
   }
-#endif
 }
 
 bool ManagementUIHandler::UpdateAccountManagedState(Profile* profile) {
@@ -649,14 +625,12 @@ bool ManagementUIHandler::UpdateAccountManagedState(Profile* profile) {
   return is_updated;
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 bool ManagementUIHandler::UpdateBrowserManagedState() {
   bool new_managed = IsBrowserManaged();
   bool is_updated = (new_managed != browser_managed_);
   browser_managed_ = new_managed;
   return is_updated;
 }
-#endif
 
 std::string ManagementUIHandler::GetAccountManager(Profile* profile) const {
   std::optional<std::string> manager = GetAccountManagerIdentity(profile);

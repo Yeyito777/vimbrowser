@@ -224,7 +224,5 @@ OSVersion GetiOSVersion();
 
 OSVersion GetLinuxOSVersion();
 
-int GetAndroidSDKVersion();
-
 }  // namespace rx
 #endif  // LIBANGLE_RENDERER_DRIVER_UTILS_H_

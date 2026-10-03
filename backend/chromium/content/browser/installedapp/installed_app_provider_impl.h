@@ -23,9 +23,6 @@ namespace content {
 
 class RenderFrameHost;
 class InstalledAppProviderImplTest;
-#if BUILDFLAG(IS_WIN)
-class NativeWinAppFetcher;
-#endif  // BUILDFLAG(IS_WIN)
 
 class CONTENT_EXPORT InstalledAppProviderImpl
     : public DocumentService<blink::mojom::InstalledAppProvider> {
@@ -51,10 +48,6 @@ class CONTENT_EXPORT InstalledAppProviderImpl
       FilterInstalledAppsCallback callback,
       std::vector<FetchRelatedAppsTaskResult> task_result_list);
 
-#if BUILDFLAG(IS_WIN)
-  void SetNativeWinAppFetcherFactoryForTesting(
-      base::RepeatingCallback<std::unique_ptr<NativeWinAppFetcher>()> factory);
-#endif  // BUILDFLAG(IS_WIN)
 
   explicit InstalledAppProviderImpl(
       RenderFrameHost& render_frame_host,
@@ -68,10 +61,6 @@ class CONTENT_EXPORT InstalledAppProviderImpl
       mojo::PendingReceiver<blink::mojom::InstalledAppProvider> receiver);
   friend class InstalledAppProviderImplTest;
 
-#if BUILDFLAG(IS_WIN)
-  base::RepeatingCallback<std::unique_ptr<NativeWinAppFetcher>()>
-      native_win_app_fetcher_factory_;
-#endif  // BUILDFLAG(IS_WIN)
   base::flat_map<FetchRelatedAppsTask*, std::unique_ptr<FetchRelatedAppsTask>>
       tasks_;
 

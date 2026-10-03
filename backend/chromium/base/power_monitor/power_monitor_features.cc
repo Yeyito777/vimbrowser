@@ -8,8 +8,5 @@
 
 namespace base {
 
-#if BUILDFLAG(IS_IOS)
-BASE_FEATURE(kRemoveIOSPowerEventNotifications, FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 }  // namespace base

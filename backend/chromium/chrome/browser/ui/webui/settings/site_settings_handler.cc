@@ -129,15 +129,7 @@
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) ||
         // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/smart_card/smart_card_permission_context.h"
-#include "chrome/browser/smart_card/smart_card_permission_context_factory.h"
-#include "components/user_manager/user_manager.h"
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/media/cdm_document_service_impl.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "extensions/common/constants.h"
@@ -1132,13 +1124,6 @@ void SiteSettingsHandler::HandleSetDefaultValueForContentType(
       site_settings::ContentSettingsTypeFromGroupName(content_type);
 
   Profile* profile = profile_;
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS special case: in Guest mode, settings are opened in Incognito
-  // mode so we need the original profile to actually modify settings.
-  if (user_manager::UserManager::Get()->IsLoggedInAsGuest()) {
-    profile = profile->GetOriginalProfile();
-  }
-#endif
   HostContentSettingsMap* map =
       HostContentSettingsMapFactory::GetForProfile(profile);
   ContentSetting previous_setting =
@@ -2325,15 +2310,6 @@ void SiteSettingsHandler::ObserveSourcesForProfile(Profile* profile) {
     }
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(blink::features::kSmartCard)) {
-    auto& smart_card_context =
-        SmartCardPermissionContextFactory::GetForProfile(*profile);
-    if (!chooser_observations_.IsObservingSource(&smart_card_context)) {
-      chooser_observations_.AddObservation(&smart_card_context);
-    }
-  }
-#endif
   observed_profiles_.AddObservation(profile);
 }
 
@@ -2378,15 +2354,6 @@ void SiteSettingsHandler::StopObservingSourcesForProfile(Profile* profile) {
     }
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (base::FeatureList::IsEnabled(blink::features::kSmartCard)) {
-    auto& smart_card_context =
-        SmartCardPermissionContextFactory::GetForProfile(*profile);
-    if (chooser_observations_.IsObservingSource(&smart_card_context)) {
-      chooser_observations_.RemoveObservation(&smart_card_context);
-    }
-  }
-#endif
 
   observed_profiles_.RemoveObservation(profile);
 }
@@ -2590,29 +2557,6 @@ void SiteSettingsHandler::RemoveNonModelData(
                                         base::Value());
   }
 
-#if BUILDFLAG(IS_WIN)
-  // Removes any Media License Data associated with the origin that is not
-  // stored in quota nodes. This should only be on Windows as ChromeOS does
-  // not support removing Media License Data per origin, and
-  // site_settings_handler.cc does not handle Android site specific code.
-  // The code for Android site specific code is located in
-  // components/browser_ui/site_settings/android/website_preference_bridge.cc
-  // TODO(b/248311157) - When CrOS supports the ability to delete platform
-  // keys by domain, implement the CrOS specific logic regarding clearing site
-  // specific media license data.
-  // TODO(b/248311157) - When the migration to BrowsingDataModel is finished,
-  // remove this and integrate the media license data removal steps there.
-  auto filter_builder = content::BrowsingDataFilterBuilder::Create(
-      content::BrowsingDataFilterBuilder::Mode::kDelete);
-
-  for (const auto& origin : origins) {
-    filter_builder->AddOrigin(origin);
-  }
-
-  CdmDocumentServiceImpl::ClearCdmData(
-      profile_, base::Time::Min(), base::Time::Max(),
-      filter_builder->BuildUrlFilter(), base::DoNothing());
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void SiteSettingsHandler::SetModelForTesting(
@@ -2769,25 +2713,6 @@ void SiteSettingsHandler::SendNotificationPermissionReviewList() {
 base::Value SiteSettingsHandler::GetSystemDeniedPermissions() {
   base::ListValue blocked_permissions;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // This is used to display warning messages in the UI in case that
-  // geolocation, microphone or camera are disabled at the system level. At the
-  // moment this functionality is only targeting CrOS.
-  if (system_permission_settings::IsDenied(
-          ContentSettingsType::MEDIASTREAM_CAMERA)) {
-    blocked_permissions.Append(site_settings::ContentSettingsTypeToGroupName(
-        ContentSettingsType::MEDIASTREAM_CAMERA));
-  }
-  if (system_permission_settings::IsDenied(
-          ContentSettingsType::MEDIASTREAM_MIC)) {
-    blocked_permissions.Append(site_settings::ContentSettingsTypeToGroupName(
-        ContentSettingsType::MEDIASTREAM_MIC));
-  }
-  if (system_permission_settings::IsDenied(ContentSettingsType::GEOLOCATION)) {
-    blocked_permissions.Append(site_settings::ContentSettingsTypeToGroupName(
-        ContentSettingsType::GEOLOCATION));
-  }
-#endif
 
   return base::Value(std::move(blocked_permissions));
 }

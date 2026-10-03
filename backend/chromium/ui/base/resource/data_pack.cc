@@ -181,15 +181,9 @@ DataPack::~DataPack() {
 
 namespace {
 
-#if BUILDFLAG(IS_WIN)
-inline DWORD GetLastErrorOrErrno() {
-  return ::GetLastError();
-}
-#else
 inline int GetLastErrorOrErrno() {
   return errno;
 }
-#endif
 
 }  // namespace
 

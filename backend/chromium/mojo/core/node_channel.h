@@ -71,15 +71,6 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeChannel
                              const uint64_t remote_capabilities) = 0;
     virtual void OnBroadcast(const ports::NodeName& from_node,
                              Channel::MessagePtr message) = 0;
-#if BUILDFLAG(IS_WIN)
-    virtual void OnRelayEventMessage(const ports::NodeName& from_node,
-                                     base::ProcessHandle from_process,
-                                     const ports::NodeName& destination,
-                                     Channel::MessagePtr message) = 0;
-    virtual void OnEventMessageFromRelay(const ports::NodeName& from_node,
-                                         const ports::NodeName& source_node,
-                                         Channel::MessagePtr message) = 0;
-#endif
     virtual void OnAcceptPeer(const ports::NodeName& from_node,
                               const ports::NodeName& token,
                               const ports::NodeName& peer_name,
@@ -165,20 +156,6 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeChannel
   bool HasLocalCapability(const uint64_t capability) const;
   void SetLocalCapabilities(const uint64_t capability);
 
-#if BUILDFLAG(IS_WIN)
-  // Relay the message to the specified node via this channel.  This is used to
-  // pass windows handles between two processes that do not have permission to
-  // duplicate handles into the other's address space. The relay process is
-  // assumed to have that permission.
-  void RelayEventMessage(const ports::NodeName& destination,
-                         Channel::MessagePtr message);
-
-  // Sends a message to its destination from a relay. This is interpreted by the
-  // receiver similarly to EventMessage, but the original source node is
-  // provided as additional message metadata from the (trusted) relay node.
-  void EventMessageFromRelay(const ports::NodeName& source,
-                             Channel::MessagePtr message);
-#endif
 
   void OfferChannelUpgrade();
 

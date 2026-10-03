@@ -36,19 +36,10 @@ config("opus_private_config") {
 
   cflags = []
 
-  if (is_win) {
-    defines += [ "inline=__inline" ]
-
-    cflags += [
-      "/wd4305",  # Disable truncation warning in celt/pitch.c .
-      "/wd4334",  # Disable 32-bit shift warning in src/opus_encoder.c .
-    ]
-  } else {
-    defines += [
-      "HAVE_LRINT",
-      "HAVE_LRINTF",
-    ]
-  }
+  defines += [
+    "HAVE_LRINT",
+    "HAVE_LRINTF",
+  ]
 
   if (is_official_build) {
     # Disable assertion messages from ENABLE_HARDENING, saving 16.4 kb.
@@ -113,12 +104,6 @@ config("opus_test_config") {
     "src/silk",
   ]
 
-  if (is_win) {
-    defines = [ "inline=__inline" ]
-  }
-  if (is_android) {
-    libs = [ "log" ]
-  }
   if (is_clang) {
     cflags = [ "-Wno-absolute-value" ]
   }
@@ -522,7 +507,7 @@ if (build_with_chromium) {
   # Compilation fails on windows due to wstring/string mistmatch.
   # This is not worth looking at it since the benchmark is tailored for android.
   # It is ok to run it on linux though, for experimentation purpose.
-  if (is_android || is_linux || is_chromeos) {
+  if (is_linux || is_chromeos) {
     test("opus_tests") {
       sources = [ "tests/opus_benchmark.cc" ]
 

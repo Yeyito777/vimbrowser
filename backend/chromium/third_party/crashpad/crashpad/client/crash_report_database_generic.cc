@@ -600,11 +600,7 @@ base::FilePath CrashReportDatabaseGeneric::ReportPath(const UUID& uuid,
   DCHECK_NE(state, kUninitialized);
   DCHECK_NE(state, kSearchable);
 
-#if BUILDFLAG(IS_WIN)
-  const std::wstring uuid_string = uuid.ToWString();
-#else
   const std::string uuid_string = uuid.ToString();
-#endif
 
   return base_dir_.Append(kReportDirectories[state])
       .Append(uuid_string + kCrashReportExtension);

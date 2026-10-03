@@ -29,9 +29,6 @@
 #include "media/audio/mac/audio_device_listener_mac.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/win_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace audio {
 
@@ -68,11 +65,6 @@ Service::Service(std::unique_ptr<AudioManagerAccessor> audio_manager_accessor,
       aecdump_recording_manager_->AsWeakPtr());
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // Disable high resolution timer throttling to prevent degraded audio quality.
-  base::win::SetProcessTimerThrottleState(
-      base::GetCurrentProcessHandle(), base::win::ProcessPowerState::kDisabled);
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 Service::~Service() {

@@ -31,9 +31,6 @@
 #include "third_party/blink/public/mojom/page/draggable_region.mojom.h"
 #include "third_party/blink/public/mojom/widget/platform_widget.mojom-test-utils.h"
 
-#if defined(OS_WIN)
-#include "sandbox/win/src/sandbox_types.h"
-#endif
 
 using content::KeyboardEventProcessingResult;
 
@@ -408,16 +405,6 @@ void CefBrowserContentsDelegate::PrimaryMainFrameRenderProcessGone(
                 "CEF_RESULT_CODE_CHROME_LAST must match "
                 "chrome::RESULT_CODE_CHROME_LAST_CODE");
 
-#if defined(OS_WIN)
-  static_assert(static_cast<int>(CEF_RESULT_CODE_SANDBOX_FATAL_FIRST) ==
-                    static_cast<int>(sandbox::SBOX_FATAL_INTEGRITY),
-                "CEF_RESULT_CODE_SANDBOX_FATAL_FIRST must match "
-                "sandbox::SBOX_FATAL_INTEGRITY");
-  static_assert(
-      static_cast<int>(CEF_RESULT_CODE_SANDBOX_FATAL_LAST) ==
-          static_cast<int>(sandbox::SBOX_FATAL_LAST),
-      "CEF_RESULT_CODE_SANDBOX_FATAL_LAST must match sandbox::SBOX_FATAL_LAST");
-#endif
 
   cef_termination_status_t ts = TS_ABNORMAL_TERMINATION;
   if (status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED) {
@@ -428,10 +415,6 @@ void CefBrowserContentsDelegate::PrimaryMainFrameRenderProcessGone(
     ts = TS_PROCESS_OOM;
   } else if (status == base::TERMINATION_STATUS_LAUNCH_FAILED) {
     ts = TS_LAUNCH_FAILED;
-#if BUILDFLAG(IS_WIN)
-  } else if (status == base::TERMINATION_STATUS_INTEGRITY_FAILURE) {
-    ts = TS_INTEGRITY_FAILURE;
-#endif
   } else if (status != base::TERMINATION_STATUS_ABNORMAL_TERMINATION) {
     return;
   }

@@ -78,13 +78,6 @@
 #include "ui/views/widget/native_widget.h"
 #include "ui/views/widget/widget_observer.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/aura/window.h"
-#include "ui/aura/window_tree_host.h"
-#include "ui/base/win/event_creation_utils.h"
-#include "ui/display/win/screen_win.h"
-#include "ui/views/win/hwnd_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace glic {
 
@@ -309,13 +302,6 @@ void GlicWindowControllerImpl::Toggle(
     return;
   }
 
-#if BUILDFLAG(IS_WIN)
-  // Clicking status tray on Windows makes floaty not active so always close.
-  if (source == mojom::InvocationSource::kOsButton) {
-    Close({});
-    return;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   // If floaty is focused or the source is the top button, close it.
   // If floaty is unfocused and open, focus it.
@@ -377,16 +363,6 @@ void GlicWindowControllerImpl::ToggleWhenNotAlwaysDetached(
     // Already attached?
     if (attached_browser_) {
       bool should_close = IsActive();
-#if BUILDFLAG(IS_WIN)
-      // On Windows, clicking the system tray icon de-activates the active
-      // window, so fall back to checking if `attached_browser_` is visible for
-      // both the hot key and system tray click cases.
-      should_close = attached_browser_->window()
-                         ->GetNativeWindow()
-                         ->GetHost()
-                         ->GetNativeWindowOcclusionState() ==
-                     aura::Window::OcclusionState::VISIBLE;
-#endif  // BUILDFLAG(IS_WIN)
 
       if (should_close) {
         // Hotkey when glic active and attached: close.
@@ -905,28 +881,10 @@ void GlicWindowControllerImpl::MaybeSetWidgetCanResize() {
     return;
   }
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows when resize is enabled there is an invisible border added
-  // around the client area. We need to make the widget larger or smaller to
-  // keep the visible client area the same size.
-  gfx::Rect previous_client_bounds =
-      GetGlicWidget()->GetClientAreaBoundsInScreen();
-#endif  // BUILDFLAG(IS_WIN)
 
   // Update resize state on widget delegate.
   GetGlicWidget()->widget_delegate()->SetCanResize(user_resizable_);
 
-#if BUILDFLAG(IS_WIN)
-  if (user_resizable_) {
-    // Resizable so the widget area is larger than the client area.
-    gfx::Rect new_widget_bounds =
-        GetGlicWidget()->VisibleToWidgetBounds(previous_client_bounds);
-    GetGlicWidget()->SetBoundsConstrained(new_widget_bounds);
-  } else {
-    // Not resizable so the client and widget areas are the same.
-    GetGlicWidget()->SetBoundsConstrained(previous_client_bounds);
-  }
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 gfx::Size GlicWindowControllerImpl::GetPanelSize() {
@@ -1093,12 +1051,6 @@ void GlicWindowControllerImpl::SaveWidgetPosition(bool user_modified) {
 }
 
 void GlicWindowControllerImpl::ShowTitleBarContextMenuAt(gfx::Point event_loc) {
-#if BUILDFLAG(IS_WIN)
-  views::View::ConvertPointToScreen(GetGlicView(), &event_loc);
-  event_loc = display::win::GetScreenWin()->DIPToScreenPoint(event_loc);
-  views::ShowSystemMenuAtScreenPixelLocation(views::HWNDForView(GetGlicView()),
-                                             event_loc);
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 mojom::PanelState GlicWindowControllerImpl::GetPanelState() {

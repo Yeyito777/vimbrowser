@@ -4,10 +4,6 @@
 
 import("//testing/libfuzzer/fuzzer_test.gni")
 
-if (is_win) {
-  import("//build/config/win/visual_studio_version.gni")
-}
-
 config("brotli_defines") {
   # By default, brotli depends on undefined behavior, but setting
   # BROTLI_BUILD_PORTABLE should result in a build which does not.

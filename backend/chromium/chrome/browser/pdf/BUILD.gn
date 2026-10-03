@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import("//pdf/features.gni")
-import("//printing/buildflags/buildflags.gni")
 
 assert(enable_pdf)
 
@@ -46,20 +45,11 @@ source_set("pdf") {
     "//extensions/browser",
     "//extensions/common:common_constants",
     "//pdf:features",
-    "//printing/buildflags",
     "//third_party/blink/public/common:headers",
     "//ui/base",
     "//ui/gfx:color_utils",
     "//url",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/browser_context_helper" ]
-  }
-
-  if (enable_print_preview) {
-    deps += [ "//chrome/common" ]
-  }
 }
 
 source_set("pdf_pref_names") {
@@ -67,24 +57,6 @@ source_set("pdf_pref_names") {
     "pdf_pref_names.cc",
     "pdf_pref_names.h",
   ]
-}
-
-if (is_chromeos) {
-  source_set("pdf_service") {
-    sources = [
-      "pdf_service.cc",
-      "pdf_service.h",
-    ]
-    public_deps = [
-      "//chrome/services/pdf/public/mojom",
-      "//mojo/public/cpp/bindings",
-    ]
-    deps = [
-      "//base",
-      "//chrome/app:generated_resources",
-      "//content/public/browser",
-    ]
-  }
 }
 
 source_set("pdf_extension_test_utils") {

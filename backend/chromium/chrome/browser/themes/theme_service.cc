@@ -456,26 +456,8 @@ void ThemeService::UseDeviceTheme(bool follow) {
 }
 
 bool ThemeService::UsingDeviceTheme() const {
-#if BUILDFLAG(IS_CHROMEOS)
-  const PrefService::Preference* pref = profile_->GetPrefs()->FindPreference(
-      prefs::kBrowserFollowsSystemThemeColors);
-  // Ensure we respect previous theme settings for an unset follow theme
-  // value.
-  if (pref->IsDefaultValue()) {
-    return GetIsBaseline() && !UsingExtensionTheme();
-  }
-  return pref->GetValue()->GetBool();
-#elif BUILDFLAG(IS_WIN)
-  // Always respect the profile preference on Windows. In the default case the
-  // preference starts disabled.
-  return profile_->GetPrefs()
-      ->FindPreference(prefs::kBrowserFollowsSystemThemeColors)
-      ->GetValue()
-      ->GetBool();
-#else
   // Only ChromeOS and Windows have this toggle.
   return false;
-#endif
 }
 
 bool ThemeService::IsSystemThemeDistinctFromDefaultTheme() const {

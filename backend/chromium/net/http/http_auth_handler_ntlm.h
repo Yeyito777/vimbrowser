@@ -13,11 +13,7 @@
 
 // This contains the portable and the SSPI implementations for NTLM.
 // We use NTLM_SSPI for Windows, and NTLM_PORTABLE for other platforms.
-#if BUILDFLAG(IS_WIN)
-#define NTLM_SSPI
-#else
 #define NTLM_PORTABLE
-#endif
 
 #if defined(NTLM_SSPI)
 #include "net/http/http_auth_sspi_win.h"

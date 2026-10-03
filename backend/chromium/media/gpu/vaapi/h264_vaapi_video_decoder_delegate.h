@@ -75,17 +75,6 @@ class H264VaapiVideoDecoderDelegate : public H264Decoder::H264Accelerator,
  private:
   void FillVAPicture(VAPictureH264* va_pic, scoped_refptr<H264Picture> pic);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // We need to hold onto this memory here because it's referenced by the
-  // mapped buffer in libva across calls. It is filled in SubmitSlice() and
-  // stays alive until SubmitDecode() or Reset().
-  std::vector<VAEncryptionSegmentInfo> encryption_segment_info_
-      GUARDED_BY_CONTEXT(sequence_checker_);
-
-  // We need to retain this for the multi-slice case since that will aggregate
-  // the encryption details across all the slices.
-  VAEncryptionParameters crypto_params_ GUARDED_BY_CONTEXT(sequence_checker_);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // We need to set this so we don't resubmit crypto params on decode.
   bool full_sample_ GUARDED_BY_CONTEXT(sequence_checker_);

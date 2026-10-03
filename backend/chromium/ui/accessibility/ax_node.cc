@@ -2193,15 +2193,6 @@ bool AXNode::IsLeaf() const {
   if (!child_count)
     return true;
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, we want to hide the subtree of a collapsed <select> element.
-  // Otherwise, ATs are always going to announce its options whether it's
-  // collapsed or expanded. In the AXTree, this element corresponds to a node
-  // with role ax::mojom::Role::kComboBoxSelect that is the parent of a node
-  // with // role ax::mojom::Role::kMenuListPopup.
-  if (IsCollapsedMenuListSelect())
-    return true;
-#endif  // BUILDFLAG(IS_WIN)
 
   // These types of objects may have children that we use as internal
   // implementation details, but we want to expose them as leaves to platform

@@ -4,13 +4,11 @@
 
 #include "chrome/browser/pdf/pdf_extension_util.h"
 
-#include <algorithm>
-#include <array>
+#include <iterator>
 #include <string>
 #include <vector>
 
 #include "base/feature_list.h"
-#include "base/notreached.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
 #include "build/branding_buildflags.h"
@@ -40,11 +38,6 @@
 #include "ui/base/webui/web_ui_util.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/browser_context_helper/browser_context_helper.h"
-#include "chromeos/ash/components/browser_context_helper/browser_context_types.h"
-#include "components/user_manager/user.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_PDF_INK2)
 #include "chrome/common/pref_names.h"
@@ -134,7 +127,6 @@ base::DictValue GetPdfViewerStrings() {
       {"tooltipDocumentOutline", IDS_PDF_TOOLTIP_DOCUMENT_OUTLINE},
       {"tooltipDownload", IDS_PDF_TOOLTIP_DOWNLOAD},
       {"tooltipDownloadAttachment", IDS_PDF_TOOLTIP_DOWNLOAD_ATTACHMENT},
-      {"tooltipPrint", IDS_PDF_TOOLTIP_PRINT},
       {"tooltipRotateCCW", IDS_PDF_TOOLTIP_ROTATE_CCW},
       {"tooltipThumbnails", IDS_PDF_TOOLTIP_THUMBNAILS},
       {"zoomTextInputAriaLabel", IDS_PDF_ZOOM_TEXT_INPUT_ARIA_LABEL},
@@ -246,14 +238,6 @@ base::DictValue GetPdfViewerStrings() {
   return dict;
 }
 
-bool IsPrintingEnabled(content::BrowserContext* context) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return ash::IsUserBrowserContext(context);
-#else
-  return true;
-#endif  // BUILDFLAG(IS_CHROMEOS)
-}
-
 #if BUILDFLAG(ENABLE_PDF_INK2)
 bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
   PrefService* prefs =
@@ -270,32 +254,6 @@ bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
 
 #if BUILDFLAG(ENABLE_PDF_SAVE_TO_DRIVE)
 bool IsPdfSaveToDriveEnabled(content::BrowserContext* context) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(crbug.com/488428177): Write unit test for this logic.
-  // On ChromeOS, only regular user session has accounts associated with the
-  // browser.
-
-  // Only allow regular user session profiles.
-  auto* user =
-      ash::BrowserContextHelper::Get()->GetUserByBrowserContext(context);
-  if (!user) {
-    return false;
-  }
-  switch (user->GetType()) {
-    case user_manager::UserType::kRegular:
-    case user_manager::UserType::kChild:
-      // These are regular user sessions.
-      break;
-    case user_manager::UserType::kGuest:
-    case user_manager::UserType::kPublicAccount:
-    case user_manager::UserType::kKioskChromeApp:
-    case user_manager::UserType::kKioskWebApp:
-    case user_manager::UserType::kKioskIWA:
-    case user_manager::UserType::kKioskArcvmApp:
-      // Disallows guest, managed guest and kiosk app sessions.
-      return false;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfSaveToDrive) &&
          !Profile::FromBrowserContext(context)->IsOffTheRecord();
@@ -321,16 +279,9 @@ std::string GetManifest() {
   return manifest_contents;
 }
 
-base::DictValue GetStrings(PdfViewerContext context) {
+base::DictValue GetStrings() {
   base::DictValue dict = GetCommonStrings();
-  if (context == PdfViewerContext::kPdfViewer ||
-      context == PdfViewerContext::kAll) {
-    dict.Merge(GetPdfViewerStrings());
-  }
-  if (context == PdfViewerContext::kPrintPreview ||
-      context == PdfViewerContext::kAll) {
-    // Nothing to do yet, since there are no PrintPreview-only strings.
-  }
+  dict.Merge(GetPdfViewerStrings());
   return dict;
 }
 
@@ -349,8 +300,6 @@ base::DictValue GetAdditionalData(content::BrowserContext* context) {
   dict.Set("pdfUseShowSaveFilePicker",
            base::FeatureList::IsEnabled(
                chrome_pdf::features::kPdfUseShowSaveFilePicker));
-  dict.Set("printingEnabled", IsPrintingEnabled(context));
-
 #if BUILDFLAG(ENABLE_PDF_INK2)
   const bool use_ink2 = IsPdfInk2AnnotationsEnabled(context);
   dict.Set("pdfInk2Enabled", use_ink2);
@@ -368,41 +317,9 @@ base::DictValue GetAdditionalData(content::BrowserContext* context) {
   return dict;
 }
 
-std::vector<webui::ResourcePath> GetResources(PdfViewerContext context) {
-  static constexpr auto kExcludeFromPdfViewer =
-      std::to_array<std::string_view>({
-          "pdf/index_print.html",
-          "pdf/main_print.js",
-          "pdf/pdf_print_wrapper.js",
-      });
-  static constexpr auto kExcludeFromPrintPreview =
-      std::to_array<std::string_view>({
-          "pdf/index.html",
-          "pdf/main.js",
-          "pdf/pdf_viewer_wrapper.js",
-      });
-  base::span<const std::string_view> exclusions;
-
-  switch (context) {
-    case PdfViewerContext::kPdfViewer:
-      exclusions = kExcludeFromPdfViewer;
-      break;
-    case PdfViewerContext::kPrintPreview:
-      exclusions = kExcludeFromPrintPreview;
-      break;
-    default:
-      NOTREACHED();
-  }
-
-  std::vector<webui::ResourcePath> resources;
-  resources.reserve(std::size(kPdfResources));
-  for (const webui::ResourcePath& resource : kPdfResources) {
-    if (std::ranges::contains(exclusions, resource.path)) {
-      continue;
-    }
-    resources.push_back(resource);
-  }
-  return resources;
+std::vector<webui::ResourcePath> GetResources() {
+  return std::vector<webui::ResourcePath>(std::begin(kPdfResources),
+                                          std::end(kPdfResources));
 }
 
 bool MaybeDispatchSaveEvent(content::RenderFrameHost* embedder_host) {

@@ -89,19 +89,9 @@ const std::u16string AutofillErrorDialogControllerImpl::GetTitle() {
       return l10n_util::GetStringUTF16(
           IDS_AUTOFILL_IBAN_UNMASK_ERROR_DIALOG_TITLE);
     case AutofillErrorDialogType::kCreditCardUploadError:
-#if BUILDFLAG(IS_IOS)
-      return l10n_util::GetStringUTF16(
-          IDS_AUTOFILL_SAVE_CARD_CONFIRMATION_FAILURE_TITLE_TEXT);
-#else
       NOTREACHED();
-#endif  // BUILDFLAG(IS_IOS)
     case AutofillErrorDialogType::kVirtualCardEnrollmentTemporaryError:
-#if BUILDFLAG(IS_IOS)
-      return l10n_util::GetStringUTF16(
-          IDS_AUTOFILL_VIRTUAL_CARD_TEMPORARY_ERROR_TITLE);
-#else
       NOTREACHED();
-#endif  // BUILDFLAG(IS_IOS)
     case AutofillErrorDialogType::kBnplTemporaryError:
     case AutofillErrorDialogType::kBnplPermanentError:
       return l10n_util::GetStringUTF16(IDS_AUTOFILL_BNPL_ERROR_DIALOG_TITLE);
@@ -153,21 +143,9 @@ const std::u16string AutofillErrorDialogControllerImpl::GetDescription() {
       return l10n_util::GetStringUTF16(
           IDS_AUTOFILL_IBAN_UNMASK_ERROR_DIALOG_MESSAGE);
     case AutofillErrorDialogType::kCreditCardUploadError:
-#if BUILDFLAG(IS_IOS)
-      return l10n_util::GetStringUTF16(
-          base::FeatureList::IsEnabled(features::kAutofillEnableWalletBranding)
-              ? IDS_AUTOFILL_SAVE_CARD_TO_WALLET_CONFIRMATION_FAILURE_DESCRIPTION_TEXT
-              : IDS_AUTOFILL_SAVE_CARD_CONFIRMATION_FAILURE_DESCRIPTION_TEXT);
-#else
       NOTREACHED();
-#endif  // BUILDFLAG(IS_IOS)
     case AutofillErrorDialogType::kVirtualCardEnrollmentTemporaryError:
-#if BUILDFLAG(IS_IOS)
-      return l10n_util::GetStringUTF16(
-          IDS_AUTOFILL_VIRTUAL_CARD_TEMPORARY_ERROR_DESCRIPTION);
-#else
       NOTREACHED();
-#endif  // BUILDFLAG(IS_IOS)
     case AutofillErrorDialogType::kBnplTemporaryError:
       return l10n_util::GetStringUTF16(
           IDS_AUTOFILL_BNPL_TEMPORARY_ERROR_DESCRIPTION);
@@ -187,12 +165,8 @@ const std::u16string AutofillErrorDialogControllerImpl::GetButtonLabel() {
           AutofillErrorDialogType::kCreditCardUploadError ||
       error_dialog_context_.type ==
           AutofillErrorDialogType::kVirtualCardEnrollmentTemporaryError) {
-#if BUILDFLAG(IS_IOS)
-    return l10n_util::GetStringUTF16(IDS_OK);
-#else  // BUILDFLAG(IS_IOS)
     // Not reachable on non-iOS platforms.
     NOTREACHED();
-#endif
   }
 
   return l10n_util::GetStringUTF16(

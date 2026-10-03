@@ -25,7 +25,6 @@
 #include "components/optimization_guide/proto/string_value.pb.h"
 #include "components/page_content_annotations/content/page_embeddings_service.h"
 #include "components/page_content_annotations/core/page_content_annotation_type.h"
-#include "components/translate/core/common/language_detection_details.h"
 #include "content/public/browser/page.h"
 
 namespace accessibility_annotator {
@@ -115,14 +114,6 @@ void ContentAnnotatorService::OnPageContentAnnotated(
   // Invert the visibility score to get a sensitivity score.
   it->second.sensitivity_score = 1.0 - result.GetContentVisibilityScore();
   it->second.navigation_timestamp = visit.nav_entry_timestamp;
-  MaybeAnnotate(it);
-}
-
-void ContentAnnotatorService::OnLanguageDetermined(
-    const translate::LanguageDetectionDetails& details) {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  CacheIterator it = GetOrCreateJoinEntry(details.url);
-  it->second.adopted_language = details.adopted_language;
   MaybeAnnotate(it);
 }
 

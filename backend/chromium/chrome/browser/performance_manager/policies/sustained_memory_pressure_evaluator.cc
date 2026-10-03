@@ -14,31 +14,7 @@ namespace performance_manager::policies {
 // Returns true if the available memory is under 15%. Only implemented on
 // Windows.
 bool IsMemoryPressure() {
-#if BUILDFLAG(IS_WIN)
-  base::SystemMemoryInfo info;
-  if (!base::GetSystemMemoryInfo(&info)) {
-    // Cannot get system memory info, do nothing.
-    return false;
-  }
-
-  base::ByteSize total = info.total;
-  base::ByteSize avail = info.avail_phys;
-
-  // This is unexpected, do nothing.
-  if (!total.is_positive()) {
-    return false;
-  }
-
-  int available_percent =
-      static_cast<int>(avail.InBytesF() / total.InBytesF() * 100.0);
-
-  // Consider memory pressure when under the threshold.
-  return available_percent <
-         features::kSustainedPMUrgentDiscarding_PercentAvailableMemory.Get();
-
-#else  // BUILDFLAG(IS_WIN)
   return false;
-#endif
 }
 
 SustainedMemoryPressureEvaluator::SustainedMemoryPressureEvaluator(

@@ -239,10 +239,6 @@ class CORE_EXPORT ScrollbarTheme {
 
   virtual bool AllowsHitTest() const { return true; }
 
-  static bool DesktopAndroidScrollbarsEnabled() {
-    return ScrollbarThemeSettings::DesktopAndroidScrollbarsEnabled();
-  }
-
  protected:
   // The point is in the same coordinate space as the scrollbar's FrameRect.
   virtual ScrollbarPart HitTest(const Scrollbar&, const gfx::Point&) const;

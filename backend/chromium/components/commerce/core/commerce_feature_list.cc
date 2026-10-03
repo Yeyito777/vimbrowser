@@ -12,9 +12,7 @@
 #include "base/strings/string_util.h"
 #include "base/values.h"
 #include "build/buildflag.h"
-#if !BUILDFLAG(IS_ANDROID)
 #include "components/commerce/core/commerce_heuristics_data.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 #include "components/commerce/core/commerce_heuristics_data_metrics_helper.h"
 #include "components/commerce/core/pref_names.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
@@ -41,14 +39,8 @@ const CountryLocaleMap& GetAllowedCountryToLocaleMap() {
   static const base::NoDestructor<CountryLocaleMap> allowed_map([] {
     CountryLocaleMap map;
 
-#if BUILDFLAG(IS_ANDROID)
-    map[&kCommerceMerchantViewer] = {{"us", {"en-us"}}};
-    map[&kPriceAnnotations] = {{"us", {"en-us"}}};
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if !BUILDFLAG(IS_IOS)
     map[&kEnableDiscountInfoApi] = {{"us", {"en-us"}}};
-#endif  // !BUILDFLAG(IS_IOS)
 
     map[&ntp_features::kNtpChromeCartModule] = {{"us", {"en-us"}}};
     map[&kPriceInsights] = {{"us", {"en-us"}}};
@@ -78,7 +70,6 @@ constexpr base::FeatureParam<std::string> kCouponPartnerMerchantPattern{
     "\\b\\B"};
 
 const re2::RE2& GetRulePartnerMerchantPattern() {
-#if !BUILDFLAG(IS_ANDROID)
   auto* pattern_from_component =
       commerce_heuristics::CommerceHeuristicsData::GetInstance()
           .GetRuleDiscountPartnerMerchantPattern();
@@ -88,7 +79,6 @@ const re2::RE2& GetRulePartnerMerchantPattern() {
         CommerceHeuristicsDataMetricsHelper::HeuristicsSource::FROM_COMPONENT);
     return *pattern_from_component;
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   re2::RE2::Options options;
   options.set_case_sensitive(false);
   static base::NoDestructor<re2::RE2> instance(
@@ -100,7 +90,6 @@ const re2::RE2& GetRulePartnerMerchantPattern() {
 }
 
 const re2::RE2& GetCouponPartnerMerchantPattern() {
-#if !BUILDFLAG(IS_ANDROID)
   auto* pattern_from_component =
       commerce_heuristics::CommerceHeuristicsData::GetInstance()
           .GetCouponDiscountPartnerMerchantPattern();
@@ -109,7 +98,6 @@ const re2::RE2& GetCouponPartnerMerchantPattern() {
           kCouponPartnerMerchantPattern.default_value) {
     return *pattern_from_component;
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
   re2::RE2::Options options;
   options.set_case_sensitive(false);
   static base::NoDestructor<re2::RE2> instance(
@@ -331,7 +319,6 @@ bool IsRegionLockedFeatureEnabled(const base::Feature& feature,
   return flag_enabled || region_launched;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 base::TimeDelta GetDiscountFetchDelay() {
   auto delay_from_component =
       commerce_heuristics::CommerceHeuristicsData::GetInstance()
@@ -355,5 +342,4 @@ bool IsNoDiscountMerchant(const GURL& url) {
   }
   return RE2::PartialMatch(url.host(), *pattern_from_component);
 }
-#endif
 }  // namespace commerce

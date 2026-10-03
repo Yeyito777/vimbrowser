@@ -11,9 +11,7 @@
 #include "chrome/browser/enterprise/connectors/reporting/browser_crash_event_router.h"
 #include "components/enterprise/browser/controller/chrome_browser_cloud_management_controller.h"
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "third_party/crashpad/crashpad/client/crash_report_database.h"
-#endif
 
 namespace enterprise_connectors {
 
@@ -30,7 +28,6 @@ class CrashReportingContext
   CrashReportingContext operator=(CrashReportingContext&&) = delete;
   ~CrashReportingContext() override;
 
-#if !BUILDFLAG(IS_CHROMEOS)
   static CrashReportingContext* GetInstance();
 
   void AddProfile(BrowserCrashEventRouter* router, Profile* profile);
@@ -51,10 +48,8 @@ class CrashReportingContext
   std::unordered_map<BrowserCrashEventRouter*,
                      raw_ptr<Profile, CtnExperimental>>
       active_profiles_;
-#endif
 };
 
-#if !BUILDFLAG(IS_CHROMEOS)
 
 // Utility function to parse reports from a crash database that were
 // created past a given timestamp. Included in header for testing.
@@ -82,7 +77,6 @@ void UploadToReportingServer(
 // in header for testing.
 base::TimeDelta GetCrashpadPollingInterval();
 
-#endif
 
 }  // namespace enterprise_connectors
 #endif  // CHROME_BROWSER_ENTERPRISE_CONNECTORS_REPORTING_CRASH_REPORTING_CONTEXT_H_

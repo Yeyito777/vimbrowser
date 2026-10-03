@@ -59,9 +59,6 @@ namespace {
 constexpr int kMinimumPickerSizePx = 620;
 
 bool IsBrowserSigninAllowed() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return true;
-#else
   if (base::FeatureList::IsEnabled(
           switches::
               kProfileCreationFrictionReductionExperimentRemoveSigninStep)) {
@@ -83,7 +80,6 @@ bool IsBrowserSigninAllowed() {
   return static_cast<policy::BrowserSigninMode>(
              browser_signin_value->GetInt()) !=
          policy::BrowserSigninMode::kDisabled;
-#endif
 }
 
 std::string GetManagedDeviceDisclaimer() {

@@ -26,13 +26,7 @@
 #include "components/prefs/pref_service.h"
 #include "components/signin/public/identity_manager/account_managed_status_finder.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
-#include "chrome/browser/ash/policy/core/user_cloud_policy_manager_ash.h"
-#include "chrome/browser/browser_process_platform_part.h"
-#else
 #include "components/policy/core/common/cloud/user_cloud_policy_manager.h"
-#endif
 
 namespace {
 
@@ -81,11 +75,6 @@ std::optional<std::string> GetDeviceManagerIdentity() {
     return std::nullopt;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  policy::BrowserPolicyConnectorAsh* connector =
-      g_browser_process->platform_part()->browser_policy_connector_ash();
-  return connector->GetEnterpriseDomainManager();
-#else
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
   if (base::FeatureList::IsEnabled(
           features::kEnterpriseManagementDisclaimerUsesCustomLabel)) {
@@ -106,7 +95,6 @@ std::optional<std::string> GetDeviceManagerIdentity() {
   return policy::GetManagedBy(g_browser_process->browser_policy_connector()
                                   ->machine_level_user_cloud_policy_manager())
       .value_or(std::string());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 std::optional<std::string> GetAccountManagerIdentity(Profile* profile) {

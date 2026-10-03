@@ -27,10 +27,6 @@
 #include "ui/gfx/mac/mtl_shared_event_fence.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_hardware_buffer_fence_sync.h"
-#include "ui/gfx/android/surface_control_frame_rate.h"
-#endif
 
 namespace gfx {
 namespace mojom {
@@ -53,9 +49,6 @@ struct DCLayerOverlayParams;
 using OverlayImage = scoped_refptr<gfx::NativePixmap>;
 #elif BUILDFLAG(IS_APPLE)
 using OverlayImage = gfx::ScopedIOSurface;
-#elif BUILDFLAG(IS_ANDROID)
-using OverlayImage =
-    std::unique_ptr<base::android::ScopedHardwareBufferFenceSync>;
 #else
 struct OverlayImage {};
 #endif
@@ -113,15 +106,6 @@ class GL_EXPORT Presenter : public base::RefCounted<Presenter> {
       std::vector<gfx::MTLSharedEventFence> backpressure_fences);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // Schedule a list of DCLayers to be shown at next Present(). Semantics is
-  // similar to calling ScheduleOverlayPlane() for every overlay in a frame. All
-  // arguments correspond to their DCLayer properties.
-  virtual void ScheduleDCLayers(std::vector<DCLayerOverlayParams> overlays);
-
-  // Destroy all visual tree resources and commit, returning true on success.
-  virtual bool DestroyDCLayerTree();
-#endif
 
   // Presents current frame asynchronously. `completion_callback` will be called
   // once all necessary steps were taken to display the frame.
@@ -135,10 +119,6 @@ class GL_EXPORT Presenter : public base::RefCounted<Presenter> {
   virtual void SetMaxPendingSwaps(int max_pending_swaps) {}
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-  // Sets preferred frame rate
-  virtual void SetFrameRate(gfx::SurfaceControlFrameRate frame_rate) {}
-#endif
 
   // Android specific. Sets vsync_id of the corresponding Choreographer frame.
   virtual void SetChoreographerVsyncIdForNextFrame(
@@ -148,15 +128,6 @@ class GL_EXPORT Presenter : public base::RefCounted<Presenter> {
   // Android to do so after app switching animation is done.
   virtual void PreserveChildSurfaceControls() {}
 
-#if BUILDFLAG(IS_WIN)
-  virtual bool SupportsDelegatedInk() = 0;
-  virtual void SetDelegatedInkTrailStartPoint(
-      std::unique_ptr<gfx::DelegatedInkMetadata> metadata) {}
-  virtual void InitDelegatedInkPointRendererReceiver(
-      mojo::PendingReceiver<gfx::mojom::DelegatedInkPointRenderer>
-          pending_receiver) {}
-  virtual HWND GetWindow() const = 0;
-#endif
 
   // Tells the presenter to rely on implicit sync when presenting buffers.
   virtual void SetRelyOnImplicitSync() {}

@@ -572,11 +572,9 @@ sql::InitStatus HistoryDatabase::EnsureCurrentVersion() {
   }
 
   if (cur_version == 16) {
-#if !BUILDFLAG(IS_WIN)
     // In this version we bring the time format on Mac & Linux in sync with the
     // Windows version so that profiles can be moved between computers.
     MigrateTimeEpoch();
-#endif
     // On all platforms we bump the version number, so on Windows this
     // migration is a NOP. We keep the compatible version at 16 since things
     // will basically still work, just history will be in the future if an
@@ -1023,11 +1021,6 @@ sql::InitStatus HistoryDatabase::EnsureCurrentVersion() {
   if (cur_version == 69) {
     // The android_urls table's stopped being read in 91.0.4438.0. Delete it if
     // it still exists.
-#if BUILDFLAG(IS_ANDROID)
-    if (!DropAndroidUrlsTable()) {
-      return LogMigrationFailure(69);
-    }
-#endif
     cur_version++;
     // TODO(crbug.com/40891923): Handle failure instead of ignoring it.
     std::ignore = meta_table_.SetVersionNumber(cur_version);
@@ -1057,7 +1050,6 @@ sql::InitStatus HistoryDatabase::EnsureCurrentVersion() {
   return sql::INIT_OK;
 }
 
-#if !BUILDFLAG(IS_WIN)
 void HistoryDatabase::MigrateTimeEpoch() {
   // Update all the times in the URLs and visits table in the main database.
   std::ignore = db_.Execute(
@@ -1073,7 +1065,6 @@ void HistoryDatabase::MigrateTimeEpoch() {
       "SET time_slot = time_slot + 11644473600000000 "
       "WHERE id IN (SELECT id FROM segment_usage WHERE time_slot > 0);");
 }
-#endif
 
 bool HistoryDatabase::MigrateRemoveTypedUrlMetadata() {
   if (!meta_table_.DeleteKey("typed_url_model_type_state")) {
@@ -1085,13 +1076,5 @@ bool HistoryDatabase::MigrateRemoveTypedUrlMetadata() {
   return true;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-bool HistoryDatabase::DropAndroidUrlsTable() {
-  if (!db_.Execute("DROP TABLE IF EXISTS android_urls;")) {
-    return false;
-  }
-  return true;
-}
-#endif
 
 }  // namespace history

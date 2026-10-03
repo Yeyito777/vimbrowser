@@ -594,7 +594,7 @@ void ChromeOmniboxClient::CheckConditionsAndLaunchSurvey() {
           metrics::OmniboxEventProto::PageClassification_Name(
               GetPageClassification(/*is_prefetch=*/false))},
          {"channel", channel}},
-        trigger_id, HatsService::SurveyOptions());
+        trigger_id);
   }
 }
 

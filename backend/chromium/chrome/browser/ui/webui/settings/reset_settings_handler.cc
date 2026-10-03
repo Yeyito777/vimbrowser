@@ -34,18 +34,7 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_features.h"
-#include "chrome/browser/profiles/profile_manager.h"
-#include "chrome/browser/ui/ash/system_web_apps/system_web_app_ui_utils.h"
-#include "chrome/browser/ui/webui/ash/settings/pref_names.h"
-#include "components/services/app_service/public/cpp/app_launch_util.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/profile_resetter/triggered_profile_resetter.h"
-#include "chrome/browser/profile_resetter/triggered_profile_resetter_factory.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace settings {
 
@@ -72,16 +61,6 @@ ResetRequestOriginFromString(const std::string& request_origin) {
 
 }  // namespace
 
-#if BUILDFLAG(IS_CHROMEOS)
-// static
-const char ResetSettingsHandler::kCctResetSettingsHash[] = "cct";
-
-// static
-void ResetSettingsHandler::RegisterProfilePrefs(PrefRegistrySimple* registry) {
-  registry->RegisterBooleanPref(ash::settings::prefs::kSanitizeCompleted,
-                                false);
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // static
 bool ResetSettingsHandler::ShouldShowResetProfileBanner(Profile* profile) {
@@ -140,12 +119,6 @@ void ResetSettingsHandler::RegisterMessages() {
       base::BindRepeating(
           &ResetSettingsHandler::HandleGetTriggeredResetToolName,
           base::Unretained(this)));
-#if BUILDFLAG(IS_CHROMEOS)
-  web_ui()->RegisterMessageCallback(
-      "onShowSanitizeDialog",
-      base::BindRepeating(&ResetSettingsHandler::OnShowSanitizeDialog,
-                          base::Unretained(this)));
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void ResetSettingsHandler::HandleResetProfileSettings(
@@ -313,18 +286,6 @@ void ResetSettingsHandler::HandleGetTriggeredResetToolName(
   // Set up the localized strings for the triggered profile reset dialog.
   // Custom reset tool names are supported on Windows only.
   std::u16string reset_tool_name;
-#if BUILDFLAG(IS_WIN)
-  Profile* profile = Profile::FromWebUI(web_ui());
-  TriggeredProfileResetter* triggered_profile_resetter =
-      TriggeredProfileResetterFactory::GetForBrowserContext(profile);
-  // TriggeredProfileResetter instance will be nullptr for incognito profiles.
-  if (triggered_profile_resetter) {
-    reset_tool_name = triggered_profile_resetter->GetResetToolName();
-
-    // Now that a reset UI has been shown, don't trigger again for this profile.
-    triggered_profile_resetter->ClearResetTrigger();
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   if (reset_tool_name.empty()) {
     reset_tool_name = l10n_util::GetStringUTF16(
@@ -335,17 +296,5 @@ void ResetSettingsHandler::HandleGetTriggeredResetToolName(
   ResolveJavascriptCallback(callback_id, string_value);
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void ResetSettingsHandler::OnShowSanitizeDialog(const base::ListValue& args) {
-  // TODO(b/357057195) move sanitize functionality functions out of
-  // ResetSettingsHandler and only leave the UI parts for ResetSettingsHandler.
-  if (base::FeatureList::IsEnabled(ash::features::kSanitize)) {
-    ash::SystemAppLaunchParams params;
-    params.launch_source = apps::LaunchSource::kUnknown;
-    ash::LaunchSystemWebAppAsync(ProfileManager::GetPrimaryUserProfile(),
-                                 ash::SystemWebAppType::OS_SANITIZE, params);
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace settings

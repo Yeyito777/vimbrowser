@@ -19,7 +19,6 @@
 #include "chrome/browser/password_manager/actor_login/internal/actor_login_federated_credentials_fetcher.h"
 #include "chrome/browser/password_manager/actor_login/internal/actor_login_metrics_helper.h"
 #include "chrome/browser/password_manager/actor_login/internal/actor_login_siwg_controller.h"
-#include "chrome/browser/translate/chrome_translate_client.h"
 #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
 #include "chrome/common/buildflags.h"
 #include "components/password_manager/content/browser/content_password_manager_driver.h"
@@ -125,9 +124,7 @@ void ActorLoginDelegateImpl::GetCredentials(
 
   const url::Origin request_origin =
       GetWebContents().GetPrimaryMainFrame()->GetLastCommittedOrigin();
-  mqls_logger->SetDomainAndLanguage(
-      ChromeTranslateClient::GetManagerFromWebContents(&GetWebContents()),
-      request_origin.GetURL());
+  mqls_logger->SetDomain(request_origin.GetURL());
 
   std::vector<std::unique_ptr<ActorLoginCredentialsFetcher>> fetchers;
   fetchers.push_back(std::make_unique<ActorLoginPasswordCredentialsFetcher>(
@@ -191,9 +188,7 @@ void ActorLoginDelegateImpl::AttemptLogin(
 
   const url::Origin origin =
       GetWebContents().GetPrimaryMainFrame()->GetLastCommittedOrigin();
-  mqls_logger->SetDomainAndLanguage(
-      ChromeTranslateClient::GetManagerFromWebContents(&GetWebContents()),
-      origin.GetURL());
+  mqls_logger->SetDomain(origin.GetURL());
 
   if (!metrics_helper_) {
     metrics_helper_ = std::make_unique<ActorLoginMetricsHelper>(

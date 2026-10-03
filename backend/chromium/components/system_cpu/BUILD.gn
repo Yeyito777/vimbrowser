@@ -36,22 +36,6 @@ source_set("system_cpu") {
       "host_processor_info_scanner.h",
     ]
   }
-
-  if (is_android) {
-    sources += [
-      "cpu_freq_android.cc",
-      "cpu_freq_android.h",
-    ]
-  }
-
-  if (is_win) {
-    sources += [
-      "cpu_probe_win.cc",
-      "cpu_probe_win.h",
-    ]
-
-    libs += [ "pdh.lib" ]
-  }
 }
 
 source_set("unit_tests") {
@@ -74,19 +58,11 @@ source_set("unit_tests") {
     ]
   }
 
-  if (is_android) {
-    sources += [ "cpu_freq_android_unittest.cc" ]
-  }
-
   if (is_mac) {
     sources += [
       "core_times_unittest.cc",
       "cpu_probe_mac_unittest.cc",
     ]
-  }
-
-  if (is_win) {
-    sources += [ "cpu_probe_win_unittest.cc" ]
   }
 }
 

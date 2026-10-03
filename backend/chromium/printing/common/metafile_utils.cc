@@ -36,14 +36,6 @@
 #include "ui/accessibility/ax_tree_update.h"
 #include "ui/gfx/skia_span_util.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <objbase.h>
-
-#include <XpsObjectModel.h>
-
-#include "third_party/skia/include/docs/SkXPSDocument.h"
-#include "third_party/skia/include/encode/SkPngRustEncoder.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace {
 
@@ -443,24 +435,6 @@ sk_sp<SkDocument> MakePdfDocument(
   return SkPDF::MakeDocument(stream, metadata);
 }
 
-#if BUILDFLAG(IS_WIN)
-sk_sp<SkDocument> MakeXpsDocument(SkWStream* stream) {
-  IXpsOMObjectFactory* factory = nullptr;
-  HRESULT hr = CoCreateInstance(CLSID_XpsOMObjectFactory, nullptr,
-                                CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
-  if (FAILED(hr) || !factory) {
-    DLOG(ERROR) << "Unable to create XPS object factory: "
-                << logging::SystemErrorCodeToString(hr);
-    return nullptr;
-  }
-
-  SkXPS::Options opts;
-  opts.pngEncoder = [](SkWStream* dst, const SkPixmap& src) {
-    return SkPngRustEncoder::Encode(dst, src, {});
-  };
-  return SkXPS::MakeDocument(stream, factory, opts);
-}
-#endif
 
 SkSerialReturnType SerializeOopPicture(SkPicture* pic, void* ctx) {
   const auto* context = reinterpret_cast<const ContentToProxyTokenMap*>(ctx);

@@ -42,16 +42,14 @@ static_library("core") {
     "utils.h",
   ]
 
-  if (!is_ios) {
-    sources += [
-      "blocked_interception_ui.cc",
-      "blocked_interception_ui.h",
-      "https_only_mode_policy_handler.cc",
-      "https_only_mode_policy_handler.h",
-      "mitm_software_ui.cc",
-      "mitm_software_ui.h",
-    ]
-  }
+  sources += [
+    "blocked_interception_ui.cc",
+    "blocked_interception_ui.h",
+    "https_only_mode_policy_handler.cc",
+    "https_only_mode_policy_handler.h",
+    "mitm_software_ui.cc",
+    "mitm_software_ui.h",
+  ]
 
   deps = [
     "//base",

@@ -24,15 +24,6 @@ proto_library("request_context_config_proto") {
   sources = [ "proto/request_context_config.proto" ]
 }
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-
-  proto_java_library("request_context_config_java_proto") {
-    proto_path = "."
-    sources = [ "proto/request_context_config.proto" ]
-  }
-}
-
 # Cronet common implementation.
 source_set("cronet_common") {
   sources = [
@@ -71,7 +62,7 @@ source_set("metrics_util") {
   ]
   deps = [
     "//base",
-    "//net:net",
+    "//net",
   ]
 }
 
@@ -91,11 +82,4 @@ source_set("cronet_common_unittests") {
     "network_tasks_unittest.cc",
     "url_request_context_config_unittest.cc",
   ]
-}
-
-if (is_android) {
-  group("cronet_package") {
-    testonly = true
-    deps = [ "//components/cronet/android:cronet_package_android" ]
-  }
 }

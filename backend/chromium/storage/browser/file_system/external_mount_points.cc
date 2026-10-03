@@ -299,17 +299,11 @@ FileSystemURL ExternalMountPoints::CrackFileSystemURL(
 
   base::FilePath virtual_path = url.path();
   if (url.type() == kFileSystemTypeLocalForPlatformApp) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // On ChromeOS, find a mount point and virtual path for the external fs.
-    if (!GetVirtualPath(url.path(), &virtual_path))
-      return FileSystemURL();
-#else
     // On other OS, it is simply a native local path.
     return FileSystemURL(url.storage_key(), url.mount_type(),
                          url.virtual_path(), url.mount_filesystem_id(),
                          kFileSystemTypeLocal, url.path(), url.filesystem_id(),
                          url.mount_option());
-#endif
   }
 
   std::string mount_name;

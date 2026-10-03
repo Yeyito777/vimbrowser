@@ -53,7 +53,6 @@ class ChromePageInfoDelegate : public PageInfoDelegate {
       blink::PermissionType permission,
       const url::Origin& origin,
       const std::optional<url::Origin>& requesting_origin) override;
-#if !BUILDFLAG(IS_ANDROID)
   std::optional<std::u16string> GetRwsOwner(const GURL& site_url) override;
   bool IsRwsManaged(const GURL& site_url) override;
   bool CreateInfoBarDelegate() override;
@@ -78,7 +77,6 @@ class ChromePageInfoDelegate : public PageInfoDelegate {
       ContentSettingsType content_settings_type) override;
   void OnPageInfoActionOccurred(page_info::PageInfoAction action) override;
   void OnUIClosing() override;
-#endif
 
   std::u16string GetSubjectName(const GURL& url) override;
   permissions::PermissionDecisionAutoBlocker* GetPermissionDecisionAutoblocker()
@@ -95,17 +93,11 @@ class ChromePageInfoDelegate : public PageInfoDelegate {
   std::unique_ptr<content_settings::PageSpecificContentSettings::Delegate>
   GetPageSpecificContentSettingsDelegate() override;
 
-#if BUILDFLAG(IS_ANDROID)
-  const std::u16string GetClientApplicationName() override;
-#endif
 
   bool IsHttpsFirstModeEnabled() override;
   bool IsIncognitoProfile() override;
   bool IsLocalNetworkAccessSplitPermissionsEnabled() override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  bool ShouldSyncCookiesForUrl(const GURL& url) override;
-#endif
 
  private:
   Profile* GetProfile() const;
@@ -115,7 +107,6 @@ class ChromePageInfoDelegate : public PageInfoDelegate {
   GetChromePasswordProtectionService() const;
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
   // Focus the window and tab for the web contents.
   void FocusWebContents();
 
@@ -123,7 +114,6 @@ class ChromePageInfoDelegate : public PageInfoDelegate {
   // service cannot be retrieved via |web_contents_| as that may be destroyed
   // before this is.
   raw_ptr<TrustSafetySentimentService> sentiment_service_;
-#endif
 
   raw_ptr<content::WebContents, AcrossTasksDanglingUntriaged> web_contents_;
   security_state::SecurityLevel security_level_for_tests_;

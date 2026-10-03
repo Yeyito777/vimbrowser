@@ -18,7 +18,7 @@
 #include <algorithm>
 
 #include "perfetto/base/status.h"
-#include "perfetto/ext/base/android_utils.h"
+#include "perfetto/ext/base/system_info.h"
 #include "perfetto/ext/base/file_utils.h"
 #include "perfetto/ext/base/getopt.h"
 #include "perfetto/ext/base/lock_free_task_runner.h"
@@ -32,7 +32,6 @@
 #include "perfetto/ext/tracing/core/tracing_service.h"
 #include "perfetto/ext/tracing/ipc/service_ipc_host.h"
 #include "perfetto/tracing/default_socket.h"
-#include "src/traced/service/builtin_producer.h"
 
 #if PERFETTO_BUILDFLAG(PERFETTO_OS_ANDROID)
 #include <sys/system_properties.h>
@@ -225,14 +224,6 @@ int PERFETTO_EXPORT_ENTRYPOINT ServiceMain(int argc, char** argv) {
     PERFETTO_ELOG("Failed to start the traced service");
     return 1;
   }
-
-  // Advertise builtin producers only on in-tree builds. These producers serve
-  // only to dynamically start heapprofd and other services via sysprops, but
-  // that can only ever happen in in-tree builds.
-#if PERFETTO_BUILDFLAG(PERFETTO_ANDROID_BUILD)
-  BuiltinProducer builtin_producer(&task_runner, /*lazy_stop_delay_ms=*/30000);
-  builtin_producer.ConnectInProcess(svc->service());
-#endif
 
   // Set the CPU limit and start the watchdog running. The memory limit will
   // be set inside the service code as it relies on the size of buffers.

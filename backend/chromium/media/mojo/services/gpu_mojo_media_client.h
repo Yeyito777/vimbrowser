@@ -19,7 +19,6 @@
 #include "gpu/config/gpu_info.h"
 #include "gpu/config/gpu_preferences.h"
 #include "gpu/ipc/service/command_buffer_stub.h"
-#include "media/base/android_overlay_mojo_factory.h"
 #include "media/base/supported_video_decoder_config.h"
 #include "media/media_buildflags.h"
 #include "media/mojo/services/mojo_media_client.h"
@@ -66,9 +65,6 @@ struct MEDIA_MOJO_EXPORT GpuMojoMediaClientTraits {
   gpu::GPUInfo gpu_info;
   scoped_refptr<base::SingleThreadTaskRunner> gpu_task_runner;
 
-  // Only used on Android.
-  AndroidOverlayMojoFactoryCB android_overlay_factory_cb;
-
   // |media_gpu_channel_manager| must only be used on |gpu_task_runner|, which
   // is expected to be the GPU main thread task runner.
   base::WeakPtr<MediaGpuChannelManager> media_gpu_channel_manager;
@@ -79,7 +75,6 @@ struct MEDIA_MOJO_EXPORT GpuMojoMediaClientTraits {
       const gpu::GpuFeatureInfo& gpu_feature_info,
       const gpu::GPUInfo& gpu_info,
       scoped_refptr<base::SingleThreadTaskRunner> gpu_task_runner,
-      AndroidOverlayMojoFactoryCB android_overlay_factory_cb,
       base::WeakPtr<MediaGpuChannelManager> media_gpu_channel_manager);
   ~GpuMojoMediaClientTraits();
 };

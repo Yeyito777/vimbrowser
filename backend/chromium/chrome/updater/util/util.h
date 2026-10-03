@@ -171,34 +171,6 @@ GURL AppendQueryParameter(const GURL& url,
 bool SetFilePermissionsRecursive(const base::FilePath& root_path);
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-
-// Returns the versioned task name prefix in the following format:
-// "{ProductName}Task{System/User}{UpdaterVersion}".
-// For instance: "ChromiumUpdaterTaskSystem92.0.0.1".
-std::wstring GetTaskNamePrefix(
-    UpdaterScope scope,
-    const base::Version& version = base::Version(kUpdaterVersion));
-
-// Returns the versioned task display name in the following format:
-// "{ProductName} Task {System/User} {UpdaterVersion}".
-// For instance: "ChromiumUpdater Task System 92.0.0.1".
-std::wstring GetTaskDisplayName(
-    UpdaterScope scope,
-    const base::Version& version = base::Version(kUpdaterVersion));
-
-// Parses the command line string in legacy format into `base::CommandLine`.
-// The string must be in format like:
-//   program.exe /switch1 value1 /switch2 /switch3 value3
-// Returns empty if a Chromium style switch is found.
-std::optional<base::CommandLine> CommandLineForLegacyFormat(
-    const std::wstring& cmd_string);
-
-// Returns the command line for current process, either in legacy style, or
-// in Chromium style.
-base::CommandLine GetCommandLineLegacyCompatible();
-
-#endif  // BUILDFLAG(IS_WIN)
 
 // Writes the provided string prefixed with the UTF8 byte order mark to a
 // temporary file. The temporary file is created in the specified `directory`.

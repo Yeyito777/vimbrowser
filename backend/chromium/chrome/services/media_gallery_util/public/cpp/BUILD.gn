@@ -53,20 +53,18 @@ source_set("browser_tests") {
     "//testing/gtest",
   ]
 
-  if (!is_android) {
-    sources += [ "media_gallery_util_browsertest.cc" ]
+  sources += [ "media_gallery_util_browsertest.cc" ]
 
+  deps += [
+    "//chrome/services/media_gallery_util/public/mojom",
+    "//chrome/test:test_support_ui",
+    "//third_party/libyuv",
+  ]
+
+  if (media_use_ffmpeg) {
     deps += [
-      "//chrome/services/media_gallery_util/public/mojom",
-      "//chrome/test:test_support_ui",
-      "//third_party/libyuv",
+      "//third_party/ffmpeg",
+      "//third_party/ffmpeg:ffmpeg_features",
     ]
-
-    if (media_use_ffmpeg) {
-      deps += [
-        "//third_party/ffmpeg",
-        "//third_party/ffmpeg:ffmpeg_features",
-      ]
-    }
   }
 }

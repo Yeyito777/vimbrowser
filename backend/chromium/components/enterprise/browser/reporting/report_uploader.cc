@@ -65,13 +65,8 @@ void ReportUploader::Upload() {
       // binary string but still provide useful information.
       VLOG(2) << "Uploading report: " << request->SerializeAsString();
 
-#if BUILDFLAG(IS_CHROMEOS)
-      client_->UploadChromeOsUserReport(std::move(request),
-                                        std::move(callback));
-#else
       client_->UploadChromeDesktopReport(std::move(request),
                                          std::move(callback));
-#endif
       break;
     }
     case ReportType::kProfileReport: {

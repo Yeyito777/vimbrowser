@@ -16,7 +16,6 @@
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/v8_value_converter.h"
 #include "net/cookies/site_for_cookies.h"
-#include "printing/buildflags/buildflags.h"
 #include "third_party/blink/public/platform/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
 #include "third_party/blink/public/platform/web_security_origin.h"
@@ -41,10 +40,6 @@
 #include "v8/include/v8-isolate.h"
 #include "v8/include/v8-local-handle.h"
 #include "v8/include/v8-value.h"
-
-#if BUILDFLAG(ENABLE_PRINTING)
-#include "components/printing/renderer/print_render_frame_helper.h"
-#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 namespace pdf {
 
@@ -293,14 +288,6 @@ void PdfViewWebPluginClient::DidStopLoading() {
     return;
 
   frame_client->DidStopLoading();
-}
-
-void PdfViewWebPluginClient::Print() {
-  blink::WebElement element = plugin_container_->GetElement();
-  DCHECK(!element.IsNull());
-#if BUILDFLAG(ENABLE_PRINTING)
-  printing::PrintRenderFrameHelper::Get(render_frame_)->PrintNode(element);
-#endif  // BUILDFLAG(ENABLE_PRINTING)
 }
 
 void PdfViewWebPluginClient::RecordComputedAction(const std::string& action) {

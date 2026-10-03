@@ -52,9 +52,6 @@ class SecurityInterstitialControllerClient
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
   void ShowCertificateViewer() override;
 #endif
-#if BUILDFLAG(IS_ANDROID)
-  void OpenAdvancedProtectionSettings() override;
-#endif
   PrefService* GetPrefService() override;
   const std::string& GetApplicationLocale() const override;
   bool CanLaunchDateAndTimeSettings() override;

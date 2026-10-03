@@ -23,9 +23,6 @@
 #include "media/base/media_switches.h"
 #include "third_party/perfetto/include/perfetto/tracing/track.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_com_initializer.h"
-#endif
 
 namespace media {
 namespace {
@@ -45,23 +42,12 @@ class AudioManagerHelper {
 
   AudioLogFactory* fake_log_factory() { return &fake_log_factory_; }
 
-#if BUILDFLAG(IS_WIN)
-  // This should be called before creating an AudioManager in tests to ensure
-  // that the creating thread is COM initialized.
-  void InitializeCOMForTesting() {
-    com_initializer_for_testing_ =
-        std::make_unique<base::win::ScopedCOMInitializer>();
-  }
-#endif
 
   void set_app_name(const std::string& app_name) { app_name_ = app_name; }
   const std::string& app_name() const { return app_name_; }
 
   FakeAudioLogFactory fake_log_factory_;
 
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<base::win::ScopedCOMInitializer> com_initializer_for_testing_;
-#endif
 
   std::string app_name_;
 };
@@ -118,9 +104,6 @@ std::unique_ptr<AudioManager> AudioManager::Create(
 // static
 std::unique_ptr<AudioManager> AudioManager::CreateForTesting(
     std::unique_ptr<AudioThread> audio_thread) {
-#if BUILDFLAG(IS_WIN)
-  GetHelper()->InitializeCOMForTesting();
-#endif
   return Create(std::move(audio_thread), GetHelper()->fake_log_factory());
 }
 

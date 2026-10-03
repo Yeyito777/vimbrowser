@@ -55,9 +55,6 @@ class VariationsSeed;
 
 namespace variations {
 
-#if BUILDFLAG(IS_CHROMEOS)
-class DeviceVariationsRestrictionByPolicyApplicator;
-#endif
 
 // Used to (a) set up field trials based on stored variations seed data and (b)
 // fetch new seed data from the variations server.
@@ -470,10 +467,6 @@ class VariationsService
   // server url.
   std::string osname_server_param_override_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<DeviceVariationsRestrictionByPolicyApplicator>
-      device_variations_restrictions_by_policy_applicator_;
-#endif
 
   SEQUENCE_CHECKER(sequence_checker_);
 

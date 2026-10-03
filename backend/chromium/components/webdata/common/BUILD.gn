@@ -60,7 +60,4 @@ source_set("unit_tests") {
     "//sql:test_support",
     "//testing/gtest",
   ]
-  if (is_ios) {
-    deps += [ "//components/test:web_database_test_bundle_data" ]
-  }
 }

@@ -39,9 +39,6 @@ class ScreenAILibraryWrapperImpl : public ScreenAILibraryWrapper {
       void (*get_file_content)(const char* relative_file_path,
                                uint32_t buffer_size,
                                char* buffer)) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetLogger() override;
-#endif
 
   bool InitMainContentExtraction() override;
   std::optional<std::vector<int32_t>> ExtractMainContent(
@@ -81,12 +78,6 @@ class ScreenAILibraryWrapperImpl : public ScreenAILibraryWrapper {
                                char* /*buffer*/));
   SetFileContentFunctionsFn set_file_content_functions_ = nullptr;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Sets a function to receive library logs and add them to Chrome logs.
-  typedef void (*SetLoggerFn)(void (*logger_func)(int /*severity*/,
-                                                  const char* /*message*/));
-  SetLoggerFn set_logger_ = nullptr;
-#endif
 
   // Initializes the pipeline for main content extraction.
   typedef bool (*InitMainContentExtractionFn)();

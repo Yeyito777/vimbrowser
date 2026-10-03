@@ -32,10 +32,6 @@
 #include "components/safe_browsing/core/common/proto/csd.pb.h"
 #endif
 
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-#include "chrome/browser/download/download_core_service.h"
-#include "chrome/browser/download/download_core_service_factory.h"
-#endif
 
 using ::testing::_;
 using ::testing::Eq;
@@ -331,59 +327,3 @@ TEST_F(DownloadOfflineContentProviderWithSafeBrowsingTest,
   EXPECT_TRUE(sent_report.did_proceed());
 }
 #endif  // BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && BUILDFLAG(IS_ANDROID)
-
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-// Tests that when the UI is hidden by an extension updates do not show.
-TEST_F(DownloadOfflineContentProviderTest, DoNotShowHiddenByExtension) {
-  DownloadCoreService* service =
-      DownloadCoreServiceFactory::GetForBrowserContext(&profile_);
-  service->SetDownloadUiEnabledForTest(false);
-
-  const std::string guid = base::Uuid::GenerateRandomV4().AsLowercaseString();
-  std::unique_ptr<download::MockDownloadItem> item =
-      CreateMockDownloadItem(guid);
-
-  ScopedMockObserver observer{&provider_};
-  EXPECT_CALL(observer, OnItemUpdated(_, _)).Times(0);
-
-  InitializeDownloads(true);
-  provider_.OnDownloadUpdated(item.get());
-  RunUntilMainThreadIdle();
-}
-
-// Tests that when the UI is hidden by an extension dangerous updates do show.
-TEST_F(DownloadOfflineContentProviderTest, DoShowDangerousHiddenByExtension) {
-  DownloadCoreService* service =
-      DownloadCoreServiceFactory::GetForBrowserContext(&profile_);
-  service->SetDownloadUiEnabledForTest(false);
-
-  const std::string guid = base::Uuid::GenerateRandomV4().AsLowercaseString();
-  ContentId id(kTestDownloadNamespace, guid);
-  std::unique_ptr<download::MockDownloadItem> item =
-      CreateMockDownloadItem(guid);
-
-  EXPECT_CALL(*item, IsDangerous()).WillRepeatedly(Return(true));
-
-  ScopedMockObserver observer{&provider_};
-  EXPECT_CALL(
-      observer,
-      OnItemUpdated(Field(&OfflineItem::id, Eq(id)),
-                    Optional(Field(&UpdateDelta::visuals_changed, true))))
-      .Times(1);
-
-  InitializeDownloads(true);
-  provider_.OnDownloadUpdated(item.get());
-  RunUntilMainThreadIdle();
-}
-
-// Tests that OnDownloadUpdated() does not crash when profile is null.
-TEST_F(DownloadOfflineContentProviderTest, OnDownloadUpdatedWithNullProfile) {
-  provider_.OnProfileCreated(nullptr);
-  const std::string guid = base::Uuid::GenerateRandomV4().AsLowercaseString();
-  std::unique_ptr<download::MockDownloadItem> item =
-      CreateMockDownloadItem(guid);
-  provider_.OnDownloadUpdated(item.get());
-  // No crash.
-  RunUntilMainThreadIdle();
-}
-#endif

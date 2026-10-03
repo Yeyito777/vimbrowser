@@ -18,7 +18,6 @@
 #include "base/time/time.h"
 #include "chrome/browser/ui/hats/survey_config.h"
 #include "components/keyed_service/core/keyed_service.h"
-#include "components/messages/android/message_enums.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 
@@ -55,18 +54,6 @@ class HatsService : public KeyedService {
         any_last_survey_with_cooldown_override_started_time;
   };
 
-  struct SurveyOptions {
-    explicit SurveyOptions(
-        std::optional<std::u16string> custom_invitation = std::nullopt,
-        std::optional<messages::MessageIdentifier> message_identifier =
-            std::nullopt);
-    SurveyOptions(const SurveyOptions& other);
-    ~SurveyOptions();
-
-    std::optional<std::u16string> custom_invitation;
-    std::optional<messages::MessageIdentifier> message_identifier;
-  };
-
   enum NavigationBehavior {
     ALLOW_ANY = 0,              // allow any navigation
     REQUIRE_SAME_ORIGIN = 1,    // abort survey on cross-origin navigation
@@ -88,19 +75,14 @@ class HatsService : public KeyedService {
   // associated with the survey response.
   // |supplied_trigger_id| allows the caller to specify a trigger id. If set,
   // overrides the survey's trigger_id defined in
-  // `SurveyConfig::GetAllSurveyConfigs`
-  // |survey_options| can be used to.
-  // customize survey invitations on Android. This is an experimental feature
-  // and may be removed in the future. For a NOP, use the default constructor of
-  // SurveyOptions.
+  // `SurveyConfig::GetAllSurveyConfigs`.
   virtual void LaunchSurvey(
       const std::string& trigger,
       base::OnceClosure success_callback,
       base::OnceClosure failure_callback,
       const SurveyBitsData& product_specific_bits_data,
       const SurveyStringData& product_specific_string_data,
-      const std::optional<std::string>& supplied_trigger_id,
-      const SurveyOptions& survey_options) = 0;
+      const std::optional<std::string>& supplied_trigger_id) = 0;
 
   void LaunchSurvey(const std::string& trigger,
                     base::OnceClosure success_callback = base::DoNothing(),
@@ -109,7 +91,7 @@ class HatsService : public KeyedService {
                     const SurveyStringData& product_specific_string_data = {}) {
     LaunchSurvey(trigger, std::move(success_callback),
                  std::move(failure_callback), product_specific_bits_data,
-                 product_specific_string_data, std::nullopt, SurveyOptions());
+                 product_specific_string_data, std::nullopt);
   }
 
   // Launches survey with id |trigger|.
@@ -124,23 +106,9 @@ class HatsService : public KeyedService {
       content::WebContents* web_contents,
       const SurveyBitsData& product_specific_bits_data,
       const SurveyStringData& product_specific_string_data,
-      base::OnceClosure success_callback,
-      base::OnceClosure failure_callback,
-      const std::optional<std::string>& supplied_trigger_id,
-      const SurveyOptions& survey_options) = 0;
-  void LaunchSurveyForWebContents(
-      const std::string& trigger,
-      content::WebContents* web_contents,
-      const SurveyBitsData& product_specific_bits_data,
-      const SurveyStringData& product_specific_string_data,
       base::OnceClosure success_callback = base::DoNothing(),
       base::OnceClosure failure_callback = base::DoNothing(),
-      const std::optional<std::string>& supplied_trigger_id = std::nullopt) {
-    LaunchSurveyForWebContents(
-        trigger, web_contents, product_specific_bits_data,
-        product_specific_string_data, std::move(success_callback),
-        std::move(failure_callback), supplied_trigger_id, SurveyOptions());
-  }
+      const std::optional<std::string>& supplied_trigger_id = std::nullopt) = 0;
 
   // Launches survey with id |trigger| with a timeout |timeout_ms| if
   // appropriate.
@@ -177,29 +145,12 @@ class HatsService : public KeyedService {
       const std::string& trigger,
       content::WebContents* web_contents,
       int timeout_ms,
-      const SurveyBitsData& product_specific_bits_data,
-      const SurveyStringData& product_specific_string_data,
-      NavigationBehavior navigation_behavior,
-      base::OnceClosure success_callback,
-      base::OnceClosure failure_callback,
-      const std::optional<std::string>& supplied_trigger_id,
-      const SurveyOptions& survey_options) = 0;
-  bool LaunchDelayedSurveyForWebContents(
-      const std::string& trigger,
-      content::WebContents* web_contents,
-      int timeout_ms,
       const SurveyBitsData& product_specific_bits_data = {},
       const SurveyStringData& product_specific_string_data = {},
       NavigationBehavior navigation_behavior = NavigationBehavior::ALLOW_ANY,
       base::OnceClosure success_callback = base::DoNothing(),
       base::OnceClosure failure_callback = base::DoNothing(),
-      const std::optional<std::string>& supplied_trigger_id = std::nullopt) {
-    return LaunchDelayedSurveyForWebContents(
-        trigger, web_contents, timeout_ms, product_specific_bits_data,
-        product_specific_string_data, navigation_behavior,
-        std::move(success_callback), std::move(failure_callback),
-        supplied_trigger_id, SurveyOptions());
-  }
+      const std::optional<std::string>& supplied_trigger_id = std::nullopt) = 0;
 
   // Whether the user is eligible for any survey (of the type |user_prompted|
   // or not) to be shown. A return value of false is always a true-negative,

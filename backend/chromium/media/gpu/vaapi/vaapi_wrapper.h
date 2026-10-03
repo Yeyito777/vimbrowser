@@ -171,17 +171,6 @@ class MEDIA_GPU_EXPORT VaapiWrapper
 
   enum CodecMode {
     kDecode,
-#if BUILDFLAG(IS_CHROMEOS)
-    // NOTE: A kDecodeProtected VaapiWrapper is created using the actual video
-    // profile and an extra VAProfileProtected, each with some special added
-    // VAConfigAttribs. Then when CreateProtectedSession() is called, it will
-    // then create a protected session using protected profile & entrypoint
-    // which gets attached to the decoding context (or attached when the
-    // decoding context is created or re-created). This then enables
-    // decrypt + decode support in the driver and encrypted frame data can then
-    // be submitted.
-    kDecodeProtected,  // Decrypt + decode to protected surface.
-#endif
     kEncodeConstantBitrate,  // Encode with Constant Bitrate algorithm.
     kEncodeConstantQuantizationParameter,  // Encode with Constant Quantization
                                            // Parameter algorithm.
@@ -360,20 +349,6 @@ class MEDIA_GPU_EXPORT VaapiWrapper
   // querying libva indicates that our protected session is no longer alive,
   // otherwise this will return false.
   bool IsProtectedSessionDead();
-#if BUILDFLAG(IS_CHROMEOS)
-  // Returns true if and only if |va_protected_session_id| is not VA_INVALID_ID
-  // and querying libva indicates that the protected session identified by
-  // |va_protected_session_id| is no longer alive.
-  bool IsProtectedSessionDead(VAProtectedSessionID va_protected_session_id);
-
-  // Returns the ID of the current protected session or VA_INVALID_ID if there's
-  // none. This must be called on the same sequence as other methods that use
-  // the protected session ID internally.
-  //
-  // TODO(b/183515581): update this documentation once we force the VaapiWrapper
-  // to be used on a single sequence.
-  VAProtectedSessionID GetProtectedSessionID() const;
-#endif
   // If we have a protected session, destroys it immediately. This should be
   // used as part of recovering dead protected sessions.
   void DestroyProtectedSession();
@@ -585,10 +560,6 @@ class MEDIA_GPU_EXPORT VaapiWrapper
       const gfx::Size& va_surface_dst_size,
       std::optional<gfx::Rect> src_rect = std::nullopt,
       std::optional<gfx::Rect> dest_rect = std::nullopt
-#if BUILDFLAG(IS_CHROMEOS)
-      ,
-      VAProtectedSessionID va_protected_session_id = VA_INVALID_ID
-#endif
   );
 
   // Initialize static data before sandbox is enabled.
@@ -730,13 +701,6 @@ class MEDIA_GPU_EXPORT VaapiWrapper
   std::unique_ptr<ScopedVABuffer> va_buffer_for_vpp_
       GUARDED_BY_CONTEXT(sequence_checker_);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // For protected decode mode.
-  VAConfigID va_protected_config_id_ GUARDED_BY_CONTEXT(sequence_checker_){
-      VA_INVALID_ID};
-  VAProtectedSessionID va_protected_session_id_
-      GUARDED_BY_CONTEXT(sequence_checker_){VA_INVALID_ID};
-#endif
 
   // Called to report codec errors to UMA. Errors to clients are reported via
   // return values from public methods.

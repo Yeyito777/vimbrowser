@@ -30,11 +30,7 @@
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-const int kCaptionHeight = 30;
-#else
 const int kCaptionHeight = 25;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -253,15 +249,9 @@ void AppWindowFrameView::Layout(PassKey) {
   if (!draw_frame_)
     return;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const int kButtonOffsetY = 4;
-  const int kButtonSpacing = 1;
-  const int kRightMargin = 12;
-#else
   const int kButtonOffsetY = 0;
   const int kButtonSpacing = 1;
   const int kRightMargin = 3;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   gfx::Size close_size = close_button_->GetPreferredSize({});
   close_button_->SetBounds(width() - kRightMargin - close_size.width(),

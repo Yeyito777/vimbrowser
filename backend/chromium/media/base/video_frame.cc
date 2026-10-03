@@ -43,9 +43,6 @@
 #include "third_party/skia/include/core/SkYUVAPixmaps.h"
 #include "ui/gfx/geometry/point.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/ozone/public/client_native_pixmap_factory_ozone.h"  // nogncheck
-#endif
 
 #if BUILDFLAG(IS_APPLE)
 #include <CoreVideo/CVPixelBuffer.h>

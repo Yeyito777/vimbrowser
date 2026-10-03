@@ -7,10 +7,8 @@
 
 #include <map>
 #include <memory>
-#include <set>
 #include <string>
 
-#include "chrome/browser/devtools/device/devtools_device_discovery.h"
 #include "chrome/browser/devtools/global_confirm_info_bar.h"
 #include "chrome/browser/devtools/protocol/protocol.h"
 #include "chrome/browser/profiles/keep_alive/scoped_profile_keep_alive.h"
@@ -18,11 +16,9 @@
 #include "components/keep_alive_registry/scoped_keep_alive.h"
 #include "content/public/browser/devtools_agent_host_observer.h"
 #include "content/public/browser/devtools_manager_delegate.h"
-#include "net/base/host_port_pair.h"
 
 class ChromeDevToolsSession;
 class ScopedKeepAlive;
-using RemoteLocations = std::set<net::HostPortPair>;
 
 class ChromeDevToolsManagerDelegate : public content::DevToolsManagerDelegate,
                                       public ConfirmInfoBarDelegate::Observer {
@@ -40,10 +36,6 @@ class ChromeDevToolsManagerDelegate : public content::DevToolsManagerDelegate,
   ~ChromeDevToolsManagerDelegate() override;
 
   static ChromeDevToolsManagerDelegate* GetInstance();
-  void UpdateDeviceDiscovery();
-
-  // Resets |device_manager_|.
-  void ResetAndroidDeviceManagerForTesting();
 
   std::vector<content::BrowserContext*> GetBrowserContexts() override;
   content::BrowserContext* GetDefaultBrowserContext() override;
@@ -91,9 +83,6 @@ class ChromeDevToolsManagerDelegate : public content::DevToolsManagerDelegate,
   void AcceptDebugging(AcceptCallback) override;
   void SetActiveWebSocketConnections(size_t count) override;
 
-  void DevicesAvailable(
-      const DevToolsDeviceDiscovery::CompleteDevices& devices);
-
   // ConfirmInfoBarDelegate::Observer
   void OnAccept() override;
   void OnDismiss() override;
@@ -103,10 +92,6 @@ class ChromeDevToolsManagerDelegate : public content::DevToolsManagerDelegate,
            std::unique_ptr<ChromeDevToolsSession>>
       sessions_;
 
-  std::unique_ptr<AndroidDeviceManager> device_manager_;
-  std::unique_ptr<DevToolsDeviceDiscovery> device_discovery_;
-  content::DevToolsAgentHost::List remote_agent_hosts_;
-  RemoteLocations remote_locations_;
   std::unique_ptr<ScopedKeepAlive> keep_alive_;
   std::unique_ptr<ScopedProfileKeepAlive> profile_keep_alive_;
 };

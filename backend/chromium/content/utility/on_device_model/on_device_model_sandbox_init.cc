@@ -126,9 +126,7 @@ bool PreSandboxInit() {
     dawnProcSetProcs(&dawn::native::GetProcs());
     auto instance = std::make_unique<dawn::native::Instance>();
     const wgpu::RequestAdapterOptions adapter_options{
-#if BUILDFLAG(IS_WIN)
-        .backendType = wgpu::BackendType::D3D12,
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
         .backendType = wgpu::BackendType::Metal,
 #else
         .backendType = wgpu::BackendType::Vulkan,

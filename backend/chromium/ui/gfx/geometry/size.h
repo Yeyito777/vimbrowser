@@ -13,9 +13,7 @@
 #include "base/numerics/safe_math.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-typedef struct tagSIZE SIZE;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 typedef struct CGSize CGSize;
 #endif
 
@@ -35,9 +33,7 @@ class COMPONENT_EXPORT(GEOMETRY) Size {
 
   void operator-=(const Size& size);
 
-#if BUILDFLAG(IS_WIN)
-  SIZE ToSIZE() const;
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   CGSize ToCGSize() const;
 #endif
 

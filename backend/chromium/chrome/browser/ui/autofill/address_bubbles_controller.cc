@@ -30,7 +30,6 @@
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_finder.h"
 #include "chrome/browser/ui/browser_window.h"
-#include "chrome/browser/ui/desktop_to_mobile_promos/ios_promos_utils.h"
 #include "chrome/browser/ui/views/frame/browser_view.h"
 #include "chrome/grit/theme_resources.h"
 #include "components/application_locale_storage/application_locale_storage.h"
@@ -40,7 +39,6 @@
 #include "components/autofill/core/browser/foundations/autofill_client.h"
 #include "components/autofill/core/browser/ui/addresses/autofill_address_util.h"
 #include "components/autofill/core/common/autofill_features.h"
-#include "components/desktop_to_mobile_promos/promos_types.h"
 #include "components/signin/public/identity_manager/account_info.h"
 #include "components/strings/grit/components_strings.h"
 #include "components/sync/base/user_selectable_type.h"
@@ -186,7 +184,6 @@ void AddressBubblesController::OnUserDecision(
 
   if (decision == AutofillClient::AddressPromptUserDecision::kAccepted ||
       decision == AutofillClient::AddressPromptUserDecision::kEditAccepted) {
-    MaybeShowIOSDektopAddressPromo();
   } else if (decision == AutofillClient::AddressPromptUserDecision::kDeclined &&
              !user_has_any_profile_saved_ &&
              base::FeatureList::IsEnabled(
@@ -319,19 +316,6 @@ void AddressBubblesController::SetUpBubble(
   shown_by_user_gesture_ = false;
   is_migration_to_account_ = is_migration_to_account;
   user_has_any_profile_saved_ = user_has_any_profile_saved;
-}
-
-void AddressBubblesController::MaybeShowIOSDektopAddressPromo() {
-  auto browser_window =
-      BrowserWindow::FindBrowserWindowWithWebContents(web_contents());
-  if (!browser_window) {
-    return;
-  }
-  Browser* browser = browser_window->AsBrowserView()->browser();
-
-  // Verify if user is eligible for iOS promo, and attempt showing if they are.
-  ios_promos_utils::VerifyIOSPromoEligibility(
-      desktop_to_mobile_promos::PromoType::kAddress, browser);
 }
 
 void AddressBubblesController::MaybeShowSignInPromo(

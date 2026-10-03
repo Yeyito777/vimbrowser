@@ -22,7 +22,7 @@ group("gn_all") {
 
   deps = [
     "inspector:inspector-test",
-    "mkgrokdump:mkgrokdump",
+    "mkgrokdump",
   ]
 
   if (v8_enable_webassembly) {
@@ -30,6 +30,7 @@ group("gn_all") {
       "wasm-js:v8_wasm_js",
       "wasm-spec-tests:v8_wasm_spec_tests",
     ]
+
     # TODO(https://crbug.com/445649941): Temporarily skipped on windows with
     # arm64.
     if (!is_win || v8_target_cpu != "arm64") {
@@ -41,15 +42,13 @@ group("gn_all") {
     deps += [ "fuzzilli:v8_fuzzilli_test" ]
   }
 
-  if (host_os != "mac" || !is_android) {
-    # These items don't compile for Android on Mac.
-    deps += [
-      "benchmarks/cpp:gn_all",
-      "cctest:cctest",
-      "unittests:generate-bytecode-expectations",
-      "unittests:v8_unittests",
-    ]
-  }
+  # These items don't compile for Android on Mac.
+  deps += [
+    "benchmarks/cpp:gn_all",
+    "cctest",
+    "unittests:generate-bytecode-expectations",
+    "unittests:v8_unittests",
+  ]
 }
 
 ###############################################################################
@@ -96,7 +95,7 @@ group("v8_bot_default") {
 
   data_deps = [
     "bigint:bigint_shell",
-    "cctest:cctest",
+    "cctest",
     "debugger:v8_debugger",
     "filecheck:v8_filecheck",
     "fuzzer:v8_fuzzer",
@@ -104,7 +103,7 @@ group("v8_bot_default") {
     "intl:v8_intl",
     "message:v8_message",
     "mjsunit:v8_mjsunit",
-    "mkgrokdump:mkgrokdump",
+    "mkgrokdump",
     "unittests:v8_unittests",
     "webkit:v8_webkit",
   ]
@@ -114,6 +113,7 @@ group("v8_bot_default") {
       "wasm-js:v8_wasm_js",
       "wasm-spec-tests:v8_wasm_spec_tests",
     ]
+
     # TODO(https://crbug.com/445649941): Temporarily skipped on windows with
     # arm64.
     if (!is_win || v8_target_cpu != "arm64") {
@@ -126,7 +126,7 @@ group("v8_default") {
   testonly = true
 
   data_deps = [
-    "cctest:cctest",
+    "cctest",
     "debugger:v8_debugger",
     "filecheck:v8_filecheck",
     "fuzzer:v8_fuzzer",
@@ -134,7 +134,7 @@ group("v8_default") {
     "intl:v8_intl",
     "message:v8_message",
     "mjsunit:v8_mjsunit",
-    "mkgrokdump:mkgrokdump",
+    "mkgrokdump",
     "unittests:v8_unittests",
   ]
 
@@ -143,6 +143,7 @@ group("v8_default") {
       "wasm-js:v8_wasm_js",
       "wasm-spec-tests:v8_wasm_spec_tests",
     ]
+
     # TODO(https://crbug.com/445649941): Temporarily skipped on windows with
     # arm64.
     if (!is_win || v8_target_cpu != "arm64") {
@@ -155,7 +156,7 @@ group("v8_optimize_for_size") {
   testonly = true
 
   data_deps = [
-    "cctest:cctest",
+    "cctest",
     "debugger:v8_debugger",
     "inspector:inspector-test",
     "intl:v8_intl",

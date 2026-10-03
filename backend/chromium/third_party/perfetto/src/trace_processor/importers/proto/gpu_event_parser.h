@@ -77,8 +77,6 @@ class GpuEventParser {
 
   void ParseVulkanApiEvent(int64_t, ConstBytes);
 
-  void ParseGpuMemTotalEvent(int64_t, ConstBytes);
-
  private:
   StringId GetFullStageName(
       PacketSequenceStateGeneration* sequence_state,

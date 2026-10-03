@@ -15,9 +15,7 @@
 #include "base/base_export.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #include <pthread.h>
 #endif
 
@@ -33,9 +31,7 @@ namespace base {
 // to distinguish a new thread from an old, dead thread.
 class PlatformThreadRef {
  public:
-#if BUILDFLAG(IS_WIN)
-  using RefType = DWORD;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   using RefType = pthread_t;
 #endif
 

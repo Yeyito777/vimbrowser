@@ -58,23 +58,6 @@ namespace {
 static std::atomic<PartitionRoot*>
     g_thread_cache_roots[internal::kMaxThreadCacheIndex];
 
-#if PA_BUILDFLAG(IS_WIN)
-void OnDllProcessDetach() {
-  // Very late allocations do occur (see crbug.com/1159411#c7 for instance),
-  // including during CRT teardown. This is problematic for the thread cache
-  // which relies on the CRT for TLS access for instance. This cannot be
-  // mitigated inside the thread cache (since getting to it requires querying
-  // TLS), but the PartitionRoot associated wih the thread cache can be made to
-  // not use the thread cache anymore.
-  for (size_t i = 0; i < internal::kMaxThreadCacheIndex; i++) {
-    auto* root =
-        PA_UNSAFE_TODO(g_thread_cache_roots[i]).load(std::memory_order_relaxed);
-    if (root) {
-      root->settings_.with_thread_cache = false;
-    }
-  }
-}
-#endif
 
 static bool g_thread_cache_key_created = false;
 }  // namespace
@@ -365,10 +348,6 @@ void ThreadCache::SwapForTesting(PartitionRoot* root, size_t index) {
     Init(root);
     Create(root, index);
   } else {
-#if PA_BUILDFLAG(IS_WIN)
-    // OnDllProcessDetach accesses g_thread_cache_root which is nullptr now.
-    internal::PartitionTlsSetOnDllProcessDetach(nullptr);
-#endif
   }
 }
 
@@ -405,9 +384,6 @@ void ThreadCache::Init(PartitionRoot* root) {
                        "cache at each index";
   }
 
-#if PA_BUILDFLAG(IS_WIN)
-  internal::PartitionTlsSetOnDllProcessDetach(OnDllProcessDetach);
-#endif
 
   SetGlobalLimits(root, kDefaultMultiplier);
 }
@@ -585,24 +561,6 @@ void ThreadCache::Delete(void* thread_caches_ptr) {
   // Operator new is overloaded to route to internal partition.
   operator delete(tcaches);
 
-#if PA_BUILDFLAG(IS_WIN)
-  // On Windows, allocations do occur during thread/process teardown, make sure
-  // they don't resurrect the thread cache.
-  //
-  // Don't MTE-tag, as it'd mess with the sentinel value.
-  //
-  // TODO(lizeb): Investigate whether this is needed on POSIX as well.
-  internal::PartitionTlsSet(internal::g_thread_cache_key,
-                            reinterpret_cast<void*>(kTombstone));
-#if PA_CONFIG(THREAD_CACHE_FAST_TLS)
-  // This is sufficient to prevent re-creation, because IsTombstone() is called
-  // before Create() and IsTombstone() only checks this index.
-  PA_UNSAFE_TODO(
-      internal::g_thread_caches[internal::kThreadCacheTombstoneIndex]) =
-      reinterpret_cast<ThreadCache*>(kTombstone);
-#endif
-
-#endif  // PA_BUILDFLAG(IS_WIN)
 }
 
 // static

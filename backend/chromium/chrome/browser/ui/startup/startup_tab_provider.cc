@@ -50,14 +50,7 @@
 #include "net/base/filename_util.h"
 #include "net/base/url_util.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/string_util_win.h"
-#include "base/win/windows_version.h"
-#include "chrome/browser/browser_process.h"
-#include "chrome/browser/shell_integration.h"
-#endif  // BUILDFLAG(IS_WIN)
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/privacy_sandbox/privacy_sandbox_service.h"
 #include "chrome/browser/search/search.h"
 #include "chrome/browser/ui/webui/new_tab_page/new_tab_page_ui.h"
@@ -65,7 +58,6 @@
 #include "chrome/common/webui_url_constants.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
 #include "chrome/browser/headless/headless_mode_util.h"
@@ -89,7 +81,6 @@ bool ProfileHasOtherTabbedBrowser(Profile* profile) {
 }
 
 
-#if !BUILDFLAG(IS_ANDROID)
 // Returns whether |extension_registry| contains an extension which has a URL
 // override for the new tab URL.
 bool HasExtensionNtpOverride(
@@ -114,19 +105,12 @@ bool IsChromeControlledNtpUrl(const GURL& url) {
          ntp_origin == url::Origin::Create(
                            GURL(chrome::kChromeUINewTabPageThirdPartyURL));
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 bool IsWelcomePageUrl(const GURL& url) {
   static constexpr std::string_view kChromeUIWelcomeHost = "welcome";
-#if BUILDFLAG(IS_WIN)
-  static constexpr std::string_view kChromeUIWelcomeWin10Host = "welcome-win10";
-#endif
 
   return url.SchemeIs(content::kChromeUIScheme) &&
          (url.host() == kChromeUIWelcomeHost
-#if BUILDFLAG(IS_WIN)
-          || url.host() == kChromeUIWelcomeWin10Host
-#endif
          );
 }
 
@@ -217,7 +201,6 @@ CommandLineTabsPresent StartupTabProviderImpl::HasCommandLineTabs(
                     : CommandLineTabsPresent::kNo;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 StartupTabs StartupTabProviderImpl::GetNewFeaturesTabs(
     bool whats_new_enabled) const {
   return GetNewFeaturesTabsForState(whats_new_enabled);
@@ -231,7 +214,6 @@ StartupTabs StartupTabProviderImpl::GetPrivacySandboxTabs(
       search::GetNewTabPageURL(profile), other_startup_tabs);
 }
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // static
 StartupTabs StartupTabProviderImpl::GetInitialPrefsTabsForState(
@@ -311,7 +293,6 @@ StartupTabs StartupTabProviderImpl::GetNewTabPageTabsForState(
   return tabs;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 // static
 StartupTabs StartupTabProviderImpl::GetNewFeaturesTabsForState(
     bool whats_new_enabled) {
@@ -358,7 +339,6 @@ StartupTabs StartupTabProviderImpl::GetPrivacySandboxTabsForState(
   return tabs;
 }
 
-#endif
 
 // static
 GURL StartupTabProviderImpl::GetTriggeredResetSettingsUrl() {

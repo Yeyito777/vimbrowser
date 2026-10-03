@@ -44,11 +44,6 @@
 #include "crypto/hash.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <shlobj.h>
-
-#include "base/win/windows_version.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace update_client {
 
@@ -56,14 +51,6 @@ const char kArchAmd64[] = "x86_64";
 const char kArchIntel[] = "x86";
 const char kArchArm64[] = "arm64";
 
-#if BUILDFLAG(IS_CHROMEOS)
-// In ChromeOS, /tmp is a ramfs drive that can be too small
-// for large downloads like Gemini Nano2v3. A larger tmpfiles.d
-// mount has been created (see https://crrev.com/c/6810025) as a
-// scratch space with access to the full stateful partition to
-// handle these larger downloads.
-const char kTempDir[] = "/var/lib/odml/chrome_component_updater";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool IsHttpServerError(int status_code) {
   return 500 <= status_code && status_code < 600;
@@ -183,14 +170,7 @@ std::optional<base::DictValue> ReadManifest(const base::FilePath& unpack_path) {
 }
 
 std::string GetArchitecture() {
-#if BUILDFLAG(IS_WIN)
-  const base::win::OSInfo* os_info = base::win::OSInfo::GetInstance();
-  return (os_info->IsWowX86OnARM64() || os_info->IsWowAMD64OnARM64())
-             ? kArchArm64
-             : base::SysInfo().OperatingSystemArchitecture();
-#else   // BUILDFLAG(IS_WIN)
   return base::SysInfo().OperatingSystemArchitecture();
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 bool RetryFileOperation(
@@ -209,34 +189,13 @@ bool RetryFileOperation(
 
 bool CreateTempDirectory(const base::FilePath::StringType& prefix,
                          base::FilePath* new_temp_path) {
-#if BUILDFLAG(IS_CHROMEOS)
-  const base::FilePath largerTmpDir(kTempDir);
-  if (base::DirectoryExists(largerTmpDir)) {
-    return base::CreateTemporaryDirInDir(largerTmpDir, prefix, new_temp_path);
-  }
-#endif
   return base::CreateNewTempDirectory(prefix, new_temp_path);
 }
 
 bool CreateScopedTempDirectory(base::ScopedTempDir& dir) {
-#if BUILDFLAG(IS_CHROMEOS)
-  const base::FilePath largerTmpDir(kTempDir);
-  if (base::DirectoryExists(largerTmpDir)) {
-    return dir.CreateUniqueTempDirUnderPath(largerTmpDir);
-  }
-#endif
   return dir.CreateUniqueTempDir();
 }
 
-#if BUILDFLAG(IS_WIN)
-base::FilePath::StringType UTF8ToStringType(const std::string& utf8) {
-  return base::UTF8ToWide(utf8);
-}
-
-std::string StringTypeToUTF8(const base::FilePath::StringType& stringtype) {
-  return base::WideToUTF8(stringtype);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void CleanupDirectoriesOlderThan(const base::FilePath& dir,
                                  const base::FilePath::StringType& matcher,

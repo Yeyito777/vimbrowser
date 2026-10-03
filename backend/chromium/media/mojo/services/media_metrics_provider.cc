@@ -22,9 +22,7 @@
 #include "services/metrics/public/cpp/ukm_builders.h"
 #include "services/metrics/public/cpp/ukm_recorder.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "media/filters/decrypting_video_decoder.h"
-#endif
 
 #if BUILDFLAG(ENABLE_CAST_RECEIVER) && \
     (BUILDFLAG(IS_FUCHSIA) || BUILDFLAG(IS_ANDROID))
@@ -147,20 +145,12 @@ std::string MediaMetricsProvider::GetUMANameForAVStream(
   }
 
   // Using default RendererImpl. Put more detailed info into the UMA name.
-#if BUILDFLAG(IS_ANDROID)
-  if (player_info.is_eme && player_info.video_pipeline_info.decoder_type ==
-                                VideoDecoderType::kMediaCodec) {
-    return uma_name + "MediaDrm." +
-           (is_hardware_secure_ ? "HardwareSecure" : "SoftwareSecure");
-  }
-#else
   if (player_info.video_pipeline_info.decoder_type ==
       VideoDecoderType::kDecrypting) {
     return uma_name + "DVD";
   } else if (player_info.is_eme) {
     uma_name += (is_hardware_secure_ ? "HardwareSecure." : "SoftwareSecure.");
   }
-#endif
 
   if (player_info.video_pipeline_info.has_decrypting_demuxer_stream)
     uma_name += "DDS.";

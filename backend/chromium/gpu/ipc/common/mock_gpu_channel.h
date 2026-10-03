@@ -56,17 +56,6 @@ class MockGpuChannel : public mojom::GpuChannel {
                     const viz::SharedImageFormat&,
                     gfx::BufferUsage,
                     CreateGpuMemoryBufferCallback));
-#if BUILDFLAG(IS_WIN)
-  MOCK_METHOD3(CreateDCOMPTexture,
-               void(int32_t,
-                    mojo::PendingAssociatedReceiver<mojom::DCOMPTexture>,
-                    CreateDCOMPTextureCallback));
-  MOCK_METHOD4(CopyToGpuMemoryBufferAsync,
-               void(const Mailbox&,
-                    const std::vector<SyncToken>&,
-                    uint64_t,
-                    CopyToGpuMemoryBufferAsyncCallback));
-#endif  // BUILDFLAG(IS_WIN)
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_ANDROID)
   MOCK_METHOD3(CopyNativeGmbToSharedMemoryAsync,
                void(gfx::GpuMemoryBufferHandle,
@@ -84,14 +73,6 @@ class MockGpuChannel : public mojom::GpuChannel {
   MOCK_METHOD5(
       WaitForGetOffsetInRange,
       bool(int32_t, uint32_t, int32_t, int32_t, CommandBuffer::State*));
-#if BUILDFLAG(IS_FUCHSIA)
-  MOCK_METHOD5(RegisterSysmemBufferCollection,
-               void(mojo::PlatformHandle,
-                    mojo::PlatformHandle,
-                    const viz::SharedImageFormat&,
-                    gfx::BufferUsage,
-                    bool));
-#endif  // BUILDFLAG(IS_FUCHSIA)
 };
 
 }  // namespace gpu

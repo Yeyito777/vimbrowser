@@ -121,9 +121,6 @@ StackUnwinder ChooseStackUnwinder() {
 #if BUILDFLAG(CAN_UNWIND_WITH_FRAME_POINTERS)
   // Use frame pointers if available, since they can be faster than the default.
   return StackUnwinder::kFramePointers;
-#elif BUILDFLAG(IS_ANDROID)
-  // Default unwind tables aren't always present on Android.
-  return CheckForDefaultUnwindTables();
 #else
   return StackUnwinder::kDefault;
 #endif

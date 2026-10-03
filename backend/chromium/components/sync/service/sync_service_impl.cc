@@ -71,17 +71,6 @@
 #include "google_apis/gaia/google_service_auth_error.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/device_info.h"
-#include "base/android/jni_android.h"
-#include "base/android/jni_array.h"
-#include "base/android/jni_string.h"
-#include "components/password_manager/core/browser/split_stores_and_local_upm.h"
-#include "components/sync/android/jni_headers/ExplicitPassphrasePlatformClient_jni.h"
-#include "components/sync/android/sync_service_android_bridge.h"
-#include "components/sync/engine/nigori/nigori.h"
-#include "components/sync/protocol/nigori_specifics.pb.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace syncer {
 
@@ -90,14 +79,6 @@ namespace {
 BASE_FEATURE(kSyncUnsubscribeFromTypesWithPermanentErrors,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-constexpr int kMinGmsVersionCodeWithCustomPassphraseApi = 235204000;
-
-// Keep in sync with the corresponding string in
-// ExplicitPassphrasePlatformClientTest.java
-constexpr char kIgnoreMinGmsVersionWithPassphraseSupportForTest[] =
-    "ignore-min-gms-version-with-passphrase-support-for-test";
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // The initial state of sync, for the Sync.InitialState2 histogram. Even if
 // this value indicates that sync (the feature or the transport) can start, the
@@ -201,7 +182,6 @@ void MaybeClearAccountKeyedPreferences(
     signin::IdentityManager* identity_manager,
     const signin::AccountsInCookieJarInfo& accounts_in_cookie_jar_info,
     SyncUserSettingsImpl& user_settings) {
-#if !BUILDFLAG(IS_IOS) && !BUILDFLAG(IS_ANDROID)
   if (accounts_in_cookie_jar_info.AreAccountsFresh()) {
     // Clear settings for accounts no longer in the cookie jar. On Android
     // and iOS this is done when the account is removed from the OS instead.
@@ -210,7 +190,6 @@ void MaybeClearAccountKeyedPreferences(
             identity_manager, accounts_in_cookie_jar_info));
     user_settings.KeepAccountSettingsPrefsOnlyForUsers(gaia_ids);
   }
-#endif  // !BUILDFLAG(IS_IOS) && !BUILDFLAG(IS_ANDROID)
 }
 
 }  // namespace
@@ -348,14 +327,6 @@ void SyncServiceImpl::Initialize(DataTypeController::TypeVector controllers) {
   // crash during signout).
   if (HasDisableReason(DISABLE_REASON_ENTERPRISE_POLICY)) {
     StopAndClear(ResetEngineReason::kEnterprisePolicy);
-#if BUILDFLAG(IS_CHROMEOS)
-    // On ChromeOS Ash, sync-the-feature stays disabled even after the policy is
-    // removed, for historic reasons. It is unclear if this behavior is
-    // optional, because it is indistinguishable from the
-    // sync-reset-via-dashboard case. It can be resolved by invoking
-    // ClearSyncFeatureDisabledViaDashboard().
-    user_settings_->SetSyncFeatureDisabledViaDashboard();
-#endif  // BUILDFLAG(IS_CHROMEOS)
   } else if (HasDisableReason(DISABLE_REASON_NOT_SIGNED_IN)) {
     // On ChromeOS-Ash, signout is not possible, so it's not necessary to handle
     // this case.
@@ -363,18 +334,12 @@ void SyncServiceImpl::Initialize(DataTypeController::TypeVector controllers) {
     // ChromeOS-Ash since it's supposedly unreachable, *but* during the very
     // first startup of a fresh profile, the signed-in account isn't known yet
     // at this point (see also https://crbug.com/1458701#c7).
-#if !BUILDFLAG(IS_CHROMEOS)
     StopAndClear(ResetEngineReason::kNotSignedIn);
-#endif
   }
 
   const bool is_sync_feature_requested_for_metrics =
       IsLocalSyncEnabled() ||
-#if BUILDFLAG(IS_CHROMEOS)
-      !user_settings_->IsSyncFeatureDisabledViaDashboard();
-#else
       HasSyncConsent();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Note: We need to record the initial state *after* calling
   // RegisterForAuthNotifications(), because before that the authenticated
@@ -783,14 +748,6 @@ std::unique_ptr<SyncEngine> SyncServiceImpl::ResetEngine(
   return engine_to_be_destroyed;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-base::android::ScopedJavaLocalRef<jobject> SyncServiceImpl::GetJavaObject() {
-  if (!sync_service_android_) {
-    sync_service_android_ = std::make_unique<SyncServiceAndroidBridge>(this);
-  }
-  return sync_service_android_->GetJavaObject();
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 SyncUserSettings* SyncServiceImpl::GetUserSettings() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -891,7 +848,6 @@ SyncService::TransportState SyncServiceImpl::GetTransportState() const {
 
 SyncService::UserActionableError SyncServiceImpl::GetUserActionableError()
     const {
-#if !BUILDFLAG(IS_IOS)
   if (HasSyncConsent()) {
     if (!GetUserSettings()->IsInitialSyncFeatureSetupComplete()) {
       return UserActionableError::kNeedsSettingsConfirmation;
@@ -902,7 +858,6 @@ SyncService::UserActionableError SyncServiceImpl::GetUserActionableError()
       return UserActionableError::kUnrecoverableError;
     }
   }
-#endif  // !BUILDFLAG(IS_IOS)
 
   if (GetAuthError().state() != GoogleServiceAuthError::NONE) {
     return UserActionableError::kSignInNeedsUpdate;
@@ -926,12 +881,6 @@ SyncService::UserActionableError SyncServiceImpl::GetUserActionableError()
                      kTrustedVaultRecoverabilityDegradedForPasswords;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  if (user_settings_->GetSelectedTypes().Has(UserSelectableType::kPasswords) &&
-      password_manager::IsGmsCoreUpdateRequired()) {
-    return UserActionableError::kNeedsUPMBackendUpgrade;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // This error should ideally be the last one to be checked. Any new identity
   // errors should be handled before this.
@@ -1144,14 +1093,6 @@ void SyncServiceImpl::OnActionableProtocolError(
       // should be okay.
       StopAndClear(ResetEngineReason::kDisableSyncOnClient);
 
-#if BUILDFLAG(IS_CHROMEOS)
-      // On Ash, the primary account is always set and sync the feature
-      // turned on, so a dedicated bit is needed to ensure that
-      // Sync-the-feature remains off. Note that sync-the-transport will restart
-      // immediately because IsEngineAllowedToRun() is almost certainly true at
-      // this point and StopAndClear() leads to TryStart().
-      user_settings_->SetSyncFeatureDisabledViaDashboard();
-#else  // !BUILDFLAG(IS_CHROMEOS)
       // On every platform except ash, revoke the Sync consent/Clear primary
       // account after a dashboard clear.
       // TODO(crbug.com/40066949): Simplify once kSync becomes unreachable or is
@@ -1168,21 +1109,12 @@ void SyncServiceImpl::OnActionableProtocolError(
         // platforms. Any platforms which support a single-step flow that signs
         // in and enables sync should clear the primary account here for
         // symmetry.
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
-        // On mobile, fully sign out the user (clear the primary account) but
-        // do not remove the list of known accounts, as the user may sign in
-        // again.
-        account_mutator->RemovePrimaryAccountButKeepTokens(
-            signin_metrics::ProfileSignout::kServerForcedDisable);
-#else
         // Note: On some platforms, revoking the sync consent will also clear
         // the primary account as transitioning from ConsentLevel::kSync to
         // ConsentLevel::kSignin is not supported.
         account_mutator->RevokeSyncConsent(
             signin_metrics::ProfileSignout::kServerForcedDisable);
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
       }
-#endif  // BUILDFLAG(IS_CHROMEOS)
       break;
     case STOP_SYNC_FOR_DISABLED_ACCOUNT:
       // Sync disabled by domain admin. Stop syncing until next restart.
@@ -1462,22 +1394,6 @@ CoreAccountInfo SyncServiceImpl::GetSyncAccountInfoForPrefs() const {
   return GetAccountInfo();
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void SyncServiceImpl::OnSyncFeatureDisabledViaDashboardCleared() {
-  // If the Sync engine was already initialized (probably running in transport
-  // mode), just reconfigure.
-  if (engine_ && engine_->IsInitialized()) {
-    ConfigureDataTypeManager(ConfigureReason::kReconfiguration,
-                             /*bypass_setup_in_progress_check=*/false);
-  } else {
-    // Otherwise try to start up. Note that there might still be other disable
-    // reasons remaining, in which case this will effectively do nothing.
-    TryStart();
-  }
-
-  NotifyObservers();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 bool SyncServiceImpl::IsSetupInProgress() const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -1772,17 +1688,6 @@ void SyncServiceImpl::ConfigureDataTypeManager(
       }
     }
 
-#if BUILDFLAG(IS_CHROMEOS)
-    bool sync_everything_os = user_settings_->IsSyncAllOsTypesEnabled();
-    base::UmaHistogramBoolean("Sync.SyncEverythingOS", sync_everything_os);
-    if (!sync_everything_os) {
-      for (UserSelectableOsType type : user_settings_->GetSelectedOsTypes()) {
-        DataTypeForHistograms canonical_data_type = DataTypeHistogramValue(
-            UserSelectableOsTypeToCanonicalDataType(type));
-        base::UmaHistogramEnumeration("Sync.CustomOSSync", canonical_data_type);
-      }
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
 
   NotifyObservers();
@@ -1818,11 +1723,6 @@ void SyncServiceImpl::UpdateDataTypesForInvalidations() {
     types.RemoveAll(data_type_manager_->GetDataTypesWithPermanentErrors());
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // On Android, don't subscribe to HISTORY invalidations, to save network
-  // traffic.
-  types.Remove(HISTORY);
-#endif
   types.RemoveAll(data_type_manager_->GetActiveProxyDataTypes());
 
   sync_client_->GetSyncInvalidationsService()->SetInterestedDataTypes(types);
@@ -1877,14 +1777,6 @@ void SyncServiceImpl::OnSyncClientDisabledByPolicyChanged() {
 
   if (user_settings_->IsSyncClientDisabledByPolicy()) {
     StopAndClear(ResetEngineReason::kEnterprisePolicy);
-#if BUILDFLAG(IS_CHROMEOS)
-    // On ChromeOS Ash, sync-the-feature stays disabled even after the policy is
-    // removed, for historic reasons. It is unclear if this behavior is
-    // optional, because it is indistinguishable from the
-    // sync-reset-via-dashboard case. It can be resolved by invoking
-    // ClearSyncFeatureDisabledViaDashboard().
-    user_settings_->SetSyncFeatureDisabledViaDashboard();
-#endif  // BUILDFLAG(IS_CHROMEOS)
   } else {
     // Sync is no longer disabled by policy. Try starting it up if appropriate.
     DCHECK(!engine_);
@@ -1894,12 +1786,10 @@ void SyncServiceImpl::OnSyncClientDisabledByPolicyChanged() {
   }
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void SyncServiceImpl::OnInitialSyncFeatureSetupCompleted() {
   ConfigureDataTypeManager(ConfigureReason::kReconfiguration,
                            /*bypass_setup_in_progress_check=*/false);
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 void SyncServiceImpl::OnAccountsCookieDeletedByUserAction() {
   // Pass an empty `signin::AccountsInCookieJarInfo` to simulate empty cookies.
@@ -2152,37 +2042,6 @@ void SyncServiceImpl::SendExplicitPassphraseToPlatformClient() {
 }
 
 void SyncServiceImpl::SendExplicitPassphraseToPlatformClientImpl() {
-#if BUILDFLAG(IS_ANDROID)
-  CHECK(engine_ && engine_->IsInitialized());
-  int version_code = 0;
-  bool has_min_gms_version =
-      base::StringToInt(base::android::device_info::gms_version_code(),
-                        &version_code) &&
-      version_code >= kMinGmsVersionCodeWithCustomPassphraseApi;
-  has_min_gms_version |= base::CommandLine::ForCurrentProcess()->HasSwitch(
-      kIgnoreMinGmsVersionWithPassphraseSupportForTest);
-  if (!has_min_gms_version) {
-    return;
-  }
-
-  std::unique_ptr<syncer::Nigori> nigori_key =
-      crypto_.GetExplicitPassphraseDecryptionNigoriKey();
-  if (!nigori_key) {
-    return;
-  }
-
-  sync_pb::NigoriKey proto;
-  proto.set_deprecated_name(nigori_key->GetKeyName());
-  nigori_key->ExportKeys(proto.mutable_deprecated_user_key(),
-                         proto.mutable_encryption_key(),
-                         proto.mutable_mac_key());
-  int32_t byte_size = proto.ByteSizeLong();
-  std::vector<uint8_t> bytes(byte_size);
-  proto.SerializeToArray(bytes.data(), byte_size);
-  JNIEnv* env = base::android::AttachCurrentThread();
-  Java_ExplicitPassphrasePlatformClient_setExplicitDecryptionPassphrase(
-      env, GetAccountInfo(), base::android::ToJavaByteArray(env, bytes));
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void SyncServiceImpl::StopAndClear(ResetEngineReason reset_engine_reason) {
@@ -2196,13 +2055,11 @@ void SyncServiceImpl::StopAndClear(ResetEngineReason reset_engine_reason) {
   // passphrase pref should be cleared before clearing
   // InitialSyncFeatureSetupComplete().
   sync_prefs_.ClearAllEncryptionBootstrapTokens();
-#if !BUILDFLAG(IS_CHROMEOS)
   // Note: ResetEngine() does *not* clear directly user-controlled prefs (such
   // as the set of selected types), so that if the user ever chooses to enable
   // Sync again, they start off with their previous settings by default.
   // However, they do have to go through the initial setup again.
   sync_prefs_.ClearInitialSyncFeatureSetupComplete();
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   sync_prefs_.ClearPassphrasePromptMutedProductVersion();
   // Cached information provided by SyncEngine must be cleared.
   sync_prefs_.ClearCachedPassphraseType();
@@ -2238,55 +2095,6 @@ SyncTokenStatus SyncServiceImpl::GetSyncTokenStatusForDebugging() const {
   return auth_manager_->GetSyncTokenStatus();
 }
 
-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
-void SyncServiceImpl::OverrideNetworkForTest(
-    const CreateHttpPostProviderFactory& create_http_post_provider_factory_cb) {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  // If the engine has already been created, then it has a copy of the previous
-  // HttpPostProviderFactory creation callback. In that case, shut down and
-  // recreate the engine, so that it uses the correct (overridden) callback.
-  // This is a horrible hack; the proper fix would be to inject the
-  // callback in the ctor instead of adding it retroactively.
-  // Note that ResetEngine() can't be used here, because it would caues the
-  // engine to immediately restart.
-  // TODO(crbug.com/41451146): Clean this up and inject required upon
-  // construction.
-  bool restart = false;
-  if (engine_) {
-    engine_->StopSyncingForShutdown();
-
-    data_type_manager_->Stop(SyncStopMetadataFate::KEEP_METADATA);
-    data_type_manager_->SetConfigurer(nullptr);
-
-    migrator_.reset();
-
-    crypto_.Reset();
-
-    engine_->Shutdown(ShutdownReason::STOP_SYNC_AND_KEEP_DATA);
-    engine_.reset();
-
-    auth_manager_->ConnectionClosed();
-
-    restart = true;
-  }
-  DCHECK(!engine_);
-
-  // If a previous request (with the wrong callback) already failed, the next
-  // one would be backed off, which breaks tests. So reset the backoff.
-  auth_manager_->ResetRequestAccessTokenBackoffForTest();  // IN-TEST
-
-  // The null callback allows tests to easily reset to the default (real)
-  // callback.
-  create_http_post_provider_factory_override_for_test_ =
-      create_http_post_provider_factory_cb
-          ? std::make_optional(create_http_post_provider_factory_cb)
-          : std::nullopt;
-
-  if (restart) {
-    TryStart();
-  }
-}
-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 
 SyncEncryptionHandler::Observer*
 SyncServiceImpl::GetEncryptionObserverForTest() {
@@ -2492,7 +2300,3 @@ void SyncServiceImpl::AcknowledgeBookmarksLimitExceededError(
 }
 
 }  // namespace syncer
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(ExplicitPassphrasePlatformClient)
-#endif

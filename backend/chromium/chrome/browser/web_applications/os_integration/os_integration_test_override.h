@@ -15,9 +15,6 @@
 #include "build/build_config.h"
 #include "components/webapps/common/web_app_id.h"
 
-#if BUILDFLAG(IS_WIN)
-class ShellLinkItem;
-#endif
 
 namespace base {
 class Environment;
@@ -79,22 +76,7 @@ class OsIntegrationTestOverride
   // Safe downcasting to the testing implementation.
   virtual OsIntegrationTestOverrideImpl* AsOsIntegrationTestOverrideImpl();
 
-#if BUILDFLAG(IS_WIN)
-  // These should not be called from tests, these are automatically
-  // called from production code in testing to set
-  // up OS integration data for shortcuts menu registration and
-  // unregistration.
-  virtual void AddShortcutsMenuJumpListEntryForApp(
-      const std::wstring& app_user_model_id,
-      const std::vector<scoped_refptr<ShellLinkItem>>& shell_link_items) = 0;
-  virtual void DeleteShortcutsMenuJumpListEntryForApp(
-      const std::wstring& app_user_model_id) = 0;
-
-  virtual base::FilePath desktop() = 0;
-  virtual base::FilePath application_menu() = 0;
-  virtual base::FilePath quick_launch() = 0;
-  virtual base::FilePath startup() = 0;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   virtual bool IsChromeAppsValid() = 0;
   virtual base::FilePath chrome_apps_folder() = 0;
   virtual void EnableOrDisablePathOnLogin(const base::FilePath& file_path,

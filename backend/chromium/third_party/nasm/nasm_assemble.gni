@@ -57,13 +57,6 @@ if ((is_mac || is_ios) && (current_cpu == "x86" || current_cpu == "x64")) {
   }
   if (is_mac) {
     _nasm_flags += [ "--macho-min-os=macos$mac_deployment_target" ]
-  } else if (is_ios) {
-    if (target_environment == "device") {
-      _nasm_flags += [ "--macho-min-os=ios$ios_deployment_target" ]
-    } else {
-      _nasm_flags +=
-          [ "--macho-min-os=ios$ios_deployment_target-$target_environment" ]
-    }
   }
 } else if (is_posix || is_fuchsia) {
   if (current_cpu == "x86") {
@@ -74,22 +67,9 @@ if ((is_mac || is_ios) && (current_cpu == "x86" || current_cpu == "x64")) {
       "-felf64",
     ]
   }
-} else if (is_win) {
-  if (current_cpu == "x86") {
-    _nasm_flags = [
-      "-DPREFIX",
-      "-fwin32",
-    ]
-  } else if (current_cpu == "x64") {
-    _nasm_flags = [ "-fwin64" ]
-  }
 }
 
-if (is_win) {
-  asm_obj_extension = "obj"
-} else {
-  asm_obj_extension = "o"
-}
+asm_obj_extension = "o"
 
 template("nasm_assemble") {
   assert(defined(invoker.sources), "Need sources defined for $target_name")

@@ -244,10 +244,6 @@ const char* ProtoEnumToString(
     sync_pb::CookieSpecifics::CookieSourceType source_type);
 
 const char* ProtoEnumToString(
-    sync_pb::SharingMessageSpecifics::ChannelConfiguration::
-        ChimeChannelConfiguration::ChimeChannelType channel_type);
-
-const char* ProtoEnumToString(
     sync_pb::UserColorTheme::BrowserColorVariant browser_color_variant);
 
 const char* ProtoEnumToString(

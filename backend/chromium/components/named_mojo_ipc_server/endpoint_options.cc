@@ -23,17 +23,6 @@ EndpointOptions::EndpointOptions(
       message_pipe_id(message_pipe_id),
       extra_send_invitation_flags(extra_send_invitation_flags) {}
 
-#if BUILDFLAG(IS_WIN)
-EndpointOptions::EndpointOptions(
-    mojo::NamedPlatformChannel::ServerName server_name,
-    const MessagePipeId& message_pipe_id,
-    MojoSendInvitationFlags extra_send_invitation_flags,
-    std::wstring security_descriptor)
-    : server_name(server_name),
-      message_pipe_id(message_pipe_id),
-      extra_send_invitation_flags(extra_send_invitation_flags),
-      security_descriptor(security_descriptor) {}
-#endif
 
 EndpointOptions::EndpointOptions(EndpointOptions&&) = default;
 EndpointOptions::EndpointOptions(const EndpointOptions&) = default;

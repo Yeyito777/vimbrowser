@@ -46,12 +46,6 @@ bool ProfileIOData::IsHandledProtocol(std::string_view scheme) {
       content::kChromeUIScheme,
       content::kChromeUIUntrustedScheme,
       url::kDataScheme,
-#if BUILDFLAG(IS_CHROMEOS)
-      content::kExternalFileScheme,
-#endif  // BUILDFLAG(IS_CHROMEOS)
-#if BUILDFLAG(IS_ANDROID)
-      url::kContentScheme,
-#endif  // BUILDFLAG(IS_ANDROID)
       url::kAboutScheme,
       url::kBlobScheme,
       url::kFileSystemScheme,

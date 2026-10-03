@@ -23,9 +23,6 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/renderer/chromeos_delayed_callback_group.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 class BoundSessionRequestThrottledInRendererManager;
@@ -43,49 +40,6 @@ class VisitedLinkReader;
 class ChromeRenderThreadObserver : public content::RenderThreadObserver,
                                    public chrome::mojom::RendererConfiguration {
  public:
-#if BUILDFLAG(IS_CHROMEOS)
-  // A helper class to handle Mojo calls that need to be dispatched to the IO
-  // thread instead of the main thread as is the norm.
-  // This class is thread-safe.
-  class ChromeOSListener : public chrome::mojom::ChromeOSListener,
-                           public base::RefCountedThreadSafe<ChromeOSListener> {
-   public:
-    static scoped_refptr<ChromeOSListener> Create(
-        mojo::PendingReceiver<chrome::mojom::ChromeOSListener>
-            chromeos_listener_receiver);
-
-    ChromeOSListener(const ChromeOSListener&) = delete;
-    ChromeOSListener& operator=(const ChromeOSListener&) = delete;
-
-    // Is the merge session still running?
-    // Virtual for testing.
-    virtual bool IsMergeSessionRunning() const;
-
-    // Run |callback| on the calling sequence when the merge session has
-    // finished (or timed out).
-    // Virtual for testing.
-    virtual void RunWhenMergeSessionFinished(
-        DelayedCallbackGroup::Callback callback);
-
-   protected:
-    // chrome::mojom::ChromeOSListener:
-    void MergeSessionComplete() override;
-
-    ChromeOSListener();
-    ~ChromeOSListener() override;
-
-   private:
-    friend class base::RefCountedThreadSafe<ChromeOSListener>;
-
-    void BindOnIOThread(mojo::PendingReceiver<chrome::mojom::ChromeOSListener>
-                            chromeos_listener_receiver);
-
-    scoped_refptr<DelayedCallbackGroup> session_merged_callbacks_;
-    bool merge_session_running_ GUARDED_BY(lock_);
-    mutable base::Lock lock_;
-    mojo::Receiver<chrome::mojom::ChromeOSListener> receiver_{this};
-  };
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   ChromeRenderThreadObserver();
 
@@ -108,11 +62,6 @@ class ChromeRenderThreadObserver : public content::RenderThreadObserver,
     return visited_link_reader_.get();
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  scoped_refptr<ChromeOSListener> chromeos_listener() const {
-    return chromeos_listener_;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   content_settings::mojom::ContentSettingsManager* content_settings_manager() {
     if (content_settings_manager_)
@@ -137,10 +86,8 @@ class ChromeRenderThreadObserver : public content::RenderThreadObserver,
       mojo::PendingRemote<chrome::mojom::BoundSessionRequestThrottledHandler>
           bound_session_request_throttled_handler) override;
   void SetConfiguration(chrome::mojom::DynamicParamsPtr params) override;
-#if !BUILDFLAG(IS_ANDROID)
   void SetConfigurationOnProcessLockUpdate(
       chrome::mojom::StaticParamsPtr params) override;
-#endif  // !BUILDFLAG(IS_ANDROID)
   void OnRendererConfigurationAssociatedRequest(
       mojo::PendingAssociatedReceiver<chrome::mojom::RendererConfiguration>
           receiver);
@@ -157,15 +104,8 @@ class ChromeRenderThreadObserver : public content::RenderThreadObserver,
       GUARDED_BY(dynamic_params_lock_);
   mutable base::Lock dynamic_params_lock_;
 
-#if !BUILDFLAG(IS_ANDROID)
   bool static_renderer_params_set_ = false;
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Only set if the ChromeOS merge session was running when the renderer
-  // was started.
-  scoped_refptr<ChromeOSListener> chromeos_listener_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
   scoped_refptr<BoundSessionRequestThrottledInRendererManager>

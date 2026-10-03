@@ -197,20 +197,12 @@
 #include "ui/gfx/geometry/rect.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/containers/id_map.h"
-#include "content/browser/webauth/webauth_request_security_checker.h"
-#else
 #include "third_party/blink/public/mojom/hid/hid.mojom-forward.h"
-#endif
 
 #if BUILDFLAG(IS_ANDROID) || (BUILDFLAG(IS_IOS) && !BUILDFLAG(IS_IOS_TVOS))
 #include "services/device/public/mojom/nfc.mojom.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "third_party/blink/public/mojom/smart_card/smart_card.mojom-forward.h"
-#endif
 
 #if BUILDFLAG(ENABLE_MEDIA_REMOTING)
 #include "media/mojo/mojom/remoting.mojom-forward.h"
@@ -1472,19 +1464,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
   // renderer process to change the accessibility mode.
   void UpdateAccessibilityMode();
 
-#if BUILDFLAG(IS_ANDROID)
-  // Samsung Galaxy Note-specific "smart clip" stylus text getter.
-  using ExtractSmartClipDataCallback = base::OnceCallback<
-      void(const std::u16string&, const std::u16string&, const gfx::Rect&)>;
-
-  void RequestSmartClipExtract(ExtractSmartClipDataCallback callback,
-                               gfx::Rect rect);
-
-  void OnSmartClipDataExtracted(int32_t callback_id,
-                                const std::u16string& text,
-                                const std::u16string& html,
-                                const gfx::Rect& clip_rect);
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Request a one-time snapshot of the accessibility tree without changing
   // the accessibility mode.
@@ -1748,10 +1727,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
       mojo::PendingAssociatedRemote<blink::mojom::DevToolsAgentHost> host,
       mojo::PendingAssociatedReceiver<blink::mojom::DevToolsAgent> receiver);
 
-#if BUILDFLAG(IS_ANDROID)
-  base::android::ScopedJavaLocalRef<jobject> GetJavaRenderFrameHost() override;
-  service_manager::InterfaceProvider* GetJavaInterfaces() override;
-#endif
 
   // Propagates the visibility state along the immediate local roots by calling
   // RenderWidgetHostViewChildFrame::Show()/Hide(). Calling this on a pending
@@ -2103,17 +2078,11 @@ class CONTENT_EXPORT RenderFrameHostImpl
   void GetFileSystemAccessManager(
       mojo::PendingReceiver<blink::mojom::FileSystemAccessManager> receiver);
 
-#if !BUILDFLAG(IS_ANDROID)
   void GetHidService(mojo::PendingReceiver<blink::mojom::HidService> receiver);
-#endif
 
   void BindSerialService(
       mojo::PendingReceiver<blink::mojom::SerialService> receiver);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void GetSmartCardService(
-      mojo::PendingReceiver<blink::mojom::SmartCardService> receiver);
-#endif
 
   IdleManagerImpl* GetIdleManager();
 
@@ -3027,41 +2996,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
 
   float GetPageScaleFactor() const;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Perform security checks on Web Authentication requests. These can be
-  // called by the Android Java |Authenticator| mojo interface implementation
-  // so that they don't have to duplicate security policies.
-  // For requests originating from the render process, |effective_origin| will
-  // be the same as the last committed origin. However, for request originating
-  // from the browser process, this may be different.
-  // |is_payment_credential_creation| indicates whether MakeCredential is making
-  // a payment credential.
-  // |remote_desktop_client_override_origin| is the origin from the
-  // RemoteDesktopClientOverride client extension for this request, if present.
-  // |PerformGetAssertionWebAuthSecurityChecks| returns a security check result
-  // and a boolean representing whether the given origin is cross-origin with
-  // any frame in this frame's ancestor chain. This extra cross-origin bit is
-  // relevant in case callers need it for crypto signature.
-  void PerformGetAssertionWebAuthSecurityChecks(
-      const std::string& relying_party_id,
-      const url::Origin& effective_origin,
-      bool is_payment_credential_get_assertion,
-      const std::optional<url::Origin>& remote_desktop_client_override_origin,
-      base::OnceCallback<void(blink::mojom::AuthenticatorStatus, bool)>
-          callback);
-  void PerformMakeCredentialWebAuthSecurityChecks(
-      const std::string& relying_party_id,
-      const url::Origin& effective_origin,
-      bool is_payment_credential_creation,
-      const std::optional<url::Origin>& remote_desktop_client_override_origin,
-      base::OnceCallback<void(blink::mojom::AuthenticatorStatus, bool)>
-          callback);
-  void PerformReportWebAuthSecurityChecks(
-      const std::string& relying_party_id,
-      const url::Origin& effective_origin,
-      base::OnceCallback<void(blink::mojom::AuthenticatorStatus, bool)>
-          callback);
-#endif
 
   using JavaScriptResultAndTypeCallback =
       base::OnceCallback<void(blink::mojom::JavaScriptExecutionResultType,
@@ -3715,9 +3649,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
       mojo::PendingAssociatedReceiver<blink::mojom::AssociatedInterface>
           receiver) override;
 
-#if BUILDFLAG(IS_ANDROID)
-  void UpdateUserGestureCarryoverInfo() override;
-#endif
 
   friend class RenderAccessibilityHost;
   void HandleAXEvents(
@@ -4433,15 +4364,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
   // IPCs is enabled and this is a main frame on a visible page.
   std::optional<mojo::UrgentMessageScope> MakeUrgentMessageScopeIfNeeded();
 
-#if BUILDFLAG(IS_ANDROID)
-  // This function is called after a WebAuthn relying party check has
-  // completed. See `Perform*WebAuthSecurityChecks`.
-  void OnWebAuthSecurityChecksCompleted(
-      base::OnceCallback<void(blink::mojom::AuthenticatorStatus, bool)>
-          callback,
-      bool is_cross_origin,
-      blink::mojom::AuthenticatorStatus status);
-#endif
 
   // Notifies the RenderProcessHost instance that this frame no longer has any
   // media stream. Called when this render frame is deleted or when the process
@@ -4878,10 +4800,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
   ui::AXTreeData ax_tree_data_;
 
   // Samsung Galaxy Note-specific "smart clip" stylus text getter.
-#if BUILDFLAG(IS_ANDROID)
-  base::IDMap<std::unique_ptr<ExtractSmartClipDataCallback>>
-      smart_clip_callbacks_;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Callback when an event is received, for testing.
   AccessibilityCallbackForTesting accessibility_testing_callback_;
@@ -5067,12 +4985,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
   // Tracks the document policy which has been set on this frame.
   std::unique_ptr<blink::DocumentPolicy> document_policy_;
 
-#if BUILDFLAG(IS_ANDROID)
-  // An InterfaceProvider for Java-implemented interfaces that are scoped to
-  // this RenderFrameHost. This provides access to interfaces implemented in
-  // Java in the browser process to C++ code in the browser process.
-  std::unique_ptr<service_manager::InterfaceProvider> java_interfaces_;
-#endif
 
   // Performs Mojo capability control on this RenderFrameHost when
   // `mojo_binder_policy_applier_` is not null. Mojo binder polices will be
@@ -5576,11 +5488,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
   std::deque<base::OnceCallback<void(NavigationOrDocumentHandle*)>>
       deferred_shared_storage_header_callbacks_;
 
-#if BUILDFLAG(IS_ANDROID)
-  // Holds a reference to a pending remote WebAuthn RP ID validation while one
-  // is ongoing. Destroying this object cancels the validation.
-  std::unique_ptr<webauthn::RemoteValidation> webauthn_remote_rp_id_validation_;
-#endif
 
   // Tracks the page that initiates Protected Audience auction. This is set
   // when AdAuctionServiceImpl is constructed, which is when the first call to

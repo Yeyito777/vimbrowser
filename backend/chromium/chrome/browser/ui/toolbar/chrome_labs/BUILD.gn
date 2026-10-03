@@ -26,32 +26,23 @@ source_set("chrome_labs") {
     "//ui/base",
   ]
 
-  if (is_chromeos) {
-    deps += [
-      "//ash/constants",
-      "//chrome/browser/ash/profiles",
-    ]
-  }
-
   public_deps = [
     "//base",
     "//components/version_info:channel",
   ]
 }
 
-if (!is_android) {
-  source_set("unit_tests") {
-    testonly = true
-    sources = [ "chrome_labs_model_unittest.cc" ]
-    deps = [
-      ":chrome_labs",
-      "//base",
-      "//base:i18n",
-      "//base/test:test_support",
-      "//chrome/browser:flags",
-      "//chrome/test:test_support",
-      "//components/webui/flags",
-      "//testing/gtest",
-    ]
-  }
+source_set("unit_tests") {
+  testonly = true
+  sources = [ "chrome_labs_model_unittest.cc" ]
+  deps = [
+    ":chrome_labs",
+    "//base",
+    "//base:i18n",
+    "//base/test:test_support",
+    "//chrome/browser:flags",
+    "//chrome/test:test_support",
+    "//components/webui/flags",
+    "//testing/gtest",
+  ]
 }

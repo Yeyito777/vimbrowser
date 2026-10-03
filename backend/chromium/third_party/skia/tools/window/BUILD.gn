@@ -29,13 +29,7 @@ skia_component("window") {
   libs = []
   frameworks = []
 
-  if (is_android) {
-    sources += [
-      "android/RasterWindowContext_android.cpp",
-      "android/WindowContextFactory_android.h",
-    ]
-    libs += [ "android" ]
-  } else if (is_linux) {
+  if (is_linux) {
     sources += [
       "unix/RasterWindowContext_unix.cpp",
       "unix/RasterWindowContext_unix.h",
@@ -67,9 +61,8 @@ skia_component("window") {
     if (skia_use_angle) {
       sources += [ "ANGLEWindowContext.cpp" ]
     }
-    if (is_android) {
-      sources += [ "android/GLWindowContext_android.cpp" ]
-    } else if (is_linux) {
+
+    if (is_linux) {
       sources += [
         "unix/GaneshGLWindowContext_unix.cpp",
         "unix/GaneshGLWindowContext_unix.h",
@@ -117,12 +110,8 @@ skia_component("window") {
         "GraphiteNativeVulkanWindowContext.h",
       ]
     }
-    if (is_android) {
-      sources += [ "android/VulkanWindowContext_android.cpp" ]
-      if (skia_enable_graphite) {
-        sources += [ "android/GraphiteVulkanWindowContext_android.cpp" ]
-      }
-    } else if (is_linux) {
+
+    if (is_linux) {
       sources += [
         "unix/GaneshVulkanWindowContext_unix.cpp",
         "unix/GaneshVulkanWindowContext_unix.h",
@@ -215,10 +204,7 @@ skia_component("window") {
           ]
         }
       }
-    } else if (is_android) {
-      if (skia_enable_graphite) {
-        sources += [ "android/GraphiteDawnWindowContext_android.cpp" ]
-      }
+    } else {
     }
   }
 

@@ -24,11 +24,6 @@ scoped_refptr<net::SSLPrivateKey> PrivateKey::GetSSLPrivateKey() {
   return ssl_private_key_;
 }
 
-#if BUILDFLAG(IS_IOS)
-SecKeyRef PrivateKey::GetSecKeyRef() const {
-  return nullptr;
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 base::DictValue PrivateKey::BuildSerializedPrivateKey(
     std::vector<uint8_t> key) const {

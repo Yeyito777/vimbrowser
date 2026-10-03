@@ -43,9 +43,7 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_util.h"
 
-#if !BUILDFLAG(IS_IOS)
 #include "ui/base/clipboard/clipboard.h"  // nogncheck
-#endif                                    // !BUILDFLAG(IS_IOS)
 
 namespace {
 constexpr bool is_android = !!BUILDFLAG(IS_ANDROID);

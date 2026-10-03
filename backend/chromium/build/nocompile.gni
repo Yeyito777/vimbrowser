@@ -50,10 +50,6 @@
 #   http://dev.chromium.org/developers/testing/no-compile-tests
 #
 import("//build/config/clang/clang.gni")
-if (is_win) {
-  import("//build/toolchain/win/win_toolchain_data.gni")
-}
-
 declare_args() {
   enable_nocompile_tests = is_clang
 }
@@ -82,38 +78,17 @@ if (enable_nocompile_tests) {
         "//build/config/clang:find_bad_constructs",
       ]
 
-      if (is_win) {
-        result_path =
-            "$target_out_dir/$target_name/{{source_name_part}}_placeholder.obj"
-      } else {
-        result_path =
-            "$target_out_dir/$target_name/{{source_name_part}}_placeholder.o"
-      }
+      result_path =
+          "$target_out_dir/$target_name/{{source_name_part}}_placeholder.o"
       rebased_obj_path = rebase_path(result_path, root_build_dir)
 
       depfile = "${result_path}.d"
       rebased_depfile_path = rebase_path(depfile, root_build_dir)
       outputs = [ result_path ]
 
-      if (is_win) {
-        if (host_os == "win") {
-          cxx = "clang-cl.exe"
-        } else {
-          cxx = "clang-cl"
-        }
-      } else {
-        cxx = "clang++"
-      }
+      cxx = "clang++"
 
       args = []
-
-      if (is_win) {
-        # ninja normally parses /showIncludes output, but the depsformat
-        # variable can only be set in compiler tools, not for custom actions.
-        # Unfortunately, this means the clang wrapper needs to generate the
-        # depfile itself.
-        args += [ "--generate-depfile" ]
-      }
 
       args += [
         rebase_path("$clang_base_path/bin/$cxx", root_build_dir),
@@ -151,40 +126,20 @@ if (enable_nocompile_tests) {
         "-Werror",
       ]
 
-      if (!is_win) {
-        args += [
-          # On non-Windows platforms, clang can generate the depfile.
-          "-MMD",
-          "-MF",
-          rebased_depfile_path,
-          "-MT",
-          rebased_obj_path,
+      args += [
+        # On non-Windows platforms, clang can generate the depfile.
+        "-MMD",
+        "-MF",
+        rebased_depfile_path,
+        "-MT",
+        rebased_obj_path,
 
-          # Non-Windows clang uses file extensions to determine how to treat
-          # various inputs, so explicitly tell it to treat all inputs (even
-          # those with weird extensions like .nc) as C++ source files.
-          "-x",
-          "c++",
-        ]
-      } else {
-        # For some reason, the Windows includes are not part of the default
-        # compiler configs. Set it explicitly here, since things like libc++
-        # depend on the VC runtime.
-        if (target_cpu == "x86") {
-          win_toolchain_data = win_toolchain_data_x86
-        } else if (target_cpu == "x64") {
-          win_toolchain_data = win_toolchain_data_x64
-        } else if (target_cpu == "arm64") {
-          win_toolchain_data = win_toolchain_data_arm64
-        } else {
-          error("Unsupported target_cpu, add it to win_toolchain_data.gni")
-        }
-        args += win_toolchain_data.include_flags_imsvc_list
-        args += [
-          "/showIncludes:user",
-          "/TP",
-        ]
-      }
+        # Non-Windows clang uses file extensions to determine how to treat
+        # various inputs, so explicitly tell it to treat all inputs (even
+        # those with weird extensions like .nc) as C++ source files.
+        "-x",
+        "c++",
+      ]
 
       # Note: for all platforms, the depfile only lists user includes, and not
       # system includes. If system includes change, the compiler flags are

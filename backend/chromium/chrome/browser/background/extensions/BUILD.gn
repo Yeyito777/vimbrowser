@@ -24,9 +24,7 @@ source_set("extensions") {
     "//extensions/browser",
   ]
 
-  if (!is_android) {
-    deps += [ "//components/keep_alive_registry" ]
-  }
+  deps += [ "//components/keep_alive_registry" ]
 
   if (is_win) {
     deps += [ "//chrome/browser/startup" ]
@@ -76,9 +74,7 @@ source_set("impl") {
     "//extensions/common",
   ]
 
-  if (!is_android) {
-    deps += [ "//components/keep_alive_registry" ]
-  }
+  deps += [ "//components/keep_alive_registry" ]
 
   if (!is_chromeos) {
     deps += [ "//chrome/browser/web_applications/extensions" ]

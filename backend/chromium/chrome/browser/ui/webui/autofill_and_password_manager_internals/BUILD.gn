@@ -38,31 +38,25 @@ source_set("autofill_and_password_manager_internals") {
     "//services/network/public/mojom:mojom_content_security_policy",
   ]
 
-  if (is_android) {
-    deps += [ "//chrome/browser/password_manager/android:utils" ]
-  } else {
-    deps += [
-      "//chrome/browser/ui/browser_window",
-      "//chrome/browser/ui/tabs:tab_strip",
-      "//components/autofill/content/browser",
-    ]
-  }
+  deps += [
+    "//chrome/browser/ui/browser_window",
+    "//chrome/browser/ui/tabs:tab_strip",
+    "//components/autofill/content/browser",
+  ]
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    sources = [ "autofill_internals_ui_browsertest.cc" ]
+source_set("browser_tests") {
+  testonly = true
+  sources = [ "autofill_internals_ui_browsertest.cc" ]
 
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
 
-    deps = [
-      ":autofill_and_password_manager_internals",
-      "//base",
-      "//chrome/browser/ui",
-      "//chrome/test:test_support_ui",
-      "//content/public/browser",
-      "//content/test:test_support",
-    ]
-  }
+  deps = [
+    ":autofill_and_password_manager_internals",
+    "//base",
+    "//chrome/browser/ui",
+    "//chrome/test:test_support_ui",
+    "//content/public/browser",
+    "//content/test:test_support",
+  ]
 }

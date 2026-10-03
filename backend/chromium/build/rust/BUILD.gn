@@ -44,11 +44,7 @@ if (toolchain_has_rust) {
 
       # We cannot depend on base/base_export.h because base depends on us.
       if (is_component_build) {
-        if (is_win) {
-          defines = [ "CXX_RS_EXPORT=__declspec(dllexport)" ]
-        } else {
-          defines = [ "CXX_RS_EXPORT=__attribute__((visibility(\"default\")))" ]
-        }
+        defines = [ "CXX_RS_EXPORT=__attribute__((visibility(\"default\")))" ]
       } else {
         defines = [ "CXX_RS_EXPORT=" ]
       }

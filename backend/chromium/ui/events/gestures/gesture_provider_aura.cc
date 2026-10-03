@@ -18,11 +18,7 @@ namespace ui {
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-constexpr bool kDoubleTapPlatformSupport = true;
-#else
 constexpr bool kDoubleTapPlatformSupport = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 

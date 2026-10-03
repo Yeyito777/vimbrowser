@@ -30,22 +30,16 @@
 #endif  // BUILDFLAG(USE_DBUS)
 #endif  // BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/installer/util/google_update_settings.h"
-#include "components/metrics/call_stacks/stack_sampling_recorder.h"
-#endif
 
 #if BUILDFLAG(USE_DBUS) && !BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/dbus_memory_pressure_evaluator_linux.h"
 #endif
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #include "base/linux_util.h"
 #include "chrome/common/chrome_paths_internal.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/sync/key_storage_config_linux.h"
 #include "components/os_crypt/sync/os_crypt.h"
-#endif
 
 ChromeBrowserMainPartsLinux::ChromeBrowserMainPartsLinux(
     bool is_integration_test,
@@ -56,17 +50,7 @@ ChromeBrowserMainPartsLinux::~ChromeBrowserMainPartsLinux() = default;
 
 void ChromeBrowserMainPartsLinux::PostCreateMainMessageLoop() {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-#if BUILDFLAG(IS_CHROMEOS)
-  if (command_line->HasSwitch(metrics::kRecordStackSamplingDataSwitch)) {
-    stack_sampling_recorder_ =
-        base::MakeRefCounted<metrics::StackSamplingRecorder>();
-    stack_sampling_recorder_->Start();
-  }
-  // Don't initialize DBus here. Bluetooth DBusManager initialization depends on
-  // FeatureList, and is done elsewhere.
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if !BUILDFLAG(IS_CHROMEOS)
 #if BUILDFLAG(USE_DBUS)
   bluez::BluezDBusManager::Initialize(
       dbus_thread_linux::GetSharedSystemBus().get());
@@ -91,7 +75,6 @@ void ChromeBrowserMainPartsLinux::PostCreateMainMessageLoop() {
           password_manager::kEnableEncryptionSelection);
   chrome::GetDefaultUserDataDirectory(&config->user_data_path);
   OSCrypt::SetConfig(std::move(config));
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   ChromeBrowserMainPartsPosix::PostCreateMainMessageLoop();
 }
@@ -104,14 +87,12 @@ void ChromeBrowserMainPartsLinux::PostMainMessageLoopRun() {
 #endif
 
 void ChromeBrowserMainPartsLinux::PreProfileInit() {
-#if !BUILDFLAG(IS_CHROMEOS)
   // Needs to be called after we have chrome::DIR_USER_DATA and
   // g_browser_process.  This happens in PreCreateThreads.
   // base::GetLinuxDistro() will initialize its value if needed.
   base::ThreadPool::PostTask(
       FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
       base::BindOnce(base::IgnoreResult(&base::GetLinuxDistro)));
-#endif
 
   ChromeBrowserMainPartsPosix::PreProfileInit();
 }
@@ -130,11 +111,7 @@ void ChromeBrowserMainPartsLinux::PostBrowserStart() {
 #endif  // BUILDFLAG(USE_DBUS) && !BUILDFLAG(IS_CHROMEOS)
 
 void ChromeBrowserMainPartsLinux::PostDestroyThreads() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // No-op; per PostBrowserStart() comment, this is done elsewhere.
-#else
   bluez::BluezDBusManager::Shutdown();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   ChromeBrowserMainPartsPosix::PostDestroyThreads();
 }

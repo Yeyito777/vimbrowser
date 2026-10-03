@@ -31,11 +31,6 @@ BASE_FEATURE(kEncryptedReportingManualTestHeartbeatEvent,
 }  // namespace
 
 ManualTestHeartbeatEvent::ManualTestHeartbeatEvent() {
-#if BUILDFLAG(IS_CHROMEOS)
-  managed_session_service_ = std::make_unique<policy::ManagedSessionService>();
-  CHECK(managed_session_service_);
-  managed_session_observation_.Observe(managed_session_service_.get());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   StartHeartbeatEvent();
 }
@@ -63,34 +58,5 @@ void ManualTestHeartbeatEvent::StartHeartbeatEvent() const {
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-namespace {
-// User heartbeat event.
-BASE_FEATURE(kEncryptedReportingManualTestUserHeartbeatEvent,
-             "EncryptedReportingManualTestUserHeartbeatEvent",
-             base::FEATURE_DISABLED_BY_DEFAULT);
-}  // namespace
-
-// Enqueues a 10 heartbeat events with `EventType::kUser` upon login.
-void ManualTestHeartbeatEvent::OnLogin(Profile* profile) {
-  managed_session_observation_.Reset();
-  CHECK_NE(profile, nullptr);
-
-  if (base::FeatureList::IsEnabled(
-          kEncryptedReportingManualTestUserHeartbeatEvent)) {
-    Start<ReportQueueManualTestContext>(
-        /*period=*/base::Seconds(1),
-        /*number_of_messages_to_enqueue=*/10,
-        /*destination=*/HEARTBEAT_EVENTS,
-        /*priority=*/FAST_BATCH, EventType::kUser,
-        base::BindOnce([](Status status) {
-          LOG(WARNING) << "Heartbeat Event completed with status: " << status;
-        }),
-        base::ThreadPool::CreateSequencedTaskRunner(
-            {base::TaskPriority::BEST_EFFORT, base::MayBlock()}));
-  }
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace reporting

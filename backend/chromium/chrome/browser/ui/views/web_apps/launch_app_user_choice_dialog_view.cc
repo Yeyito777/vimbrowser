@@ -56,9 +56,7 @@ LaunchAppUserChoiceDialogView::~LaunchAppUserChoiceDialogView() = default;
 
 void LaunchAppUserChoiceDialogView::Init() {
   SetModalType(ui::mojom::ModalType::kNone);
-#if !BUILDFLAG(IS_CHROMEOS)
   SetTitle(l10n_util::GetStringUTF16(IDS_PRODUCT_NAME));
-#endif
   SetShowCloseButton(true);
   SetCanResize(false);
   set_draggable(true);

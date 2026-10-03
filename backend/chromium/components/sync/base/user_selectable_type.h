@@ -61,38 +61,6 @@ DataType UserSelectableTypeToCanonicalDataType(UserSelectableType type);
 std::optional<UserSelectableType> GetUserSelectableTypeFromDataType(
     DataType data_type);
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Chrome OS provides a separate UI with sync controls for OS data types. Note
-// that wallpaper is a special case due to its reliance on apps, so while it
-// appears in the UI, it is not included in this enum.
-// TODO(crbug.com/40629581): Break this dependency.
-enum class UserSelectableOsType {
-  kOsApps,
-  kFirstType = kOsApps,
-
-  kOsPreferences,
-  kOsWifiConfigurations,
-  kLastType = kOsWifiConfigurations
-};
-
-using UserSelectableOsTypeSet = base::EnumSet<UserSelectableOsType,
-                                              UserSelectableOsType::kFirstType,
-                                              UserSelectableOsType::kLastType>;
-
-const char* GetUserSelectableOsTypeName(UserSelectableOsType type);
-std::string UserSelectableOsTypeSetToString(UserSelectableOsTypeSet types);
-DataTypeSet UserSelectableOsTypeToAllDataTypes(UserSelectableOsType type);
-DataType UserSelectableOsTypeToCanonicalDataType(UserSelectableOsType type);
-
-// Returns the type if the string matches a known OS type.
-std::optional<UserSelectableOsType> GetUserSelectableOsTypeFromString(
-    const std::string& type);
-
-base::ListValue UserSelectableOsTypeSetToValueList(
-    syncer::UserSelectableOsTypeSet user_selected_types);
-syncer::UserSelectableOsTypeSet ValueListToUserSelectableOsTypeSet(
-    const base::ListValue& value_list);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // For GTest.
 std::ostream& operator<<(std::ostream& stream, const UserSelectableType& type);

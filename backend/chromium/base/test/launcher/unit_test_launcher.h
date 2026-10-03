@@ -58,14 +58,6 @@ int LaunchUnitTestsWithOptions(int argc,
                                RepeatingClosure timeout_callback,
                                RunTestSuiteCallback run_test_suite);
 
-#if BUILDFLAG(IS_WIN)
-// Launches unit tests in given test suite. Returns exit code.
-// |use_job_objects| determines whether to use job objects.
-int LaunchUnitTests(int argc,
-                    wchar_t** argv,
-                    bool use_job_objects,
-                    RunTestSuiteCallback run_test_suite);
-#endif  // BUILDFLAG(IS_WIN)
 
 // Delegate to abstract away platform differences for unit tests.
 class UnitTestPlatformDelegate {

@@ -61,9 +61,6 @@ class CPDF_DocPageData final : public CPDF_Document::PageDataIface,
                                        const CPDF_FontEncoding* pEncoding);
   RetainPtr<CPDF_Font> GetStandardFont(const ByteString& fontName,
                                        const CPDF_FontEncoding* pEncoding);
-#if BUILDFLAG(IS_WIN)
-  RetainPtr<CPDF_Font> AddWindowsFont(LOGFONTA* pLogFont);
-#endif
 
   // Loads a colorspace.
   RetainPtr<CPDF_ColorSpace> GetColorSpace(const CPDF_Object* pCSObj,

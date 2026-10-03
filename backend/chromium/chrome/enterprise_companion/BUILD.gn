@@ -8,26 +8,6 @@ import("//chrome/process_version_rc_template.gni")
 import("//chrome/updater/zip.gni")
 import("//testing/test.gni")
 
-if (is_win) {
-  # ICU is needed for proxy URL canonicalization. Proxies are only supported on
-  # Windows.
-  import("//third_party/icu/config.gni")
-  if (icu_use_data_file) {
-    action("icu_file_checksum_header") {
-      script = "generate_icu_file_checksum_header.py"
-      inputs = [ "$root_build_dir/icudtl.dat" ]
-      outputs = [ "$target_gen_dir/icu_file_checksum.h" ]
-      deps = [ "//third_party/icu:icudata" ]
-      args = [
-        "--icu_file",
-        "icudtl.dat",
-        "--output",
-        rebase_path("$target_gen_dir/icu_file_checksum.h", root_build_dir),
-      ]
-    }
-  }
-}
-
 process_version("version_header") {
   sources = [ "//chrome/VERSION" ]
   template_file = "enterprise_companion_version.h.in"
@@ -160,22 +140,6 @@ source_set("base") {
       "mac/mac_utils.h",
       "mac/mac_utils.mm",
     ]
-  } else if (is_win) {
-    sources += [
-      "icu_util.cc",
-      "icu_util.h",
-      "installer_win.cc",
-      "ipc_security_win.cc",
-    ]
-    deps += [
-      "//base:i18n",
-      "//chrome/installer/util:work_item",
-      "//third_party/boringssl",
-    ]
-    if (icu_use_data_file) {
-      defines = [ "ENTERPRISE_COMPANION_USE_ICU_DATA_FILE" ]
-      deps += [ ":icu_file_checksum_header" ]
-    }
   }
 }
 
@@ -191,10 +155,6 @@ executable("test_crashpad_embedder") {
     "//base",
     "//chrome/updater:constants_test",
   ]
-
-  if (is_win) {
-    configs += [ "//build/config/win:windowed" ]
-  }
 }
 
 source_set("test_utils") {
@@ -226,8 +186,6 @@ source_set("test_utils") {
     sources += [ "test/test_utils_linux.cc" ]
   } else if (is_mac) {
     sources += [ "test/test_utils_mac.cc" ]
-  } else if (is_win) {
-    sources += [ "test/test_utils_win.cc" ]
   }
 }
 
@@ -326,9 +284,6 @@ test("enterprise_companion_integration_tests") {
   if (is_mac) {
     data_deps +=
         [ "//chrome/enterprise_companion/mac:enterprise_companion_bundle_test" ]
-  } else if (is_win) {
-    sources += [ "test/integration_tests_win.cc" ]
-    data_deps += [ ":enterprise_companion_test" ]
   } else if (is_linux) {
     data_deps += [ ":enterprise_companion_test" ]
   }
@@ -381,8 +336,6 @@ static_library("installer_paths") {
   } else if (is_mac) {
     sources += [ "installer_paths_mac.mm" ]
     frameworks = [ "Foundation.framework" ]
-  } else if (is_win) {
-    sources += [ "installer_paths_win.cc" ]
   }
 }
 
@@ -421,29 +374,6 @@ static_library("constants_test") {
   defines = [ "ENTERPRISE_COMPANION_TEST_ONLY" ]
 }
 
-if (is_win) {
-  # `process_version_rc_template` invokes `process_version` with the default
-  # template rc file which is at //chrome/app/chrome_version.rc.version.
-  process_version_rc_template("enterprise_companion_rc") {
-    _product_fullname = "$enterprise_companion_product_full_name"
-    _internal_name = _product_fullname + " ($current_cpu)"
-    if (is_debug) {
-      _internal_name += " (debug)"
-    }
-    extra_args = [
-      "-e",
-      "PRODUCT_FULLNAME=\"$_product_fullname\"",
-      "-e",
-      "INTERNAL_NAME=\"$_internal_name\"",
-      "-e",
-      "ORIGINAL_FILENAME=\"enterprise_companion.exe\"",
-      "-e",
-      "PRODUCT_SHORTNAME=\"$enterprise_companion_product_full_name\"",
-    ]
-    output = "$target_gen_dir/enterprise_companion.exe.rc"
-  }
-}
-
 executable("enterprise_companion") {
   sources = [ "main.cc" ]
   deps = [
@@ -451,14 +381,6 @@ executable("enterprise_companion") {
     ":constants_prod",
     "//chrome/updater:constants_prod",
   ]
-
-  if (is_win) {
-    configs += [ "//build/config/win:windowed" ]
-    deps += [ ":enterprise_companion_rc" ]
-    if (icu_use_data_file) {
-      public_deps = [ "//third_party/icu:icudata" ]
-    }
-  }
 }
 
 # Enterprise Companion application used by integration tests. Constants can be
@@ -470,13 +392,6 @@ executable("enterprise_companion_test") {
     ":constants_test",
     "//chrome/updater:constants_test",
   ]
-
-  if (is_win) {
-    configs += [ "//build/config/win:windowed" ]
-    if (icu_use_data_file) {
-      public_deps = [ "//third_party/icu:icudata" ]
-    }
-  }
 
   defines = [ "ENTERPRISE_COMPANION_TEST_ONLY" ]
 }
@@ -570,13 +485,6 @@ artifact_zip("prod_zip") {
       # chrome-unsigned.
       deps += [ ":syms_archive" ]
     }
-  } else if (is_win) {
-    inputs = [ "$root_build_dir/enterprise_companion.exe" ]
-    deps = [ ":enterprise_companion" ]
-
-    if (icu_use_data_file) {
-      inputs += [ "$root_out_dir/icudtl.dat" ]
-    }
   }
 }
 
@@ -598,13 +506,6 @@ artifact_zip("test_zip") {
 
     if (is_asan) {
       inputs += [ "$root_build_dir/${enterprise_companion_product_full_name}_test.app/Contents/MacOS/libclang_rt.asan_osx_dynamic.dylib" ]
-    }
-  } else if (is_win) {
-    inputs = [ "$root_build_dir/enterprise_companion_test.exe" ]
-    deps = [ ":enterprise_companion_test" ]
-
-    if (icu_use_data_file) {
-      inputs += [ "$root_out_dir/icudtl.dat" ]
     }
   }
 }

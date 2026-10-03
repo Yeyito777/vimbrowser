@@ -25,9 +25,6 @@
 #include "chrome/browser/shell_integration.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/registry.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace default_browser {
 
@@ -47,23 +44,6 @@ class ShellDelegateImpl : public DefaultBrowserManager::ShellDelegate {
     worker->StartCheckIsDefault(std::move(callback));
   }
 
-#if BUILDFLAG(IS_WIN)
-  void StartCheckDefaultClientProgId(
-      const GURL& scheme,
-      base::OnceCallback<void(const std::u16string&)> callback) override {
-    auto worker =
-        base::MakeRefCounted<shell_integration::DefaultSchemeClientWorker>(
-            scheme);
-    worker->StartCheckIsDefaultAndGetDefaultClientProgId(base::BindOnce(
-        [](base::OnceCallback<void(const std::u16string&)>
-               prog_id_handle_callback,
-           shell_integration::DefaultWebClientState,
-           const std::u16string& prog_id) {
-          std::move(prog_id_handle_callback).Run(prog_id);
-        },
-        std::move(callback)));
-  }
-#endif  // BUILDFLAG(IS_WIN)
 };
 
 // UMA enum for logging browser state validation result.
@@ -78,61 +58,6 @@ enum class DefaultBrowserStateValidationResult {
 };
 // LINT.ThenChange(//tools/metrics/histograms/metadata/ui/enums.xml:DefaultBrowserStateValidationResult)
 
-#if BUILDFLAG(IS_WIN)
-constexpr wchar_t kHttpUserChoiceKeyPath[] =
-    L"Software\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\htt"
-    L"p\\UserChoice";
-
-std::wstring GetProgIdFromRegistry(const wchar_t user_choice_path[]) {
-  const wchar_t kProgIdEntryName[] = L"ProgId";
-
-  base::win::RegKey key;
-  std::wstring prog_id;
-
-  // First, check the current user's choice.
-  if (key.Open(HKEY_CURRENT_USER, user_choice_path, KEY_READ) ==
-      ERROR_SUCCESS) {
-    if (key.ReadValue(kProgIdEntryName, &prog_id) == ERROR_SUCCESS) {
-      return prog_id;
-    }
-  }
-  return L"";
-}
-
-// Returns whether a give program ID belongs to Chrome.
-constexpr bool IsProgIdChrome(const std::u16string& prog_id) {
-  constexpr std::array<std::u16string_view, 5> kChromeProgIds = {
-      u"ChromeHTML", u"ChromeBHTML", u"ChromeDHTML", u"ChromeSSHTM",
-      u"ChromiumHTM"};
-
-  return std::find(kChromeProgIds.begin(), kChromeProgIds.end(), prog_id) !=
-         kChromeProgIds.end();
-}
-
-// Reports whether the default browser state matches the current default program
-// ID for HTTP.
-void CompareHttpProgIdWithDefaultState(DefaultBrowserState default_state,
-                                       const std::string_view histogram_name,
-                                       const std::u16string& http_prog_id) {
-  CHECK(default_state == shell_integration::IS_DEFAULT ||
-        default_state == shell_integration::NOT_DEFAULT);
-  const bool is_http_prog_id_chrome = IsProgIdChrome(http_prog_id);
-  const bool is_default = default_state == shell_integration::IS_DEFAULT;
-
-  DefaultBrowserStateValidationResult result;
-  if (is_default && is_http_prog_id_chrome) {
-    result = DefaultBrowserStateValidationResult::kTruePositive;
-  } else if (!is_default && !is_http_prog_id_chrome) {
-    result = DefaultBrowserStateValidationResult::kTrueNegative;
-  } else if (is_default && !is_http_prog_id_chrome) {
-    result = DefaultBrowserStateValidationResult::kFalsePositive;
-  } else {
-    result = DefaultBrowserStateValidationResult::kFalseNegative;
-  }
-
-  base::UmaHistogramEnumeration(histogram_name, result);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -218,24 +143,6 @@ void DefaultBrowserManager::OnDefaultBrowserCheckResult(
 
 void DefaultBrowserManager::PerformDefaultBrowserCheckValidations(
     DefaultBrowserState default_state) {
-#if BUILDFLAG(IS_WIN)
-  shell_delegate_->StartCheckDefaultClientProgId(
-      GURL("http://"),
-      base::BindOnce(&CompareHttpProgIdWithDefaultState, default_state,
-                     "DefaultBrowser.HttpProgIdAssocValidationResult"));
-  base::ThreadPool::PostTask(
-      FROM_HERE, {base::TaskPriority::BEST_EFFORT, base::MayBlock()},
-      base::BindOnce(
-          [](DefaultBrowserState default_state) {
-            std::wstring prog_id_from_registry =
-                GetProgIdFromRegistry(kHttpUserChoiceKeyPath);
-            CompareHttpProgIdWithDefaultState(
-                default_state,
-                "DefaultBrowser.HttpProgIdRegistryValidationResult",
-                base::WideToUTF16(prog_id_from_registry));
-          },
-          default_state));
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 base::CallbackListSubscription

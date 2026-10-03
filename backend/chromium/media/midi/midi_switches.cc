@@ -8,9 +8,6 @@
 namespace midi {
 namespace features {
 
-#if BUILDFLAG(IS_WIN)
-BASE_FEATURE(kMidiManagerWinrt, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 }  // namespace features
 }  // namespace midi

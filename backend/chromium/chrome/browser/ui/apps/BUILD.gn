@@ -55,8 +55,4 @@ source_set("impl") {
     "//services/service_manager/public/cpp",
     "//ui/base",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chrome/browser/chromeos/policy/dlp" ]
-  }
 }

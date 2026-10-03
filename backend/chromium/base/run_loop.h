@@ -29,13 +29,7 @@ class ScopedRunLoopTimeout;
 class ScopedDisableRunLoopTimeout;
 }  // namespace test
 
-#if BUILDFLAG(IS_ANDROID)
-class MessagePumpAndroid;
-#endif
 
-#if BUILDFLAG(IS_IOS)
-class MessagePumpUIApplication;
-#endif
 
 class SingleThreadTaskRunner;
 
@@ -264,17 +258,7 @@ class BASE_EXPORT RunLoop {
   FRIEND_TEST_ALL_PREFIXES(SingleThreadTaskExecutorTypedTest,
                            RunLoopQuitOrderAfter);
 
-#if BUILDFLAG(IS_ANDROID)
-  // Android doesn't support the blocking RunLoop::Run, so it calls
-  // BeforeRun and AfterRun directly.
-  friend class MessagePumpAndroid;
-#endif
 
-#if BUILDFLAG(IS_IOS)
-  // iOS doesn't support the blocking RunLoop::Run, so it calls
-  // BeforeRun directly.
-  friend class MessagePumpUIApplication;
-#endif
 
   // Support for //base/test/scoped_run_loop_timeout.h.
   friend class test::ScopedRunLoopTimeout;

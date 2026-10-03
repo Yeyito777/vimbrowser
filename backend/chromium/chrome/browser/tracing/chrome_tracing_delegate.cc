@@ -37,23 +37,10 @@
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/tracing/public/cpp/tracing_features.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/ui/android/tab_model/tab_model.h"
-#include "chrome/browser/ui/android/tab_model/tab_model_list.h"
-#else
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_list.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_pref_names.h"
-#include "chromeos/dbus/constants/dbus_switches.h"  // nogncheck
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/task/thread_pool.h"
-#include "chrome/installer/util/system_tracing_util.h"
-#endif
 
 namespace {
 
@@ -67,39 +54,14 @@ ChromeTracingDelegate::ChromeTracingDelegate() {
   DCHECK(
       content::BrowserThread::CurrentlyOn(content::BrowserThread::UI) ||
       !content::BrowserThread::IsThreadInitialized(content::BrowserThread::UI));
-#if !BUILDFLAG(IS_ANDROID)
   BrowserList::AddObserver(this);
-#else
-  TabModelList::AddObserver(this);
-#endif
 }
 
 ChromeTracingDelegate::~ChromeTracingDelegate() {
   CHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
-#if !BUILDFLAG(IS_ANDROID)
   BrowserList::RemoveObserver(this);
-#else
-  TabModelList::RemoveObserver(this);
-#endif
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void ChromeTracingDelegate::OnTabModelAdded(TabModel* tab_model) {
-  for (const TabModel* model : TabModelList::models()) {
-    if (model->GetProfile()->IsOffTheRecord()) {
-      latest_incognito_launched_ = base::TimeTicks::Now();
-      base::trace_event::EmitNamedTrigger("incognito-start");
-    }
-  }
-}
-
-void ChromeTracingDelegate::OnTabModelRemoved(TabModel* tab_model) {
-  if (!IsOffTheRecordSessionActive()) {
-    base::trace_event::EmitNamedTrigger("incognito-end");
-  }
-}
-
-#else
 
 void ChromeTracingDelegate::OnBrowserAdded(Browser* browser) {
   if (browser->profile()->IsOffTheRecord()) {
@@ -114,7 +76,6 @@ void ChromeTracingDelegate::OnBrowserRemoved(Browser* browser) {
   }
 }
 
-#endif  // BUILDFLAG(IS_ANDROID)
 
 bool ChromeTracingDelegate::IsRecordingAllowed(
     bool requires_anonymized_data,
@@ -165,56 +126,7 @@ ChromeTracingDelegate::CreateSystemProfileMetadataRecorder() const {
   return base::BindRepeating(&tracing::RecordSystemProfileMetadata);
 }
 
-#if BUILDFLAG(IS_WIN)
-void ChromeTracingDelegate::GetSystemTracingState(
-    base::OnceCallback<void(bool service_supported, bool service_enabled)>
-        on_tracing_state) {
-  base::ThreadPool::PostTaskAndReplyWithResult(
-      FROM_HERE, {base::MayBlock{}},
-      base::BindOnce([]() -> std::pair<bool, bool> {
-        return {installer::IsSystemTracingServiceSupported(),
-                installer::IsSystemTracingServiceRegistered()};
-      }),
-      base::BindOnce(
-          [](base::OnceCallback<void(bool service_supported,
-                                     bool service_enabled)> on_tracing_state,
-             std::pair<bool, bool> state) {
-            std::move(on_tracing_state).Run(state.first, state.second);
-          },
-          std::move(on_tracing_state)));
-}
-
-void ChromeTracingDelegate::EnableSystemTracing(
-    base::OnceCallback<void(bool success)> on_complete) {
-  base::ThreadPool::PostTaskAndReplyWithResult(
-      FROM_HERE, {base::MayBlock{}}, base::BindOnce([]() {
-        return installer::ElevateAndRegisterSystemTracingService();
-      }),
-      std::move(on_complete));
-}
-
-void ChromeTracingDelegate::DisableSystemTracing(
-    base::OnceCallback<void(bool success)> on_complete) {
-  base::ThreadPool::PostTaskAndReplyWithResult(
-      FROM_HERE, {base::MayBlock{}}, base::BindOnce([]() {
-        return installer::ElevateAndDeregisterSystemTracingService();
-      }),
-      std::move(on_complete));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 bool ChromeTracingDelegate::IsSystemWideTracingEnabled() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Always allow system tracing in dev mode images.
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          chromeos::switches::kSystemDevMode)) {
-    return true;
-  }
-  // In non-dev images, honor the pref for system-wide tracing.
-  PrefService* local_state = g_browser_process->local_state();
-  DCHECK(local_state);
-  return local_state->GetBoolean(ash::prefs::kDeviceSystemWideTracingEnabled);
-#else
   return false;
-#endif
 }

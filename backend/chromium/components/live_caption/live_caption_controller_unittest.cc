@@ -14,7 +14,6 @@
 #include "components/live_caption/caption_bubble_context.h"
 #include "components/live_caption/caption_bubble_controller.h"
 #include "components/live_caption/pref_names.h"
-#include "components/live_caption/views/translation_view_wrapper_base.h"
 #include "components/pref_registry/pref_registry_syncable.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/testing_pref_service.h"
@@ -37,9 +36,7 @@ class MockCaptionControllerDelgate : public CaptionControllerBase::Delegate {
 
   MOCK_METHOD(std::unique_ptr<CaptionBubbleController>,
               CreateCaptionBubbleController,
-              (CaptionBubbleSettings*,
-               const std::string&,
-               std::unique_ptr<TranslationViewWrapperBase>),
+              (CaptionBubbleSettings*, const std::string&),
               (override));
 
   void AddCaptionStyleObserver(ui::NativeThemeObserver*) override {}

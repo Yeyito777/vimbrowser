@@ -8,11 +8,6 @@
 
 import("../../webrtc.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-  import("//build/config/android/rules.gni")
-}
-
 config("audio_device_warnings_config") {
   if (is_win && is_clang) {
     cflags = [
@@ -325,15 +320,7 @@ rtc_library("audio_device_impl") {
       "audio_device_impl.h",
       "include/audio_device_data_observer.h",
     ]
-    if (is_android) {
-      if (build_with_mozilla) {
-        include_dirs += [
-          "/config/external/nspr",
-          "/nsprpub/lib/ds",
-          "/nsprpub/pr/include",
-        ]
-      }
-    }
+
     if (rtc_use_dummy_audio_file_devices) {
       defines += [ "WEBRTC_DUMMY_FILE_DEVICES" ]
     } else {
@@ -376,24 +363,6 @@ rtc_library("audio_device_impl") {
         deps += [
           ":audio_device_impl_frameworks",
           "../third_party/portaudio:mac_portaudio",
-        ]
-      }
-      if (is_win) {
-        sources += [
-          "win/audio_device_core_win.cc",
-          "win/audio_device_core_win.h",
-        ]
-        libs = [
-          # Required for the built-in WASAPI AEC.
-          "dmoguids.lib",
-          "wmcodecdspuuid.lib",
-          "amstrmid.lib",
-          "msdmo.lib",
-          "oleaut32.lib",
-        ]
-        deps += [
-          "../../rtc_base:win32",
-          "../../rtc_base/win:scoped_com_initializer",
         ]
       }
       configs += [ ":audio_device_warnings_config" ]
@@ -492,23 +461,7 @@ if (rtc_include_tests && !build_with_chromium) {
     if (is_linux || is_chromeos || is_mac || is_win) {
       sources += [ "audio_device_unittest.cc" ]
     }
-    if (is_win) {
-      sources += [ "win/core_audio_utility_win_unittest.cc" ]
-      deps += [
-        ":audio_device_module_from_input_and_output",
-        ":windows_core_audio_utility",
-        "../../rtc_base/win:scoped_com_initializer",
-        "../../rtc_base/win:windows_version",
-      ]
-    }
-    if (is_android) {
-      deps += [
-        "../../sdk/android:internal_jni",
-        "../../sdk/android:libjingle_peerconnection_java",
-        "../../sdk/android:native_api_jni",
-        "../utility",
-      ]
-    }
+
     if (!rtc_include_internal_audio_device) {
       defines = [ "WEBRTC_DUMMY_AUDIO_BUILD" ]
     }

@@ -67,27 +67,17 @@
 #include "third_party/blink/renderer/platform/wtf/vector.h"
 #include "ui/gfx/font_list.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "third_party/skia/include/ports/SkTypeface_win.h"
-#endif
 
 namespace blink {
 
 const char kColorEmojiLocale[] = "und-Zsye";
 const char kMonoEmojiLocale[] = "und-Zsym";
 
-#if BUILDFLAG(IS_ANDROID)
-extern const char kNotoColorEmojiCompat[] = "Noto Color Emoji Compat";
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 float FontCache::device_scale_factor_ = 1.0;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-bool FontCache::antialiased_text_enabled_ = false;
-bool FontCache::lcd_text_enabled_ = false;
-#endif  // BUILDFLAG(IS_WIN)
 
 FontCache& FontCache::Get() {
   return FontGlobalContext::GetFontCache();
@@ -296,10 +286,6 @@ FontCache::Bcp47Vector FontCache::GetBcp47LocaleForRequest(
 // initialize SkFontMgr beforehand. But `FontCache::MaybePreloadSystemFonts()`
 // breaks this expectation. So we don't provide
 // `FontCache::MaybePreloadSystemFonts()` feature for Fuchsia for now.
-#if BUILDFLAG(IS_FUCHSIA)
-// static
-void FontCache::MaybePreloadSystemFonts() {}
-#else
 // static
 void FontCache::MaybePreloadSystemFonts() {
   static bool initialized = false;
@@ -370,7 +356,6 @@ void FontCache::MaybePreloadSystemFonts() {
     }
   }
 }
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 FontFallbackMap& FontCache::GetFontFallbackMap() {
   if (!font_fallback_map_) {

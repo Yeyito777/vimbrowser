@@ -46,12 +46,6 @@ void WebUIWebAppNavigationThrottle::MaybeCreateAndAdd(
     return;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Exclude system web apps.
-  if (browser->app_controller()->system_app()) {
-    return;
-  }
-#endif
 
   // Proceed only if the app is coming from Chrome WebUI.
   GURL start_url = browser->app_controller()->GetAppStartUrl();

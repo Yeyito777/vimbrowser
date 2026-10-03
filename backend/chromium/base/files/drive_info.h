@@ -90,10 +90,6 @@ struct BASE_EXPORT DriveInfo {
   std::optional<std::string> bsd_name;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // The size, in bytes, of a physical sector on the disk.
-  std::optional<uint32_t> bytes_per_sector;
-#endif
 };
 
 // Given a path to a file (following symlinks), returns information about the

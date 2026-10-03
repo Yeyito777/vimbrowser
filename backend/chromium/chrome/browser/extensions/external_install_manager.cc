@@ -25,12 +25,6 @@
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "chrome/browser/extensions/external_install_error_desktop.h"
-
-using ExternalInstallErrorType = extensions::ExternalInstallErrorDesktop;
-#else
-#include "chrome/browser/extensions/external_install_error_android.h"
-
-using ExternalInstallErrorType = extensions::ExternalInstallErrorAndroid;
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
@@ -44,8 +38,12 @@ std::unique_ptr<ExternalInstallError> CreateExternalInstallError(
     const std::string& extension_id,
     ExternalInstallError::AlertType error_type,
     ExternalInstallManager* manager) {
-  return std::make_unique<ExternalInstallErrorType>(
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  return std::make_unique<extensions::ExternalInstallErrorDesktop>(
       browser_context, extension_id, error_type, manager);
+#else
+  return nullptr;
+#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 }
 
 //  Prompt the user this many times before considering an extension

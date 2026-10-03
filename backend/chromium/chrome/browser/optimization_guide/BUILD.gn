@@ -4,7 +4,7 @@
 
 import("//components/optimization_guide/features.gni")
 
-assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+assert(is_win || is_mac || is_linux || is_chromeos)
 
 source_set("optimization_guide") {
   sources = [
@@ -41,15 +41,9 @@ source_set("optimization_guide") {
     "//ui/base",
     "//ui/webui",
   ]
-  if (is_android) {
-    public_deps += [
-      "//chrome/browser/bookmarks/android",
-      "//chrome/browser/optimization_guide/android:jni_headers",
-    ]
-  } else {
-    sources += [ "private_ai_model_execution_fetcher.h" ]
-    public_deps += [ "//components/private_ai" ]
-  }
+
+  sources += [ "private_ai_model_execution_fetcher.h" ]
+  public_deps += [ "//components/private_ai" ]
 }
 
 source_set("impl") {
@@ -85,22 +79,16 @@ source_set("impl") {
     "//components/version_info",
     "//ui/webui",
   ]
-  if (is_android) {
-    deps += [
-      "//base",
-      "//chrome/browser/optimization_guide/android:jni_headers",
-    ]
-  } else {
-    sources += [ "private_ai_model_execution_fetcher.cc" ]
-    deps += [
-      "//chrome/browser/private_ai",
-      "//chrome/browser/ui/browser_window",
-      "//chrome/browser/ui/tabs:tab_strip",
-      "//components/private_ai",
-      "//components/private_ai:proto",
-      "//components/private_ai/phosphor",
-    ]
-  }
+
+  sources += [ "private_ai_model_execution_fetcher.cc" ]
+  deps += [
+    "//chrome/browser/private_ai",
+    "//chrome/browser/ui/browser_window",
+    "//chrome/browser/ui/tabs:tab_strip",
+    "//components/private_ai",
+    "//components/private_ai:proto",
+    "//components/private_ai/phosphor",
+  ]
 }
 
 source_set("optimization_guide_on_device_model_installer") {
@@ -148,43 +136,41 @@ source_set("test_support") {
   allow_circular_includes_from = [ "//chrome/test:test_support" ]
 }
 
-if (!is_android) {
-  source_set("browser_tests") {
-    testonly = true
-    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
-    sources = [
-      "hints_fetcher_browsertest.cc",
-      "model_execution/model_execution_browsertest.cc",
-      "model_execution/model_execution_live_test.cc",
-      "model_execution/model_execution_validation_browsertest.cc",
-      "optimization_guide_keyed_service_browsertest.cc",
-    ]
+source_set("browser_tests") {
+  testonly = true
+  defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
+  sources = [
+    "hints_fetcher_browsertest.cc",
+    "model_execution/model_execution_browsertest.cc",
+    "model_execution/model_execution_live_test.cc",
+    "model_execution/model_execution_validation_browsertest.cc",
+    "optimization_guide_keyed_service_browsertest.cc",
+  ]
 
-    if (build_with_tflite_lib) {
-      sources += [
-        "prediction/prediction_manager_browsertest.cc",
-        "prediction/prediction_model_store_browsertest.cc",
-      ]
-    }
-
-    deps = [
-      ":optimization_guide",
-      ":test_support",
-      "//base/test:test_proto",
-      "//base/test:test_support",
-      "//chrome/browser/preloading/prefetch:test_support",
-      "//chrome/browser/preloading/prefetch/no_state_prefetch",
-      "//chrome/browser/signin/e2e_tests:test_support",
-      "//chrome/browser/ui/webauthn",
-      "//chrome/test:test_support",
-      "//components/metrics_services_manager",
-      "//components/no_state_prefetch/browser",
-      "//components/optimization_guide/core:test_support",
-      "//components/site_engagement/content",
-      "//components/variations/service",
-      "//third_party/tflite:buildflags",
+  if (build_with_tflite_lib) {
+    sources += [
+      "prediction/prediction_manager_browsertest.cc",
+      "prediction/prediction_model_store_browsertest.cc",
     ]
   }
+
+  deps = [
+    ":optimization_guide",
+    ":test_support",
+    "//base/test:test_proto",
+    "//base/test:test_support",
+    "//chrome/browser/preloading/prefetch:test_support",
+    "//chrome/browser/preloading/prefetch/no_state_prefetch",
+    "//chrome/browser/signin/e2e_tests:test_support",
+    "//chrome/browser/ui/webauthn",
+    "//chrome/test:test_support",
+    "//components/metrics_services_manager",
+    "//components/no_state_prefetch/browser",
+    "//components/optimization_guide/core:test_support",
+    "//components/site_engagement/content",
+    "//components/variations/service",
+    "//third_party/tflite:buildflags",
+  ]
 }
 
 source_set("unit_tests") {
@@ -205,17 +191,16 @@ source_set("unit_tests") {
     "//components/unified_consent",
     "//components/variations:test_support",
   ]
-  if (!is_android) {
-    sources += [
-      "private_ai_model_execution_fetcher_unittest.cc",
 
-      # Android uses a different way of showing browser windows.
-      "optimization_guide_tab_url_provider_unittest.cc",
-    ]
-    deps += [
-      "//components/private_ai",
-      "//components/private_ai:proto",
-      "//components/private_ai:testing",
-    ]
-  }
+  sources += [
+    "private_ai_model_execution_fetcher_unittest.cc",
+
+    # Android uses a different way of showing browser windows.
+    "optimization_guide_tab_url_provider_unittest.cc",
+  ]
+  deps += [
+    "//components/private_ai",
+    "//components/private_ai:proto",
+    "//components/private_ai:testing",
+  ]
 }

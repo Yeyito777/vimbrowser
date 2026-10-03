@@ -18,9 +18,6 @@ class BoxLayoutView;
 class Label;
 }  // namespace views
 
-#if BUILDFLAG(IS_CHROMEOS)
-class NonAccessibleImageView;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 // The view that is used as a content view of the Cookies subpage in page info.
 // It contains information about cookies (short description, how many sites
@@ -97,12 +94,6 @@ class PageInfoCookiesContentView : public views::View, public PageInfoUI {
   // is only shown if third-party cookies are blocked or there is an exception.
   void AddThirdPartyCookiesContainer();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // There is a ChromeOS enterprise policy which allows moving users' cookies
-  // across devices. If this is the case, we add a section explaining it to
-  // the cookies subpage.
-  void MaybeAddSyncDisclaimer();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   base::OnceClosure initialized_callback_ = base::NullCallback();
 
@@ -117,14 +108,6 @@ class PageInfoCookiesContentView : public views::View, public PageInfoUI {
   // The StyledLabel that appears above |third_party_cookies_container|.
   raw_ptr<views::StyledLabel> cookies_description_label_ = nullptr;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Cookie sync disclaimer which consists of an enterprise icon and a
-  // description. It should be displayed for ChromeOS enterprise users when
-  // their admin has configured cookie sync.
-  raw_ptr<views::BoxLayoutView> cookies_sync_container_ = nullptr;
-  raw_ptr<NonAccessibleImageView> cookies_sync_icon_ = nullptr;
-  raw_ptr<views::StyledLabel> cookies_sync_description_ = nullptr;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // The toggle on |blocking_third_party_cookies_row| when state is managed by
   // the user.

@@ -347,13 +347,7 @@ class ConsumerEndpoint : public perfetto::ConsumerEndpoint,
                      perfetto::base::ScopedFile file) override {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
     trace_config_ = trace_config;
-#if BUILDFLAG(IS_WIN)
-    // TODO(crbug.com/40736989): Add support on Windows.
-    DCHECK(!file)
-        << "Tracing directly to a file isn't supported on Windows yet";
-#else
     output_file_ = base::File(file.release());
-#endif
     if (!trace_config.deferred_start())
       StartTracing();
   }

@@ -88,9 +88,7 @@ build_webui_tests("build") {
       ]
     }
 
-    if (!is_chromeos) {
-      files += [ "ink2_disabled_test.ts" ]
-    }
+    files += [ "ink2_disabled_test.ts" ]
   }
 
   if (enable_pdf_save_to_drive) {
@@ -106,10 +104,6 @@ build_webui_tests("build") {
 
   if (enable_pdf_ink2 || enable_pdf_save_to_drive) {
     files += [ "test_before_unload_proxy.ts" ]
-  }
-
-  if (is_chromeos) {
-    files += [ "printing_icon_test.ts" ]
   }
 
   ts_definitions = [

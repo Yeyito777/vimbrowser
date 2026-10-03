@@ -76,7 +76,6 @@ source_set("lib") {
   public_deps = [ ":pprofbuilder" ]
   deps = [
     ":gen_cc_trace_descriptor",
-    ":gen_cc_winscope_descriptor",
     ":utils",
     "../../gn:default_deps",
     "../../include/perfetto/base",
@@ -145,11 +144,6 @@ if (enable_perfetto_ui) {
 perfetto_cc_proto_descriptor("gen_cc_trace_descriptor") {
   descriptor_name = "trace.descriptor"
   descriptor_target = "../../protos/perfetto/trace:descriptor"
-}
-
-perfetto_cc_proto_descriptor("gen_cc_winscope_descriptor") {
-  descriptor_name = "winscope.descriptor"
-  descriptor_target = "../../protos/perfetto/trace/android:winscope_descriptor"
 }
 
 source_set("integrationtests") {

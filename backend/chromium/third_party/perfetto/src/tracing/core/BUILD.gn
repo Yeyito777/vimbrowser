@@ -72,12 +72,10 @@ perfetto_unittest_source_set("unittests") {
 
   # These tests rely on test_task_runner.h which
   # has no Windows implementation.
-  if (!is_win) {
-    sources += [
-      "shared_memory_arbiter_impl_unittest.cc",
-      "trace_writer_impl_unittest.cc",
-    ]
-  }
+  sources += [
+    "shared_memory_arbiter_impl_unittest.cc",
+    "trace_writer_impl_unittest.cc",
+  ]
 }
 
 perfetto_unittest_source_set("test_support") {

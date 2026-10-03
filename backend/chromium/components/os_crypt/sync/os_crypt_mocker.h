@@ -28,13 +28,6 @@ class OSCryptMocker {
   static void SetBackendLocked(bool locked);
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // Store data using the older DPAPI interface rather than session key.
-  static void SetLegacyEncryption(bool legacy);
-
-  // Reset OSCrypt so it can be initialized again with a new profile/key.
-  static void ResetState();
-#endif
 
   // Restore OSCrypt to its real behaviour.
   static void TearDown();

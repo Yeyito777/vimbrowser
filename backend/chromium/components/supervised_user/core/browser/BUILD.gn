@@ -2,10 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 static_library("fetcher_config") {
   sources = [
     "fetcher_config.cc",
@@ -46,9 +42,6 @@ source_set("test_support") {
     "//testing/gmock",
     "//testing/gtest",
   ]
-  if (is_android) {
-    deps += [ "//components/supervised_user/core/browser/android" ]
-  }
 }
 
 static_library("mocked") {
@@ -182,12 +175,6 @@ static_library("browser") {
   ]
 }
 
-if (is_android) {
-  java_cpp_enum("supervised_user_utils_enum_javagen") {
-    sources = [ "supervised_user_utils.h" ]
-  }
-}
-
 static_library("device_parental_controls") {
   sources = [
     "device_parental_controls.cc",
@@ -230,10 +217,6 @@ source_set("unit_tests") {
     "supervised_user_utils_unittest.cc",
   ]
 
-  if (is_android) {
-    sources += [ "supervised_user_url_filtering_service_android_unittest.cc" ]
-  }
-
   deps = [
     ":browser",
     ":device_parental_controls",
@@ -263,10 +246,6 @@ source_set("unit_tests") {
     "//testing/gtest",
     "//ui/base",
   ]
-
-  if (is_android) {
-    deps += [ "//components/supervised_user/core/browser/android" ]
-  }
 
   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
   # enable the diagnostic by removing this line.

@@ -10,10 +10,6 @@ import("//third_party/blink/renderer/config.gni")
 import("//third_party/blink/renderer/core/core.gni")
 import("//third_party/blink/renderer/modules/modules.gni")
 
-if (is_ios) {
-  import("//build/config/ios/bundle_data_from_filelist.gni")
-}
-
 visibility = [
   "//:gn_all",
   "//third_party/blink/*",
@@ -90,25 +86,7 @@ component("controller") {
     ]
     deps += [ "//third_party/blink/public/mojom:memory_usage_monitor_linux_mojo_bindings_blink" ]
   }
-  if (is_android) {
-    sources += [
-      "crash_memory_metrics_reporter_impl.cc",
-      "crash_memory_metrics_reporter_impl.h",
-      "memory_usage_monitor_posix.cc",
-      "memory_usage_monitor_posix.h",
-      "oom_intervention_impl.cc",
-      "oom_intervention_impl.h",
-      "private_memory_footprint_provider.cc",
-      "private_memory_footprint_provider.h",
-    ]
-    public_deps = [ "//third_party/blink/public/mojom:memory_usage_monitor_linux_mojo_bindings_blink" ]
-  }
-  if (is_win) {
-    sources += [
-      "memory_usage_monitor_win.cc",
-      "memory_usage_monitor_win.h",
-    ]
-  }
+
   if (is_apple) {
     sources += [
       "memory_usage_monitor_mac.cc",
@@ -119,16 +97,10 @@ component("controller") {
 
   # HighestPmfReporter depends on MemoryUsageMonitor and MemoryUsageMonitor
   # depends on platform specific code. Explicitly specify supported platforms.
-  if (is_linux || is_chromeos || is_win || is_android || is_apple) {
+  if (is_linux || is_chromeos || is_win || is_apple) {
     sources += [
       "highest_pmf_reporter.cc",
       "highest_pmf_reporter.h",
-    ]
-  }
-  if (is_android) {
-    sources += [
-      "user_level_memory_pressure_signal_generator.cc",
-      "user_level_memory_pressure_signal_generator.h",
     ]
   }
 
@@ -157,48 +129,11 @@ group("blink_unittests_data") {
 test("blink_unittests") {
   deps = [ ":blink_unittests_sources" ]
 
-  if (is_ios) {
-    bundle_deps = [
-      ":blink_unittests_pak_bundle_data",
-      "//components/shared_highlighting/core/common:data_driven_testing_data",
-      "//media/test:media_bundle_data",
-      "//third_party/blink/renderer/core:animation_test_bundle_data",
-      "//third_party/blink/renderer/core:core_test_bundle_data",
-      "//third_party/blink/renderer/core:paint_test_bundle_data",
-      "//third_party/blink/renderer/modules:accessibility_selection_test_bundle_data",
-      "//third_party/blink/renderer/platform:blink_platform_unittests_bundle_data",
-      "//third_party/text-fragments-polyfill:test_bundle_data",
-    ]
-  } else {
-    data_deps = [
-      ":blink_unittests_data",
-      "//content/shell:pak",
-      "//testing/buildbot/filters:blink_unittests_filters",
-    ]
-  }
-
-  if (is_android) {
-    deps += [
-      "//content/public/android:content_java",
-      "//content/shell/android:content_shell_assets",
-      "//net/android:net_java",
-    ]
-
-    if (enable_chrome_android_internal) {
-      data_deps += [ "//clank/build/bot/filters:blink_unittests_filters" ]
-    }
-  }
-
-  if (is_fuchsia) {
-    additional_manifest_fragments = [
-      "//build/config/fuchsia/test/fonts.shard.test-cml",
-      "//build/config/fuchsia/test/network.shard.test-cml",
-
-      # TODO(https://crbug.com/1185811): Investigate removing the requirement
-      # for VmexResource.
-      "//build/config/fuchsia/test/mark_vmo_executable.shard.test-cml",
-    ]
-  }
+  data_deps = [
+    ":blink_unittests_data",
+    "//content/shell:pak",
+    "//testing/buildbot/filters:blink_unittests_filters",
+  ]
 
   fuzztests = [
     "BlinkAttributeFuzzTestFixture.NoElementAttributeCrashes",
@@ -284,15 +219,8 @@ source_set("blink_unittests_sources") {
   if (is_linux || is_chromeos) {
     sources += [ "memory_usage_monitor_posix_test.cc" ]
   }
-  if (is_android) {
-    sources += [
-      "memory_usage_monitor_posix_test.cc",
-      "oom_intervention_impl_test.cc",
-      "user_level_memory_pressure_signal_generator_test.cc",
-    ]
-  }
 
-  if (is_linux || is_chromeos || is_android || is_apple || is_win) {
+  if (is_linux || is_chromeos || is_apple || is_win) {
     sources += [
       "highest_pmf_reporter_test.cc",
       "memory_usage_monitor_test.cc",
@@ -333,13 +261,4 @@ source_set("blink_unittests_sources") {
     "//third_party/blink/renderer:inside_blink",
     "//third_party/blink/renderer/core:blink_core_pch",
   ]
-}
-
-if (is_ios) {
-  bundle_data("blink_unittests_pak_bundle_data") {
-    testonly = true
-    public_deps = [ "//content/shell:pak" ]
-    sources = [ "$root_out_dir/content_shell.pak" ]
-    outputs = [ "{{bundle_resources_dir}}/content_shell.pak" ]
-  }
 }

@@ -12,9 +12,6 @@
 #include "build/build_config.h"
 #include "extensions/common/constants.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 namespace extensions {
 
@@ -66,17 +63,6 @@ bool ExtensionCreatorFilter::ShouldPackageFile(
     return false;
   }
 
-#if BUILDFLAG(IS_WIN)
-  // It's correct that we use file_path, not base_name, here, because we
-  // are working with the actual file.
-  DWORD file_attributes = ::GetFileAttributes(file_path.value().c_str());
-  if (file_attributes == INVALID_FILE_ATTRIBUTES) {
-    return false;
-  }
-  if ((file_attributes & FILE_ATTRIBUTE_HIDDEN) != 0) {
-    return false;
-  }
-#endif
 
   return true;
 }

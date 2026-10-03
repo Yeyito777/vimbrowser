@@ -344,12 +344,7 @@ egl::Error FunctionsEGL::initialize(EGLAttrib platformType, EGLNativeDisplayType
                                 eglGetFrameTimestampsANDROID);
     }
 
-    // The native fence sync extension is a bit complicated. It's reported as present for ChromeOS,
-    // but Android currently doesn't report this extension even when it's present, and older devices
-    // may export a useless wrapper function. See crbug.com/775707 for details. In short, if the
-    // symbol is present and we're on Android N or newer, assume that it's usable even if the
-    // extension wasn't reported.
-    if (hasExtension("EGL_ANDROID_native_fence_sync") || GetAndroidSDKVersion() >= 24)
+    if (hasExtension("EGL_ANDROID_native_fence_sync"))
     {
         // Don't error trying to load this entry point.
         if (SetPtr(&mFnPtrs->dupNativeFenceFDANDROIDPtr,

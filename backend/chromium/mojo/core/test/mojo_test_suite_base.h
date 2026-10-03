@@ -21,9 +21,6 @@ class ScopedMojoSupport;
 class MojoTestSuiteBase : public base::TestSuite {
  public:
   MojoTestSuiteBase(int argc, char** argv);
-#if BUILDFLAG(IS_WIN)
-  MojoTestSuiteBase(int argc, wchar_t** argv);
-#endif  // BUILDFLAG(IS_WIN)
 
   MojoTestSuiteBase(const MojoTestSuiteBase&) = delete;
   MojoTestSuiteBase& operator=(const MojoTestSuiteBase&) = delete;

@@ -14,13 +14,7 @@
 #include "ui/aura/window_tree_host.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/display/screen.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace content {
 
@@ -66,9 +60,6 @@ bool FlingScheduler::ProgressFlingOnFlingStart() {
 bool FlingScheduler::ShouldUseMobileFlingCurve() {
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
   return true;
-#elif BUILDFLAG(IS_CHROMEOS)
-  CHECK(display::Screen::Get());
-  return display::Screen::Get()->InTabletMode();
 #else
   return false;
 #endif
@@ -76,12 +67,8 @@ bool FlingScheduler::ShouldUseMobileFlingCurve() {
 
 gfx::Vector2dF FlingScheduler::GetPixelsPerInch(
     const gfx::PointF& position_in_screen) {
-#if BUILDFLAG(IS_WIN)
-  return display::win::GetScreenWin()->GetPixelsPerInch(position_in_screen);
-#else
   return gfx::Vector2dF(input::kDefaultPixelsPerInch,
                         input::kDefaultPixelsPerInch);
-#endif
 }
 
 void FlingScheduler::ProgressFlingOnBeginFrameIfneeded(

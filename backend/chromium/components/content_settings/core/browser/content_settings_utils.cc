@@ -133,17 +133,8 @@ PatternPair ParsePatternString(const std::string& pattern_str) {
 
 void GetRendererContentSettingRules(const HostContentSettingsMap* map,
                                     RendererContentSettingRules* rules) {
-#if !BUILDFLAG(IS_IOS)
   rules->mixed_content_rules =
       map->GetSettingsForOneType(ContentSettingsType::MIXEDSCRIPT);
-#else
-  // In Android active mixed content is hard blocked, with no option to allow
-  // it.
-  rules->mixed_content_rules.push_back(ContentSettingPatternSource(
-      ContentSettingsPattern::Wildcard(), ContentSettingsPattern::Wildcard(),
-      ContentSettingToValue(CONTENT_SETTING_BLOCK), ProviderType::kNone,
-      map->IsOffTheRecord()));
-#endif
 }
 
 bool IsMorePermissive(ContentSetting a, ContentSetting b) {
@@ -277,10 +268,8 @@ bool IsChooserPermissionEligibleForAutoRevocation(ContentSettingsType type) {
 
 const std::vector<ContentSettingsType>& GetTypesWithTemporaryGrants() {
   static base::NoDestructor<const std::vector<ContentSettingsType>> types{{
-#if !BUILDFLAG(IS_ANDROID)
       ContentSettingsType::CAMERA_PAN_TILT_ZOOM,
       ContentSettingsType::CAPTURED_SURFACE_CONTROL,
-#endif
       ContentSettingsType::KEYBOARD_LOCK,
       ContentSettingsType::GEOLOCATION,
       ContentSettingsType::GEOLOCATION_WITH_OPTIONS,
@@ -297,10 +286,8 @@ const std::vector<ContentSettingsType>& GetTypesWithTemporaryGrants() {
 
 const std::vector<ContentSettingsType>& GetTypesWithTemporaryGrantsInHcsm() {
   static base::NoDestructor<const std::vector<ContentSettingsType>> types{{
-#if !BUILDFLAG(IS_ANDROID)
       ContentSettingsType::CAMERA_PAN_TILT_ZOOM,
       ContentSettingsType::CAPTURED_SURFACE_CONTROL,
-#endif
       ContentSettingsType::KEYBOARD_LOCK,
       ContentSettingsType::GEOLOCATION,
       ContentSettingsType::GEOLOCATION_WITH_OPTIONS,

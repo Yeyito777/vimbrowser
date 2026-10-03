@@ -29,13 +29,7 @@
 #include "third_party/blink/public/mojom/renderer_preference_watcher.mojom.h"
 #include "ui/native_theme/native_theme.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_pref_names.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "components/browser_ui/accessibility/android/font_size_prefs_android.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "ui/linux/linux_ui.h"
@@ -63,15 +57,6 @@ const char* const kWebPrefsToObserve[] = {
     prefs::kAccessibilityCaptionsBackgroundColor,
     prefs::kAccessibilityCaptionsTextShadow,
     prefs::kAccessibilityCaptionsBackgroundOpacity,
-#if BUILDFLAG(IS_ANDROID)
-    browser_ui::prefs::kWebKitFontScaleFactor,
-    prefs::kAccessibilityTextSizeContrastFactor,
-    prefs::kAccessibilityForceEnableZoom,
-    prefs::kAccessibilityFontWeightAdjustment,
-    prefs::kAccessibilityTouchpadOverscrollHistoryNavigation,
-    prefs::kWebKitPasswordEchoEnabledPhysical,
-    prefs::kWebKitPasswordEchoEnabledTouch,
-#endif
     prefs::kWebKitForceDarkModeEnabled,
     prefs::kWebKitJavascriptEnabled,
     prefs::kWebKitLoadsImagesAutomatically,
@@ -81,11 +66,7 @@ const char* const kWebPrefsToObserve[] = {
     prefs::kWebkitTabsToLinks,
     prefs::kWebKitTextAreasAreResizable,
     prefs::kWebKitWebSecurityEnabled,
-#if BUILDFLAG(IS_CHROMEOS)
-    ash::prefs::kAccessibilityFocusHighlightEnabled,
-#else
     prefs::kAccessibilityFocusHighlightEnabled,
-#endif
     prefs::kPageColorsBlockList,
 };
 

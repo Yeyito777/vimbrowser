@@ -6,10 +6,6 @@ import("//build/config/features.gni")
 import("//testing/test.gni")
 import("//tools/grit/repack.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 if (use_blink) {
   test("offline_pages_unittests") {
     deps = [
@@ -17,22 +13,9 @@ if (use_blink) {
       "//components/test:run_all_unittests",
     ]
 
-    if (!is_fuchsia) {
-      # On Fuchsia, components/test/data seems to change spuriously,
-      # breaking incremental compilation.
-      data = [ "../test" ]
-    }
-
-    if (is_android) {
-      # renovations tests depend on content shell and UI.  For some reason.
-      # these deps need to be on the test() target and not the source_set
-      # for renovations.
-      deps += [
-        "//content/shell/android:content_shell_assets",
-        "//net/android:net_java",
-        "//ui/android:ui_java",
-      ]
-    }
+    # On Fuchsia, components/test/data seems to change spuriously,
+    # breaking incremental compilation.
+    data = [ "../test" ]
   }
 
   group("unit_tests") {
@@ -45,8 +28,5 @@ if (use_blink) {
       "//components/offline_pages/core/request_header:unit_tests",
       "//components/offline_pages/task:unit_tests",
     ]
-    if (is_ios) {
-      deps += [ "//components/test:offline_pages_test_bundle_data" ]
-    }
   }
 }

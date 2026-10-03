@@ -47,11 +47,7 @@ class TextInputClient;
 // ui::InputMethod and owns it.
 class InputMethod {
  public:
-#if BUILDFLAG(IS_WIN)
-  typedef LRESULT NativeEventResult;
-#else
   typedef int32_t NativeEventResult;
-#endif
 
   virtual ~InputMethod() = default;
 
@@ -66,27 +62,6 @@ class InputMethod {
   // Called when the top-level system window loses keyboard focus.
   virtual void OnBlur() = 0;
 
-#if BUILDFLAG(IS_WIN)
-  // Called when the focused window receives native IME messages that are not
-  // translated into other predefined event callbacks. Currently this method is
-  // used only for IME functionalities specific to Windows.
-  virtual bool OnUntranslatedIMEMessage(const CHROME_MSG event,
-                                        NativeEventResult* result) = 0;
-
-  // Called by the focused client whenever its input locale is changed.
-  // This method is currently used only on Windows.
-  // This method does not take a parameter of TextInputClient for historical
-  // reasons.
-  // TODO(ime): Consider to take a parameter of TextInputClient.
-  virtual void OnInputLocaleChanged() = 0;
-
-  // Returns whether the system input locale is in CJK languages.
-  // This is only used in Windows platforms.
-  virtual bool IsInputLocaleCJK() const = 0;
-
-  // Called when a frame with a committed Url has received focus.
-  virtual void OnUrlChanged() = 0;
-#endif
 
   // Sets the text input client which receives text input events such as
   // SetCompositionText(). |client| can be NULL. A gfx::NativeWindow which

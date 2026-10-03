@@ -15,10 +15,7 @@
 #include "cef/libcef/browser/context.h"
 #include "cef/libcef/browser/views/browser_platform_delegate_views.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "cef/libcef/browser/native/browser_platform_delegate_native_win.h"
-#include "cef/libcef/browser/osr/browser_platform_delegate_osr_win.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "cef/libcef/browser/native/browser_platform_delegate_native_mac.h"
 #include "cef/libcef/browser/osr/browser_platform_delegate_osr_mac.h"
 #elif BUILDFLAG(IS_LINUX)
@@ -33,10 +30,7 @@ namespace {
 std::unique_ptr<CefBrowserPlatformDelegateNative> CreateNativeDelegate(
     const CefWindowInfo& window_info,
     SkColor background_color) {
-#if BUILDFLAG(IS_WIN)
-  return std::make_unique<CefBrowserPlatformDelegateNativeWin>(
-      window_info, background_color);
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return std::make_unique<CefBrowserPlatformDelegateNativeMac>(
       window_info, background_color);
 #elif BUILDFLAG(IS_LINUX)
@@ -49,10 +43,7 @@ std::unique_ptr<CefBrowserPlatformDelegateOsr> CreateOSRDelegate(
     std::unique_ptr<CefBrowserPlatformDelegateNative> native_delegate,
     bool use_shared_texture,
     bool use_external_begin_frame) {
-#if BUILDFLAG(IS_WIN)
-  return std::make_unique<CefBrowserPlatformDelegateOsrWin>(
-      std::move(native_delegate), use_shared_texture, use_external_begin_frame);
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   return std::make_unique<CefBrowserPlatformDelegateOsrMac>(
       std::move(native_delegate), use_shared_texture, use_external_begin_frame);
 #elif BUILDFLAG(IS_LINUX)

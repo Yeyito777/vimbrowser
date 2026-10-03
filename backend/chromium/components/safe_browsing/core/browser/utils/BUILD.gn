@@ -40,7 +40,4 @@ source_set("unit_tests") {
     "//components/safe_browsing/core/common/proto:csd_proto",
     "//url",
   ]
-  if (is_ios) {
-    deps += [ "//components/test:safe_browsing_test_bundle_data" ]
-  }
 }

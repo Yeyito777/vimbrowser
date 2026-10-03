@@ -97,7 +97,6 @@ export abstract class PdfViewerBaseElement extends HelpBubbleCrLitElementBase {
     //
     // LINT.IfChange(CreateEmbed)
     const plugin = document.createElement('embed');
-    // LINT.ThenChange(//chrome/renderer/printing/chrome_print_render_frame_helper_delegate.cc:GetPdfElement)
 
     plugin.id = 'plugin';
     plugin.type = 'application/x-google-chrome-pdf';
@@ -130,7 +129,6 @@ export abstract class PdfViewerBaseElement extends HelpBubbleCrLitElementBase {
       allowJavascript: javascript === 'allow',
     };
 
-    // PDF viewer only, as Print Preview doesn't set PDF plugin attributes.
     if (this.pdfOopifEnabled) {
       if (chrome.pdfViewerPrivate) {
         chrome.pdfViewerPrivate.setPdfPluginAttributes(attributesForLoading);

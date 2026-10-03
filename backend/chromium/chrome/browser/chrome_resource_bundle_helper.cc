@@ -21,14 +21,7 @@
 #include "extensions/buildflags/buildflags.h"
 #include "ui/base/resource/resource_bundle.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "ui/base/resource/resource_bundle_android.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_switches.h"
-#include "chrome/common/pref_names.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "extensions/common/extension_l10n_util.h"
@@ -40,23 +33,6 @@ extern void InitializeLocalState(
     ChromeFeatureListCreator* chrome_feature_list_creator) {
   TRACE_EVENT0("startup", "ChromeBrowserMainParts::InitializeLocalState");
 
-#if BUILDFLAG(IS_CHROMEOS)
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(ash::switches::kLoginManager)) {
-    PrefService* local_state = chrome_feature_list_creator->local_state();
-    DCHECK(local_state);
-
-    std::string owner_locale = local_state->GetString(prefs::kOwnerLocale);
-    // Ensure that we start with owner's locale.
-    if (!owner_locale.empty() &&
-        local_state->GetString(language::prefs::kApplicationLocale) !=
-            owner_locale &&
-        !local_state->IsManagedPreference(
-            language::prefs::kApplicationLocale)) {
-      local_state->SetString(language::prefs::kApplicationLocale, owner_locale);
-    }
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 // Initializes the shared instance of ResourceBundle and returns the application
@@ -65,12 +41,6 @@ std::string InitResourceBundleAndDetermineLocale(
     PrefService* local_state,
     ui::ResourceBundle::Delegate* resource_bundle_delegate,
     bool is_running_tests) {
-#if BUILDFLAG(IS_ANDROID)
-  // In order for DetectAndSetLoadNonWebViewLocalePaks() to work ResourceBundle
-  // must not have been created yet.
-  DCHECK(!ui::ResourceBundle::HasSharedInstance());
-  ui::DetectAndSetLoadNonWebViewLocalePaks();
-#endif
 
   std::string preferred_locale =
       local_state->GetString(language::prefs::kApplicationLocale);
@@ -92,15 +62,8 @@ std::string InitResourceBundleAndDetermineLocale(
                  ":AddDataPack");
     base::FilePath resources_pack_path;
     base::PathService::Get(chrome::FILE_RESOURCES_PACK, &resources_pack_path);
-#if BUILDFLAG(IS_ANDROID)
-    ui::LoadMainAndroidPackFile("assets/resources.pak", resources_pack_path);
-
-    // Avoid loading DFM native resources here, to keep startup lean. These
-    // resources are loaded on-use, when an already-installed DFM loads.
-#else
     ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(
         resources_pack_path, ui::kScaleFactorNone);
-#endif  // BUILDFLAG(IS_ANDROID)
   }
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)

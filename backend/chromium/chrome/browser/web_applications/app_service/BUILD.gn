@@ -39,27 +39,6 @@ source_set("app_service") {
     "//components/webapps/common",
     "//url",
   ]
-
-  if (is_chromeos) {
-    deps += [
-      "//ash/public/cpp",
-      "//ash/webui/projector_app/public/cpp",
-      "//ash/webui/system_apps/public:system_web_app_type",
-      "//chrome/browser/apps/almanac_api_client",
-      "//chrome/browser/apps/browser_instance",
-      "//chrome/browser/ash/file_manager",
-      "//chrome/browser/ash/guest_os",
-      "//chrome/browser/ash/login/demo_mode",
-      "//chrome/browser/ash/system_web_apps",
-      "//chromeos/ash/components/file_manager:constants",
-      "//chromeos/ash/experiences/arc:arc_base",
-      "//chromeos/ash/experiences/system_web_apps/types",
-      "//components/app_restore",
-      "//components/services/app_service/public/cpp:instance_update",
-      "//extensions/browser/api/file_handlers",
-    ]
-    allow_circular_includes_from += [ "//chrome/browser/apps/browser_instance" ]
-  }
 }
 
 source_set("unit_tests") {
@@ -87,8 +66,4 @@ source_set("unit_tests") {
     "//content/public/common",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/ash/components/system" ]
-  }
 }

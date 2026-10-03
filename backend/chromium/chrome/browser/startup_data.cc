@@ -51,10 +51,6 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "services/preferences/public/mojom/tracked_preference_validation_delegate.mojom.h"
 
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-#include "chrome/browser/extensions/chrome_extensions_browser_client.h"
-#include "extensions/browser/extensions_browser_client.h"
-#endif
 
 namespace {
 
@@ -167,17 +163,6 @@ StartupData::TakeProtoDatabaseProvider() {
 void StartupData::PreProfilePrefServiceInit() {
   pref_registry_ = base::MakeRefCounted<user_prefs::PrefRegistrySyncable>();
 
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-  // On desktop Android the ExtensionsBrowserClient is created here because it
-  // must be initialized before BrowserContextKeyedServiceFactories are built.
-  // Some factories use ExtensionsBrowserClient::Get() in their DependsOn().
-  extensions_browser_client_ =
-      std::make_unique<extensions::ChromeExtensionsBrowserClient>();
-  // We don't set ExtensionsBrowserClient to nullptr in this class because
-  // ownership will be transferred later to BrowserProcessImpl. Initialization
-  // will finish in BrowserProcessImpl as well.
-  extensions::ExtensionsBrowserClient::Set(extensions_browser_client_.get());
-#endif
 
   ChromeBrowserMainExtraPartsProfiles::
       EnsureBrowserContextKeyedServiceFactoriesBuilt();
@@ -246,12 +231,5 @@ void StartupData::CreateServicesInternal() {
       std::move(pref_validation_delegate), io_task_runner, key_.get(), path,
       false /* async_prefs*/, g_browser_process->os_crypt_async(),
       g_browser_process->device_parental_controls());
-}
-#endif
-
-#if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
-std::unique_ptr<extensions::ExtensionsBrowserClient>
-StartupData::TakeExtensionsBrowserClient() {
-  return std::move(extensions_browser_client_);
 }
 #endif

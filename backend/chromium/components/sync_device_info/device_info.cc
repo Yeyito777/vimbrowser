@@ -20,10 +20,8 @@ bool DeviceInfo::SharingTargetInfo::operator==(
 
 DeviceInfo::SharingInfo::SharingInfo(
     SharingTargetInfo sender_id_target_info,
-    std::string chime_representative_target_id,
     std::set<sync_pb::SharingSpecificFields::EnabledFeatures> enabled_features)
     : sender_id_target_info(std::move(sender_id_target_info)),
-      chime_representative_target_id(std::move(chime_representative_target_id)),
       enabled_features(std::move(enabled_features)) {}
 
 DeviceInfo::SharingInfo::SharingInfo(const SharingInfo& other) = default;
@@ -37,8 +35,6 @@ DeviceInfo::SharingInfo::~SharingInfo() = default;
 
 bool DeviceInfo::SharingInfo::operator==(const SharingInfo& other) const {
   return sender_id_target_info == other.sender_id_target_info &&
-         chime_representative_target_id ==
-             other.chime_representative_target_id &&
          enabled_features == other.enabled_features;
 }
 
@@ -82,10 +78,7 @@ DeviceInfo::DeviceInfo(
     const std::optional<PhoneAsASecurityKeyInfo>& paask_info,
     const std::string& fcm_registration_token,
     const DataTypeSet& interested_data_types,
-    std::optional<base::Time> auto_sign_out_last_signin_timestamp,
-    bool desktop_to_ios_promo_receiving_enabled,
-    const MobilePromoOnDesktopPromoTypeSet&
-        desktop_to_ios_promo_receiving_types)
+    std::optional<base::Time> auto_sign_out_last_signin_timestamp)
     : guid_(guid),
       client_name_(client_name),
       chrome_version_(chrome_version),
@@ -105,11 +98,7 @@ DeviceInfo::DeviceInfo(
       paask_info_(paask_info),
       fcm_registration_token_(fcm_registration_token),
       interested_data_types_(interested_data_types),
-      auto_sign_out_last_signin_timestamp_(auto_sign_out_last_signin_timestamp),
-      desktop_to_ios_promo_receiving_enabled_(
-          desktop_to_ios_promo_receiving_enabled),
-      desktop_to_ios_promo_receiving_types_(
-          desktop_to_ios_promo_receiving_types) {}
+      auto_sign_out_last_signin_timestamp_(auto_sign_out_last_signin_timestamp) {}
 
 DeviceInfo::~DeviceInfo() = default;
 
@@ -178,15 +167,6 @@ DeviceInfo::send_tab_to_self_receiving_type() const {
   return send_tab_to_self_receiving_type_;
 }
 
-bool DeviceInfo::desktop_to_ios_promo_receiving_enabled() const {
-  return desktop_to_ios_promo_receiving_enabled_;
-}
-
-const MobilePromoOnDesktopPromoTypeSet&
-DeviceInfo::desktop_to_ios_promo_receiving_types() const {
-  return desktop_to_ios_promo_receiving_types_;
-}
-
 const std::optional<DeviceInfo::SharingInfo>& DeviceInfo::sharing_info() const {
   return sharing_info_;
 }
@@ -225,15 +205,6 @@ void DeviceInfo::set_send_tab_to_self_receiving_enabled(bool new_value) {
 void DeviceInfo::set_send_tab_to_self_receiving_type(
     sync_pb::SyncEnums_SendTabReceivingType new_value) {
   send_tab_to_self_receiving_type_ = new_value;
-}
-
-void DeviceInfo::set_desktop_to_ios_promo_receiving_enabled(bool new_value) {
-  desktop_to_ios_promo_receiving_enabled_ = new_value;
-}
-
-void DeviceInfo::set_desktop_to_ios_promo_receiving_types(
-    const MobilePromoOnDesktopPromoTypeSet& new_types) {
-  desktop_to_ios_promo_receiving_types_ = new_types;
 }
 
 void DeviceInfo::set_sharing_info(

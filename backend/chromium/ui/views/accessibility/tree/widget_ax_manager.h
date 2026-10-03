@@ -25,13 +25,7 @@
 #include "ui/views/accessibility/tree/widget_ax_manager_observer.h"
 #include "ui/views/views_export.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <wrl/client.h>
-#endif
 
-#if BUILDFLAG(IS_WIN)
-struct IAccessible;
-#endif
 
 namespace ui {
 class BrowserAccessibilityManager;
@@ -189,10 +183,6 @@ class VIEWS_EXPORT WidgetAXManager : public ui::AXModeObserver,
                      base::ObserverListReentrancyPolicy::kDisallowReentrancy>
       observers_;
 
-#if BUILDFLAG(IS_WIN)
-  // The IAccessible of the Widget's parent HWND.
-  Microsoft::WRL::ComPtr<IAccessible> parent_accessible_;
-#endif
 
   // Ensure posted tasks don’t run after we’re destroyed.
   base::WeakPtrFactory<WidgetAXManager> weak_factory_{this};

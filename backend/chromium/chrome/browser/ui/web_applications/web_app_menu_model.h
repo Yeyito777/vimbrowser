@@ -31,9 +31,6 @@ class WebAppMenuModel : public AppMenuModel {
   void Build() override;
 
  private:
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<chromeos::MoveToDesksMenuModel> move_to_desks_submenu_;
-#endif
 };
 
 #endif  // CHROME_BROWSER_UI_WEB_APPLICATIONS_WEB_APP_MENU_MODEL_H_

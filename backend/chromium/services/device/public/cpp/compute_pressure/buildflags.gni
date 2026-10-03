@@ -7,5 +7,5 @@
 # into the mentioned build to reduce the image size.
 
 declare_args() {
-  enable_compute_pressure = !is_android && !is_fuchsia
+  enable_compute_pressure = !is_fuchsia
 }

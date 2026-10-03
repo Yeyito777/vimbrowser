@@ -344,16 +344,19 @@ void ApplyWindowThemeColors(CefRefPtr<CefWindow> window) {
 } // namespace
 
 BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
+                             std::vector<uint64_t> initial_tab_ids,
                              std::vector<uint64_t> initial_tab_folder_ids,
                              std::vector<uint64_t> initial_tab_sort_orders,
                              std::vector<bool> initial_tab_pinned,
                              std::vector<std::string> initial_tab_contexts,
-                             size_t active_index, bool show_mode_indicator,
+                             size_t active_index, uint64_t next_tab_id,
+                             bool show_mode_indicator,
                              bool show_fps_indicator, bool show_statusline,
                              bool shader_enabled, std::string state_path,
                              std::string dwm_save_argv,
                              std::string root_cache_path, bool a26_shell)
     : initial_urls_(std::move(initial_urls)),
+      initial_tab_ids_(std::move(initial_tab_ids)),
       initial_tab_folder_ids_(std::move(initial_tab_folder_ids)),
       initial_tab_sort_orders_(std::move(initial_tab_sort_orders)),
       initial_tab_pinned_(std::move(initial_tab_pinned)),
@@ -365,7 +368,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
       show_mode_indicator_(show_mode_indicator),
       show_fps_indicator_(show_fps_indicator),
       show_statusline_(show_statusline), shader_enabled_(shader_enabled),
-      a26_shell_(a26_shell) {
+      a26_shell_(a26_shell), next_tab_id_(next_tab_id) {
   const char* xtest_workaround = std::getenv("A26_VIMBROWSER_XTEST_CHAR_WORKAROUND");
   a26_xtest_char_workaround_ =
       a26_shell_ && xtest_workaround && std::string_view(xtest_workaround) == "1";
@@ -406,6 +409,7 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
   if (initial_urls_.empty()) {
     initial_urls_.push_back(ResolveUrlOrSearch(""));
   }
+  initial_tab_ids_.resize(initial_urls_.size(), 0);
   initial_tab_folder_ids_.resize(initial_urls_.size(), 0);
   initial_tab_sort_orders_.resize(initial_urls_.size(), 0);
   initial_tab_pinned_.resize(initial_urls_.size(), false);
@@ -413,6 +417,22 @@ BrowserWindow::BrowserWindow(std::vector<std::string> initial_urls,
   for (uint64_t &folder_id : initial_tab_folder_ids_) {
     if (folder_id != 0 && !folder_ids.contains(folder_id)) {
       folder_id = 0;
+    }
+  }
+  // State files are external input. Preserve every valid unique id, replace
+  // duplicates through the allocator, and ensure a stale counter can never
+  // collide with a restored tab. A zero next id is the explicit exhausted
+  // namespace sentinel and remains zero.
+  std::unordered_set<uint64_t> restored_tab_ids;
+  for (uint64_t &tab_id : initial_tab_ids_) {
+    if (tab_id == 0 || !restored_tab_ids.insert(tab_id).second) {
+      tab_id = 0;
+      continue;
+    }
+    if (next_tab_id_ != 0 && tab_id >= next_tab_id_) {
+      next_tab_id_ = tab_id == std::numeric_limits<uint64_t>::max()
+                         ? 0
+                         : tab_id + 1;
     }
   }
   if (initial_active_index_ >= initial_urls_.size()) {
@@ -432,6 +452,7 @@ void BrowserWindow::OnClientBrowserCreated(BrowserClient *client) {
       tabs_[i].is_loading = client->browser()->IsLoading();
       tabs_[i].can_go_back = client->browser()->CanGoBack();
       tabs_[i].can_go_forward = client->browser()->CanGoForward();
+      ApplyTabActivity(tabs_[i].id);
       if (i == active_index_) {
         UpdateA26Chrome();
       }
@@ -483,6 +504,12 @@ bool BrowserWindow::GetRootWindowScreenRectForClient(BrowserClient *client,
 }
 
 void BrowserWindow::OnClientBeforeClose(BrowserClient* client) {
+  pending_popups_.erase(
+      std::remove_if(pending_popups_.begin(), pending_popups_.end(),
+                     [client](const PendingPopup& popup) {
+                       return popup.client.get() == client;
+                     }),
+      pending_popups_.end());
   CancelFileChooserUploadForClient(client, "tab_closed",
                                    "armed tab closed before file selection");
   CancelMediaPermissionRequestsForClient(client);
@@ -720,6 +747,10 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient *client,
                              ActiveTab()->client.get() == client;
   const uint64_t opener_tab_id = source->id;
   const std::string source_context = source->context;
+  const int activity_remaining_ms = source->activity_deadline >
+      std::chrono::steady_clock::now() ? static_cast<int>(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          source->activity_deadline - std::chrono::steady_clock::now()).count()) : 0;
   // Renderer and automation work in a background tab must never select a tab
   // as a side effect. Foreground page gestures keep their requested disposition.
   activate = activate && !source->automation_popup_background &&
@@ -734,21 +765,36 @@ bool BrowserWindow::OnClientBeforePopup(BrowserClient *client,
       AddTabAfterSelection(target_url, activate);
     } else {
       AddTab(target_url, activate, source_context);
+      if (activity_remaining_ms > 0 && !tabs_.empty()) {
+        SetTabActivity(tabs_.back().id, activity_remaining_ms);
+      }
     }
     UpdateModeIndicator();
     return true;
   }
 
   pending_popups_.push_back({popup_client, popup_id, target_url, activate,
-                             opener_tab_id, hint_open_tab, source_context});
+                             opener_tab_id, true, source_context});
   return false;
 }
 
-void BrowserWindow::OnClientBeforePopupAborted(BrowserClient *, int popup_id) {
+void BrowserWindow::OnClientBeforePopupAborted(BrowserClient* client,
+                                               int popup_id) {
+  uint64_t opener_tab_id = 0;
+  for (const Tab& tab : tabs_) {
+    if (tab.client.get() == client) {
+      opener_tab_id = tab.id;
+      break;
+    }
+  }
   pending_popups_.erase(std::remove_if(pending_popups_.begin(),
                                        pending_popups_.end(),
-                                       [popup_id](const PendingPopup &popup) {
-                                         return popup.popup_id == popup_id;
+                                       [popup_id, opener_tab_id](
+                                           const PendingPopup& popup) {
+                                         return popup.popup_id == popup_id &&
+                                                (opener_tab_id == 0 ||
+                                                 popup.opener_tab_id ==
+                                                     opener_tab_id);
                                        }),
                         pending_popups_.end());
 }
@@ -835,18 +881,38 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
   }
 
   CefRefPtr<CefBrowser> popup_browser = popup_browser_view->GetBrowser();
-  CefRefPtr<CefClient> cef_client = popup_browser && popup_browser->GetHost()
-                                        ? popup_browser->GetHost()->GetClient()
-                                        : nullptr;
-  if (!cef_client) {
+  if (!popup_browser) {
     return false;
   }
 
+  // Chrome-style CEF reaches this callback after OnAfterCreated, so browser
+  // identity is the strongest correlation. Alloy reaches it earlier, before the
+  // pending BrowserClient has a browser; in that case correlate by the exact
+  // opener BrowserView and request order. Do not rely solely on CefClient wrapper
+  // identity because the client crosses CEF's C/C++ API boundary.
   auto pending = std::find_if(
       pending_popups_.begin(), pending_popups_.end(),
-      [cef_client](const PendingPopup &popup) {
-        return static_cast<CefClient *>(popup.client.get()) == cef_client.get();
+      [popup_browser](const PendingPopup &popup) {
+        CefRefPtr<CefBrowser> candidate =
+            popup.client ? popup.client->browser() : nullptr;
+        return candidate && candidate->IsSame(popup_browser);
       });
+  if (pending == pending_popups_.end()) {
+    uint64_t callback_opener_tab_id = 0;
+    for (const Tab& tab : tabs_) {
+      if (tab.view && browser_view && tab.view->IsSame(browser_view)) {
+        callback_opener_tab_id = tab.id;
+        break;
+      }
+    }
+    if (callback_opener_tab_id != 0) {
+      pending = std::find_if(
+          pending_popups_.begin(), pending_popups_.end(),
+          [callback_opener_tab_id](const PendingPopup& popup) {
+            return popup.opener_tab_id == callback_opener_tab_id;
+          });
+    }
+  }
   if (pending == pending_popups_.end()) {
     return false;
   }
@@ -889,9 +955,18 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
       insert_index = active_index_ + 1;
     }
   }
+  const int activity_remaining_ms = opener_index &&
+      tabs_[*opener_index].activity_deadline > std::chrono::steady_clock::now()
+      ? static_cast<int>(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          tabs_[*opener_index].activity_deadline -
+          std::chrono::steady_clock::now()).count()) : 0;
   InsertPopupTab(popup_browser_view, retained_popup_client, std::move(url),
                  insert_index, activate, popup_folder_id, popup_sort_order,
                  std::move(popup_context));
+  if (activity_remaining_ms > 0) {
+    SetTabActivity(tabs_[insert_index].id, activity_remaining_ms);
+  }
   UpdateModeIndicator();
   return true;
 }
@@ -1153,7 +1228,7 @@ void BrowserWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
     InsertTab(initial_urls_[i], tabs_.size(), activate,
               lazy_restore_background_tabs && !activate,
               initial_tab_folder_ids_[i], initial_tab_sort_orders_[i],
-              initial_tab_pinned_[i], initial_tab_contexts_[i]);
+              initial_tab_pinned_[i], initial_tab_contexts_[i], initial_tab_ids_[i]);
   }
   bulk_tab_update_ = false;
   RefreshSidebar();
@@ -1943,17 +2018,13 @@ bool BrowserWindow::OnAccelerator(CefRefPtr<CefWindow> window, int command_id) {
   }
   if (mode_ != Mode::kNormal && (command_id == kAcceleratorCommandTab ||
                                  command_id == kAcceleratorCommandBacktab)) {
-    if (command_vim_.mode == vim::Mode::kInsert) {
-      CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1
-                                                                        : 1);
-    }
+    CycleCommandAutocomplete(command_id == kAcceleratorCommandBacktab ? -1 : 1);
     return true;
   }
-  if (mode_ != Mode::kNormal && command_vim_.mode == vim::Mode::kInsert) {
-    if (command_id == kAcceleratorCommandDeleteCompletion) {
-      DeleteSelectedCommandAutocomplete();
-      return true;
-    }
+  if (mode_ != Mode::kNormal &&
+      command_id == kAcceleratorCommandDeleteCompletion) {
+    DeleteSelectedCommandAutocomplete();
+    return true;
   }
   if (a26_shell_ && focus_area_ == FocusArea::kA26Url) {
     return false;
@@ -2379,8 +2450,7 @@ void BrowserWindow::OnAfterUserAction(CefRefPtr<CefTextfield> textfield) {
   }
   if ((textfield != command_field_ &&
        (!textfield || textfield->GetID() != kCommandFieldId)) ||
-      mode_ == Mode::kNormal || command_vim_.mode != vim::Mode::kInsert ||
-      suppress_next_char_event_) {
+      mode_ == Mode::kNormal || suppress_next_char_event_) {
     return;
   }
 
@@ -4225,9 +4295,15 @@ bool BrowserWindow::HandleWebsiteModeKey(const CefKeyEvent &event) {
           website_mode_ = vim::Mode::kWebsiteNormal;
           ScheduleActivePageBlur();
         } else {
-          website_mode_ = (event.modifiers & EVENTFLAG_SHIFT_DOWN)
-                              ? vim::Mode::kWebsiteNormal
-                              : vim::Mode::kNormal;
+          // Insert mode can also be entered while page content rather than a
+          // text control has focus. In that case there is no editing context to
+          // leave via regular Vim normal mode, so one Escape returns directly
+          // to website mode. A focused editable retains the staged transition.
+          const bool skip_normal_mode =
+              (event.modifiers & EVENTFLAG_SHIFT_DOWN) ||
+              !PageHasFocusedEditable(event);
+          website_mode_ = skip_normal_mode ? vim::Mode::kWebsiteNormal
+                                           : vim::Mode::kNormal;
         }
         UpdateModeIndicator();
         return true;
@@ -6345,8 +6421,10 @@ void BrowserWindow::BroadcastShaderState() {
 
 void BrowserWindow::SaveState() const {
   AppState state;
-  // Persist each tab's context identity; never restore isolated tabs globally.
+  // Persist context identity with every tab: restoring a named-context tab
+  // into the default context would cross storage/authentication boundaries.
   state.active_index = 0;
+  state.next_tab_id = next_tab_id_;
   state.show_mode_indicator = show_mode_indicator_;
   state.show_fps_indicator = show_fps_indicator_;
   state.show_statusline = show_statusline_;
@@ -6372,6 +6450,7 @@ void BrowserWindow::SaveState() const {
         state.active_index = state.tabs.size();
       }
       state.tabs.push_back(tab.url);
+      state.tab_ids.push_back(tab.id);
       state.tab_folder_ids.push_back(tab.folder_id);
       state.tab_sort_orders.push_back(tab.sidebar_sort_order);
       state.tab_pinned.push_back(tab.pinned);
@@ -6389,7 +6468,7 @@ std::string BrowserWindow::ModeIndicatorText() const {
     return "SIDEBAR";
   }
   if (focus_area_ == FocusArea::kCommandLine || mode_ != Mode::kNormal) {
-    return command_vim_.mode == vim::Mode::kNormal ? "CMD-N" : "CMD-I";
+    return "CMD-I";
   }
   if (focus_area_ == FocusArea::kTabSidebar) {
     return "SIDEBAR";

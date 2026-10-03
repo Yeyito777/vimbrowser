@@ -18,16 +18,15 @@ static_library("browser") {
 
 source_set("unit_tests") {
   testonly = true
-  if (!is_android) {
-    sources = [ "internal_authenticator_impl_unittest.cc" ]
-    deps = [
-      ":browser",
-      "//base/test:test_support",
-      "//components/webauthn/core/browser",
-      "//content/public/browser",
-      "//content/test:test_support",
-      "//device/fido:test_support",
-      "//testing/gtest",
-    ]
-  }
+
+  sources = [ "internal_authenticator_impl_unittest.cc" ]
+  deps = [
+    ":browser",
+    "//base/test:test_support",
+    "//components/webauthn/core/browser",
+    "//content/public/browser",
+    "//content/test:test_support",
+    "//device/fido:test_support",
+    "//testing/gtest",
+  ]
 }

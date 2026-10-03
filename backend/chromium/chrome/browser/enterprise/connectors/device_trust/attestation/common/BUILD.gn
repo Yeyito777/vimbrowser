@@ -22,12 +22,7 @@ source_set("common") {
 source_set("types") {
   public = [ "signals_type.h" ]
 
-  if (is_chromeos) {
-    public_deps =
-        [ "//chromeos/ash/components/dbus/attestation:attestation_proto" ]
-  } else {
-    public_deps = [ "//chrome/browser/enterprise/connectors/device_trust/attestation/common/proto:attestation_ca_proto" ]
-  }
+  public_deps = [ "//chrome/browser/enterprise/connectors/device_trust/attestation/common/proto:attestation_ca_proto" ]
 }
 
 source_set("test_support") {

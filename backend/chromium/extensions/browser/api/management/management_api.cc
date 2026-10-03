@@ -87,11 +87,7 @@ bool ShouldExposeViaManagementAPI(const Extension& extension) {
 
 // Utility function to make the code below less ifdef-y.
 bool IsRunningOnAndroid() {
-#if BUILDFLAG(IS_ANDROID)
-  return true;
-#else
   return false;
-#endif
 }
 
 std::vector<std::string> CreateWarningsList(const Extension* extension) {

@@ -9,10 +9,7 @@
 #include "build/build_config.h"
 #include "net/base/net_errors.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
@@ -21,9 +18,7 @@
 namespace net {
 
 int SetTCPNoDelay(SocketDescriptor fd, bool no_delay) {
-#if BUILDFLAG(IS_WIN)
-  BOOL on = no_delay ? TRUE : FALSE;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   int on = no_delay ? 1 : 0;
 #endif
   int rv = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
@@ -45,9 +40,7 @@ int SetReuseAddr(SocketDescriptor fd, bool reuse) {
 // provided on Linux prior to 3.9.
 //
 // SO_REUSEPORT is provided in MacOS X and iOS.
-#if BUILDFLAG(IS_WIN)
-  BOOL boolean_value = reuse ? TRUE : FALSE;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   int boolean_value = reuse ? 1 : 0;
 #endif
   int rv = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
@@ -59,9 +52,7 @@ int SetReuseAddr(SocketDescriptor fd, bool reuse) {
 int SetSocketReceiveBufferSize(SocketDescriptor fd, int32_t size) {
   int rv = setsockopt(fd, SOL_SOCKET, SO_RCVBUF,
                       reinterpret_cast<const char*>(&size), sizeof(size));
-#if BUILDFLAG(IS_WIN)
-  int os_error = WSAGetLastError();
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   int os_error = errno;
 #endif
   int net_error = (rv == -1) ? MapSystemError(os_error) : OK;
@@ -74,9 +65,7 @@ int SetSocketReceiveBufferSize(SocketDescriptor fd, int32_t size) {
 int SetSocketSendBufferSize(SocketDescriptor fd, int32_t size) {
   int rv = setsockopt(fd, SOL_SOCKET, SO_SNDBUF,
                       reinterpret_cast<const char*>(&size), sizeof(size));
-#if BUILDFLAG(IS_WIN)
-  int os_error = WSAGetLastError();
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   int os_error = errno;
 #endif
   int net_error = (rv == -1) ? MapSystemError(os_error) : OK;
@@ -87,9 +76,7 @@ int SetSocketSendBufferSize(SocketDescriptor fd, int32_t size) {
 }
 
 int SetIPv6Only(SocketDescriptor fd, bool ipv6_only) {
-#if BUILDFLAG(IS_WIN)
-  DWORD on = ipv6_only ? 1 : 0;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   int on = ipv6_only ? 1 : 0;
 #endif
   int rv = setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY,

@@ -25,9 +25,6 @@
 #include "ui/events/types/event_type.h"
 #include "ui/gfx/native_ui_types.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_types.h"
-#endif
 
 namespace gfx {
 class Point;
@@ -173,40 +170,6 @@ EVENTS_EXPORT void ComputeEventLatencyOS(ui::EventType type,
                                          base::TimeTicks time_stamp,
                                          base::TimeTicks current_time);
 
-#if BUILDFLAG(IS_WIN)
-// Like ComputeEventLatencyOS, but for events whose timestamp comes from a
-// TOUCHINPUT structure instead of PlatformEvent.
-EVENTS_EXPORT void ComputeEventLatencyOSFromTOUCHINPUT(
-    ui::EventType event_type,
-    TOUCHINPUT touch_input,
-    base::TimeTicks current_time);
-
-// Like ComputeEventLatencyOS, but for events whose timestamp comes from a
-// POINTER_INFO structure instead of PlatformEvent.
-EVENTS_EXPORT void ComputeEventLatencyOSFromPOINTER_INFO(
-    ui::EventType event_type,
-    POINTER_INFO pointer_info,
-    base::TimeTicks current_time);
-
-EVENTS_EXPORT int GetModifiersFromKeyState();
-
-// Returns true if |message| identifies a mouse event that was generated as the
-// result of a touch event.
-EVENTS_EXPORT bool IsMouseEventFromTouch(UINT message);
-
-// Converts scan code and lParam each other.  The scan code
-// representing an extended key contains 0xE000 bits.
-EVENTS_EXPORT uint16_t GetScanCodeFromLParam(LPARAM lParam);
-EVENTS_EXPORT LPARAM GetLParamFromScanCode(uint16_t scan_code);
-
-// Creates a CHROME_MSG from the given KeyEvent if there is no native_event.
-EVENTS_EXPORT CHROME_MSG MSGFromKeyEvent(KeyEvent* key_event,
-                                         HWND hwnd = nullptr);
-EVENTS_EXPORT KeyEvent KeyEventFromMSG(const CHROME_MSG& msg);
-EVENTS_EXPORT MouseEvent MouseEventFromMSG(const CHROME_MSG& msg);
-EVENTS_EXPORT MouseWheelEvent MouseWheelEventFromMSG(const CHROME_MSG& msg);
-
-#endif  // BUILDFLAG(IS_WIN)
 
 // Registers a custom event type.
 EVENTS_EXPORT int RegisterCustomEventType();

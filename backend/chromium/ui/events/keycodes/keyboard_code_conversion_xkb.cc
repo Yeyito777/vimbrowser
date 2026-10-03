@@ -109,14 +109,9 @@ DomKey NonPrintableXKeySymToDomKey(xkb_keysym_t keysym) {
     case XKB_KEY_Select:
       return DomKey::SELECT;
     case XKB_KEY_Print:
-#if BUILDFLAG(IS_CHROMEOS)
-      // On ChromeOS KEY_PRINT really means print not print screen.
-      return DomKey::PRINT;
-#else   // !BUILDFLAG(IS_CHROMEOS)
       // For legacy reasons XKB and Linux treat Print and PrintScreen as
       // PrintScreen. See https://crbug.com/683097.
       return DomKey::PRINT_SCREEN;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
     case XKB_KEY_3270_PrintScreen:
       return DomKey::PRINT_SCREEN;
     case XKB_KEY_Execute:
@@ -209,22 +204,12 @@ DomKey NonPrintableXKeySymToDomKey(xkb_keysym_t keysym) {
       return DomKey::CONTROL;
     case XKB_KEY_Caps_Lock:
       return DomKey::CAPS_LOCK;
-#if BUILDFLAG(IS_CHROMEOS)
-    case XKB_KEY_Meta_L:
-    case XKB_KEY_Meta_R:
-    case XKB_KEY_Alt_L:
-    case XKB_KEY_Alt_R:
-      // The Shift+Alt generates a KeySym for the Meta key. On ChromeOS the Meta
-      // key is not used and we should still get the Alt key. crbug.com/541468.
-      return DomKey::ALT;
-#else
     case XKB_KEY_Meta_L:
     case XKB_KEY_Meta_R:
       return DomKey::META;
     case XKB_KEY_Alt_L:
     case XKB_KEY_Alt_R:
       return DomKey::ALT;
-#endif  // BUILDFLAG(IS_CHROMEOS)
     case XKB_KEY_Super_L:
     case XKB_KEY_Super_R:
       return DomKey::META;

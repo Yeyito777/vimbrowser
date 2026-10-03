@@ -113,18 +113,9 @@
 #include "chrome/browser/ui/chrome_pages.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/password_manager/android/password_checkup_launcher_helper_impl.h"
-#include "chrome/browser/safe_browsing/android/password_reuse_controller_android.h"
-#include "chrome/browser/safe_browsing/android/safe_browsing_referring_app_bridge_android.h"
-#include "components/enterprise/connectors/core/features.h"
-#include "components/password_manager/core/browser/password_check_referrer_android.h"
-#include "ui/android/window_android.h"
-#else
 #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"  // nogncheck crbug.com/40147906
 #include "chrome/browser/ui/hats/trust_safety_sentiment_service.h"
 #include "chrome/browser/ui/hats/trust_safety_sentiment_service_factory.h"
-#endif
 
 using base::RecordAction;
 using base::UserMetricsAction;
@@ -251,39 +242,6 @@ std::unique_ptr<UserEventSpecifics> GetUserEventSpecifics(
       GetLastCommittedNavigationID(web_contents));
 }
 
-#if BUILDFLAG(IS_ANDROID)
-struct CredentialFoundInStore {
-  bool is_account_store;
-  bool is_profile_store;
-};
-
-// Check whether the compromised credential is saved in the account or
-// profile store.
-CredentialFoundInStore CheckCredentialsStore(
-    const std::vector<password_manager::MatchingReusedCredential>&
-        matching_reused_credentials) {
-  bool is_account_credential = false;
-  bool is_profile_credential = false;
-
-  for (const password_manager::MatchingReusedCredential& credential :
-       matching_reused_credentials) {
-    // After the store split, the same credential could be stored in both
-    // account and profile store, so both checks are necessary.
-    if ((credential.in_store &
-         password_manager::PasswordForm::Store::kAccountStore) ==
-        password_manager::PasswordForm::Store::kAccountStore) {
-      is_account_credential = true;
-    }
-    if ((credential.in_store &
-         password_manager::PasswordForm::Store::kProfileStore) ==
-        password_manager::PasswordForm::Store::kProfileStore) {
-      is_profile_credential = true;
-    }
-  }
-
-  return CredentialFoundInStore(is_account_credential, is_profile_credential);
-}
-#endif
 
 }  // namespace
 
@@ -331,9 +289,6 @@ ChromePasswordProtectionService::ChromePasswordProtectionService(
   remove_phished_credentials_ =
       base::BindRepeating(&password_manager::RemovePhishedCredentials);
 
-#if BUILDFLAG(IS_ANDROID)
-  checkup_launcher_ = std::make_unique<PasswordCheckupLauncherHelperImpl>();
-#endif
   // TODO(nparker) Move the rest of the above code into Init()
   // without crashing unittests.
   Init();
@@ -361,7 +316,6 @@ void ChromePasswordProtectionService::SetSyncPasswordHash(
 // The following code is disabled on Android. RefreshTokenIsAvailable cannot be
 // used in unit tests, because it needs to interact with system accounts.
 // Considering avoid running it during unit tests. See: crbug.com/1009957.
-#if !BUILDFLAG(IS_ANDROID)
   // This code is shared by the normal ctor and testing ctor.
   sync_password_hash_ = sync_password_hash;
   if (!sync_password_hash_.empty()) {
@@ -385,7 +339,6 @@ void ChromePasswordProtectionService::SetSyncPasswordHash(
     }
     SetLogPasswordCaptureTimer(delay);
   }
-#endif
 }
 
 void ChromePasswordProtectionService::Shutdown() {
@@ -482,22 +435,12 @@ void ChromePasswordProtectionService::ShowModalWarning(
   if (web_contents->IsFullscreen())
     web_contents->ExitFullscreen(true);
 
-#if BUILDFLAG(IS_ANDROID)
-  (new PasswordReuseControllerAndroid(
-       web_contents, this, profile_->GetPrefs(), password_type,
-       base::BindOnce(&ChromePasswordProtectionService::OnUserAction,
-                      base::Unretained(this), web_contents, password_type,
-                      outcome, verdict_type, verdict_token,
-                      WarningUIType::MODAL_DIALOG)))
-      ->ShowDialog();
-#else   // !BUILDFLAG(IS_ANDROID)
   ShowPasswordReuseModalWarningDialog(
       web_contents, this, password_type,
       base::BindOnce(&ChromePasswordProtectionService::OnUserAction,
                      base::Unretained(this), web_contents, password_type,
                      outcome, verdict_type, verdict_token,
                      WarningUIType::MODAL_DIALOG));
-#endif  // BUILDFLAG(IS_ANDROID)
 
   LogWarningAction(WarningUIType::MODAL_DIALOG, WarningAction::SHOWN,
                    password_type);
@@ -631,7 +574,6 @@ void ChromePasswordProtectionService::OnUserAction(
       NOTREACHED();
   }
 
-#if !BUILDFLAG(IS_ANDROID)
   if (safe_browsing::IsSafeBrowsingSurveysEnabled(*profile_->GetPrefs())) {
     TrustSafetySentimentService* trust_safety_sentiment_service =
         TrustSafetySentimentServiceFactory::GetForProfile(profile_);
@@ -649,7 +591,6 @@ void ChromePasswordProtectionService::OnUserAction(
       }
     }
   }
-#endif
 }
 
 void ChromePasswordProtectionService::AddObserver(Observer* observer) {
@@ -1152,50 +1093,6 @@ void ChromePasswordProtectionService::OpenPasswordCheck(
         password_manager::PasswordCheckReferrer::kPhishGuardDialog);
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-    JNIEnv* env = base::android::AttachCurrentThread();
-    const syncer::SyncService* sync_service =
-        SyncServiceFactory::GetForProfile(profile_);
-    bool is_syncing_passwords =
-        password_manager::sync_util::HasChosenToSyncPasswords(sync_service);
-    std::string account =
-        is_syncing_passwords ? sync_service->GetAccountInfo().email : "";
-
-    CredentialFoundInStore credentials_store =
-        CheckCredentialsStore(saved_passwords_matching_reused_credentials());
-
-    if (credentials_store.is_account_store &&
-        credentials_store.is_profile_store) {
-      // If the compromised credential is saved in both stores, Safety Hub in
-      // Chrome will open so the user can review the compromised credentials in
-      // both stores.
-
-      // TODO(crbug.com/397184847): While the local passwords module is not in
-      // the most recent version of Safety Check (also known as Safety Hub),
-      // show the old UI.
-      if (base::FeatureList::IsEnabled(
-              features::kSafetyHubLocalPasswordsModule)) {
-        checkup_launcher_->LaunchSafetyHub(
-            env, web_contents->GetTopLevelNativeWindow());
-      } else {
-        checkup_launcher_->LaunchSafetyCheck(
-            env, web_contents->GetTopLevelNativeWindow());
-      }
-    } else {
-      // In case the compromised credential is only saved in one of the stores,
-      // checkup for that store will open.
-
-      bool should_show_checkup_for_local = true;
-
-      if (credentials_store.is_account_store) {
-        should_show_checkup_for_local = false;
-      }
-      checkup_launcher_->LaunchCheckupOnDevice(
-          env, profile_, web_contents->GetTopLevelNativeWindow(),
-          password_manager::PasswordCheckReferrerAndroid::kPhishedWarningDialog,
-          should_show_checkup_for_local ? "" : account);
-    }
-#endif
   }
 }
 
@@ -1349,7 +1246,6 @@ void ChromePasswordProtectionService::MaybeReportPasswordReuseDetected(
         username.empty() ? GetAccountInfo().email : username;
 
 // Disabled on Android, because enterprise reporting extension is not supported.
-#if !BUILDFLAG(IS_ANDROID)
     auto* safe_browsing_event_router =
         extensions::SafeBrowsingPrivateEventRouterFactory::GetForProfile(
             profile_);
@@ -1362,7 +1258,6 @@ void ChromePasswordProtectionService::MaybeReportPasswordReuseDetected(
           "PasswordProtection.GmailReportSent",
           base::EndsWith(username_or_email, "@gmail.com"));
     }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
     auto* reporting_event_router = enterprise_connectors::
         ReportingEventRouterFactory::GetForBrowserContext(profile_);
@@ -1379,7 +1274,6 @@ void ChromePasswordProtectionService::ReportPasswordChanged() {
   }
 
 // Disabled on Android, because enterprise reporting extension is not supported.
-#if !BUILDFLAG(IS_ANDROID)
   auto* safe_browsing_event_router =
       extensions::SafeBrowsingPrivateEventRouterFactory::GetForProfile(
           profile_);
@@ -1387,7 +1281,6 @@ void ChromePasswordProtectionService::ReportPasswordChanged() {
     safe_browsing_event_router->OnPolicySpecifiedPasswordChanged(
         GetAccountInfo().email);
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   auto* reporting_event_router =
       enterprise_connectors::ReportingEventRouterFactory::GetForBrowserContext(
@@ -1637,19 +1530,7 @@ bool ChromePasswordProtectionService::IsPingingEnabled(
 // result in enforcement for Android users. Therefore, other types of password
 // reuse events should be gated by Safe Browsing extended reporting because
 // phishy verdicts won't be enforced making the pings telemetry-only.
-#if BUILDFLAG(IS_ANDROID)
-    if (password_type.account_type() ==
-            ReusedPasswordAccountType::SAVED_PASSWORD ||
-        password_type.account_type() == ReusedPasswordAccountType::GMAIL ||
-        trigger_type ==
-            LoginReputationClientRequest::ONE_TIME_PASSWORD_FIELD_DETECTED) {
-      return true;
-    }
-
-    return extended_reporting_enabled;
-#else
     return true;
-#endif
   }
   // Since it's possible that on-focus pings could trigger for many visited
   // pages, don't send the ping when a SBER user is in Incognito to reduce data
@@ -1853,36 +1734,6 @@ ChromePasswordProtectionService::ChromePasswordProtectionService(
   Init();
 }
 
-#if BUILDFLAG(IS_ANDROID)
-ChromePasswordProtectionService::ChromePasswordProtectionService(
-    Profile* profile,
-    scoped_refptr<SafeBrowsingUIManager> ui_manager,
-    StringProvider sync_password_hash_provider,
-    VerdictCacheManager* cache_manager,
-    ChangePhishedCredentialsCallback add_phished_credentials,
-    ChangePhishedCredentialsCallback remove_phished_credentials,
-    std::unique_ptr<PasswordCheckupLauncherHelper> checkup_launcher)
-    : PasswordProtectionService(
-          nullptr,
-          nullptr,
-          nullptr,
-          nullptr,
-          nullptr,
-          false,
-          nullptr,
-          /*try_token_fetch=*/false,
-          SafeBrowsingMetricsCollectorFactory::GetForProfile(profile)),
-      ui_manager_(ui_manager),
-      trigger_manager_(nullptr),
-      profile_(profile),
-      cache_manager_(cache_manager),
-      add_phished_credentials_(std::move(add_phished_credentials)),
-      remove_phished_credentials_(std::move(remove_phished_credentials)),
-      sync_password_hash_provider_for_testing_(sync_password_hash_provider),
-      checkup_launcher_(std::move(checkup_launcher)) {
-  Init();
-}
-#endif
 
 std::unique_ptr<PasswordProtectionCommitDeferringCondition>
 MaybeCreateCommitDeferringCondition(
@@ -1968,19 +1819,6 @@ void ChromePasswordProtectionService::RemovePhishedSavedPasswordCredential(
   }
 }
 
-#if BUILDFLAG(IS_ANDROID)
-ReferringAppInfo ChromePasswordProtectionService::GetReferringAppInfo(
-    content::WebContents* web_contents) {
-  // Do not get WebAPK info for PhishGuard. We don't consume referring WebAPK
-  // data for password reuse events.
-  internal::ReferringAppInfo info_struct = safe_browsing::GetReferringAppInfo(
-      web_contents, /*get_webapk_info=*/false);
-  ReferringAppInfo info_proto;
-  info_proto.set_referring_app_source(info_struct.referring_app_source);
-  info_proto.set_referring_app_name(info_struct.referring_app_name);
-  return info_proto;
-}
-#endif
 
 password_manager::PasswordReuseManager*
 ChromePasswordProtectionService::GetPasswordReuseManager() const {

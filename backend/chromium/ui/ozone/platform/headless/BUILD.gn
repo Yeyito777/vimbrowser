@@ -45,10 +45,6 @@ source_set("headless") {
     "//ui/platform_window",
   ]
 
-  if (is_fuchsia) {
-    deps += [ "//ui/base/ime/fuchsia" ]
-  }
-
   if (enable_vulkan && (is_linux || is_fuchsia)) {
     sources += [
       "vulkan_implementation_headless.cc",

@@ -11,7 +11,6 @@
 #include "base/logging.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
-#include "chromeos/constants/chromeos_features.h"
 #include "device/bluetooth/dbus/bluetooth_adapter_client.h"
 #include "device/bluetooth/dbus/bluetooth_admin_policy_client.h"
 #include "device/bluetooth/dbus/bluetooth_advertisement_monitor_manager_client.h"
@@ -50,10 +49,6 @@ BluetoothDBusClientBundle::BluetoothDBusClientBundle(bool use_fakes)
     bluetooth_admin_policy_client_ = BluetoothAdminPolicyClient::Create();
     bluetooth_le_advertising_manager_client_.reset(
         BluetoothLEAdvertisingManagerClient::Create());
-#if BUILDFLAG(IS_CHROMEOS)
-    bluetooth_advertisement_monitor_manager_client_ =
-        BluetoothAdvertisementMonitorManagerClient::Create();
-#endif  // BUILDFLAG(IS_CHROMEOS)
     bluetooth_agent_manager_client_.reset(
         BluetoothAgentManagerClient::Create());
     bluetooth_battery_client_.reset(BluetoothBatteryClient::Create());
@@ -83,10 +78,6 @@ BluetoothDBusClientBundle::BluetoothDBusClientBundle(bool use_fakes)
         std::make_unique<FakeBluetoothAdminPolicyClient>();
     bluetooth_le_advertising_manager_client_ =
         std::make_unique<FakeBluetoothLEAdvertisingManagerClient>();
-#if BUILDFLAG(IS_CHROMEOS)
-    bluetooth_advertisement_monitor_manager_client_ =
-        std::make_unique<FakeBluetoothAdvertisementMonitorManagerClient>();
-#endif  // BUILDFLAG(IS_CHROMEOS)
     bluetooth_agent_manager_client_ =
         std::make_unique<FakeBluetoothAgentManagerClient>();
     bluetooth_battery_client_ = std::make_unique<FakeBluetoothBatteryClient>();

@@ -85,11 +85,9 @@ class CFX_Font {
   bool LoadFromSpanStream(const RetainPtr<CFX_ReadOnlySpanStream>& stream,
                           int face_index);
 
-#if !BUILDFLAG(IS_WIN)
   void SetFaceFromFont(const CFX_Font& that);
   void SetFontSpan(pdfium::span<uint8_t> pSpan) { font_data_ = pSpan; }
   void SetSubstFont(std::unique_ptr<CFX_SubstFont> subst);
-#endif  // !BUILDFLAG(IS_WIN)
 #endif  // defined(PDF_ENABLE_XFA)
 
   const CFX_GlyphBitmap* LoadGlyphBitmap(

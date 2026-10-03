@@ -102,9 +102,7 @@ void RunFileDialogDismissed(CefRefPtr<CefRunFileDialogCallback> callback,
 // Based on net/base/filename_util_internal.cc FilePathToString16().
 std::u16string FilePathTypeToString16(const base::FilePath::StringType& str) {
   std::u16string result;
-#if BUILDFLAG(IS_WIN)
-  result.assign(str.begin(), str.end());
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   if (!str.empty()) {
     base::UTF8ToUTF16(str.c_str(), str.size(), &result);
   }

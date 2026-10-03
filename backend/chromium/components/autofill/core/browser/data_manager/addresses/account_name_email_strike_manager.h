@@ -6,6 +6,7 @@
 #define COMPONENTS_AUTOFILL_CORE_BROWSER_DATA_MANAGER_ADDRESSES_ACCOUNT_NAME_EMAIL_STRIKE_MANAGER_H_
 
 #include "base/memory/raw_ref.h"
+#include "base/scoped_observation.h"
 #include "components/autofill/core/browser/foundations/autofill_manager.h"
 
 namespace autofill {

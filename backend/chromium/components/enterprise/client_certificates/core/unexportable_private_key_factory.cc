@@ -29,11 +29,6 @@ namespace client_certificates {
 namespace {
 
 bool IsHardwareModuleSupported(crypto::UnexportableSigningKey* key) {
-#if BUILDFLAG(IS_WIN)
-  if (features::IsWindowsTpmTls13CheckEnabled() && !key->SupportsTls13()) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_WIN)
   return true;
 }
 

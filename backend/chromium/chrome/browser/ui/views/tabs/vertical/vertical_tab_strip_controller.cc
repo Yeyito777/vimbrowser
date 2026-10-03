@@ -42,10 +42,6 @@
 #include "ui/views/interaction/element_tracker_views.h"
 #include "ui/views/view_utils.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ui/web_applications/app_browser_controller.h"
-#include "chromeos/ash/experiences/system_web_apps/types/system_web_app_delegate.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 VerticalTabStripController::VerticalTabStripController(
     TabStripModel* model,
@@ -407,16 +403,6 @@ void VerticalTabStripController::ExecuteContextMenuCommand(
 bool VerticalTabStripController::GetContextMenuAccelerator(
     int command_id,
     ui::Accelerator* accelerator) {
-#if BUILDFLAG(IS_CHROMEOS)
-  auto* browser = browser_view_->browser();
-  auto* system_app = browser->app_controller()
-                         ? browser->app_controller()->system_app()
-                         : nullptr;
-  if (system_app && !system_app->ShouldShowTabContextMenuShortcut(
-                        browser->profile(), command_id)) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   int browser_cmd;
   return TabStripModel::ContextMenuCommandToBrowserCommand(command_id,

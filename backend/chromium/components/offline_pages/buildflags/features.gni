@@ -5,7 +5,7 @@
 declare_args() {
   # Whether to enable OfflinePages support. Currently user-visible features
   # are Android-only.
-  enable_offline_pages = is_android
+  enable_offline_pages = false
 
   # This enables test API for locally-built harness which is used for quality
   # evaluations. Requires setting this variable manually at local environment.

@@ -26,16 +26,7 @@
 
 namespace {
 
-#if BUILDFLAG(IS_ANDROID)
-// Set the render host waiting time to 5s on Android, that's the same
-// as an "Application Not Responding" timeout.
-const int64_t kTimerDelaySeconds = 5;
-#elif BUILDFLAG(IS_CHROMEOS)
-// linux-chromeos-dbg is failing to destroy the profile in under 1 second
-const int64_t kTimerDelaySeconds = 2;
-#else
 const int64_t kTimerDelaySeconds = 1;
-#endif
 
 // These values are persisted to logs. Entries should not be renumbered and
 // numeric values should never be reused.
@@ -310,11 +301,9 @@ void ProfileDestroyer::DestroyOriginalProfileNow(
   // RenderProcessHosts in --single-process mode, to avoid race conditions.
   if (!content::RenderProcessHost::run_renderer_in_process()) {
     DCHECK_EQ(profile_hosts_count, 0u);
-#if !BUILDFLAG(IS_CHROMEOS)
     // ChromeOS' system profile can be outlived by its off-the-record profile
     // (see https://crbug.com/40569888).
     DCHECK_EQ(off_the_record_profile_hosts_count, 0u);
-#endif
   }
 #endif  // DCHECK_IS_ON()
 }

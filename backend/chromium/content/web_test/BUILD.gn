@@ -8,10 +8,6 @@ import("//mojo/public/tools/bindings/mojom.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//services/device/public/cpp/compute_pressure/buildflags.gni")
 
-if (is_android) {
-  import("//build/config/android/config.gni")
-}
-
 mojom("web_test_common_mojom") {
   sources = [
     "common/fake_bluetooth_chooser.mojom",
@@ -156,18 +152,12 @@ static_library("web_test_browser") {
     sources += [ "browser/web_test_shell_platform_delegate_mac.mm" ]
   } else if (toolkit_views && !is_castos) {
     sources += [ "browser/web_test_shell_platform_delegate_views.cc" ]
-  } else if (is_ios) {
-    sources += [ "browser/web_test_shell_platform_delegate_ios.mm" ]
   } else {
     sources += [ "browser/web_test_shell_platform_delegate_aura.cc" ]
   }
 
   if (is_apple) {
     sources += [ "browser/web_test_browser_main_platform_support_mac.mm" ]
-  }
-
-  if (is_win) {
-    sources += [ "browser/web_test_browser_main_platform_support_win.cc" ]
   }
 
   if (is_linux || is_chromeos) {

@@ -84,10 +84,6 @@ bool TooltipIcon::OnMousePressed(const ui::MouseEvent& event) {
 
 void TooltipIcon::OnFocus() {
   ShowBubble();
-#if BUILDFLAG(IS_WIN)
-  // Tooltip text does not announce on Windows; crbug.com/1245470
-  NotifyAccessibilityEventDeprecated(ax::mojom::Event::kFocus, true);
-#endif
 }
 
 void TooltipIcon::OnBlur() {

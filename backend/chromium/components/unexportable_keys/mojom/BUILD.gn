@@ -9,8 +9,6 @@ mojom("mojom") {
 
   public_deps = [ "//mojo/public/mojom/base" ]
 
-  generate_java = true
-
   cpp_typemaps = [
     {
       types = [

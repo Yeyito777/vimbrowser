@@ -487,26 +487,6 @@ bool TrackRunIterator::Init(const MovieFragment& moof) {
 
           // TODO(crbug.com/1336055): Investigate if this is a hardware or
           // cast-related limitation.
-#if BUILDFLAG(IS_CASTOS)
-          // On Chromecast, we only support setting the pattern values in the
-          // 'tenc' box for the track (not varying on per sample group basis).
-          // Thus we need to verify that the settings in the sample group
-          // match those in the 'tenc'.
-          if (is_encrypted && index != 0) {
-            RCHECK_MEDIA_LOGGED(info_entry->crypt_byte_block ==
-                                    track_encryption->default_crypt_byte_block,
-                                media_log_,
-                                "Pattern value (crypt byte block) for the "
-                                "sample group does not match that in the tenc "
-                                "box . This is not currently supported.");
-            RCHECK_MEDIA_LOGGED(info_entry->skip_byte_block ==
-                                    track_encryption->default_skip_byte_block,
-                                media_log_,
-                                "Pattern value (skip byte block) for the "
-                                "sample group does not match that in the tenc "
-                                "box . This is not currently supported.");
-          }
-#endif  // BUILDFLAG(IS_CASTOS)
           if (is_encrypted && !iv_size) {
             entry.initialization_vector =
                 index == 0 ? track_encryption->default_constant_iv

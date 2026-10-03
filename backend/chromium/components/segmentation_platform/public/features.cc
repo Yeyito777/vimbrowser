@@ -17,11 +17,7 @@ BASE_FEATURE(kSegmentationPlatformFeature,
 
 BASE_FEATURE(kSegmentationPlatformUkmEngine,
 
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#else
              base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kSegmentationPlatformAdaptiveToolbarV2Feature,
              base::FEATURE_ENABLED_BY_DEFAULT);
@@ -93,13 +89,6 @@ BASE_FEATURE(kSegmentationPlatformPasswordManagerUser,
 BASE_FEATURE(kSegmentationPlatformTabResumptionRanker,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-BASE_FEATURE(kSegmentationPlatformIosModuleRanker,
-#if BUILDFLAG(IS_IOS)
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#else
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
-
 BASE_FEATURE(kSegmentationPlatformAndroidHomeModuleRanker,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
@@ -111,11 +100,7 @@ BASE_FEATURE(kSegmentationPlatformTimeDelaySampling,
 
 // Enabled only on iOS to improve startup performance of the module ranker.
 BASE_FEATURE(kSegmentationPlatformSignalDbCache,
-#if BUILDFLAG(IS_IOS)
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#else
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kSegmentationPlatformComposePromotion,
              base::FEATURE_ENABLED_BY_DEFAULT);
@@ -127,22 +112,11 @@ BASE_FEATURE(kSegmentationPlatformUmaFromSqlDb,
              base::FEATURE_DISABLED_BY_DEFAULT);
 #endif
 
-BASE_FEATURE(kSegmentationPlatformIosModuleRankerSplitBySurface,
-#if BUILDFLAG(IS_IOS)
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#else
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
-
 BASE_FEATURE(kSegmentationPlatformURLVisitResumptionRanker,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
 BASE_FEATURE(kSegmentationPlatformEphemeralBottomRank,
-#if BUILDFLAG(IS_IOS)
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#else
              base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 const char kEphemeralCardRankerForceShowCardParam[] =
     "EphemeralCardRankerForceShowCardParam";
@@ -158,11 +132,7 @@ BASE_FEATURE(kSegmentationPlatformEphemeralCardRanker,
 #endif
 
 BASE_FEATURE(kSegmentationSurveyPage,
-#if BUILDFLAG(IS_ANDROID)
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#else
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 constexpr base::FeatureParam<bool> kSegmentationSurveyInternalsPage{
     &kSegmentationSurveyPage, "survey_internals_page", /*default_value=*/true};
@@ -183,11 +153,7 @@ BASE_FEATURE(kDefaultBrowserPromoPropensityModel,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
 BASE_FEATURE(kAppBundlePromoEphemeralCard,
-#if BUILDFLAG(IS_IOS)
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#else
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 constexpr base::FeatureParam<int> kMaxAppBundlePromoImpressions{
     &kAppBundlePromoEphemeralCard, "max_app_bundle_promo_impressions",
@@ -203,11 +169,7 @@ bool IsAppBundlePromoEphemeralCardEnabled() {
 }
 
 BASE_FEATURE(kDefaultBrowserMagicStackIos,
-#if BUILDFLAG(IS_IOS)
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#else
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 constexpr base::FeatureParam<int> kMaxDefaultBrowserMagicStackIosImpressions{
     &kDefaultBrowserMagicStackIos,

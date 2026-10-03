@@ -23,11 +23,6 @@
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "base/command_line.h"
-#include "components/variations/net/variations_flags.h"
-#include "net/base/url_util.h"
-#endif  // BUILDFLAG(IS_IOS)
 
 namespace variations {
 
@@ -94,13 +89,6 @@ URLValidationResult GetUrlValidationResult(const GURL& url) {
     return URLValidationResult::kNotValidNeitherHttpHttps;
   }
 
-#if BUILDFLAG(IS_IOS)
-  if (net::IsLocalhost(url) &&
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          kAppendVariationsHeadersToLocalhostForTesting)) {
-    return URLValidationResult::kShouldAppend;
-  }
-#endif  // BUILDFLAG(IS_IOS)
 
   if (!google_util::IsGoogleAssociatedDomainUrl(url)) {
     return URLValidationResult::kNotValidNotGoogleDomain;

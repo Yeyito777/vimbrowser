@@ -33,9 +33,6 @@
 #include "storage/common/file_system/file_system_mount_option.h"
 #include "storage/common/file_system/file_system_types.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "extensions/browser/api/file_handlers/non_native_file_system_delegate.h"
-#endif
 
 namespace extensions {
 
@@ -196,24 +193,6 @@ void WritableFileChecker::Check() {
   outstanding_tasks_ = paths_.size();
   for (const auto& path : paths_) {
     bool is_directory = directory_paths_.contains(path);
-#if BUILDFLAG(IS_CHROMEOS)
-    NonNativeFileSystemDelegate* delegate =
-        ExtensionsAPIClient::Get()->GetNonNativeFileSystemDelegate();
-    if (delegate && delegate->IsUnderNonNativeLocalPath(context_, path)) {
-      if (is_directory) {
-        delegate->IsNonNativeLocalPathDirectory(
-            context_, path,
-            base::BindOnce(&WritableFileChecker::OnPrepareFileDone, this,
-                           path));
-      } else {
-        delegate->PrepareNonNativeLocalFileForWritableApp(
-            context_, path,
-            base::BindOnce(&WritableFileChecker::OnPrepareFileDone, this,
-                           path));
-      }
-      continue;
-    }
-#endif
     base::TaskTraits traits = {base::TaskPriority::USER_BLOCKING,
                                base::MayBlock()};
     base::OnceCallback<bool()> task = base::BindOnce(

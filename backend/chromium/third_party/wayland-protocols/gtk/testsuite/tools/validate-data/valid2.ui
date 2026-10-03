@@ -1,4 +1,0 @@
-<interface>
-  <template class="GtkEmojiChooser" parent="GtkPopover">
-  </template>
-</interface>

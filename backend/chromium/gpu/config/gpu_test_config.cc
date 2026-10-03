@@ -16,28 +16,14 @@
 #include "gpu/config/gpu_test_expectations_parser.h"
 #include "ui/gl/gl_utils.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 namespace gpu {
 
 namespace {
 
 GPUTestConfig::OS GetCurrentOS() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return GPUTestConfig::kOsChromeOS;
-#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OPENBSD)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_OPENBSD)
   return GPUTestConfig::kOsLinux;
-#elif BUILDFLAG(IS_WIN)
-  int32_t major_version = 0;
-  int32_t minor_version = 0;
-  int32_t bugfix_version = 0;
-  base::SysInfo::OperatingSystemVersionNumbers(&major_version, &minor_version,
-                                               &bugfix_version);
-  if (major_version == 10)
-    return GPUTestConfig::kOsWin10;
-  return GPUTestConfig::kOsUnknown;
 #elif BUILDFLAG(IS_MAC)
   int32_t major_version = 0;
   int32_t minor_version = 0;
@@ -81,12 +67,6 @@ GPUTestConfig::OS GetCurrentOS() {
       return GPUTestConfig::kOsMacSequoia;
   }
   return GPUTestConfig::kOsUnknown;
-#elif BUILDFLAG(IS_ANDROID)
-  return GPUTestConfig::kOsAndroid;
-#elif BUILDFLAG(IS_FUCHSIA)
-  return GPUTestConfig::kOsFuchsia;
-#elif BUILDFLAG(IS_IOS)
-  return GPUTestConfig::kOsIOS;
 #else
 #error "unknown os"
 #endif

@@ -24,21 +24,17 @@
 namespace whats_new {
 bool g_is_remote_content_disabled = false;
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // For testing purposes, so that WebUI tests run on non-branded
 // CQ bots.
 BASE_FEATURE(kForceEnabled,
              "WhatsNewForceEnabled",
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 bool IsEnabled() {
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING) && !BUILDFLAG(IS_CHROMEOS)
   return true;
-#elif !BUILDFLAG(IS_CHROMEOS)
-  return base::FeatureList::IsEnabled(whats_new::kForceEnabled);
 #else
-  return false;
+  return base::FeatureList::IsEnabled(whats_new::kForceEnabled);
 #endif
 }
 
@@ -47,9 +43,7 @@ void DisableRemoteContentForTests() {
 }
 
 void LogStartupType(StartupType type) {
-#if !BUILDFLAG(IS_CHROMEOS)
   base::UmaHistogramEnumeration("WhatsNew.StartupType", type);
-#endif
 }
 
 bool IsRemoteContentDisabled() {
@@ -58,9 +52,6 @@ bool IsRemoteContentDisabled() {
 
 bool ShouldShowForState(PrefService* local_state,
                         bool promotional_tabs_enabled) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return false;
-#else
   LogStartupType(StartupType::kCalledShouldShow);
 
   if (!promotional_tabs_enabled) {
@@ -101,16 +92,11 @@ bool ShouldShowForState(PrefService* local_state,
   // multiple profile relaunches (see https://crbug.com/1274313).
   local_state->SetInteger(prefs::kLastWhatsNewVersion, CHROME_VERSION_MAJOR);
   return true;
-#endif
 }
 
 GURL GetWebUIStartupURL() {
-#if !BUILDFLAG(IS_CHROMEOS)
   return net::AppendQueryParameter(GURL(chrome::kChromeUIWhatsNewURL), "auto",
                                    "true");
-#else
-  NOTREACHED();
-#endif
 }
 
 bool UseStagingOverrideEnabled() {

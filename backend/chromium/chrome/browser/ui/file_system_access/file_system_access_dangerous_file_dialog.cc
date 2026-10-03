@@ -46,13 +46,8 @@ std::unique_ptr<ui::DialogModel> CreateFileSystemAccessDangerousFileDialog(
       file_system_access_ui_helper::GetUrlIdentityName(profile,
                                                        origin.GetURL());
 
-#if BUILDFLAG(IS_WIN)
-  std::u16string file_extension = base::WideToUTF16(
-      safe_browsing::FileTypePolicies::GetFileExtension(path_info.path));
-#else
   std::u16string file_extension = base::ASCIIToUTF16(
       safe_browsing::FileTypePolicies::GetFileExtension(path_info.path));
-#endif  // BUILDFLAG(IS_WIN)
 
   ui::DialogModel::Builder dialog_builder;
   dialog_builder

@@ -58,15 +58,5 @@ const std::vector<std::string> SingleInvalidConfiguration::GetRegisteredGroups()
   return {};
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void SingleInvalidConfiguration::UpdateConfig(
-    const base::Feature& feature,
-    const ConfigurationProvider* provider) {}
-
-const Configuration::EventPrefixSet&
-SingleInvalidConfiguration::GetRegisteredAllowedEventPrefixes() const {
-  return event_prefixes_;
-}
-#endif
 
 }  // namespace feature_engagement

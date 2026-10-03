@@ -25,16 +25,13 @@
 #include "chrome/browser/safe_browsing/application_advanced_protection_status_detector.h"
 #include "chrome/browser/ui/browser_window/public/global_browser_collection.h"
 #include "components/application_locale_storage/application_locale_storage.h"
-#include "components/on_device_translation/buildflags/buildflags.h"
 #include "components/safe_browsing/core/common/features.h"
 #include "media/base/media_switches.h"
 #include "net/net_buildflags.h"
 
-#if !BUILDFLAG(IS_ANDROID)
 // This causes a gn error on Android builds, because gn does not understand
 // buildflags, so we include it only on platforms where it is used.
 #include "chrome/browser/background/glic/glic_background_mode_manager.h"  // nogncheck
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 // This causes a gn error on Android builds, because gn does not understand
@@ -52,13 +49,8 @@
 #include "chrome/browser/win/installer_downloader/installer_downloader_infobar_delegate.h"
 #endif
 
-#if !BUILDFLAG(IS_ANDROID)
 #include "chrome/browser/ui/startup/profile_launch_observer.h"
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_WIN)
-#include "chrome/browser/startup/startup_launch_manager.h"
-#endif
 
 #if BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
 #include "chrome/browser/signin/bound_session_credentials/unexportable_key_obsolete_profile_garbage_collector.h"  // nogncheck
@@ -67,9 +59,6 @@
 #include "components/unexportable_keys/unexportable_key_service_impl.h"
 #endif  // BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
 
-#if BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
-#include "chrome/browser/on_device_translation/installer_impl.h"
-#endif  // BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
 
 namespace {
 
@@ -106,21 +95,14 @@ void GlobalFeatures::PreBrowserProcessInit() {
 }
 
 void GlobalFeatures::PostBrowserProcessInit() {
-#if BUILDFLAG(IS_WIN)
-  startup_launch_manager_ =
-      GetUserDataFactory().CreateInstance<StartupLaunchManager>(
-          *g_browser_process, g_browser_process);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   PostBrowserProcessInitCore();
 
   if (glic::GlicEnabling::IsEnabledByFlags()) {
     glic_profile_manager_ = std::make_unique<glic::GlicProfileManager>();
-#if !BUILDFLAG(IS_ANDROID)
     glic_background_mode_manager_ =
         std::make_unique<glic::GlicBackgroundModeManager>(
             g_browser_process->status_tray());
-#endif
     synthetic_trial_manager_ =
         std::make_unique<glic::GlicSyntheticTrialManager>();
   }
@@ -140,14 +122,8 @@ void GlobalFeatures::PostBrowserProcessInit() {
   ip_address_space_overrides_prefs_observer_ = std::make_unique<
       local_network_access::IPAddressSpaceOverridesPrefsObserver>(
       g_browser_process->local_state());
-#if BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
-  on_device_translation_installer_ = std::make_unique<
-      on_device_translation::OnDeviceTranslationInstallerImpl>();
-#endif  // BUILDFLAG(ENABLE_ON_DEVICE_TRANSLATION)
 
-#if !BUILDFLAG(IS_ANDROID)
   profile_launch_observer_ = std::make_unique<ProfileLaunchObserver>();
-#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void GlobalFeatures::PreBrowserProcessInitCore() {
@@ -203,16 +179,12 @@ void GlobalFeatures::PostBrowserProcessInitCore() {
 }
 
 void GlobalFeatures::PostMainMessageLoopRun() {
-#if !BUILDFLAG(IS_ANDROID)
   profile_launch_observer_.reset();
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if !BUILDFLAG(IS_ANDROID)
   if (glic_background_mode_manager_) {
     glic_background_mode_manager_->Shutdown();
     glic_background_mode_manager_.reset();
   }
-#endif
   if (glic_profile_manager_) {
     glic_profile_manager_->Shutdown();
     glic_profile_manager_.reset();
@@ -230,11 +202,6 @@ void GlobalFeatures::PostMainMessageLoopRun() {
 }
 
 void GlobalFeatures::PostDestroyThreads() {
-#if BUILDFLAG(IS_WIN)
-  // Startup launch manager should be destroyed before GlobalBrowserCollection
-  // since its infobar manager observes GlobalBrowserCollection.
-  startup_launch_manager_.reset();
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   global_browser_collection_.reset();
 }

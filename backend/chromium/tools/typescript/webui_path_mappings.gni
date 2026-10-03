@@ -46,19 +46,6 @@ template("webui_path_mappings") {
 
     # The |platform| flag is used to limit some logic to certain platforms, like
     # preventing special iOS exceptions being abused on other platforms.
-    if (is_ios) {
-      platform = "ios"
-      args += [
-        "--platform",
-        platform,
-      ]
-    } else if (is_chromeos) {
-      platform = "chromeos_ash"
-      args += [
-        "--platform",
-        platform,
-      ]
-    }
 
     if (defined(webui_context_type)) {
       args += [

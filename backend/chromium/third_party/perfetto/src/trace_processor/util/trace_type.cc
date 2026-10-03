@@ -25,7 +25,6 @@
 #include "perfetto/ext/base/string_utils.h"
 #include "perfetto/protozero/proto_decoder.h"
 #include "perfetto/protozero/proto_utils.h"
-#include "src/trace_processor/importers/android_bugreport/android_log_event.h"
 #include "src/trace_processor/importers/perf_text/perf_text_sample_line_parser.h"
 
 #include "protos/perfetto/trace/trace.pbzero.h"
@@ -426,10 +425,6 @@ TraceType GuessTraceType(const uint8_t* data, size_t size) {
   if (base::StartsWith(start, "# ninja log"))
     return kNinjaLogTraceType;
 
-  if (AndroidLogEvent::IsAndroidLogcat(data, size)) {
-    return kAndroidLogcatTraceType;
-  }
-
   // Collapsed stack format (flamegraph input format).
   if (IsCollapsedStackFormat(data, size))
     return kCollapsedStackTraceType;
@@ -455,16 +450,6 @@ TraceType GuessTraceType(const uint8_t* data, size_t size) {
   // better way.
   if (base::StartsWith(start, "\x09"))
     return kPrimesTraceType;
-
-  if (base::StartsWith(start, "9,0,i,vers,")) {
-    return kAndroidDumpstateTraceType;  // BatteryStats Checkin format.
-  }
-
-  if (base::StartsWith(start,
-                       "======================================================="
-                       "=\n== dumpstate: ")) {
-    return kAndroidDumpstateTraceType;
-  }
 
   return kUnknownTraceType;
 }

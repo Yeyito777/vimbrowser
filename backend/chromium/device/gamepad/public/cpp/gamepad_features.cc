@@ -32,11 +32,6 @@ BASE_FEATURE(kEnableSimulatedGamepadDataFetcher,
 // Enables `OnGamepadRawInputChanged` for the `GamepadConsumer` interface.
 BASE_FEATURE(kGamepadRawInputChangeEvent, base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_WIN)
-// Ignores PlayStation 5 gamepads (DualSense, DualSense Edge) in
-// WgiDataFetcherWin to avoid double enumeration.
-BASE_FEATURE(kIgnorePS5GamepadsInWgi, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 // Enabling this feature causes GamepadPlatformDataFetcherLinux to check device

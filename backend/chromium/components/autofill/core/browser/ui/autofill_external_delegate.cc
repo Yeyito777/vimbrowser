@@ -315,11 +315,6 @@ void AutofillExternalDelegate::OnSuggestionsReturned(
   if (field_id != query_field_.global_id()) {
     return;
   }
-#if BUILDFLAG(IS_IOS)
-  if (!manager_->client().IsLastQueriedField(field_id)) {
-    return;
-  }
-#endif
   AttemptToDisplayAutofillSuggestions(
       input_suggestions, trigger_source_,
       /*is_update=*/false, AutofillSuggestionsIgnoreFocusLoss(false));
@@ -412,11 +407,7 @@ void AutofillExternalDelegate::AttemptToDisplayAutofillSuggestions(
       show_proactive_nudge_at_caret && are_caret_bounds_valid;
 
   const PopupAnchorType default_anchor_type =
-#if BUILDFLAG(IS_ANDROID)
-      PopupAnchorType::kKeyboardAccessory;
-#else
       PopupAnchorType::kField;
-#endif
   AutofillClient::PopupOpenArgs open_args(
       should_use_caret_bounds ? gfx::RectF(caret_bounds_)
                               : query_field_.bounds(),
@@ -455,14 +446,8 @@ AutofillExternalDelegate::CreateUpdateSuggestionsCallback() {
 }
 
 bool AutofillExternalDelegate::HasActiveScreenReader() const {
-#if BUILDFLAG(IS_IOS)
-  // ui::AXPlatform is not supported on iOS. The rendering engine handles
-  // a11y internally.
-  return false;
-#else
   return ui::AXPlatform::GetInstance().GetMode().has_mode(
       ui::AXMode::kScreenReader);
-#endif
 }
 
 void AutofillExternalDelegate::OnAutofillAvailabilityEvent(

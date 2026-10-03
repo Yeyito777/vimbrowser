@@ -58,11 +58,6 @@ class TestPDFiumEngine : public PDFiumEngine {
               (const blink::WebInputEvent&),
               (override));
 
-  MOCK_METHOD(std::vector<uint8_t>,
-              PrintPages,
-              (base::span<const int>, const blink::WebPrintParams&),
-              (override));
-
   MOCK_METHOD(void, ZoomUpdated, (double), (override));
 
   MOCK_METHOD(gfx::Size,

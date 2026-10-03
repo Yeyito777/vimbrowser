@@ -8,7 +8,6 @@
 #include <string_view>
 
 #include "base/notreached.h"
-#include "chrome/browser/devtools/chrome_devtools_manager_delegate.h"
 #include "chrome/browser/devtools/devtools_browser_context_manager.h"
 #include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/ui/browser.h"
@@ -65,30 +64,12 @@ TargetHandler::TargetHandler(protocol::UberDispatcher* dispatcher,
   protocol::Target::Dispatcher::wire(dispatcher, this);
 }
 
-TargetHandler::~TargetHandler() {
-  ChromeDevToolsManagerDelegate* delegate =
-      ChromeDevToolsManagerDelegate::GetInstance();
-  if (delegate)
-    delegate->UpdateDeviceDiscovery();
-}
+TargetHandler::~TargetHandler() = default;
 
 protocol::Response TargetHandler::SetRemoteLocations(
-    std::unique_ptr<protocol::Array<protocol::Target::RemoteLocation>>
-        locations) {
-  remote_locations_.clear();
-  if (!locations)
-    return protocol::Response::Success();
-
-  for (const auto& location : *locations) {
-    remote_locations_.insert(
-        net::HostPortPair(location->GetHost(), location->GetPort()));
-  }
-
-  ChromeDevToolsManagerDelegate* delegate =
-      ChromeDevToolsManagerDelegate::GetInstance();
-  if (delegate)
-    delegate->UpdateDeviceDiscovery();
-  return protocol::Response::Success();
+    std::unique_ptr<protocol::Array<protocol::Target::RemoteLocation>>) {
+  return protocol::Response::ServerError(
+      "Remote target discovery is not supported");
 }
 
 protocol::Response TargetHandler::CreateTarget(

@@ -222,9 +222,6 @@ void CoreExtensionsRendererAPIProvider::PopulateSourceMap(
       {"mojo_bindings", IDR_MOJO_MOJO_BINDINGS_JS},
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-      {"mojo_bindings_lite", IDR_MOJO_MOJO_BINDINGS_LITE_JS},
-#endif
 
       {"extensions/common/mojom/keep_alive.mojom", IDR_KEEP_ALIVE_MOJOM_JS},
 

@@ -35,9 +35,6 @@
 #include "net/base/network_interfaces_linux.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#endif
 
 namespace net::internal {
 
@@ -211,14 +208,6 @@ void AddressTrackerLinux::InitWithFdForTesting(base::ScopedFD fd) {
 
 void AddressTrackerLinux::Init() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-#if BUILDFLAG(IS_ANDROID)
-  // RTM_GETLINK stopped working in Android 11 (see
-  // https://developer.android.com/preview/privacy/mac-address),
-  // so AddressTrackerLinux should not be used in later versions
-  // of Android.  Chromium code doesn't need it past Android P.
-  DCHECK_LT(base::android::android_info::sdk_int(),
-            base::android::android_info::SDK_VERSION_P);
-#endif
   netlink_fd_.reset(socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE));
   if (!netlink_fd_.is_valid()) {
     PLOG(ERROR) << "Could not create NETLINK socket";

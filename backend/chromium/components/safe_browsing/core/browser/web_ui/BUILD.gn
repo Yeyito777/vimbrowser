@@ -109,7 +109,5 @@ source_set("util") {
     "//url",
   ]
 
-  if (!is_android) {
-    deps += [ "//components/enterprise/common/proto:upload_request_response_extras_to_value" ]
-  }
+  deps += [ "//components/enterprise/common/proto:upload_request_response_extras_to_value" ]
 }

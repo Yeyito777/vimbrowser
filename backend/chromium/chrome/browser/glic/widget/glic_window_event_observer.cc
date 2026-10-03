@@ -12,13 +12,6 @@
 #include "ui/views/event_monitor.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/aura/window.h"
-#include "ui/aura/window_tree_host.h"
-#include "ui/base/win/event_creation_utils.h"
-#include "ui/display/win/screen_win.h"
-#include "ui/views/win/hwnd_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace glic {
 
@@ -61,48 +54,6 @@ class GlicWindowEventObserver::WindowEventObserverImpl
     if (!view_ || !observer_) {
       return;
     }
-#if BUILDFLAG(IS_WIN)
-    if (event.IsTouchEvent()) {
-      // If we get a touch event, send the corresponding mouse event so that
-      // drag drop of the floaty window will work with touch screens. This is a
-      // bit hacky; it would be better to have non client hit tests for the
-      // draggable area return HT_CAPTION but that requires the web client to
-      // set the draggable areas correctly, and not include the buttons in the
-      // titlebar. See crbug.com/388000848.
-
-      const ui::TouchEvent* touch_event = event.AsTouchEvent();
-      gfx::Point touch_location = touch_event->location();
-      auto touch_screen_point =
-          views::View::ConvertPointToScreen(view_.get(), touch_location);
-      auto* host = view_->GetWidget()->GetNativeWindow()->GetHost();
-
-      host->ConvertDIPToPixels(&touch_screen_point);
-      if (event.type() == ui::EventType::kTouchPressed) {
-        POINT cursor_location = touch_screen_point.ToPOINT();
-        ::SetCursorPos(cursor_location.x, cursor_location.y);
-        touch_down_in_draggable_area_ =
-            view_->IsPointWithinDraggableRegion(touch_location);
-        if (touch_down_in_draggable_area_) {
-          ui::SendMouseEvent(touch_screen_point, MOUSEEVENTF_LEFTDOWN);
-          ui::SendMouseEvent(touch_screen_point, MOUSEEVENTF_MOVE);
-        }
-      }
-      if (!touch_down_in_draggable_area_) {
-        // If we're not in a potential touch drag of the window, ignore touch
-        // events.
-        return;
-      }
-      if (event.type() == ui::EventType::kTouchCancelled ||
-          event.type() == ui::EventType::kTouchReleased) {
-        touch_down_in_draggable_area_ = false;
-        ui::SendMouseEvent(touch_screen_point, MOUSEEVENTF_LEFTUP);
-      }
-      if (event.type() == ui::EventType::kTouchMoved) {
-        ui::SendMouseEvent(touch_screen_point, MOUSEEVENTF_MOVE);
-      }
-      return;
-    }
-#endif  // BUILDFLAG(IS_WIN)
 
     gfx::Point mouse_location = event_monitor_->GetLastMouseLocation();
     views::View::ConvertPointFromScreen(view_.get(), &mouse_location);
@@ -136,12 +87,6 @@ class GlicWindowEventObserver::WindowEventObserverImpl
   // area of the window.
   bool mouse_down_in_draggable_area_ = false;
 
-#if BUILDFLAG(IS_WIN)
-  // Tracks whether a touch pressed event occurred within the draggable area. If
-  // so, subsequent touch events will trigger corresponding mouse events so that
-  // window drag works.
-  bool touch_down_in_draggable_area_ = false;
-#endif  // BUILDFLAG(IS_WIN)
 
   // Tracks the initial kMousePressed location of a potential drag.
   gfx::Point initial_click_location_;

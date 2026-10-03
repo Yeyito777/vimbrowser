@@ -171,44 +171,7 @@ class VIZ_SERVICE_EXPORT OverlayCandidate {
   // Mailbox from resource_id. It is used by SkiaRenderer.
   gpu::Mailbox mailbox;
 
-#if BUILDFLAG(IS_WIN)
-  // Indication of the overlay to be detected as possible full screen
-  // letterboxing.
-  // During video display, sometimes the video image does not have the same
-  // shape or Picture Aspect Ratio as the display area. Letterboxing is the
-  // process of scaling a widescreen image to fit a specific display, like 4:3.
-  // The reverse case, scaling a 4:3 image to fit a widescreen display, is
-  // sometimes called pillarboxing. However here letterboxing is also used in a
-  // general sense, to mean scaling a video image to fit any given display area.
-  // Check out more information from
-  // https://learn.microsoft.com/en-us/windows/win32/medfound/picture-aspect-ratio#letterboxing.
-  // Two conditions to make possible_video_fullscreen_letterboxing be true:
-  // 1. Current page is in full screen mode which is decided by
-  // AggregatedFrame::page_fullscreen_mode.
-  // 2. IsPossibleFullScreenLetterboxing helper from
-  // DCLayerOverlayProcessor returns true, which basically means the draw
-  // quad beneath the overlay quad touches two sides of the screen while
-  // starting at display origin (0, 0). Then before swap chain presentation and
-  // with possible_video_fullscreen_letterboxing be true, some necessary
-  // adjustment is done in order to make the video be equidistant from the sides
-  // off the screen. That is, it needs to be CENTERED for the sides that are not
-  // touching the screen. At this point, Desktop Window Manager(DWM) considers
-  // the video as full screen letterboxing.
-  bool possible_video_fullscreen_letterboxing = false;
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-  // Is video using SurfaceView-like architecture. It's currently actually uses
-  // `DialogOverlay` in browser instead of actual SurfaceView. But "SurfaceView"
-  // is used throughout the code so is used here as well for consistency.
-  bool is_video_in_surface_view = false;
-  // Crop within the buffer to be placed inside |display_rect| before
-  // |clip_rect| was applied. Valid only for surface control.
-  gfx::RectF unclipped_uv_rect = gfx::RectF(0.f, 0.f, 1.f, 1.f);
-  // |display_rect| before |clip_rect| was applied. Valid only for surface
-  // control.
-  gfx::RectF unclipped_display_rect = gfx::RectF(0.f, 0.f, 1.f, 1.f);
-#endif
 
   // Stacking order of the overlay plane relative to the main surface,
   // which is 0. Signed to allow for "underlays".
@@ -257,10 +220,6 @@ class VIZ_SERVICE_EXPORT OverlayCandidate {
   // |tracking_id|.
   TrackingId tracking_id = kDefaultTrackingId;
 
-#if BUILDFLAG(IS_WIN)
-  // Used to identify overlays that originate from the same cc layer.
-  gfx::OverlayLayerId layer_id;
-#endif
 
   // Transformation to apply to layer during composition.
   // Note: A |gfx::OverlayTransform| transforms the buffer within its bounds and

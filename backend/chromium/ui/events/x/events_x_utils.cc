@@ -482,9 +482,6 @@ EventType EventTypeFromXEvent(const x11::Event& xev) {
 int GetEventFlagsFromXEvent(x11::KeyCode keycode,
                             uint32_t state,
                             bool send_event) {
-#if BUILDFLAG(IS_CHROMEOS)
-  const int ime_fabricated_flag = 0;
-#else
   // XIM fabricates key events for the character compositions by XK_Multi_key.
   // For example, when a user hits XK_Multi_key, XK_apostrophe, and XK_e in
   // order to input "é", then XIM generates a key event with keycode=0 and
@@ -500,7 +497,6 @@ int GetEventFlagsFromXEvent(x11::KeyCode keycode,
       keycode == x11::KeyCode{} && (state & ~shift_lock_mask) == 0;
   const int ime_fabricated_flag =
       fabricated_by_xim ? ui::EF_IME_FABRICATED_KEY : 0;
-#endif
 
   return GetEventFlagsFromXState(state) | (send_event ? ui::EF_FINAL : 0) |
          ime_fabricated_flag;
@@ -588,18 +584,6 @@ gfx::Point EventLocationFromXEvent(const x11::Event& xev) {
   if (auto* xievent = xev.As<x11::Input::DeviceEvent>()) {
     float x = Fp1616ToDouble(xievent->event_x);
     float y = Fp1616ToDouble(xievent->event_y);
-#if BUILDFLAG(IS_CHROMEOS)
-    switch (xievent->opcode) {
-      case x11::Input::DeviceEvent::TouchBegin:
-      case x11::Input::DeviceEvent::TouchUpdate:
-      case x11::Input::DeviceEvent::TouchEnd:
-        ui::DeviceDataManagerX11::GetInstance()->ApplyTouchTransformer(
-            static_cast<uint16_t>(xievent->deviceid), &x, &y);
-        break;
-      default:
-        break;
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
     return gfx::Point(static_cast<int>(x), static_cast<int>(y));
   }
   return gfx::Point();

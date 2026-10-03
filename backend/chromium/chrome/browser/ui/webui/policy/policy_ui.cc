@@ -51,21 +51,9 @@ namespace {
 // Returns the operating system information to be displayed on
 // chrome://policy/logs page.
 std::string GetOsInfo() {
-#if BUILDFLAG(IS_ANDROID)
-  // The base format for the OS version and build.
-  constexpr char kOSVersionAndBuildFormat[] = "Android %s %s";
-  return base::StringPrintf(
-      kOSVersionAndBuildFormat,
-      (base::SysInfo::OperatingSystemVersion()).c_str(),
-      (embedder_support::GetAndroidOSInfo(
-           embedder_support::IncludeAndroidBuildNumber::Include,
-           embedder_support::IncludeAndroidModel::Include))
-          .c_str());
-#else
   return base::StringPrintf("%s %s",
                             base::SysInfo::OperatingSystemName().c_str(),
                             base::SysInfo::OperatingSystemVersion().c_str());
-#endif  //  BUILDFLAG (IS_ANDROID)
 }
 
 // Returns the version information to be displayed on the chrome://policy/logs
@@ -147,15 +135,11 @@ void CreateAndAddPolicyUIHtmlSource(Profile* profile) {
       {"statusUpdater", IDS_POLICY_STATUS_UPDATER},
 #endif
       {"statusUser", IDS_POLICY_STATUS_USER},
-#if !BUILDFLAG(IS_CHROMEOS)
       {"uploadReport", IDS_UPLOAD_REPORT},
-#endif  // !BUILDFLAG(IS_CHROMEOS)
       {"viewLogs", IDS_VIEW_POLICY_LOGS},
-#if !BUILDFLAG(IS_ANDROID)
       {"promotionBannerTitle", IDS_POLICY_BANNER_PROMOTION_TITLE},
       {"promotionBannerDesc", IDS_POLICY_BANNER_PROMOTION_DESC},
       {"promotionBannerBtn", IDS_POLICY_BANNER_PROMOTION_BTN},
-#endif
   };
   source->AddLocalizedStrings(kStrings);
 

@@ -50,19 +50,6 @@ js_modules_args = [
   "browser_resolver_prefix_replacements=\"//resources/=./\"",
 ]
 
-if (is_chromeos_ash) {
-  js_modules_args += [
-    "js_module_root=" +
-        rebase_path("//ash/webui/common/resources/", root_build_dir),
-    "js_module_root=gen/ash/webui/common/resources/",
-    "browser_resolver_prefix_replacements=\"chrome://resources/ash/common/=./\"",
-    "browser_resolver_prefix_replacements=\"//resources/ash/common/=./\"",
-    "js_module_root=" +
-        rebase_path("//chrome/test/data/webui/", root_build_dir),
-    "browser_resolver_prefix_replacements=\"chrome://webui-test/=./\"",
-  ]
-}
-
 mojom_js_args = [
   "js_module_root=" +
       rebase_path("$root_gen_dir/mojo/public/js", root_build_dir),

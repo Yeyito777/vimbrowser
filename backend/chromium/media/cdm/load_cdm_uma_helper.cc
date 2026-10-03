@@ -22,9 +22,6 @@ void ReportLoadErrorCode(const std::string& uma_prefix,
                          const base::NativeLibraryLoadError* error) {
 // Only report load error code on Windows because that's the only platform that
 // has a numerical error value.
-#if BUILDFLAG(IS_WIN)
-  base::UmaHistogramSparse(uma_prefix + "LoadErrorCode", error->code);
-#endif
 }
 
 void ReportLoadTime(const std::string& uma_prefix,

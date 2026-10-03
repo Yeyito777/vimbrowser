@@ -21,9 +21,6 @@
 #include "media/gpu/vaapi/vaapi_wrapper.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_android.h"
-#endif
 
 #if BUILDFLAG(IS_IOS) && !BUILDFLAG(IS_IOS_TVOS)
 #include "gpu/ipc/common/ios/be_layer_hierarchy_transport.h"
@@ -76,15 +73,6 @@ void InProcessGpuThread::Init() {
   if (client) {
     client->PostSandboxInitialized();
   }
-#if BUILDFLAG(IS_ANDROID)
-  // Call AttachCurrentThreadWithName, before any other AttachCurrentThread()
-  // calls. The latter causes Java VM to assign Thread-??? to the thread name.
-  // Please note calls to AttachCurrentThreadWithName after AttachCurrentThread
-  // will not change the thread name kept in Java VM.
-  base::android::AttachCurrentThreadWithName(thread_name());
-  // Up the priority of the |io_thread_| on Android.
-  io_thread_type = base::ThreadType::kPresentation;
-#endif
 
 #if BUILDFLAG(IS_IOS) && !BUILDFLAG(IS_IOS_TVOS)
   be_layer_transport_ =

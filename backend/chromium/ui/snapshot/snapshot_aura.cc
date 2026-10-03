@@ -93,7 +93,6 @@ void GrabWindowSnapshotAura(aura::Window* window,
                      std::move(callback)));
 }
 
-#if !BUILDFLAG(IS_WIN)
 
 void GrabWindowSnapshotAndScale(gfx::NativeWindow window,
                                 const gfx::Rect& source_rect,
@@ -124,6 +123,5 @@ void GrabLayerSnapshot(ui::Layer* layer,
                      std::move(callback)));
 }
 
-#endif
 
 }  // namespace ui

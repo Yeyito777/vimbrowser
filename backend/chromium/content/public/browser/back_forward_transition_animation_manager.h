@@ -9,10 +9,10 @@
 #include "content/common/content_export.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkColor.h"
-#include "ui/events/back_gesture_event.h"
 
 namespace ui {
 class BackGestureEvent;
+enum class BackGestureEventSwipeEdge;
 }  // namespace ui
 
 namespace content {

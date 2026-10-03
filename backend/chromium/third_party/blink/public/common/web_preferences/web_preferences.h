@@ -144,16 +144,8 @@ struct BLINK_COMMON_EXPORT WebPreferences {
   blink::mojom::EditingBehavior editing_behavior =
 #if BUILDFLAG(IS_APPLE)
       mojom::EditingBehavior::kEditingMacBehavior;
-#elif BUILDFLAG(IS_WIN)
-      mojom::EditingBehavior::kEditingWindowsBehavior;
-#elif BUILDFLAG(IS_ANDROID)
-      mojom::EditingBehavior::kEditingAndroidBehavior;
-#elif BUILDFLAG(IS_CHROMEOS)
-      mojom::EditingBehavior::kEditingChromeOSBehavior;
-#elif BUILDFLAG(IS_POSIX)
-      mojom::EditingBehavior::kEditingUnixBehavior;
 #else
-      mojom::EditingBehavior::kEditingMacBehavior;
+      mojom::EditingBehavior::kEditingUnixBehavior;
 #endif
 
   bool supports_multiple_windows = true;
@@ -251,52 +243,6 @@ struct BLINK_COMMON_EXPORT WebPreferences {
   // Representation of the Web App Manifest scope if any.
   GURL web_app_scope;
 
-#if BUILDFLAG(IS_ANDROID)
-  float font_scale_factor = 1.0f;
-  int font_weight_adjustment = 0;
-  int text_size_contrast_factor = 0;
-  float device_scale_adjustment = 1.0f;
-  bool force_enable_zoom = false;
-  bool enable_touchpad_overscroll_history_navigation = true;
-  GURL default_video_poster_url;
-  bool support_deprecated_target_density_dpi = false;
-  bool wide_viewport_quirk = false;
-  bool use_wide_viewport = true;
-  bool force_zero_layout_height = false;
-  bool viewport_meta_merge_content_quirk = false;
-  bool viewport_meta_non_user_scalable_quirk = false;
-  bool viewport_meta_zero_values_quirk = false;
-  bool clobber_user_agent_initial_scale_quirk = false;
-  bool ignore_main_frame_overflow_hidden_quirk = false;
-  bool report_screen_size_in_physical_pixels_quirk = false;
-  // Used by Android_WebView only to support legacy apps that inject script into
-  // a top-level initial empty document and expect it to persist on navigation.
-  bool reuse_global_for_unowned_main_frame = false;
-  // Specifies default setting for spellcheck when the spellcheck attribute is
-  // not explicitly specified.
-  bool spellcheck_enabled_by_default = true;
-  // If enabled, when a video goes fullscreen, the orientation should be locked.
-  bool video_fullscreen_orientation_lock_enabled = false;
-  // If enabled, fullscreen should be entered/exited when the device is rotated
-  // to/from the orientation of the video.
-  bool video_rotate_to_fullscreen_enabled = false;
-  bool embedded_media_experience_enabled = false;
-  // Enable 8 (#RRGGBBAA) and 4 (#RGBA) value hex colors in CSS Android
-  // WebView quirk (http://crbug.com/618472).
-  bool css_hex_alpha_color_enabled = true;
-  // Enable support for document.scrollingElement
-  // WebView sets this to false to retain old documentElement behaviour
-  // (http://crbug.com/761016).
-  bool scroll_top_left_interop_enabled = true;
-
-  // Don't accelerate small canvases to avoid crashes TODO(crbug.com/1004304)
-  bool disable_accelerated_small_canvases = false;
-
-  // Long press on links selects text instead of triggering context menu.
-  bool long_press_link_select_text = false;
-  // Support WebView font scaling behavior that differs from Chrome.
-  bool scale_all_fonts_if_no_meta_text_scale_tag = false;
-#endif  // BUILDFLAG(IS_ANDROID)
 
 // TODO(crbug.com/1284805): Remove IS_ANDROID once WebView supports WebAuthn.
 // TODO(crbug.com/1382970): Remove IS_FUCHSIA and merge with the block above
@@ -468,12 +414,6 @@ struct BLINK_COMMON_EXPORT WebPreferences {
   bool should_disable_external_popups = false;
 #endif  // BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_ANDROID)
-  // Whether a screenshot will be take for every traversable mainframe same-doc
-  // navigation. This will increment the `viz::LocalSurfaceId` from the impl
-  // thread as a side-effect.
-  bool should_screenshot_on_mainframe_same_doc_navigation = true;
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // We try to keep the default values the same as the default values in
   // chrome, except for the cases where it would require lots of extra work for

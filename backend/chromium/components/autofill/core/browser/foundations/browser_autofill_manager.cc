@@ -1223,11 +1223,7 @@ void BrowserAutofillManager::OnAskForValuesToFillImpl(
         }
         return;
       }
-#if !BUILDFLAG(IS_ANDROID)
       password_delegate->ShowSuggestions(password_request->field);
-#else
-      password_delegate->ShowKeyboardReplacingSurface(password_request.value());
-#endif  // !BUILDFLAG(IS_ANDROID)
       return;
     }
   } else if (IsPasswordsAutofillManuallyTriggered(trigger_source)) {

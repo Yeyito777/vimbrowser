@@ -13,31 +13,19 @@ namespace features {
 // clients to consume the Media Session Mojo APIs but should not have any
 // changes to behavior. It is enabled by default on all platforms except Android.
 BASE_FEATURE(kMediaSessionService,
-#if !BUILDFLAG(IS_ANDROID)
              base::FEATURE_ENABLED_BY_DEFAULT
-#else
-             base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 // Enables Audio Focus enforcement which means that only one media session can
 // have audio focus at any one time.
 BASE_FEATURE(kAudioFocusEnforcement,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 // Enables Audio Focus grouping which means that multiple media sessions can
 // share audio focus at the same time provided that they have the same group id.
 BASE_FEATURE(kAudioFocusSessionGrouping,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 
 }  // namespace features

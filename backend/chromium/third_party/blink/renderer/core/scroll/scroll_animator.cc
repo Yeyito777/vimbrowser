@@ -42,8 +42,6 @@
 #include "third_party/blink/renderer/core/scroll/scrollable_area.h"
 #include "third_party/blink/renderer/platform/instrumentation/tracing/trace_event.h"
 
-#include "base/win/windows_h_disallowed.h"
-
 namespace blink {
 
 ScrollAnimatorBase* ScrollAnimatorBase::Create(

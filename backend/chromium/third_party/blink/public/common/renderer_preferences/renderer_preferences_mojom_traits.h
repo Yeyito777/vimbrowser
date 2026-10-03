@@ -22,9 +22,6 @@
 #include "third_party/blink/public/mojom/renderer_preferences.mojom-shared.h"
 #include "ui/gfx/mojom/font_render_params_mojom_traits.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "mojo/public/cpp/base/string16_mojom_traits.h"
-#endif
 
 namespace mojo {
 
@@ -133,12 +130,6 @@ struct BLINK_COMMON_EXPORT
     return data.enable_encrypted_media;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  static const bool& use_overlay_scrollbar(
-      const ::blink::RendererPreferences& data) {
-    return data.use_overlay_scrollbar;
-  }
-#endif
 
   static const ::blink::mojom::WebRtcIpHandlingPolicy&
   webrtc_ip_handling_policy(const ::blink::RendererPreferences& data) {
@@ -206,64 +197,6 @@ struct BLINK_COMMON_EXPORT
   }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  static const std::u16string& caption_font_family_name(
-      const ::blink::RendererPreferences& data) {
-    return data.caption_font_family_name;
-  }
-  static const int32_t& caption_font_height(
-      const ::blink::RendererPreferences& data) {
-    return data.caption_font_height;
-  }
-  static const std::u16string& small_caption_font_family_name(
-      const ::blink::RendererPreferences& data) {
-    return data.small_caption_font_family_name;
-  }
-  static const int32_t& small_caption_font_height(
-      const ::blink::RendererPreferences& data) {
-    return data.small_caption_font_height;
-  }
-  static const std::u16string& menu_font_family_name(
-      const ::blink::RendererPreferences& data) {
-    return data.menu_font_family_name;
-  }
-  static const int32_t& menu_font_height(
-      const ::blink::RendererPreferences& data) {
-    return data.menu_font_height;
-  }
-  static const std::u16string& status_font_family_name(
-      const ::blink::RendererPreferences& data) {
-    return data.status_font_family_name;
-  }
-  static const int32_t& status_font_height(
-      const ::blink::RendererPreferences& data) {
-    return data.status_font_height;
-  }
-  static const std::u16string& message_font_family_name(
-      const ::blink::RendererPreferences& data) {
-    return data.message_font_family_name;
-  }
-  static const int32_t& message_font_height(
-      const ::blink::RendererPreferences& data) {
-    return data.message_font_height;
-  }
-  static const int32_t& vertical_scroll_bar_width_in_dips(
-      const ::blink::RendererPreferences& data) {
-    return data.vertical_scroll_bar_width_in_dips;
-  }
-  static const int32_t& horizontal_scroll_bar_height_in_dips(
-      const ::blink::RendererPreferences& data) {
-    return data.horizontal_scroll_bar_height_in_dips;
-  }
-  static const int32_t& arrow_bitmap_height_vertical_scroll_bar_in_dips(
-      const ::blink::RendererPreferences& data) {
-    return data.arrow_bitmap_height_vertical_scroll_bar_in_dips;
-  }
-  static const int32_t& arrow_bitmap_width_horizontal_scroll_bar_in_dips(
-      const ::blink::RendererPreferences& data) {
-    return data.arrow_bitmap_width_horizontal_scroll_bar_in_dips;
-  }
-#endif
 
   static const bool& plugin_fullscreen_allowed(
       const ::blink::RendererPreferences& data) {
@@ -275,12 +208,6 @@ struct BLINK_COMMON_EXPORT
     return data.caret_browsing_enabled;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  static const bool& uses_platform_autofill(
-      const ::blink::RendererPreferences& data) {
-    return data.uses_platform_autofill;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   static const std::vector<uint16_t>& explicitly_allowed_network_ports(
       const ::blink::RendererPreferences& data) {

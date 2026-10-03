@@ -66,9 +66,6 @@
 #include "net/reporting/reporting_service.h"
 #endif  // BUILDFLAG(ENABLE_REPORTING)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
 #include "net/device_bound_sessions/session_service.h"
@@ -271,13 +268,7 @@ void URLRequestContextBuilder::set_cache_encryption_delegate(
 void URLRequestContextBuilder::BindToNetwork(
     handles::NetworkHandle network,
     std::optional<HostResolver::ManagerOptions> options) {
-#if BUILDFLAG(IS_ANDROID)
-  DCHECK(NetworkChangeNotifier::AreNetworkHandlesSupported());
-  bound_network_ = network;
-  manager_options_ = options.value_or(manager_options_);
-#else
   NOTIMPLEMENTED();
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 std::unique_ptr<URLRequestContext> URLRequestContextBuilder::Build() {
@@ -446,7 +437,7 @@ std::unique_ptr<URLRequestContext> URLRequestContextBuilder::Build() {
   }
 
   if (!proxy_resolution_service_) {
-#if !BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS) && !BUILDFLAG(IS_ANDROID)
+#if !BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS)
     // TODO(willchan): Switch to using this code when
     // ProxyConfigService::CreateSystemProxyConfigService()'s
     // signature doesn't suck.
@@ -607,10 +598,6 @@ std::unique_ptr<URLRequestContext> URLRequestContextBuilder::Build() {
       http_cache_backend =
           HttpCache::DefaultBackend::InMemory(http_cache_params_.max_size);
     }
-#if BUILDFLAG(IS_ANDROID)
-    http_cache_backend->SetAppStatusListenerGetter(
-        http_cache_params_.app_status_listener_getter);
-#endif
 
     http_transaction_factory = std::make_unique<HttpCache>(
         std::move(http_transaction_factory), std::move(http_cache_backend),

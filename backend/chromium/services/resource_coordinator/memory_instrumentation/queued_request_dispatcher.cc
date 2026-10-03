@@ -66,9 +66,6 @@ uint32_t CalculatePrivateFootprintKb(const mojom::RawOSMemDump& os_dump,
   return base::saturated_cast<uint32_t>(
       base::saturated_cast<int32_t>(phys_footprint_bytes / 1024) -
       base::saturated_cast<int32_t>(shared_resident_kb));
-#elif BUILDFLAG(IS_WIN)
-  return base::saturated_cast<int32_t>(
-      os_dump.platform_private_footprint->private_bytes / 1024);
 #else
   // TODO(crbug.com/40947218): Implement for iOS.
   return 0;

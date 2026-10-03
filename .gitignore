@@ -2,6 +2,8 @@
 /build-mac/
 /build-mac.noindex/
 /build-source/
+/build-diagnostics/
+/build-session-recovery/
 /build-a26-arm64/
 /third_party/cef/
 /third_party/cef-a26-arm64/

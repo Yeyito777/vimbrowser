@@ -59,15 +59,6 @@
 #include "content/public/common/url_constants.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
-#include "chromeos/ash/experiences/arc/mojom/app.mojom.h"
-#include "chromeos/ash/experiences/arc/mojom/intent_helper.mojom.h"
-#include "chromeos/ash/experiences/arc/session/arc_bridge_service.h"
-#include "chromeos/ash/experiences/arc/session/arc_service_manager.h"
-#include "net/base/url_util.h"
-#endif
 
 namespace web_app {
 
@@ -75,48 +66,6 @@ namespace {
 
 constexpr bool kAddAppsToQuickLaunchBarByDefault = !BUILDFLAG(IS_CHROMEOS);
 
-#if BUILDFLAG(IS_CHROMEOS)
-const char kChromeOsPlayPlatform[] = "chromeos_play";
-const char kPlayIntentPrefix[] =
-    "https://play.google.com/store/apps/details?id=";
-const char kPlayStorePackage[] = "com.android.vending";
-
-struct PlayStoreIntent {
-  std::string app_id;
-  std::string intent;
-};
-
-// Find the first Chrome OS app in related_applications of |manifest| and return
-// the details necessary to redirect the user to the app's listing in the Play
-// Store.
-std::optional<PlayStoreIntent> GetPlayStoreIntentFromManifest(
-    const blink::mojom::Manifest& manifest) {
-  for (const auto& app : manifest.related_applications) {
-    std::string id = base::UTF16ToUTF8(app.id.value_or(std::u16string()));
-    if (!base::EqualsASCII(app.platform.value_or(std::u16string()),
-                           kChromeOsPlayPlatform)) {
-      continue;
-    }
-
-    if (id.empty()) {
-      // Fallback to ID in the URL.
-      if (!net::GetValueForKeyInQuery(app.url, "id", &id) || id.empty()) {
-        continue;
-      }
-    }
-
-    std::string referrer;
-    if (net::GetValueForKeyInQuery(app.url, "referrer", &referrer) &&
-        !referrer.empty()) {
-      referrer = "&referrer=" + referrer;
-    }
-
-    std::string intent = kPlayIntentPrefix + id + referrer;
-    return PlayStoreIntent{id, intent};
-  }
-  return std::nullopt;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 void LogInstallInfoForFallbackData(base::DictValue& dict,
                                    const WebAppInstallInfo& install_info) {
@@ -473,25 +422,6 @@ void FetchManifestAndInstallCommand::CheckForPlayStoreIntentOrGetIcons() {
   bool skip_store = is_create_shortcut || !opt_manifest_;
 
   if (!skip_store) {
-#if BUILDFLAG(IS_CHROMEOS)
-    std::optional<PlayStoreIntent> intent =
-        GetPlayStoreIntentFromManifest(*opt_manifest_);
-    if (intent) {
-      auto* arc_service_manager = arc::ArcServiceManager::Get();
-      if (arc_service_manager) {
-        auto* instance = ARC_GET_INSTANCE_FOR_METHOD(
-            arc_service_manager->arc_bridge_service()->app(), IsInstallable);
-        if (instance) {
-          instance->IsInstallable(
-              intent->app_id,
-              base::BindOnce(&FetchManifestAndInstallCommand::
-                                 OnDidCheckForIntentToPlayStore,
-                             weak_ptr_factory_.GetWeakPtr(), intent->intent));
-          return;
-        }
-      }
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
   }
   OnDidCheckForIntentToPlayStore(/*intent=*/"",
                                  /*should_intent_to_store=*/false);
@@ -504,21 +434,6 @@ void FetchManifestAndInstallCommand::OnDidCheckForIntentToPlayStore(
     Abort(webapps::InstallResultCode::kWebContentsDestroyed);
     return;
   }
-#if BUILDFLAG(IS_CHROMEOS)
-  if (should_intent_to_store && !intent.empty()) {
-    auto* arc_service_manager = arc::ArcServiceManager::Get();
-    if (arc_service_manager) {
-      auto* instance = ARC_GET_INSTANCE_FOR_METHOD(
-          arc_service_manager->arc_bridge_service()->intent_helper(),
-          HandleUrl);
-      if (instance) {
-        instance->HandleUrl(intent, kPlayStorePackage);
-        Abort(webapps::InstallResultCode::kIntentToPlayStore);
-        return;
-      }
-    }
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Populate a `WebAppInstallInfo` instance assuming that there is a valid
   // `opt_manifest_`.

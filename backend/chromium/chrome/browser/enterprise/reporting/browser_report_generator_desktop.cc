@@ -18,9 +18,6 @@
 #include "components/policy/proto/device_management_backend.pb.h"
 #include "components/version_info/version_info.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ash/profiles/profile_helper.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace em = ::enterprise_management;
 
@@ -47,12 +44,6 @@ BrowserReportGeneratorDesktop::GetReportedProfiles() {
   for (const auto* entry : g_browser_process->profile_manager()
                                ->GetProfileAttributesStorage()
                                .GetAllProfilesAttributes()) {
-#if BUILDFLAG(IS_CHROMEOS)
-    // Skip sign-in and lock screen app profile on Chrome OS.
-    if (!ash::ProfileHelper::IsUserProfilePath(entry->GetPath().BaseName())) {
-      continue;
-    }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
     base::FilePath profile_path = entry->GetPath();
 

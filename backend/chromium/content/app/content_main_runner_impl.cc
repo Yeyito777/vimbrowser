@@ -127,23 +127,11 @@
 #include "ui/display/display_switches.h"
 #include "ui/gfx/switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <malloc.h>
-#include <cstring>
-
-#include "ui/base/l10n/l10n_util_win.h"
-#include "ui/display/win/dpi.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "sandbox/mac/seatbelt.h"
 #include "sandbox/mac/seatbelt_exec.h"
 #endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_IOS)
-#include "base/threading/thread_restrictions.h"
-#if !BUILDFLAG(IS_IOS_TVOS)
-#include "content/app/ios/appex/child_process_sandbox.h"
-#endif  // !BUILDFLAG(IS_IOS_TVOS)
-#endif  // BUILDFLAG(IS_IOS)
 
 #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 #include <signal.h>
@@ -188,17 +176,7 @@
 #include "media/base/media_switches.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/background_thread_pool_field_trial.h"
-#include "base/system/sys_info.h"
-#include "content/browser/android/battery_metrics.h"
-#include "content/browser/android/browser_startup_controller.h"
-#include "content/common/android/cpu_time_metrics.h"
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "base/fuchsia/system_info.h"
-#endif
 
 #if BUILDFLAG(BUILD_TFLITE_WITH_XNNPACK)
 #include "third_party/cpuinfo/src/include/cpuinfo.h"
@@ -221,25 +199,11 @@ namespace {
 using ::sandbox::policy::IsUnsandboxedSandboxType;
 using ::sandbox::policy::SandboxTypeFromCommandLine;
 
-#if defined(V8_USE_EXTERNAL_STARTUP_DATA) && BUILDFLAG(IS_ANDROID)
-#if defined __LP64__
-#define kV8SnapshotDataDescriptor kV8Snapshot64DataDescriptor
-#define kV8ContextSnapshotDataDescriptor kV8ContextSnapshot64DataDescriptor
-#else
-#define kV8SnapshotDataDescriptor kV8Snapshot32DataDescriptor
-#define kV8ContextSnapshotDataDescriptor kV8ContextSnapshot32DataDescriptor
-#endif
-#endif
 
 #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
 
 gin::V8SnapshotFileType GetSnapshotType(const base::CommandLine& command_line) {
-#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(INCLUDE_BOTH_V8_SNAPSHOTS)
-  if (command_line.HasSwitch(switches::kUseContextSnapshotSwitch)) {
-    return gin::V8SnapshotFileType::kWithAdditionalContext;
-  }
-  return gin::V8SnapshotFileType::kDefault;
-#elif BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT)
+#if BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT)
   return gin::V8SnapshotFileType::kWithAdditionalContext;
 #else
   return gin::V8SnapshotFileType::kDefault;
@@ -248,12 +212,7 @@ gin::V8SnapshotFileType GetSnapshotType(const base::CommandLine& command_line) {
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
 std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
-#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(INCLUDE_BOTH_V8_SNAPSHOTS)
-  if (command_line.HasSwitch(switches::kUseContextSnapshotSwitch)) {
-    return kV8ContextSnapshotDataDescriptor;
-  }
-  return kV8SnapshotDataDescriptor;
-#elif BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT)
+#if BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT)
   return kV8ContextSnapshotDataDescriptor;
 #else
   return kV8SnapshotDataDescriptor;
@@ -268,11 +227,7 @@ void AsanProcessInfoCB(const char* reason,
                        bool* should_exit_cleanly,
                        bool* should_abort) {
   auto* cmd_line = base::CommandLine::ForCurrentProcess();
-#if BUILDFLAG(IS_WIN)
-  std::string cmd_string = base::WideToUTF8(cmd_line->GetCommandLineString());
-#else
   std::string cmd_string = cmd_line->GetCommandLineString();
-#endif
   base::debug::AsanService::GetInstance()->Log("\nCommand line: `%s`\n",
                                                cmd_string.c_str());
 }
@@ -434,58 +389,10 @@ mojo::ScopedMessagePipeHandle MaybeAcceptMojoInvitation() {
   return invitation.ExtractMessagePipe(0);
 }
 
-#if BUILDFLAG(IS_WIN)
-void HandleConsoleControlEventOnBrowserUiThread(DWORD control_type) {
-  GetContentClient()->browser()->SessionEnding(control_type);
-}
-
-// A console control event handler for browser processes that initiates end
-// session handling on the main thread and hangs the control thread.
-BOOL WINAPI BrowserConsoleControlHandler(DWORD control_type) {
-  BrowserTaskExecutor::GetUIThreadTaskRunner(
-      {base::TaskPriority::USER_BLOCKING})
-      ->PostTask(FROM_HERE,
-                 base::BindOnce(&HandleConsoleControlEventOnBrowserUiThread,
-                                control_type));
-
-  // Block the control thread while waiting for SessionEnding to be handled.
-  base::PlatformThread::Sleep(base::Hours(1));
-
-  // This should never be hit. The process will be terminated either by
-  // ContentBrowserClient::SessionEnding or by Windows, if the former takes too
-  // long.
-  return TRUE;  // Handled.
-}
-
-// A console control event handler for non-browser processes that hangs the
-// control thread. The event will be handled by the browser process.
-BOOL WINAPI OtherConsoleControlHandler(DWORD control_type) {
-  // Block the control thread while waiting for the browser process.
-  base::PlatformThread::Sleep(base::Hours(1));
-
-  // This should never be hit. The process will be terminated by the browser
-  // process or by Windows, if the former takes too long.
-  return TRUE;  // Handled.
-}
-
-void InstallConsoleControlHandler(bool is_browser_process) {
-  if (!::SetConsoleCtrlHandler(is_browser_process
-                                   ? &BrowserConsoleControlHandler
-                                   : &OtherConsoleControlHandler,
-                               /*Add=*/TRUE)) {
-    DPLOG(ERROR) << "Failed to set console hook function";
-  }
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 bool ShouldAllowSystemTracingConsumer() {
 // System tracing consumer support is currently only supported on ChromeOS.
-#if BUILDFLAG(IS_CHROMEOS)
-  // The consumer should only be enabled when the delegate allows it.
-  return GetContentClient()->browser()->IsSystemWideTracingEnabled();
-#else
   return false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void CreateChildThreadPool(const std::string& process_type) {
@@ -685,10 +592,6 @@ static void RegisterMainThreadFactories() {
 // Returns the exit code for this process.
 int RunBrowserProcessMain(MainFunctionParams main_function_params,
                           ContentMainDelegate* delegate) {
-#if BUILDFLAG(IS_WIN)
-  if (delegate->ShouldHandleConsoleControlEvents())
-    InstallConsoleControlHandler(/*is_browser_process=*/true);
-#endif
   auto exit_code = delegate->RunProcess("", std::move(main_function_params));
   if (std::holds_alternative<int>(exit_code)) {
     DCHECK_GE(std::get<int>(exit_code), 0);
@@ -707,10 +610,6 @@ NO_STACK_PROTECTOR int RunOtherNamedProcessTypeMain(
     ContentMainDelegate* delegate) {
 #if BUILDFLAG(IS_MAC)
   base::Process::SetCurrentTaskDefaultRole();
-#endif
-#if BUILDFLAG(IS_WIN)
-  if (delegate->ShouldHandleConsoleControlEvents())
-    InstallConsoleControlHandler(/*is_browser_process=*/false);
 #endif
   static const auto kMainFunctions = std::to_array<MainFunction>({
       {switches::kUtilityProcess, UtilityMain},
@@ -806,11 +705,6 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
   std::string process_type =
       command_line.GetSwitchValueASCII(switches::kProcessType);
 
-#if BUILDFLAG(IS_ANDROID)
-  // Initialize the background threadpool field trial before creating the
-  // thread pools.
-  base::android::BackgroundThreadPoolFieldTrial::Initialize();
-#endif  // BUILDFLAG(IS_ANDROID)
 
   // Create and start the ThreadPool early to allow the rest of the startup
   // code to use the thread_pool.h API.
@@ -827,7 +721,6 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
     DCHECK_NE(base::ThreadPoolInstance::Get(), nullptr);
   }
 
-#if !BUILDFLAG(IS_WIN)
 
   [[maybe_unused]] base::GlobalDescriptors* g_fds =
       base::GlobalDescriptors::GetInstance();
@@ -835,7 +728,6 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
 // On Android, the shared descriptors are passed through the Java service,
 // which takes care of updating these mappings; otherwise, we need to update
 // the mappings explicitly.
-#if !BUILDFLAG(IS_ANDROID)
   g_fds->Set(kMojoIPCChannel,
              kMojoIPCChannel + base::GlobalDescriptors::kBaseDescriptor);
   g_fds->Set(kFieldTrialDescriptor,
@@ -852,7 +744,6 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
   g_fds->Set(kPseudonymizationSaltDescriptor,
              kPseudonymizationSaltDescriptor +
                  base::GlobalDescriptors::kBaseDescriptor);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OPENBSD)
   g_fds->Set(kCrashDumpSignal,
@@ -860,7 +751,6 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) ||
         // BUILDFLAG(IS_OPENBSD)
 
-#endif  // !BUILDFLAG(IS_WIN)
 
   is_initialized_ = true;
   TRACE_EVENT0("startup,benchmark,rail", "ContentMainRunnerImpl::Initialize");
@@ -869,25 +759,13 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
 // On Android, AtExitManager is set up when library is loaded.
 // A consequence of this is that you can't use the ctor/dtor-based
 // TRACE_EVENT methods on Linux or iOS builds till after we set this up.
-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
   if (!content_main_params_->ui_task) {
     // When running browser tests, don't create a second AtExitManager as that
     // interfers with shutdown when objects created before ContentMain is
     // called are destructed when it returns.
     exit_manager_ = std::make_unique<base::AtExitManager>();
   }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_FUCHSIA)
-  // Cache the system info for this process.
-  // This avoids requiring that all callers of certain base:: functions first
-  // ensure the cache is populated.
-  // Making the blocking call now also avoids the potential for blocking later
-  // in when it might be user-visible.
-  if (!base::FetchAndCacheSystemInfo()) {
-    return TerminateForFatalInitializationError();
-  }
-#endif
 
   if (!GetContentClient())
     ContentClientCreator::Create(delegate_);
@@ -901,15 +779,6 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
         process_type);
   }
 
-#if BUILDFLAG(IS_WIN)
-  if (command_line.HasSwitch(switches::kDeviceScaleFactor)) {
-    std::string scale_factor_string =
-        command_line.GetSwitchValueASCII(switches::kDeviceScaleFactor);
-    double scale_factor = 0;
-    if (base::StringToDouble(scale_factor_string, &scale_factor))
-      display::win::SetDefaultDeviceScaleFactor(scale_factor);
-  }
-#endif
 
   RegisterContentSchemes(delegate_->ShouldLockSchemeRegistry());
   ContentClientInitializer::Set(process_type, delegate_);
@@ -940,23 +809,8 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
 
   RegisterPathProvider();
 
-#if BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
-  if (!process_type.empty()) {
-    // In child process map ICU data files loaded by browser process.
-    int icu_data_fd = g_fds->MaybeGet(kAndroidICUDataDescriptor);
-    if (icu_data_fd == -1) {
-      return TerminateForFatalInitializationError();
-    }
-    auto icu_data_region = g_fds->GetRegion(kAndroidICUDataDescriptor);
-    if (!base::i18n::InitializeICUWithFileDescriptor(icu_data_fd,
-                                                     icu_data_region)) {
-      return TerminateForFatalInitializationError();
-    }
-  }
-#else
   if (!base::i18n::InitializeICU())
     return TerminateForFatalInitializationError();
-#endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
 
 #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
   if (delegate_->ShouldLoadV8Snapshot(process_type)) {
@@ -994,17 +848,9 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
   }
 #endif  // PA_BUILDFLAG(ENABLE_THREAD_ISOLATION)
 
-#if BUILDFLAG(IS_POSIX)
   base::CheckPThreadStackMinIsSafe();
-#endif  // BUILDFLAG(IS_POSIX)
 
-#if BUILDFLAG(IS_WIN)
-  if (!sandbox::policy::Sandbox::Initialize(
-          SandboxTypeFromCommandLine(command_line),
-          content_main_params_->sandbox_info)) {
-    return TerminateForFatalInitializationError();
-  }
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   if (!IsUnsandboxedSandboxType(SandboxTypeFromCommandLine(command_line))) {
     // Verify that the sandbox was initialized prior to ContentMain using the
     // SeatbeltExecServer.
@@ -1124,9 +970,7 @@ NO_STACK_PROTECTOR int ContentMainRunnerImpl::Run() {
       std::move(content_main_params_->created_main_parts_closure);
   main_params.needs_startup_tracing_after_sandbox_init =
       needs_startup_tracing_after_sandbox_init;
-#if BUILDFLAG(IS_WIN)
-  main_params.sandbox_info = content_main_params_->sandbox_info;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   main_params.autorelease_pool = content_main_params_->autorelease_pool;
 #endif
 
@@ -1183,14 +1027,6 @@ int ContentMainRunnerImpl::RunBrowser(MainFunctionParams main_params,
     if (pre_browser_main_exit_code.has_value())
       return pre_browser_main_exit_code.value();
 
-#if BUILDFLAG(IS_WIN)
-    if (l10n_util::GetLocaleOverrides().empty()) {
-      // Override the configured locale with the user's preferred UI language.
-      // Don't do this if the locale is already set, which is done by
-      // integration tests to ensure tests always run with the same locale.
-      l10n_util::OverrideLocaleWithUILanguageList();
-    }
-#endif
 
     // When this is enabled, these things will have already been initialized.
     if (!delegate_->IsInitFeatureListEarly()) {
@@ -1254,12 +1090,6 @@ int ContentMainRunnerImpl::RunBrowser(MainFunctionParams main_params,
     // Ensure the visibility tracker is created on the main thread.
     ProcessPriorityTracker::GetInstance();
 
-#if BUILDFLAG(IS_ANDROID)
-    SetupCpuTimeMetrics();
-
-    // Requires base::PowerMonitor to be initialized first.
-    AndroidBatteryMetrics::CreateInstance();
-#endif
 
     GetContentClient()->browser()->SetIsMinimalMode(start_minimal_browser);
     if (start_minimal_browser) {
@@ -1283,12 +1113,6 @@ int ContentMainRunnerImpl::RunBrowser(MainFunctionParams main_params,
 
     InitializeBrowserMemoryInstrumentationClient();
 
-#if BUILDFLAG(IS_ANDROID)
-    if (start_minimal_browser) {
-      base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-          FROM_HERE, base::BindOnce(&MinimalBrowserStartupComplete));
-    }
-#endif
   }
 
   if (!delegate_->IsInitFeatureListEarly()) {
@@ -1319,18 +1143,6 @@ void ContentMainRunnerImpl::Shutdown() {
   DCHECK(is_initialized_);
   DCHECK(!is_shutdown_);
 
-#if BUILDFLAG(IS_IOS)
-  // This would normally be handled by BrowserMainLoop shutdown, but since iOS
-  // (like Android) does not run this shutdown, we also need to ensure that we
-  // permit sync primitives during shutdown. If we don't do this, eg, tearing
-  // down test fixtures will often fail.
-  // TODO(crbug.com/40557572): ideally these would both be scoped allowances.
-  // That would be one of the first step to ensure no persistent work is being
-  // done after ThreadPoolInstance::Shutdown() in order to move towards atomic
-  // shutdown.
-  base::PermanentThreadAllowance::AllowBaseSyncPrimitives();
-  base::PermanentThreadAllowance::AllowBlocking();
-#endif
 
   mojo_ipc_support_.reset();
 
@@ -1343,11 +1155,6 @@ void ContentMainRunnerImpl::Shutdown() {
   // The BrowserTaskExecutor needs to be destroyed before |exit_manager_|.
   BrowserTaskExecutor::Shutdown();
 
-#if BUILDFLAG(IS_WIN)
-#ifdef _CRTDBG_MAP_ALLOC
-  _CrtDumpMemoryLeaks();
-#endif  // _CRTDBG_MAP_ALLOC
-#endif  // BUILDFLAG(IS_WIN)
 
   exit_manager_.reset(nullptr);
 

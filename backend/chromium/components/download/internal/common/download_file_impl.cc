@@ -31,10 +31,6 @@
 #include "net/base/io_buffer.h"
 #include "third_party/perfetto/include/perfetto/tracing/track.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/content_uri_utils.h"
-#include "components/download/internal/common/android/download_collection_bridge.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace download {
 
@@ -397,13 +393,6 @@ bool DownloadFileImpl::CalculateBytesToWrite(SourceStream* source_stream,
 
 void DownloadFileImpl::RenameAndUniquify(const base::FilePath& full_path,
                                          RenameCompletionCallback callback) {
-#if BUILDFLAG(IS_ANDROID)
-  if (full_path.IsContentUri()) {
-    DownloadInterruptReason reason = file_.Rename(full_path);
-    OnRenameComplete(full_path, std::move(callback), reason);
-    return;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   std::unique_ptr<RenameParameters> parameters(
       new RenameParameters(UNIQUIFY, full_path, std::move(callback)));
   RenameWithRetryInternal(std::move(parameters));
@@ -427,12 +416,6 @@ void DownloadFileImpl::RenameAndAnnotate(
   RenameWithRetryInternal(std::move(parameters));
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void DownloadFileImpl::PublishDownload(RenameCompletionCallback callback) {
-  DownloadInterruptReason reason = file_.PublishDownload();
-  OnRenameComplete(file_.full_path(), std::move(callback), reason);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 base::TimeDelta DownloadFileImpl::GetRetryDelayForFailedRename(
     int attempt_number) {

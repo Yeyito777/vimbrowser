@@ -40,18 +40,8 @@
 #include "mojo/public/cpp/system/message_pipe.h"
 #include "third_party/abseil-cpp/absl/container/inlined_vector.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_hardware_buffer_handle.h"
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/channel.h>
-#include <lib/zx/vmo.h>
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/string_util_win.h"
-#endif
 
 namespace base {
 class FilePath;
@@ -310,18 +300,6 @@ inline void WriteParam(base::Pickle* m, std::u16string_view sv) {
   ParamTraits<std::u16string>::Write(m, sv);
 }
 
-#if BUILDFLAG(IS_WIN)
-template <>
-struct COMPONENT_EXPORT(IPC) ParamTraits<std::wstring> {
-  typedef std::wstring param_type;
-  static void Write(base::Pickle* m, const param_type& p) {
-    m->WriteString16(base::AsStringPiece16(p));
-  }
-  static bool Read(const base::Pickle* m,
-                   base::PickleIterator* iter,
-                   param_type* r);
-};
-#endif
 
 template <>
 struct COMPONENT_EXPORT(IPC) ParamTraits<std::vector<char>> {
@@ -532,48 +510,8 @@ struct COMPONENT_EXPORT(IPC) ParamTraits<base::ScopedFD> {
 
 #endif  // BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 
-#if BUILDFLAG(IS_WIN)
-template <>
-struct COMPONENT_EXPORT(IPC) ParamTraits<base::win::ScopedHandle> {
-  using param_type = base::win::ScopedHandle;
-  static void Write(base::Pickle* m, const param_type& p);
-  static bool Read(const base::Pickle* m,
-                   base::PickleIterator* iter,
-                   param_type* r);
-};
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-template <>
-struct COMPONENT_EXPORT(IPC) ParamTraits<zx::vmo> {
-  typedef zx::vmo param_type;
-  static void Write(base::Pickle* m, const param_type& p);
-  static bool Read(const base::Pickle* m,
-                   base::PickleIterator* iter,
-                   param_type* r);
-};
 
-template <>
-struct COMPONENT_EXPORT(IPC) ParamTraits<zx::channel> {
-  typedef zx::channel param_type;
-  static void Write(base::Pickle* m, const param_type& p);
-  static bool Read(const base::Pickle* m,
-                   base::PickleIterator* iter,
-                   param_type* r);
-};
-#endif  // BUILDFLAG(IS_FUCHSIA)
-
-#if BUILDFLAG(IS_ANDROID)
-template <>
-struct COMPONENT_EXPORT(IPC)
-    ParamTraits<base::android::ScopedHardwareBufferHandle> {
-  typedef base::android::ScopedHardwareBufferHandle param_type;
-  static void Write(base::Pickle* m, const param_type& p);
-  static bool Read(const base::Pickle* m,
-                   base::PickleIterator* iter,
-                   param_type* r);
-};
-#endif
 
 template <>
 struct COMPONENT_EXPORT(IPC) ParamTraits<base::ReadOnlySharedMemoryRegion> {
@@ -663,12 +601,6 @@ struct SimilarTypeTraits<base::File::Error> {
   typedef int Type;
 };
 
-#if BUILDFLAG(IS_WIN)
-template <>
-struct SimilarTypeTraits<HWND> {
-  typedef HANDLE Type;
-};
-#endif  // BUILDFLAG(IS_WIN)
 
 template <>
 struct COMPONENT_EXPORT(IPC) ParamTraits<base::Time> {
@@ -949,25 +881,6 @@ struct COMPONENT_EXPORT(IPC) ParamTraits<Message> {
 
 // Windows ParamTraits ---------------------------------------------------------
 
-#if BUILDFLAG(IS_WIN)
-template <>
-struct COMPONENT_EXPORT(IPC) ParamTraits<HANDLE> {
-  typedef HANDLE param_type;
-  static void Write(base::Pickle* m, const param_type& p);
-  static bool Read(const base::Pickle* m,
-                   base::PickleIterator* iter,
-                   param_type* r);
-};
-
-template <>
-struct COMPONENT_EXPORT(IPC) ParamTraits<MSG> {
-  typedef MSG param_type;
-  static void Write(base::Pickle* m, const param_type& p);
-  static bool Read(const base::Pickle* m,
-                   base::PickleIterator* iter,
-                   param_type* r);
-};
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace IPC
 

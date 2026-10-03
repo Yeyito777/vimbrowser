@@ -31,11 +31,10 @@ source_set("service") {
     "../../../protos/perfetto/protovm:cpp",
     "../../../protos/perfetto/trace:zero",
     "../../../protos/perfetto/trace/perfetto:zero",  # For MetatraceWriter.
-    "../../android_stats",
     "../../base",
     "../../base:clock_snapshots",
     "../../base:version",
-    "../../protovm:protovm",
+    "../../protovm",
     "../../protozero/filtering:message_filter",
     "../../protozero/filtering:string_filter",
     "../core",
@@ -66,12 +65,6 @@ source_set("service") {
     "tracing_service_session.h",
     "tracing_service_structs.h",
   ]
-  if (is_android && perfetto_build_with_android) {
-    deps += [
-      "../../android_internal:headers",
-      "../../android_internal:lazy_library_loader",
-    ]
-  }
 }
 
 if (enable_perfetto_zlib) {
@@ -129,9 +122,7 @@ perfetto_unittest_source_set("unittests") {
 
   # These tests rely on test_task_runner.h which
   # has no Windows implementation.
-  if (!is_win) {
-    sources += [ "tracing_service_impl_unittest.cc" ]
-  }
+  sources += [ "tracing_service_impl_unittest.cc" ]
 }
 
 if (enable_perfetto_benchmarks) {

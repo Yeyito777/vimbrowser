@@ -37,10 +37,6 @@ namespace {
 
 using content::BrowserThread;
 
-#if BUILDFLAG(IS_WIN)
-constexpr base::FilePath::CharType kLoopbackServerBackendFilename[] =
-    FILE_PATH_LITERAL("profile.pb");
-#endif  // BUILDFLAG(IS_WIN)
 
 // A global variable is needed to detect multi-profile scenarios where more than
 // one profile try to register a synthetic field trial. Rather than using a
@@ -101,27 +97,6 @@ base::FilePath ChromeSyncClient::GetLocalSyncBackendFolder() {
   base::FilePath local_sync_backend_folder =
       GetPrefService()->GetFilePath(syncer::prefs::kLocalSyncBackendDir);
 
-#if BUILDFLAG(IS_WIN)
-  if (local_sync_backend_folder.empty()) {
-    if (!base::PathService::Get(chrome::DIR_ROAMING_USER_DATA,
-                                &local_sync_backend_folder)) {
-      SYSLOG(WARNING) << "Local sync can not get the roaming profile folder.";
-      return base::FilePath();
-    }
-  }
-
-  // This code as it is now will assume the same profile order is present on
-  // all machines, which is not a given. It is to be defined if only the
-  // Default profile should get this treatment or all profile as is the case
-  // now.
-  // TODO(pastarmovj): http://crbug.com/41291598 Decide if only the Default one
-  // should be considered roamed. For now the code assumes all profiles are
-  // created in the same order on all machines.
-  local_sync_backend_folder =
-      local_sync_backend_folder.Append(profile_base_name_);
-  local_sync_backend_folder =
-      local_sync_backend_folder.Append(kLoopbackServerBackendFilename);
-#endif  // BUILDFLAG(IS_WIN)
 
   return local_sync_backend_folder;
 }

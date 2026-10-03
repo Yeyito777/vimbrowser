@@ -55,9 +55,6 @@ class AccountsCookieMutatorImpl : public AccountsCookieMutator {
 
   void TriggerCookieJarUpdate() override;
 
-#if BUILDFLAG(IS_IOS)
-  void ForceTriggerOnCookieChange() override;
-#endif
 
   void LogOutAllAccounts(
       gaia::GaiaSource source,

@@ -120,7 +120,7 @@ write_cmake_config("config") {
     "LLVM_SUPPORT_XCODE_SIGNPOSTS=",
   ]
 
-  if (current_os == "linux" || current_os == "android") {
+  if (current_os == "linux") {
     values += [
       "HAVE_FUTIMENS=1",
       "HAVE_MALLINFO=1",

@@ -101,9 +101,6 @@ ui::Accelerator GlicLauncherConfiguration::GetSelectionGlobalHotkey() {
 ui::Accelerator GlicLauncherConfiguration::GetDefaultHotkey() {
 #if BUILDFLAG(IS_MAC)
   const ui::EventFlags modifiers = ui::EF_CONTROL_DOWN;
-#elif BUILDFLAG(IS_CHROMEOS)
-  // This is the search key on ChromeOS keyboard.
-  const ui::EventFlags modifiers = ui::EF_COMMAND_DOWN;
 #else
   const ui::EventFlags modifiers = ui::EF_ALT_DOWN;
 #endif
@@ -115,9 +112,6 @@ ui::Accelerator GlicLauncherConfiguration::GetDefaultHotkey() {
 ui::Accelerator GlicLauncherConfiguration::GetDefaultSelectionHotkey() {
 #if BUILDFLAG(IS_MAC)
   const ui::EventFlags modifiers = ui::EF_CONTROL_DOWN | ui::EF_SHIFT_DOWN;
-#elif BUILDFLAG(IS_CHROMEOS)
-  // This is the search key on ChromeOS keyboard.
-  const ui::EventFlags modifiers = ui::EF_COMMAND_DOWN | ui::EF_SHIFT_DOWN;
 #else
   const ui::EventFlags modifiers = ui::EF_ALT_DOWN | ui::EF_CONTROL_DOWN;
 #endif

@@ -74,9 +74,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDeviceFloss
   uint16_t GetAppearance() const override;
   std::optional<std::string> GetName() const override;
   bool IsPaired() const override;
-#if BUILDFLAG(IS_CHROMEOS)
-  bool IsBonded() const override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   bool IsConnected() const override;
   bool IsGattConnected() const override;
   bool IsConnectable() const override;
@@ -92,11 +89,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDeviceFloss
                             ErrorCallback error_callback) override;
   void Connect(device::BluetoothDevice::PairingDelegate* pairing_delegate,
                ConnectCallback callback) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void ConnectClassic(
-      device::BluetoothDevice::PairingDelegate* pairing_delegate,
-      ConnectCallback callback) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   void SetPinCode(const std::string& pincode) override;
   void SetPasskey(uint32_t passkey) override;
   void ConfirmPairing() override;
@@ -121,14 +113,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDeviceFloss
             ConnectCallback callback) override;
   BluetoothPairingFloss* BeginPairing(
       BluetoothDevice::PairingDelegate* pairing_delegate);
-#if BUILDFLAG(IS_CHROMEOS)
-  bool UsingReliableWrite() const { return using_reliable_write_; }
-  void BeginReliableWrite();
-  void ExecuteWrite(base::OnceClosure callback,
-                    ExecuteWriteErrorCallback error_callback) override;
-  void AbortWrite(base::OnceClosure callback,
-                  AbortWriteErrorCallback error_callback) override;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   FlossDeviceId AsFlossDeviceId() const;
   // Floss always distinguishes between IsBonded and IsPaired so provide
@@ -173,10 +157,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDeviceFloss
   void GattConfigureMtu(std::string address,
                         int32_t mtu,
                         GattStatus status) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void GattServiceChanged(std::string address) override;
-  void GattExecuteWrite(std::string address, GattStatus status) override;
-#endif
 
   // Returns the adapter which owns this device instance.
   BluetoothAdapterFloss* adapter() const {
@@ -259,11 +239,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDeviceFloss
   void OnCreateBond(DBusResult<bool> ret);
   void OnCreateBond(DBusResult<FlossDBusClient::BtifStatus> ret);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void OnExecuteWrite(base::OnceClosure callback,
-                      ExecuteWriteErrorCallback error_callback,
-                      DBusResult<Void> ret);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   std::optional<ConnectCallback> pending_callback_on_connect_profiles_ =
       std::nullopt;
@@ -278,14 +253,6 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDeviceFloss
   std::optional<std::pair<base::OnceClosure, ErrorCallback>>
       pending_set_connection_latency_ = std::nullopt;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Callbacks for a pending |ExecuteWrite| or |AbortWrite|.
-  std::optional<std::pair<base::OnceClosure, ExecuteWriteErrorCallback>>
-      pending_execute_write_ = std::nullopt;
-
-  // Writes are using reliable writes.
-  bool using_reliable_write_ = false;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // Number of pending device properties to initialize
   int num_pending_properties_ = 0;

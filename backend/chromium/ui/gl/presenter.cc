@@ -7,13 +7,9 @@
 #include "base/notimplemented.h"
 #include "ui/gfx/gpu_fence.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gl/dc_layer_overlay_params.h"
-#else
 namespace gl {
 struct DCLayerOverlayParams {};
 }  // namespace gl
-#endif
 
 namespace gl {
 
@@ -49,16 +45,6 @@ bool Presenter::ScheduleCALayer(
 }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-void Presenter::ScheduleDCLayers(std::vector<DCLayerOverlayParams> overlays) {
-  NOTIMPLEMENTED();
-}
-
-bool Presenter::DestroyDCLayerTree() {
-  NOTIMPLEMENTED();
-  return false;
-}
-#endif
 
 bool Presenter::Resize(const gfx::Size& size,
                        float scale_factor,

@@ -809,9 +809,6 @@ WebInputEventResult MouseEventManager::HandleMouseDraggedEvent(
 
   // We disable the drag and drop actions on pen input on windows.
   bool should_handle_drag = true;
-#if BUILDFLAG(IS_WIN)
-  should_handle_drag = !is_pen;
-#endif
 
   if (should_handle_drag &&
       HandleDrag(event, is_pen ? DragAndDropToolType::kStylusViaButton

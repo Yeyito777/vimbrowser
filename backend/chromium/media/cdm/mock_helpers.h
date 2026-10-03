@@ -56,12 +56,6 @@ class MockCdmAuxiliaryHelper : public CdmAuxiliaryHelper {
 
   MOCK_METHOD(void, RecordUkm, (const CdmMetricsData&), (override));
 
-#if BUILDFLAG(IS_WIN)
-  MOCK_METHOD(void,
-              GetMediaFoundationCdmData,
-              (GetMediaFoundationCdmDataCB callback),
-              (override));
-#endif  // BUILDFLAG(IS_WIN)
 
  private:
   std::unique_ptr<CdmAllocator> allocator_;

@@ -45,28 +45,5 @@ source_set("feedback_private") {
     "//third_party/boringssl",
   ]
 
-  if (!is_chromeos) {
-    deps += [ "//components/feedback/redaction_tool" ]
-  } else {
-    sources += [
-      "access_rate_limiter.cc",
-      "access_rate_limiter.h",
-      "log_source_access_manager.cc",
-      "log_source_access_manager.h",
-      "log_source_resource.cc",
-      "log_source_resource.h",
-    ]
-
-    public_deps += [
-      "//chromeos/ash/components/dbus/debug_daemon",
-      "//components/feedback/redaction_tool",
-    ]
-
-    deps += [
-      "//ash/public/cpp",
-      "//chromeos/ash/components/cryptohome",
-      "//chromeos/ash/components/dbus/cryptohome:cryptohome_proto",
-      "//chromeos/ash/services/assistant/public/cpp",
-    ]
-  }
+  deps += [ "//components/feedback/redaction_tool" ]
 }

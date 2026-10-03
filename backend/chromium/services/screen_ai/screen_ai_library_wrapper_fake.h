@@ -39,9 +39,6 @@ class ScreenAILibraryWrapperFake : public ScreenAILibraryWrapper {
       void (*get_file_content)(const char* relative_file_path,
                                uint32_t buffer_size,
                                char* buffer)) override;
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetLogger() override;
-#endif
 
   bool InitMainContentExtraction() override;
   std::optional<std::vector<int32_t>> ExtractMainContent(

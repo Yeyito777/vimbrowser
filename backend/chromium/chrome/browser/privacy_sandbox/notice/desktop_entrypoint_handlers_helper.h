@@ -15,12 +15,6 @@ namespace privacy_sandbox {
 // suitable.
 bool IsUrlSuitableForPrompt(const GURL& url);
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Opens AboutBlank on Chrome for non-Chrome controlled NTP navigations.
-void MaybeOpenAboutBlankOnChrome(content::NavigationHandle* navigation_handle,
-                                 Profile* profile,
-                                 content::WebContents* web_contents);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace privacy_sandbox
 #endif  // CHROME_BROWSER_PRIVACY_SANDBOX_NOTICE_DESKTOP_ENTRYPOINT_HANDLERS_HELPER_H_

@@ -17,11 +17,9 @@
 #include "third_party/lens_server_proto/lens_overlay_image_data.pb.h"
 #include "ui/gfx/geometry/size.h"
 
-#if !BUILDFLAG(IS_IOS)
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/webp_codec.h"
 #include "ui/gfx/image/image_skia_operations.h"
-#endif  // !BUILDFLAG(IS_IOS)
 
 namespace lens {
 
@@ -77,7 +75,6 @@ void AddClientLogsForDownscale(
       downscaled_pixel_size.GetArea());
 }
 
-#if !BUILDFLAG(IS_IOS)
 
 void AddClientLogsForDownscale(
     scoped_refptr<RefCountedLensOverlayClientLogs> client_logs,
@@ -177,6 +174,5 @@ ImageData DownscaleAndEncodeBitmap(
   return image_data;
 }
 
-#endif  // !BUILDFLAG(IS_IOS)
 
 }  // namespace lens

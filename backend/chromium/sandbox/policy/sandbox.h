@@ -38,10 +38,6 @@ class SANDBOX_POLICY_EXPORT Sandbox {
                          const SandboxLinux::Options& options);
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-  static bool Initialize(sandbox::mojom::Sandbox sandbox_type,
-                         SandboxInterfaceInfo* sandbox_info);
-#endif  // BUILDFLAG(IS_WIN)
 
   // Returns true if the current process is running with a sandbox, and false
   // if the process is not sandboxed. This should be used to assert that code is

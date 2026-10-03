@@ -44,12 +44,7 @@ const int kProfileImageSize = 128;
 // Derives screen mode of sync opt in screen from the
 // CanShowHistorySyncOptInsWithoutMinorModeRestrictions capability.
 constexpr bool UseMinorModeRestrictions() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS handles minor modes separately.
-  return false;
-#else
   return true;
-#endif
 }
 
 inline bool ScreenModeIsPending(const AccountInfo& primary_account_info) {

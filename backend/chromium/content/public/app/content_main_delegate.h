@@ -163,16 +163,6 @@ class CONTENT_EXPORT ContentMainDelegate {
   // should exit afterwards.
   virtual std::optional<int> PostEarlyInitialization(InvokedIn invoked_in);
 
-#if BUILDFLAG(IS_WIN)
-  // Allows the embedder to indicate that console control events (e.g., Ctrl-C,
-  // Ctrl-break, or closure of the console) are to be handled. By default, these
-  // events are not handled, leading to process termination. When an embedder
-  // returns true to indicate that these events are to be handled, the
-  // embedder's ContentBrowserClient::SessionEnding function will be called
-  // when a console control event is received. All non-browser processes will
-  // swallow the event.
-  virtual bool ShouldHandleConsoleControlEvents();
-#endif
 
   // Returns true if content should initialize Perfetto. Returns true by
   // default. If this returns false, the embedder must initialize Perfetto.

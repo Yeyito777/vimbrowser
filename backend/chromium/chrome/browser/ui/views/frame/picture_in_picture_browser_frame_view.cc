@@ -63,10 +63,6 @@
 #include "ui/views/window/frame_background.h"
 #include "ui/views/window/window_shape.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/base/win/hwnd_metrics.h"
-#include "ui/views/win/hwnd_util.h"
-#endif
 
 #if !BUILDFLAG(IS_MAC)
 // Mac does not use Aura
@@ -448,9 +444,7 @@ void PictureInPictureBrowserFrameView::ChildDialogObserverHelper::
     // the pip window to include the child dialog.
     // ChromeOS is unique in that it does not clip non-desktop widgets to the
     // parent window. So skip resizing the pip window on ChromeOS.
-#if !BUILDFLAG(IS_CHROMEOS)
     adjusted_bounds.Union(dialog_bounds);
-#endif
   } else {
     // Non-modal dialogs that are desktop widgets set their bounds directly and
     // are not clipped to the parent window bounds, so just leave it as is.
@@ -757,12 +751,7 @@ void PictureInPictureBrowserFrameView::ShowOverlayIfNeeded() {
 void PictureInPictureBrowserFrameView::OnBrowserViewInitViewsComplete() {
   BrowserFrameView::OnBrowserViewInitViewsComplete();
 
-#if BUILDFLAG(IS_WIN)
-  const gfx::Insets insets = GetClientAreaInsets(
-      MonitorFromWindow(HWNDForView(this), MONITOR_DEFAULTTONEAREST));
-#else
   const gfx::Insets insets;
-#endif
 
   const std::optional<blink::mojom::PictureInPictureWindowOptions> pip_options =
       GetBrowserView()->GetDocumentPictureInPictureOptions();
@@ -936,12 +925,10 @@ void PictureInPictureBrowserFrameView::Layout(PassKey) {
   top_bar.set_height(
       top_bar_container_view_->GetVisible() ? kTopControlsHeight : 0);
   top_bar_container_view_->SetBoundsRect(top_bar);
-#if !BUILDFLAG(IS_ANDROID)
   if (auto_pip_setting_overlay_) {
     auto_pip_setting_overlay_->SetBoundsRect(
         gfx::SubtractRects(content_area, top_bar));
   }
-#endif
 
   LayoutSuperclass<BrowserFrameView>(this);
 }
@@ -977,7 +964,6 @@ void PictureInPictureBrowserFrameView::AddedToWidget() {
 // Fade in animation is disabled for Document and Video Picture-in-Picture on
 // Windows. On Windows, resizable windows can not be translucent. See
 // crbug.com/425711450.
-#if !BUILDFLAG(IS_WIN)
   if (base::FeatureList::IsEnabled(
           media::kPictureInPictureShowWindowAnimation)) {
     if (!fade_animator_) {
@@ -986,7 +972,6 @@ void PictureInPictureBrowserFrameView::AddedToWidget() {
     fade_animator_->AnimateShowWindow(
         GetWidget(), PictureInPictureWidgetFadeAnimator::WidgetShowType::kNone);
   }
-#endif
 
   // If the AutoPiP setting overlay is set, then post a task to show it.  Don't
   // do this here, since not all observers might have found out about the new
@@ -1532,15 +1517,6 @@ gfx::Size PictureInPictureBrowserFrameView::GetNonClientViewAreaSize() const {
                    top_height + border_thickness.bottom());
 }
 
-#if BUILDFLAG(IS_WIN)
-gfx::Insets PictureInPictureBrowserFrameView::GetClientAreaInsets(
-    HMONITOR monitor) const {
-  const int frame_thickness = ui::GetResizableFrameThicknessFromMonitorInPixels(
-      monitor, /*has_caption=*/true);
-  return gfx::Insets::TLBR(0, frame_thickness, frame_thickness,
-                           frame_thickness);
-}
-#endif
 
 bool PictureInPictureBrowserFrameView::HasAnyVisibleContentSettingViews()
     const {

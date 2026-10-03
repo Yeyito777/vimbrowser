@@ -55,22 +55,6 @@ class COMPONENT_EXPORT(PLATFORM_WINDOW) PlatformWindowDelegate {
     // True if the bounds change resulted in the origin change.
     bool origin_changed : 1;
 
-#if BUILDFLAG(IS_FUCHSIA)
-    // The widths of border regions which are obscured by overlapping
-    // platform UI elements like onscreen keyboards.
-    //
-    // As an example, the overlap from an onscreen keyboard covering
-    // the bottom of the Window would be represented like this:
-    //
-    // +------------------------+                ---
-    // |                        |                 |
-    // |        content         |                 |
-    // |                        |                 | window
-    // +------------------------+  ---            |
-    // |    onscreen keyboard   |   |  overlap    |
-    // +------------------------+  ---           ---
-    gfx::Insets system_ui_overlap;
-#endif  // BUILDFLAG(IS_FUCHSIA)
   };
 
   // State describes important data about this window, for example data that

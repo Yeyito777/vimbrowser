@@ -269,11 +269,6 @@ class VaapiVideoDecoder : public VideoDecoderMixin,
 
   EncryptionScheme encryption_scheme_ GUARDED_BY_CONTEXT(sequence_checker_);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // To keep the CdmContext event callback registered.
-  std::unique_ptr<CallbackRegistration> cdm_event_cb_registration_
-      GUARDED_BY_CONTEXT(sequence_checker_);
-#endif
 
   // Platform and codec specific video decoder.
   std::unique_ptr<AcceleratedVideoDecoder> decoder_

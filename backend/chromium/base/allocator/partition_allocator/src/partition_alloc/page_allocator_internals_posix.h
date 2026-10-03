@@ -88,9 +88,6 @@ uintptr_t SystemAllocPagesInternal(uintptr_t hint,
     // call, they must be set initially. iOS has per-thread W^X state that
     // takes precedence over the mapping's permissions for MAP_JIT regions.
     // See https://developer.apple.com/forums/thread/672804
-#if PA_BUILDFLAG(IS_IOS)
-    access_flag = PROT_READ | PROT_WRITE | PROT_EXEC;
-#endif
   }
 #endif
 

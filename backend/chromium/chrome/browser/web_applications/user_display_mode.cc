@@ -43,32 +43,18 @@ ResolvePlatformSpecificUserDisplayMode(
       sync_proto.has_user_display_mode_default()
           ? sync_proto.user_display_mode_default()
           : sync_pb::WebAppSpecifics_UserDisplayMode_STANDALONE;
-#if BUILDFLAG(IS_CHROMEOS)
-  return sync_proto.has_user_display_mode_cros()
-             ? sync_proto.user_display_mode_cros()
-             : resolved_default_udm;
-#else
   return resolved_default_udm;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void SetPlatformSpecificUserDisplayMode(
     sync_pb::WebAppSpecifics::UserDisplayMode user_display_mode,
     sync_pb::WebAppSpecifics* sync_proto) {
-#if BUILDFLAG(IS_CHROMEOS)
-  sync_proto->set_user_display_mode_cros(user_display_mode);
-#else
   sync_proto->set_user_display_mode_default(user_display_mode);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 bool HasCurrentPlatformUserDisplayMode(
     const sync_pb::WebAppSpecifics& sync_proto) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return sync_proto.has_user_display_mode_cros();
-#else
   return sync_proto.has_user_display_mode_default();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 }  // namespace web_app

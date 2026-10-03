@@ -136,8 +136,6 @@ template("repack") {
 template("repack_locales") {
   if (defined(invoker.output_dir)) {
     _output_dir = invoker.output_dir
-  } else if (is_ios) {
-    _output_dir = "$target_gen_dir"
   } else {
     _output_dir = "$target_gen_dir/$target_name"
   }
@@ -172,12 +170,7 @@ template("repack_locales") {
                                  "testonly",
                                ])
         visibility = [ ":${invoker.target_name}" ]
-        if (is_ios) {
-          output =
-              "$_output_dir/${_output_locale}${_gender_suffix}.lproj/locale.pak"
-        } else {
-          output = "$_output_dir/${_output_locale}${_gender_suffix}.pak"
-        }
+        output = "$_output_dir/${_output_locale}${_gender_suffix}.pak"
         if (defined(copy_data_to_bundle) && copy_data_to_bundle) {
           bundle_output = "{{bundle_resources_dir}}/${_output_locale}${_gender_suffix}.lproj/locale.pak"
         }

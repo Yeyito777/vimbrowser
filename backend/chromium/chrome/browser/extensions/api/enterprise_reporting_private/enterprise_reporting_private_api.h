@@ -16,11 +16,7 @@
 #include "chrome/browser/extensions/api/enterprise_reporting_private/chrome_desktop_report_request_helper.h"
 #include "chrome/common/extensions/api/enterprise_reporting_private.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/reporting/proto/synced/record.pb.h"
-#include "components/reporting/proto/synced/record_constants.pb.h"
-#include "components/reporting/util/statusor.h"
-#elif BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 #include "base/time/time.h"
 #include "components/device_signals/core/browser/signals_types.h"
 #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -29,7 +25,6 @@
 
 namespace extensions {
 
-#if !BUILDFLAG(IS_CHROMEOS)
 namespace enterprise_reporting {
 
 extern const char kDeviceIdNotFound[];
@@ -163,7 +158,6 @@ class EnterpriseReportingPrivateGetDeviceInfoFunction
   void OnDeviceInfoRetrieved(const enterprise_signals::DeviceInfo& device_info);
 };
 
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 class EnterpriseReportingPrivateGetContextInfoFunction
     : public ExtensionFunction {
@@ -215,56 +209,6 @@ class EnterpriseReportingPrivateGetCertificateFunction
       client_cert_fetcher_;
 };
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-class EnterpriseReportingPrivateEnqueueRecordFunction
-    : public ExtensionFunction {
- public:
-  inline static constexpr char kErrorInvalidEnqueueRecordRequest[] =
-      "Invalid request";
-  inline static constexpr char kUnexpectedErrorEnqueueRecordRequest[] =
-      "Encountered unexpected error while enqueuing record";
-  inline static constexpr char kErrorProfileNotAffiliated[] =
-      "Profile is not affiliated";
-  inline static constexpr char kErrorCannotAssociateRecordWithUser[] =
-      "Cannot associate record with user";
-
-  DECLARE_EXTENSION_FUNCTION("enterprise.reportingPrivate.enqueueRecord",
-                             ENTERPRISEREPORTINGPRIVATE_ENQUEUERECORD)
-
-  EnterpriseReportingPrivateEnqueueRecordFunction();
-  EnterpriseReportingPrivateEnqueueRecordFunction(
-      const EnterpriseReportingPrivateEnqueueRecordFunction&) = delete;
-  EnterpriseReportingPrivateEnqueueRecordFunction& operator=(
-      const EnterpriseReportingPrivateEnqueueRecordFunction&) = delete;
-
-  void SetProfileIsAffiliatedForTesting(bool is_affiliated);
-
- private:
-  ~EnterpriseReportingPrivateEnqueueRecordFunction() override;
-
-  // ExtensionFunction:
-  ExtensionFunction::ResponseAction Run() override;
-
-  bool TryParseParams(
-      std::optional<api::enterprise_reporting_private::EnqueueRecord::Params>
-          params,
-      ::reporting::Record& record,
-      ::reporting::Priority& priority);
-
-  bool TryAttachDMTokenToRecord(
-      ::reporting::Record& record,
-      api::enterprise_reporting_private::EventType event_type);
-
-  // Callback invoked after the record was successfully enqueued
-  void OnRecordEnqueued(::reporting::Status result);
-
-  bool IsProfileAffiliated(Profile* profile);
-
-  bool profile_is_affiliated_for_testing_ = false;
-};
-
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
@@ -326,59 +270,6 @@ class EnterpriseReportingPrivateGetSettingsFunction : public ExtensionFunction {
 
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 
-#if BUILDFLAG(IS_WIN)
-
-class EnterpriseReportingPrivateGetAvInfoFunction : public ExtensionFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("enterprise.reportingPrivate.getAvInfo",
-                             ENTERPRISEREPORTINGPRIVATE_GETAVINFO)
-
-  EnterpriseReportingPrivateGetAvInfoFunction();
-  EnterpriseReportingPrivateGetAvInfoFunction(
-      const EnterpriseReportingPrivateGetAvInfoFunction&) = delete;
-  EnterpriseReportingPrivateGetAvInfoFunction& operator=(
-      const EnterpriseReportingPrivateGetAvInfoFunction&) = delete;
-
- private:
-  ~EnterpriseReportingPrivateGetAvInfoFunction() override;
-
-  // ExtensionFunction
-  ExtensionFunction::ResponseAction Run() override;
-
-  void OnSignalRetrieved(base::TimeTicks start_time,
-                         device_signals::SignalsAggregationResponse response);
-
-  device_signals::SignalName signal_name() {
-    return device_signals::SignalName::kAntiVirus;
-  }
-};
-
-class EnterpriseReportingPrivateGetHotfixesFunction : public ExtensionFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("enterprise.reportingPrivate.getHotfixes",
-                             ENTERPRISEREPORTINGPRIVATE_GETHOTFIXES)
-
-  EnterpriseReportingPrivateGetHotfixesFunction();
-  EnterpriseReportingPrivateGetHotfixesFunction(
-      const EnterpriseReportingPrivateGetHotfixesFunction&) = delete;
-  EnterpriseReportingPrivateGetHotfixesFunction& operator=(
-      const EnterpriseReportingPrivateGetHotfixesFunction&) = delete;
-
- private:
-  ~EnterpriseReportingPrivateGetHotfixesFunction() override;
-
-  // ExtensionFunction
-  ExtensionFunction::ResponseAction Run() override;
-
-  void OnSignalRetrieved(base::TimeTicks start_time,
-                         device_signals::SignalsAggregationResponse response);
-
-  device_signals::SignalName signal_name() {
-    return device_signals::SignalName::kHotfixes;
-  }
-};
-
-#endif  // BUILDFLAG(IS_WIN)
 
 class EnterpriseReportingPrivateReportDataMaskingEventFunction
     : public ExtensionFunction {

@@ -718,12 +718,10 @@ void TabGroupHeader::UpdateAccessibleName() {
 // toggled. The state is added into the title for other platforms and the title
 // will be reread with the updated state when the header's collapsed state is
 // toggled.
-#if !BUILDFLAG(IS_WIN)
   bool is_collapsed = tab_slot_controller_->IsGroupCollapsed(group().value());
   group_status = is_collapsed
                      ? l10n_util::GetStringUTF16(IDS_GROUP_AX_LABEL_COLLAPSED)
                      : l10n_util::GetStringUTF16(IDS_GROUP_AX_LABEL_EXPANDED);
-#endif
 
   std::u16string shared_state = u"";
 

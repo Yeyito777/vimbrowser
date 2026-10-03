@@ -30,12 +30,7 @@ void DiskCacheDirPolicyHandler::ApplyPolicySettings(const PolicyMap& policies,
     return;
 
   base::FilePath::StringType expanded_value =
-#if BUILDFLAG(IS_WIN)
-      policy::path_parser::ExpandPathVariables(
-          base::UTF8ToWide(value->GetString()));
-#else
       policy::path_parser::ExpandPathVariables(value->GetString());
-#endif
   base::FilePath expanded_path(expanded_value);
   prefs->SetValue(prefs::kDiskCacheDir,
                   base::Value(expanded_path.AsUTF8Unsafe()));

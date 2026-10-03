@@ -215,11 +215,9 @@ PageInfoPermissionContentView::PageInfoPermissionContentView(
 }
 
 PageInfoPermissionContentView::~PageInfoPermissionContentView() {
-#if !BUILDFLAG(IS_CHROMEOS)
   if (previews_coordinator_) {
     previews_coordinator_->UpdateDevicePreferenceRanking();
   }
-#endif
 }
 
 void PageInfoPermissionContentView::SetPermissionInfo(
@@ -255,11 +253,9 @@ void PageInfoPermissionContentView::SetPermissionInfo(
   bool is_toggle_on = PageInfoUI::IsToggleOn(permission_);
   toggle_button_->SetIsOn(is_toggle_on);
 
-#if !BUILDFLAG(IS_CHROMEOS)
   if (previews_coordinator_) {
     previews_coordinator_->OnPermissionChange(is_toggle_on);
   }
-#endif
 
   if (type_ == ContentSettingsType::FILE_SYSTEM_WRITE_GUARD &&
       base::FeatureList::IsEnabled(
@@ -325,7 +321,6 @@ void PageInfoPermissionContentView::PermissionChanged() {
                                       permission_.is_one_time);
 }
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void PageInfoPermissionContentView::OnAudioDevicesChanged(
     const std::optional<std::vector<media::AudioDeviceDescription>>&
         device_infos) {
@@ -359,7 +354,6 @@ void PageInfoPermissionContentView::SetTitleTextAndTooltip(
   title_->SetCustomTooltipText(
       base::UTF8ToUTF16(base::JoinString(device_names, "\n")));
 }
-#endif
 
 void PageInfoPermissionContentView::ToggleFileSystemExtendedPermissions() {
   if (!web_contents_.MaybeValid()) {
@@ -398,7 +392,6 @@ void PageInfoPermissionContentView::ToggleFileSystemExtendedPermissions() {
 void PageInfoPermissionContentView::MaybeAddMediaPreview(
     content::WebContents* web_contents,
     views::View& preceding_separator) {
-#if !BUILDFLAG(IS_CHROMEOS)
   if (type_ != ContentSettingsType::MEDIASTREAM_CAMERA &&
       type_ != ContentSettingsType::MEDIASTREAM_MIC &&
       type_ != ContentSettingsType::CAMERA_PAN_TILT_ZOOM) {
@@ -426,7 +419,6 @@ void PageInfoPermissionContentView::MaybeAddMediaPreview(
                        DISTANCE_HORIZONTAL_SEPARATOR_PADDING_PAGE_INFO_VIEW)))
       ->GetProperty(views::kMarginsKey)
       ->set_top(0);
-#endif
 }
 
 BEGIN_METADATA(PageInfoPermissionContentView)

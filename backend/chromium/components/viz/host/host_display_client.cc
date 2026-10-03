@@ -12,15 +12,6 @@
 #include "ui/accelerated_widget_mac/ca_layer_frame_sink.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include <utility>
-
-#include "components/viz/common/display/use_layered_window.h"
-#include "components/viz/host/layered_window_updater_impl.h"
-#include "ui/base/win/internal_constants.h"
-#endif
 
 namespace viz {
 
@@ -51,23 +42,8 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
 
 void HostDisplayClient::CreateLayeredWindowUpdater(
     mojo::PendingReceiver<mojom::LayeredWindowUpdater> receiver) {
-#if BUILDFLAG(IS_WIN)
-  if (!NeedsToUseLayerWindow(widget_)) {
-    DLOG(ERROR) << "HWND shouldn't be using a layered window";
-    return;
-  }
-
-  layered_window_updater_ =
-      std::make_unique<LayeredWindowUpdaterImpl>(widget_, std::move(receiver));
-#endif
 }
 
-#if BUILDFLAG(IS_WIN)
-void HostDisplayClient::AddChildWindowToBrowser(
-    gpu::SurfaceHandle child_window) {
-  NOTREACHED();
-}
-#endif
 
 #if BUILDFLAG(IS_LINUX) && BUILDFLAG(SUPPORTS_OZONE_X11)
 void HostDisplayClient::DidCompleteSwapWithNewSize(const gfx::Size& size) {
@@ -75,10 +51,5 @@ void HostDisplayClient::DidCompleteSwapWithNewSize(const gfx::Size& size) {
 }
 #endif  // BUILDFLAG(IS_LINUX) && BUILDFLAG(SUPPORTS_OZONE_X11)
 
-#if BUILDFLAG(IS_CHROMEOS)
-void HostDisplayClient::SetPreferredRefreshRate(float refresh_rate) {
-  NOTREACHED();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace viz

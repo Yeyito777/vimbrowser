@@ -12,32 +12,18 @@
 #include "base/process/launch.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/jni_android.h"
-#include "base/android/jni_string.h"
-#include "base/android/scoped_java_ref.h"
-#include "components/security_interstitials/content/android/jni_headers/DateAndTimeSettingsHelper_jni.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/base_paths_win.h"
-#include "base/path_service.h"
-#endif
 
 namespace security_interstitials {
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void LaunchDateAndTimeSettings() {
 // The code for each OS is completely separate, in order to avoid bugs like
 // https://crbug.com/430877 .
-#if BUILDFLAG(IS_ANDROID)
-  JNIEnv* env = base::android::AttachCurrentThread();
-  Java_DateAndTimeSettingsHelper_openDateAndTimeSettings(env);
-#elif BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   struct ClockCommand {
     const char* const pathname;
     const char* const argument;
@@ -79,19 +65,6 @@ void LaunchDateAndTimeSettings() {
 
 #elif BUILDFLAG(IS_MAC)
   base::mac::OpenSystemSettingsPane(base::mac::SystemSettingsPane::kDateTime);
-#elif BUILDFLAG(IS_WIN)
-  base::FilePath path;
-  base::PathService::Get(base::DIR_SYSTEM, &path);
-  static const wchar_t kControlPanelExe[] = L"control.exe";
-  path = path.Append(kControlPanelExe);
-  base::CommandLine command(path);
-  command.AppendArg("/name");
-  command.AppendArg("Microsoft.DateAndTime");
-
-  base::LaunchOptions options;
-  options.wait = false;
-  base::LaunchProcess(command, options);
-
 #elif BUILDFLAG(IS_FUCHSIA) || BUILDFLAG(IS_IOS)
   // TODO(crbug.com/40191566): Send to the platform settings.
   // The iOS Blink port also need to send the platform settings.
@@ -101,10 +74,5 @@ void LaunchDateAndTimeSettings() {
 #endif
   // Don't add code here! (See the comment at the beginning of the function.)
 }
-#endif
 
 }  // namespace security_interstitials
-
-#if BUILDFLAG(IS_ANDROID)
-DEFINE_JNI(DateAndTimeSettingsHelper)
-#endif

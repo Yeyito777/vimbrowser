@@ -17,9 +17,6 @@
 #include "components/prefs/pref_change_registrar.h"
 #include "extensions/browser/event_router.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/settings/cros_settings.h"
-#endif
 
 namespace content {
 class BrowserContext;
@@ -78,10 +75,6 @@ class SettingsPrivateEventRouter
 
   PrefChangeRegistrar* FindRegistrarForPref(const std::string& pref_name);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  using SubscriptionMap = std::map<std::string, base::CallbackListSubscription>;
-  SubscriptionMap cros_settings_subscription_map_;
-#endif
 
   const raw_ptr<content::BrowserContext> context_;
   bool listening_ = false;

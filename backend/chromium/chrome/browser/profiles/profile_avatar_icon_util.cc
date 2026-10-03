@@ -66,12 +66,6 @@
 #include "ui/native_theme/native_theme.h"
 #include "url/url_canon.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#include "chrome/browser/profiles/profile_attributes_entry.h"
-#include "chrome/grit/chrome_unscaled_resources.h"  // nogncheck crbug.com/1125897
-#include "ui/gfx/win/icon_util.h"  // For Iconutil::kLargeIconSize.
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/profiles/profile_attributes_entry.h"
@@ -122,41 +116,6 @@ static_assert(kAvatarWithDottedRingParamsNoPadding.dotted_ring_radius >
               0.5 - kAvatarWithDottedRingParamsNoPadding.image_padding +
                   kAvatarWithDottedRingParamsNoPadding.ring_stroke_width);
 
-#if BUILDFLAG(IS_WIN)
-const int kOldAvatarIconWidth = 38;
-const int kOldAvatarIconHeight = 31;
-
-// 2x sized versions of the old profile avatar icons.
-// TODO(crbug.com/41444689): Clean this up.
-constexpr auto kProfileAvatarIconResources2x = std::to_array<int>({
-    IDR_PROFILE_AVATAR_2X_0,  IDR_PROFILE_AVATAR_2X_1,
-    IDR_PROFILE_AVATAR_2X_2,  IDR_PROFILE_AVATAR_2X_3,
-    IDR_PROFILE_AVATAR_2X_4,  IDR_PROFILE_AVATAR_2X_5,
-    IDR_PROFILE_AVATAR_2X_6,  IDR_PROFILE_AVATAR_2X_7,
-    IDR_PROFILE_AVATAR_2X_8,  IDR_PROFILE_AVATAR_2X_9,
-    IDR_PROFILE_AVATAR_2X_10, IDR_PROFILE_AVATAR_2X_11,
-    IDR_PROFILE_AVATAR_2X_12, IDR_PROFILE_AVATAR_2X_13,
-    IDR_PROFILE_AVATAR_2X_14, IDR_PROFILE_AVATAR_2X_15,
-    IDR_PROFILE_AVATAR_2X_16, IDR_PROFILE_AVATAR_2X_17,
-    IDR_PROFILE_AVATAR_2X_18, IDR_PROFILE_AVATAR_2X_19,
-    IDR_PROFILE_AVATAR_2X_20, IDR_PROFILE_AVATAR_2X_21,
-    IDR_PROFILE_AVATAR_2X_22, IDR_PROFILE_AVATAR_2X_23,
-    IDR_PROFILE_AVATAR_2X_24, IDR_PROFILE_AVATAR_2X_25,
-    IDR_PROFILE_AVATAR_2X_26,
-});
-
-// Returns a copied SkBitmap for the given image that can be safely passed to
-// another thread.
-SkBitmap GetSkBitmapCopy(const gfx::Image& image) {
-  DCHECK(!image.IsEmpty());
-  const SkBitmap* image_bitmap = image.ToSkBitmap();
-  SkBitmap bitmap_copy;
-  if (bitmap_copy.tryAllocPixels(image_bitmap->info()))
-    image_bitmap->readPixels(bitmap_copy.info(), bitmap_copy.getPixels(),
-                             bitmap_copy.rowBytes(), 0, 0);
-  return bitmap_copy;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 // Determine what the scaled height of the avatar icon should be for a
 // specified width, to preserve the aspect ratio.
@@ -246,10 +205,6 @@ void AvatarImageSource::Draw(gfx::Canvas* canvas) {
     y = canvas_size_.height() - height_ - 1;
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  // Circular shape is only available on desktop platforms.
-  DCHECK(shape_ != profiles::SHAPE_CIRCLE);
-#else
   if (shape_ == profiles::SHAPE_CIRCLE) {
     // Draw the avatar on the bottom center of the canvas; overrides the
     // previous position specification to avoid leaving visible gap below the
@@ -263,7 +218,6 @@ void AvatarImageSource::Draw(gfx::Canvas* canvas) {
                        canvas_size_.width() / 2);
     canvas->ClipPath(circular_mask, true);
   }
-#endif
 
   canvas->DrawImageInt(avatar_, x, y);
 }
@@ -292,7 +246,6 @@ class ImageWithBackgroundSource : public gfx::CanvasImageSource {
   const SkColor background_;
 };
 
-#if !BUILDFLAG(IS_ANDROID)
 class ImageWithDottedCircleSource : public gfx::CanvasImageSource {
  public:
   ImageWithDottedCircleSource(const gfx::ImageSkia& image,
@@ -328,7 +281,6 @@ class ImageWithDottedCircleSource : public gfx::CanvasImageSource {
   const float ring_stroke_width_;
   const SkColor ring_color_;
 };
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // Returns icon with padding with no background.
 const gfx::ImageSkia CreatePaddedIcon(const gfx::VectorIcon& icon,
@@ -455,20 +407,10 @@ constexpr base::FilePath::CharType kHighResAvatarFolderName[] =
     FILE_PATH_LITERAL("Avatars");
 
 // The size of the function-static kDefaultAvatarIconResources array below.
-#if BUILDFLAG(IS_ANDROID)
-constexpr size_t kDefaultAvatarIconsCount = 1;
-#elif BUILDFLAG(IS_CHROMEOS)
-constexpr size_t kDefaultAvatarIconsCount = 27;
-#else
 constexpr size_t kDefaultAvatarIconsCount = 56;
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
 // The avatar used as a placeholder.
 constexpr size_t kPlaceholderAvatarIndex = 26;
-#else
-constexpr size_t kPlaceholderAvatarIndex = 0;
-#endif
 
 ui::ImageModel GetGuestAvatar(int size) {
   // Guest profiles generally use the default theme, no need to go through the
@@ -523,7 +465,6 @@ ui::ImageModel GetSizedAvatarImageModel(const ui::ImageModel& image, int size) {
                                         size);
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 gfx::ImageSkia GetAvatarWithDottedRing(
     const ui::ImageModel& image,
     int size,
@@ -562,7 +503,6 @@ gfx::ImageSkia GetAvatarWithDottedRing(
           color_provider.GetColor(ui::kColorSysStateInactiveRing)),
       gfx::Size(size, size));
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 gfx::Image GetAvatarIconForWebUI(const gfx::Image& image) {
   return GetSizedAvatarIcon(image, kAvatarIconSize, kAvatarIconSize);
@@ -662,7 +602,6 @@ const IconResourceInfo* GetDefaultAvatarIconResourceInfo(size_t index) {
   static const std::array<IconResourceInfo, kDefaultAvatarIconsCount>
       resource_info = {{
   // Old avatar icons:
-#if !BUILDFLAG(IS_ANDROID)
           {IDR_PROFILE_AVATAR_0, "avatar_generic.png",
            IDS_DEFAULT_AVATAR_LABEL_0},
           {IDR_PROFILE_AVATAR_1, "avatar_generic_aqua.png",
@@ -715,7 +654,6 @@ const IconResourceInfo* GetDefaultAvatarIconResourceInfo(size_t index) {
            IDS_DEFAULT_AVATAR_LABEL_24},
           {IDR_PROFILE_AVATAR_25, "avatar_sun_cloud.png",
            IDS_DEFAULT_AVATAR_LABEL_25},
-#endif
           // Placeholder avatar icon:
           {IDR_PROFILE_AVATAR_26, nullptr, IDS_DEFAULT_AVATAR_LABEL_26},
 
@@ -837,11 +775,6 @@ int GetDefaultAvatarIconResourceIDAtIndex(size_t index) {
   return GetDefaultAvatarIconResourceInfo(index)->resource_id;
 }
 
-#if BUILDFLAG(IS_WIN)
-int GetOldDefaultAvatar2xIconResourceIDAtIndex(size_t index) {
-  return kProfileAvatarIconResources2x[index];
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 const char* GetDefaultAvatarIconFileNameAtIndex(size_t index) {
   CHECK_NE(index, kPlaceholderAvatarIndex);
@@ -856,9 +789,7 @@ base::FilePath GetPathOfHighResAvatarAtIndex(size_t index) {
 }
 
 std::string GetDefaultAvatarIconUrl(size_t index) {
-#if !BUILDFLAG(IS_ANDROID)
   CHECK(IsDefaultAvatarIconIndex(index));
-#endif
   return base::StringPrintf("%s%" PRIuS, kDefaultUrlPrefix, index);
 }
 
@@ -947,7 +878,6 @@ size_t GetRandomAvatarIconIndex(
   return interval_begin + random_offset;
 }
 
-#if !BUILDFLAG(IS_ANDROID)
 base::ListValue GetIconsAndLabelsForProfileAvatarSelector(
     const base::FilePath& profile_path) {
   ProfileAttributesEntry* entry =
@@ -988,7 +918,6 @@ base::ListValue GetIconsAndLabelsForProfileAvatarSelector(
 
   return avatars;
 }
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 void SetDefaultProfileAvatarIndex(Profile* profile, size_t avatar_icon_index) {
   CHECK(IsDefaultAvatarIconIndex(avatar_icon_index));
@@ -1002,89 +931,6 @@ void SetDefaultProfileAvatarIndex(Profile* profile, size_t avatar_icon_index) {
   ProfileMetrics::LogProfileAvatarSelection(avatar_icon_index);
 }
 
-#if BUILDFLAG(IS_WIN)
-SkBitmap GetWin2xAvatarImage(ProfileAttributesEntry* entry) {
-  // Request just one size large enough for all uses.
-  return GetSkBitmapCopy(
-      entry->GetAvatarIcon(IconUtil::kLargeIconSize, /*use_high_res_file=*/true,
-                           /*icon_params=*/{.has_padding = false}));
-}
-
-SkBitmap GetWin2xAvatarIconAsSquare(const SkBitmap& source_bitmap) {
-  constexpr int kIconScaleFactor = 2;
-  if ((source_bitmap.width() != kIconScaleFactor * kOldAvatarIconWidth) ||
-      (source_bitmap.height() != kIconScaleFactor * kOldAvatarIconHeight)) {
-    // It's not an old avatar icon, the image should be square.
-    DCHECK_EQ(source_bitmap.width(), source_bitmap.height());
-    return source_bitmap;
-  }
-
-  // If |source_bitmap| matches the old avatar icon dimensions, i.e. it's an
-  // old avatar icon, shave a couple of columns so the |source_bitmap| is more
-  // square. So when resized to a square aspect ratio it looks pretty.
-  gfx::Rect frame(gfx::SkIRectToRect(source_bitmap.bounds()));
-  frame.Inset(
-      gfx::Insets::VH(/*vertical=*/0, /*horizontal=*/kIconScaleFactor * 2));
-  SkBitmap cropped_bitmap;
-  source_bitmap.extractSubset(&cropped_bitmap, gfx::RectToSkIRect(frame));
-  return cropped_bitmap;
-}
-
-SkBitmap GetBadgedWinIconBitmapForAvatar(const SkBitmap& app_icon_bitmap,
-                                         const SkBitmap& avatar_bitmap) {
-  // TODO(dfried): This function often doesn't actually do the thing it claims
-  // to. We should probably fix it.
-  SkBitmap source_bitmap = profiles::GetWin2xAvatarIconAsSquare(avatar_bitmap);
-
-  int avatar_badge_width = kProfileAvatarBadgeSizeWin;
-  if (app_icon_bitmap.width() != kShortcutIconSizeWin) {
-    avatar_badge_width = std::ceilf(
-        app_icon_bitmap.width() *
-        (float{kProfileAvatarBadgeSizeWin} / float{kShortcutIconSizeWin}));
-  }
-
-  // Resize the avatar image down to the desired badge size, maintaining aspect
-  // ratio (but prefer more square than rectangular when rounding).
-  const int avatar_badge_height = base::ClampCeil(
-      avatar_badge_width *
-      (static_cast<float>(source_bitmap.height()) / source_bitmap.width()));
-  SkBitmap sk_icon = skia::ImageOperations::Resize(
-      source_bitmap, skia::ImageOperations::RESIZE_LANCZOS3,
-      avatar_badge_width, avatar_badge_height);
-
-  // Sanity check - avatars shouldn't be taller than they are wide.
-  DCHECK_GE(sk_icon.width(), sk_icon.height());
-
-  // Overlay the avatar on the icon, anchoring it to the bottom-right of the
-  // icon on Win 10 and earlier, and the top right on Win 11. Win 11 moved the
-  // taskbar icon badge to the top right from the bottom right, so profile
-  // badging needs to move as well, to avoid double badging.
-  SkBitmap badged_bitmap;
-  badged_bitmap.allocN32Pixels(app_icon_bitmap.width(),
-                               app_icon_bitmap.height());
-  SkCanvas offscreen_canvas(badged_bitmap, SkSurfaceProps{});
-  offscreen_canvas.clear(SK_ColorTRANSPARENT);
-  offscreen_canvas.drawImage(app_icon_bitmap.asImage(), 0, 0);
-
-  // Render the avatar in a cutout circle. If the avatar is not square, center
-  // it in the circle but favor pushing it further down.
-  const int cutout_size = avatar_badge_width;
-  const int cutout_left = app_icon_bitmap.width() - cutout_size;
-  const int cutout_top = base::win::GetVersion() >= base::win::Version::WIN11
-                             ? 0
-                             : app_icon_bitmap.height() - cutout_size;
-  const int icon_left = cutout_left;
-
-  const int icon_top =
-      cutout_top + base::ClampCeil((cutout_size - avatar_badge_height) / 2.0f);
-  const SkRRect clip_circle = SkRRect::MakeOval(
-      SkRect::MakeXYWH(cutout_left, cutout_top, cutout_size, cutout_size));
-
-  offscreen_canvas.clipRRect(clip_circle, true);
-  offscreen_canvas.drawImage(sk_icon.asImage(), icon_left, icon_top);
-  return badged_bitmap;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 gfx::ImageSkia AddBackgroundToImage(const gfx::ImageSkia& image,
                                     SkColor background_color) {

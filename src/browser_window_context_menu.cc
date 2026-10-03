@@ -387,7 +387,6 @@ void BrowserWindow::BuildNativeContextMenuItems(NativeContextMenu* menu) {
           is_loading ? "Stop loading" : "Reload");
   AddItem(&items, kContextCommandCopyPageUrl, "Copy page URL",
           UrlDetail(FirstNonEmpty(menu->page_url, ActiveTabUrl())));
-  AddItem(&items, MENU_ID_PRINT, "Print page");
   AddItem(&items, MENU_ID_VIEW_SOURCE, "View page source");
 
   if (!menu->frame_url.empty() && menu->frame_url != menu->page_url) {
@@ -833,9 +832,6 @@ bool BrowserWindow::OnNativeContextMenuCommand(
       return true;
     case MENU_ID_SELECT_ALL:
       if (target_frame) target_frame->SelectAll();
-      return true;
-    case MENU_ID_PRINT:
-      if (target_browser && target_browser->GetHost()) target_browser->GetHost()->Print();
       return true;
     case MENU_ID_VIEW_SOURCE:
       if (target_browser && target_browser->GetMainFrame()) {

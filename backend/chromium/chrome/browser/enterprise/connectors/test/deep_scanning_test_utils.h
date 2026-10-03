@@ -324,12 +324,10 @@ void SetAnalysisConnector(PrefService* prefs,
 void ClearAnalysisConnector(PrefService* prefs, AnalysisConnector connector);
 #endif  // BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
 
-#if !BUILDFLAG(IS_CHROMEOS)
 // Helper function to set the profile DM token. It installs a
 // MockCloudPolicyClient with |dm_token| into |profile|'s UserCloudPolicyManager
 // to simulate |profile|'s DM token.
 void SetProfileDMToken(Profile* profile, const std::string& dm_token);
-#endif
 
 }  // namespace enterprise_connectors::test
 

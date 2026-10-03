@@ -30,33 +30,8 @@ std::string CdmContext::CdmIdToString(const base::UnguessableToken* cdm_id) {
   return cdm_id ? cdm_id->ToString() : "null";
 }
 
-#if BUILDFLAG(IS_WIN)
-bool CdmContext::RequiresMediaFoundationRenderer() {
-  return false;
-}
 
-scoped_refptr<MediaFoundationCdmProxy>
-CdmContext::GetMediaFoundationCdmProxy() {
-  return nullptr;
-}
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-MediaCryptoContext* CdmContext::GetMediaCryptoContext() {
-  return nullptr;
-}
-#endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-FuchsiaCdmContext* CdmContext::GetFuchsiaCdmContext() {
-  return nullptr;
-}
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS)
-chromeos::ChromeOsCdmContext* CdmContext::GetChromeOsCdmContext() {
-  return nullptr;
-}
-#endif
 
 }  // namespace media

@@ -20,9 +20,6 @@
 #if BUILDFLAG(IS_APPLE)
 #include "base/mac/mac_util.h"
 #endif
-#if BUILDFLAG(IS_WIN)
-#include "device/bluetooth/bluetooth_adapter_win.h"
-#endif
 
 namespace device {
 
@@ -83,31 +80,7 @@ void BluetoothAdapterFactory::GetAdapter(AdapterCallback callback) {
 }
 
 void BluetoothAdapterFactory::GetClassicAdapter(AdapterCallback callback) {
-#if BUILDFLAG(IS_WIN)
-  DCHECK(IsBluetoothSupported());
-
-  if (!classic_adapter_) {
-    classic_adapter_callbacks_.push_back(std::move(callback));
-
-    classic_adapter_under_initialization_ =
-        BluetoothAdapterWin::CreateClassicAdapter();
-    classic_adapter_ = classic_adapter_under_initialization_->GetWeakPtr();
-    classic_adapter_->Initialize(
-        base::BindOnce(&BluetoothAdapterFactory::ClassicAdapterInitialized,
-                       base::Unretained(this)));
-    return;
-  }
-
-  if (!classic_adapter_->IsInitialized()) {
-    classic_adapter_callbacks_.push_back(std::move(callback));
-    return;
-  }
-
-  std::move(callback).Run(
-      scoped_refptr<BluetoothAdapter>(classic_adapter_.get()));
-#else
   GetAdapter(std::move(callback));
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
@@ -124,9 +97,6 @@ void BluetoothAdapterFactory::SetAdapterForTesting(
   Get()->adapter_ = adapter->GetWeakPtrForTesting();
   if (!adapter->IsInitialized())
     Get()->adapter_under_initialization_ = adapter;
-#if BUILDFLAG(IS_WIN)
-  Get()->classic_adapter_ = adapter->GetWeakPtrForTesting();
-#endif
 }
 
 // static
@@ -164,20 +134,5 @@ void BluetoothAdapterFactory::AdapterInitialized() {
     std::move(callback).Run(adapter);
 }
 
-#if BUILDFLAG(IS_WIN)
-void BluetoothAdapterFactory::ClassicAdapterInitialized() {
-  DCHECK(classic_adapter_);
-  DCHECK(classic_adapter_under_initialization_);
-
-  // Move |adapter_under_initialization_| and |adapter_callbacks_| to avoid
-  // potential re-entrancy issues while looping over the callbacks.
-  scoped_refptr<BluetoothAdapter> adapter =
-      std::move(classic_adapter_under_initialization_);
-  std::vector<AdapterCallback> callbacks =
-      std::move(classic_adapter_callbacks_);
-  for (auto& callback : callbacks)
-    std::move(callback).Run(adapter);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace device

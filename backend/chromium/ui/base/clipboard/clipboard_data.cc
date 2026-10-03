@@ -35,9 +35,6 @@ ClipboardData::ClipboardData(const ClipboardData& other) {
   filenames_ = other.filenames_;
   src_ = other.src_;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  commit_time_ = other.commit_time_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 ClipboardData::ClipboardData(ClipboardData&&) = default;

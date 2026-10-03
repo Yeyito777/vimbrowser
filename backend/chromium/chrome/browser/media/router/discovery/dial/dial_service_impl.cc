@@ -43,11 +43,6 @@
 #include "services/network/public/mojom/network_service.mojom.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/components/network/network_state.h"
-#include "chromeos/ash/components/network/network_state_handler.h"
-#include "third_party/cros_system_api/dbus/service_constants.h"
-#endif
 
 using base::Time;
 using content::BrowserThread;
@@ -62,7 +57,6 @@ using net::UDPSocket;
 
 namespace media_router {
 
-#if !BUILDFLAG(IS_CHROMEOS)
 void PostSendNetworkList(
     base::WeakPtr<DialServiceImpl> impl,
     scoped_refptr<base::SequencedTaskRunner> task_runner,
@@ -72,7 +66,6 @@ void PostSendNetworkList(
                         base::BindOnce(&DialServiceImpl::SendNetworkList,
                                        std::move(impl), networks));
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 namespace {
 
@@ -129,39 +122,6 @@ std::string BuildRequest() {
   return request;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Finds the IP address of the preferred interface of network type |type|
-// to bind the socket and inserts the address into |bind_address_list|. This
-// ChromeOS version can prioritize wifi and ethernet interfaces.
-void InsertBestBindAddressChromeOS(const ash::NetworkTypePattern& type,
-                                   net::IPAddressList* bind_address_list) {
-  const ash::NetworkState* state = ash::NetworkHandler::Get()
-                                       ->network_state_handler()
-                                       ->ConnectedNetworkByType(type);
-  if (!state) {
-    return;
-  }
-  std::string state_ip_address = state->GetIpAddress();
-  IPAddress bind_ip_address;
-  if (bind_ip_address.AssignFromIPLiteral(state_ip_address) &&
-      bind_ip_address.IsIPv4()) {
-    bind_address_list->push_back(bind_ip_address);
-  }
-}
-
-net::IPAddressList GetBestBindAddressOnUIThread() {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
-
-  net::IPAddressList bind_address_list;
-  if (ash::NetworkHandler::IsInitialized()) {
-    InsertBestBindAddressChromeOS(ash::NetworkTypePattern::Ethernet(),
-                                  &bind_address_list);
-    InsertBestBindAddressChromeOS(ash::NetworkTypePattern::WiFi(),
-                                  &bind_address_list);
-  }
-  return bind_address_list;
-}
-#else
 // This function and PostSendNetworkList together handle DialServiceImpl's use
 // of the network service, while keeping all of DialServiceImpl running on the
 // sequence associated with task_runner_ (currently the IO thread).
@@ -182,7 +142,6 @@ void GetNetworkListOnUIThread(
       net::INCLUDE_HOST_SCOPE_VIRTUAL_INTERFACES,
       base::BindOnce(&PostSendNetworkList, std::move(impl), task_runner));
 }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -446,16 +405,9 @@ void DialServiceImpl::StartDiscovery() {
 
   auto ui_task_runner = content::GetUIThreadTaskRunner({});
 
-#if BUILDFLAG(IS_CHROMEOS)
-  ui_task_runner->PostTaskAndReplyWithResult(
-      FROM_HERE, base::BindOnce(&GetBestBindAddressOnUIThread),
-      base::BindOnce(&DialServiceImpl::DiscoverOnAddresses,
-                     weak_ptr_factory_.GetWeakPtr()));
-#else
   ui_task_runner->PostTask(
       FROM_HERE, base::BindOnce(&GetNetworkListOnUIThread,
                                 weak_ptr_factory_.GetWeakPtr(), task_runner_));
-#endif
 }
 
 void DialServiceImpl::SendNetworkList(

@@ -11,12 +11,7 @@
 #include <mach/mach.h>
 
 #include "base/apple/scoped_mach_port.h"
-#elif BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/vmo.h>
-#elif BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#include "base/win/windows_types.h"
-#elif BUILDFLAG(IS_POSIX)
+#else
 #include <sys/types.h>
 
 #include "base/files/scoped_file.h"
@@ -56,15 +51,6 @@ struct BASE_EXPORT ScopedFDPair {
 #if BUILDFLAG(IS_APPLE)
 using PlatformSharedMemoryHandle = mach_port_t;
 using ScopedPlatformSharedMemoryHandle = apple::ScopedMachSendRight;
-#elif BUILDFLAG(IS_FUCHSIA)
-using PlatformSharedMemoryHandle = zx::unowned_vmo;
-using ScopedPlatformSharedMemoryHandle = zx::vmo;
-#elif BUILDFLAG(IS_WIN)
-using PlatformSharedMemoryHandle = HANDLE;
-using ScopedPlatformSharedMemoryHandle = win::ScopedHandle;
-#elif BUILDFLAG(IS_ANDROID)
-using PlatformSharedMemoryHandle = int;
-using ScopedPlatformSharedMemoryHandle = ScopedFD;
 #else
 using PlatformSharedMemoryHandle = FDPair;
 using ScopedPlatformSharedMemoryHandle = ScopedFDPair;

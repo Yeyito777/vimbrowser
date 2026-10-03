@@ -21,11 +21,6 @@
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-namespace chromeos {
-class CdmContextForOOPVDImpl;
-}  // namespace chromeos
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace media {
 
@@ -191,12 +186,6 @@ class OOPVideoDecoder : public VideoDecoderMixin,
   mojo::Receiver<mojom::MediaLog> media_log_receiver_
       GUARDED_BY_CONTEXT(sequence_checker_){this};
 
-#if BUILDFLAG(IS_CHROMEOS)
-  std::unique_ptr<chromeos::CdmContextForOOPVDImpl> cdm_context_for_oopvd_
-      GUARDED_BY_CONTEXT(sequence_checker_);
-  std::unique_ptr<mojo::Receiver<mojom::CdmContextForOOPVD>>
-      cdm_context_for_oopvd_receiver_ GUARDED_BY_CONTEXT(sequence_checker_);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   bool initialized_for_protected_content_
       GUARDED_BY_CONTEXT(sequence_checker_) = false;
 

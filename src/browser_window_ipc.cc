@@ -6,12 +6,15 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <array>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -34,14 +37,45 @@
 #include "include/internal/vimbrowser_private_api.h"
 #include "include/wrapper/cef_closure_task.h"
 
+extern "C" const char* vimbrowser_control_backend_build() __attribute__((weak));
+
 namespace vimbrowser {
 namespace {
+
+// Cached macOS distributions expose the original activation signature. Use the
+// declaration from that distribution, not a mismatched hand-written extern.
+// Legacy backends retain their original activation behavior; rebuilt backends
+// receive the newer explicit activation option.
+template <typename Activate>
+bool ActivateElementHandleCompat(
+    Activate activate, int browser_id, const char* handle, size_t handle_size,
+    bool grant_user_activation, uint64_t* nonce_high, uint64_t* nonce_low,
+    vimbrowser_element_activation_callback_t callback, void* user_data) {
+  if constexpr (requires {
+      activate(browser_id, handle, handle_size, grant_user_activation,
+               nonce_high, nonce_low, callback, user_data);
+  }) {
+    return activate(browser_id, handle, handle_size, grant_user_activation,
+                    nonce_high, nonce_low, callback, user_data);
+  } else {
+    return activate(browser_id, handle, handle_size,
+                    nonce_high, nonce_low, callback, user_data);
+  }
+}
 
 constexpr size_t kMaxJsFileBytes = 1024 * 1024;
 constexpr size_t kMaxUploadFiles = 32;
 constexpr size_t kMaxUploadSelectorBytes = 4096;
 constexpr size_t kMaxUploadPathBytes = 4096;
 constexpr size_t kMaxUploadPayloadBytes = 256 * 1024;
+constexpr size_t kMaxNetworkExecutePayloadBytes = 700 * 1024;
+constexpr size_t kMaxNetworkExecuteBodyBytes = 512 * 1024;
+constexpr size_t kMaxNetworkExecuteHeaderBytes = 256 * 1024;
+constexpr size_t kMaxNetworkExecuteResponseBytes = 8 * 1024 * 1024;
+constexpr size_t kMaxNetworkUrlBytes = 16 * 1024;
+constexpr size_t kMaxNetworkFilterBytes = 16 * 1024;
+constexpr int kMaxNetworkWaitTimeoutMs = 30000;
+constexpr int kDefaultNetworkExecuteTimeoutMs = 30000;
 
 bool DecodeBase64JsPayload(const std::string& encoded,
                            std::string* code,
@@ -88,6 +122,60 @@ enum class VimbrowserElementActivationResult {
   kTargetDisabled = 14,
 };
 
+struct VimbrowserElementActivationError {
+  std::string_view code;
+  std::string_view message;
+};
+
+VimbrowserElementActivationError ElementActivationErrorForResult(
+    VimbrowserElementActivationResult result) {
+  switch (result) {
+    case VimbrowserElementActivationResult::kDocumentUnavailable:
+      return {"document_unavailable",
+              "tab document is unavailable for native activation"};
+    case VimbrowserElementActivationResult::kInvalidSelector:
+      return {"invalid_selector",
+              "activation target is not a valid CSS selector"};
+    case VimbrowserElementActivationResult::kTargetNotFound:
+      return {"target_not_found", "activation target was not found"};
+    case VimbrowserElementActivationResult::kAmbiguousTarget:
+      return {"ambiguous_target",
+              "activation target resolved to more than one element"};
+    case VimbrowserElementActivationResult::kTargetNotVisible:
+      return {"target_not_visible",
+              "activation target is not visible in the tab viewport"};
+    case VimbrowserElementActivationResult::kTargetObscured:
+      return {"target_obscured",
+              "activation target is covered or not the native hit-test target"};
+    case VimbrowserElementActivationResult::kActivationIgnored:
+      return {"activation_ignored",
+              "Blink did not dispatch the requested element activation"};
+    case VimbrowserElementActivationResult::kInvalidHandle:
+      return {"invalid_handle",
+              "inspected element handle is unknown or already consumed"};
+    case VimbrowserElementActivationResult::kExpiredHandle:
+      return {"expired_handle",
+              "inspected element handle expired before activation"};
+    case VimbrowserElementActivationResult::kStaleFrame:
+      return {"stale_frame", "inspected element frame is no longer active"};
+    case VimbrowserElementActivationResult::kStaleDocument:
+      return {"stale_document",
+              "inspected element document changed before activation"};
+    case VimbrowserElementActivationResult::kStaleNode:
+      return {"stale_node",
+              "inspected element was removed or replaced before activation"};
+    case VimbrowserElementActivationResult::kTargetDisabled:
+      return {"target_disabled",
+              "inspected element became disabled before activation"};
+    case VimbrowserElementActivationResult::kDispatched:
+      return {"", ""};
+    case VimbrowserElementActivationResult::kBackendUnavailable:
+    default:
+      return {"activation_backend_unavailable",
+              "activation backend failed, disconnected, or exceeded its deadline; outcome unknown; do not blindly retry"};
+  }
+}
+
 struct UploadFileRequest {
   uint64_t tab_id = 0;
   std::string target_kind;
@@ -104,6 +192,232 @@ struct InspectControlsRequest {
   std::string context_contains;
   uint32_t limit = 100;
 };
+
+struct NetworkExecuteRequest {
+  uint64_t template_request_id = 0;
+  NetworkRequestMutation mutation;
+  int timeout_ms = kDefaultNetworkExecuteTimeoutMs;
+};
+
+bool IsHttpToken(std::string_view value) {
+  if (value.empty()) {
+    return false;
+  }
+  return std::all_of(value.begin(), value.end(), [](unsigned char c) {
+    const bool ascii_alnum = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') ||
+                             (c >= 'a' && c <= 'z');
+    return ascii_alnum || std::string_view("!#$%&'*+-.^_`|~").find(c) !=
+                              std::string_view::npos;
+  });
+}
+
+bool IsContextManagedHeader(std::string_view name) {
+  const std::string lower = ToLowerAscii(std::string(name));
+  return lower == "cookie" || lower == "host" || lower == "content-length";
+}
+
+bool JsonUint64(CefRefPtr<CefDictionaryValue> value, const char *key,
+                uint64_t *output) {
+  if (!value || !output) {
+    return false;
+  }
+  if (value->GetType(key) == VTYPE_INT) {
+    const int number = value->GetInt(key);
+    if (number <= 0) {
+      return false;
+    }
+    *output = static_cast<uint64_t>(number);
+    return true;
+  }
+  if (value->GetType(key) == VTYPE_DOUBLE) {
+    const double number = value->GetDouble(key);
+    if (!std::isfinite(number) || number <= 0 || std::floor(number) != number ||
+        number > 9007199254740991.0) {
+      return false;
+    }
+    *output = static_cast<uint64_t>(number);
+    return true;
+  }
+  return false;
+}
+
+bool DecodeNetworkExecutePayload(const std::string &encoded,
+                                 NetworkExecuteRequest *request,
+                                 std::string *error) {
+  auto fail = [error](std::string_view message) {
+    if (error) {
+      *error = std::string(message);
+    }
+    return false;
+  };
+  if (!request || encoded.empty() ||
+      encoded.size() > ((kMaxNetworkExecutePayloadBytes + 2) / 3) * 4 + 4) {
+    return fail("network execute payload is missing or too large");
+  }
+  CefRefPtr<CefBinaryValue> decoded = CefBase64Decode(encoded);
+  if (!decoded || decoded->GetSize() == 0 ||
+      decoded->GetSize() > kMaxNetworkExecutePayloadBytes) {
+    return fail("network execute payload is not valid base64");
+  }
+  std::vector<char> bytes(decoded->GetSize());
+  if (decoded->GetData(bytes.data(), bytes.size(), 0) != bytes.size()) {
+    return fail("network execute payload could not be decoded");
+  }
+  CefRefPtr<CefValue> parsed =
+      CefParseJSON(bytes.data(), bytes.size(), JSON_PARSER_RFC);
+  if (!parsed || parsed->GetType() != VTYPE_DICTIONARY) {
+    return fail("network execute payload is not a JSON object");
+  }
+  CefRefPtr<CefDictionaryValue> root = parsed->GetDictionary();
+  if (!root || root->GetType("version") != VTYPE_INT ||
+      root->GetInt("version") != 1 ||
+      !JsonUint64(root, "templateRequestId", &request->template_request_id)) {
+    return fail("network execute payload has an unsupported schema");
+  }
+
+  std::vector<CefString> keys;
+  if (!root->GetKeys(keys)) {
+    return fail("network execute payload keys are unavailable");
+  }
+  static constexpr std::array<std::string_view, 9> kAllowedKeys = {
+      "version",         "templateRequestId", "url",
+      "method",          "bodyUtf8",          "bodyBase64",
+      "headerOverrides", "removeHeaders",     "timeoutMs",
+  };
+  for (const CefString &key : keys) {
+    const std::string text = key.ToString();
+    if (std::find(kAllowedKeys.begin(), kAllowedKeys.end(), text) ==
+        kAllowedKeys.end()) {
+      return fail("network execute payload contains an unknown field");
+    }
+  }
+
+  auto optional_string = [&](const char *key, size_t max,
+                             std::optional<std::string> *output) {
+    if (!root->HasKey(key)) {
+      return true;
+    }
+    if (root->GetType(key) != VTYPE_STRING) {
+      return false;
+    }
+    std::string text = root->GetString(key).ToString();
+    if (text.empty() || text.size() > max) {
+      return false;
+    }
+    *output = std::move(text);
+    return true;
+  };
+  if (!optional_string("url", kMaxNetworkUrlBytes, &request->mutation.url) ||
+      !optional_string("method", 32, &request->mutation.method)) {
+    return fail("network execute URL or method override is invalid");
+  }
+  if (request->mutation.method && !IsHttpToken(*request->mutation.method)) {
+    return fail("network execute method is not a valid HTTP token");
+  }
+
+  if (root->HasKey("bodyUtf8") && root->HasKey("bodyBase64")) {
+    return fail(
+        "network execute bodyUtf8 and bodyBase64 are mutually exclusive");
+  }
+  if (root->HasKey("bodyUtf8")) {
+    if (root->GetType("bodyUtf8") != VTYPE_STRING) {
+      return fail("network execute bodyUtf8 must be a string");
+    }
+    std::string body = root->GetString("bodyUtf8").ToString();
+    if (body.size() > kMaxNetworkExecuteBodyBytes) {
+      return fail("network execute request body is too large");
+    }
+    request->mutation.body = std::move(body);
+  } else if (root->HasKey("bodyBase64")) {
+    if (root->GetType("bodyBase64") != VTYPE_STRING) {
+      return fail("network execute bodyBase64 must be a string");
+    }
+    const std::string body64 = root->GetString("bodyBase64").ToString();
+    if (body64.empty()) {
+      request->mutation.body = std::string();
+    } else {
+      CefRefPtr<CefBinaryValue> body = CefBase64Decode(body64);
+      if (!body || body->GetSize() > kMaxNetworkExecuteBodyBytes) {
+        return fail("network execute bodyBase64 is invalid or too large");
+      }
+      std::string decoded_body(body->GetSize(), '\0');
+      if (body->GetData(decoded_body.data(), decoded_body.size(), 0) !=
+          decoded_body.size()) {
+        return fail("network execute bodyBase64 could not be decoded");
+      }
+      request->mutation.body = std::move(decoded_body);
+    }
+  }
+
+  size_t header_bytes = 0;
+  if (root->HasKey("headerOverrides")) {
+    if (root->GetType("headerOverrides") != VTYPE_DICTIONARY) {
+      return fail("network execute headerOverrides must be an object");
+    }
+    CefRefPtr<CefDictionaryValue> overrides =
+        root->GetDictionary("headerOverrides");
+    std::vector<CefString> names;
+    if (!overrides || !overrides->GetKeys(names) || names.size() > 128) {
+      return fail("network execute headerOverrides is invalid or too large");
+    }
+    std::vector<std::string> lower_names;
+    for (const CefString &cef_name : names) {
+      const std::string name = cef_name.ToString();
+      if (!IsHttpToken(name) || IsContextManagedHeader(name) ||
+          overrides->GetType(name) != VTYPE_STRING) {
+        return fail("network execute contains an invalid or context-managed "
+                    "header override");
+      }
+      const std::string lower_name = ToLowerAscii(name);
+      if (std::find(lower_names.begin(), lower_names.end(), lower_name) !=
+          lower_names.end()) {
+        return fail("network execute contains duplicate header overrides");
+      }
+      lower_names.push_back(lower_name);
+      std::string value = overrides->GetString(name).ToString();
+      if (value.find_first_of("\r\n") != std::string::npos ||
+          value.find('\0') != std::string::npos) {
+        return fail(
+            "network execute header value contains a forbidden character");
+      }
+      header_bytes += name.size() + value.size();
+      if (header_bytes > kMaxNetworkExecuteHeaderBytes) {
+        return fail("network execute headers are too large");
+      }
+      request->mutation.header_overrides.emplace_back(name, std::move(value));
+    }
+  }
+
+  if (root->HasKey("removeHeaders")) {
+    if (root->GetType("removeHeaders") != VTYPE_LIST) {
+      return fail("network execute removeHeaders must be an array");
+    }
+    CefRefPtr<CefListValue> removed = root->GetList("removeHeaders");
+    if (!removed || removed->GetSize() > 128) {
+      return fail("network execute removeHeaders is too large");
+    }
+    for (size_t i = 0; i < removed->GetSize(); ++i) {
+      if (removed->GetType(i) != VTYPE_STRING) {
+        return fail("network execute removeHeaders entries must be strings");
+      }
+      std::string name = removed->GetString(i).ToString();
+      if (!IsHttpToken(name)) {
+        return fail("network execute removeHeaders contains an invalid name");
+      }
+      request->mutation.remove_headers.push_back(std::move(name));
+    }
+  }
+
+  if (root->HasKey("timeoutMs")) {
+    if (root->GetType("timeoutMs") != VTYPE_INT ||
+        root->GetInt("timeoutMs") < 1 ||
+        root->GetInt("timeoutMs") > kMaxNetworkWaitTimeoutMs) {
+      return fail("network execute timeoutMs must be between 1 and 30000");
+    }
+    request->timeout_ms = root->GetInt("timeoutMs");
+  }
+  return true;
+}
 
 struct UploadFileValidation {
   bool ok = false;
@@ -1005,6 +1319,151 @@ private:
   DISALLOW_COPY_AND_ASSIGN(URLRequestReplayClient);
 };
 
+bool IsValidUtf8(std::string_view text) {
+  size_t i = 0;
+  while (i < text.size()) {
+    const unsigned char first = static_cast<unsigned char>(text[i]);
+    if (first <= 0x7f) {
+      ++i;
+      continue;
+    }
+    size_t length = 0;
+    uint32_t codepoint = 0;
+    if (first >= 0xc2 && first <= 0xdf) {
+      length = 2;
+      codepoint = first & 0x1f;
+    } else if (first >= 0xe0 && first <= 0xef) {
+      length = 3;
+      codepoint = first & 0x0f;
+    } else if (first >= 0xf0 && first <= 0xf4) {
+      length = 4;
+      codepoint = first & 0x07;
+    } else {
+      return false;
+    }
+    if (i + length > text.size()) {
+      return false;
+    }
+    for (size_t j = 1; j < length; ++j) {
+      const unsigned char next = static_cast<unsigned char>(text[i + j]);
+      if ((next & 0xc0) != 0x80) {
+        return false;
+      }
+      codepoint = (codepoint << 6) | (next & 0x3f);
+    }
+    if ((length == 3 && codepoint < 0x800) ||
+        (length == 4 && codepoint < 0x10000) ||
+        (codepoint >= 0xd800 && codepoint <= 0xdfff) || codepoint > 0x10ffff) {
+      return false;
+    }
+    i += length;
+  }
+  return true;
+}
+
+const char *URLRequestStatusText(cef_urlrequest_status_t status) {
+  switch (status) {
+  case UR_SUCCESS:
+    return "success";
+  case UR_IO_PENDING:
+    return "io_pending";
+  case UR_CANCELED:
+    return "canceled";
+  case UR_FAILED:
+    return "failed";
+  case UR_UNKNOWN:
+  default:
+    return "unknown";
+  }
+}
+
+class URLRequestBrokerClient final : public CefURLRequestClient {
+public:
+  URLRequestBrokerClient(uint64_t template_request_id, IpcReplyCallback reply)
+      : template_request_id_(template_request_id), reply_(std::move(reply)) {}
+
+  void OnRequestComplete(CefRefPtr<CefURLRequest> request) override {
+    if (!reply_) {
+      return;
+    }
+    const cef_urlrequest_status_t request_status =
+        request ? request->GetRequestStatus() : UR_UNKNOWN;
+    CefRefPtr<CefResponse> response =
+        request ? request->GetResponse() : nullptr;
+    CefResponse::HeaderMap headers;
+    if (response) {
+      response->GetHeaderMap(headers);
+    }
+    const bool utf8 = IsValidUtf8(body_);
+    const std::string body_base64 =
+        body_.empty() ? std::string()
+                      : CefBase64Encode(body_.data(), body_.size()).ToString();
+    std::ostringstream out;
+    out << "{"
+        << "\"ok\":" << (request_status == UR_SUCCESS ? "true" : "false")
+        << ",\"template_request_id\":" << template_request_id_
+        << ",\"request_status\":" << static_cast<int>(request_status)
+        << ",\"request_status_text\":\"" << URLRequestStatusText(request_status)
+        << "\""
+        << ",\"error\":"
+        << (response ? static_cast<int>(response->GetError()) : 0)
+        << ",\"status\":" << (response ? response->GetStatus() : 0)
+        << ",\"status_text\":\""
+        << JsonEscape(response ? response->GetStatusText().ToString()
+                               : std::string())
+        << "\",\"mime_type\":\""
+        << JsonEscape(response ? response->GetMimeType().ToString()
+                               : std::string())
+        << "\",\"final_url\":\""
+        << JsonEscape(response ? response->GetURL().ToString() : std::string())
+        << "\",\"headers\":" << HeadersJson(headers) << ",\"body_utf8\":";
+    if (utf8) {
+      out << "\"" << JsonEscape(body_) << "\"";
+    } else {
+      out << "null";
+    }
+    out << ",\"body_base64\":\"" << body_base64 << "\""
+        << ",\"body_size\":" << body_.size()
+        << ",\"body_truncated\":" << (body_truncated_ ? "true" : "false")
+        << "}";
+    auto reply = std::move(reply_);
+    reply_ = nullptr;
+    reply(out.str());
+  }
+
+  void OnUploadProgress(CefRefPtr<CefURLRequest>, int64_t, int64_t) override {}
+  void OnDownloadProgress(CefRefPtr<CefURLRequest>, int64_t, int64_t) override {
+  }
+  void OnDownloadData(CefRefPtr<CefURLRequest>, const void *data,
+                      size_t data_length) override {
+    const size_t remaining =
+        body_.size() < kMaxNetworkExecuteResponseBytes
+            ? kMaxNetworkExecuteResponseBytes - body_.size()
+            : 0;
+    const size_t take = std::min(data_length, remaining);
+    if (take > 0) {
+      body_.append(static_cast<const char *>(data), take);
+    }
+    if (take < data_length) {
+      body_truncated_ = true;
+    }
+  }
+  bool GetAuthCredentials(bool, const CefString &, int, const CefString &,
+                          const CefString &,
+                          CefRefPtr<CefAuthCallback>) override {
+    return false;
+  }
+
+private:
+  uint64_t template_request_id_ = 0;
+  IpcReplyCallback reply_;
+  std::string body_;
+  bool body_truncated_ = false;
+
+  IMPLEMENT_REFCOUNTING(URLRequestBrokerClient);
+  DISALLOW_COPY_AND_ASSIGN(URLRequestBrokerClient);
+};
+
 class ScreenshotDevToolsObserver final : public CefDevToolsMessageObserver {
 public:
   ScreenshotDevToolsObserver(uint64_t tab_id, std::string url,
@@ -1177,6 +1636,11 @@ struct InspectControlsContext {
   IpcReplyCallback reply;
 };
 
+struct ActivateControlContext {
+  uint64_t tab_id = 0;
+  IpcReplyCallback reply;
+};
+
 }  // namespace
 
 std::string BrowserWindow::ArmFileChooserUpload(
@@ -1343,8 +1807,9 @@ void BrowserWindow::StartFileChooserHandleUpload(
   context->owner = this;
   context->generation = file_chooser_upload_.generation;
   auto* context_ptr = context.release();
-  const bool started = vimbrowser_activate_element_handle(
+  const bool started = ActivateElementHandleCompat(vimbrowser_activate_element_handle,
       browser->GetIdentifier(), handle.data(), handle.size(),
+      false,
       &file_chooser_upload_.activation_nonce_high,
       &file_chooser_upload_.activation_nonce_low,
       +[](void* user_data, int result, int match_count) {
@@ -1475,79 +1940,10 @@ void BrowserWindow::FinishFileChooserElementActivation(uint64_t generation,
   ++file_chooser_upload_.generation;
   file_chooser_upload_.phase = FileChooserUploadPhase::kFailed;
   file_chooser_upload_.paths.clear();
-  switch (activation_result) {
-    case VimbrowserElementActivationResult::kDocumentUnavailable:
-      file_chooser_upload_.error_code = "document_unavailable";
-      file_chooser_upload_.error_message =
-          "tab document is unavailable for native activation";
-      break;
-    case VimbrowserElementActivationResult::kInvalidSelector:
-      file_chooser_upload_.error_code = "invalid_selector";
-      file_chooser_upload_.error_message =
-          "activation target is not a valid CSS selector";
-      break;
-    case VimbrowserElementActivationResult::kTargetNotFound:
-      file_chooser_upload_.error_code = "target_not_found";
-      file_chooser_upload_.error_message =
-          "activation selector did not match an element";
-      break;
-    case VimbrowserElementActivationResult::kAmbiguousTarget:
-      file_chooser_upload_.error_code = "ambiguous_target";
-      file_chooser_upload_.error_message =
-          "activation selector matched more than one element";
-      break;
-    case VimbrowserElementActivationResult::kTargetNotVisible:
-      file_chooser_upload_.error_code = "target_not_visible";
-      file_chooser_upload_.error_message =
-          "activation target is not visible in the tab viewport";
-      break;
-    case VimbrowserElementActivationResult::kTargetObscured:
-      file_chooser_upload_.error_code = "target_obscured";
-      file_chooser_upload_.error_message =
-          "activation target is covered or not the native hit-test target";
-      break;
-    case VimbrowserElementActivationResult::kActivationIgnored:
-      file_chooser_upload_.error_code = "activation_ignored";
-      file_chooser_upload_.error_message =
-          "Blink did not dispatch the requested element activation";
-      break;
-    case VimbrowserElementActivationResult::kInvalidHandle:
-      file_chooser_upload_.error_code = "invalid_handle";
-      file_chooser_upload_.error_message =
-          "inspected element handle is unknown or already consumed";
-      break;
-    case VimbrowserElementActivationResult::kExpiredHandle:
-      file_chooser_upload_.error_code = "expired_handle";
-      file_chooser_upload_.error_message =
-          "inspected element handle expired before activation";
-      break;
-    case VimbrowserElementActivationResult::kStaleFrame:
-      file_chooser_upload_.error_code = "stale_frame";
-      file_chooser_upload_.error_message =
-          "inspected element frame is no longer active";
-      break;
-    case VimbrowserElementActivationResult::kStaleDocument:
-      file_chooser_upload_.error_code = "stale_document";
-      file_chooser_upload_.error_message =
-          "inspected element document changed before activation";
-      break;
-    case VimbrowserElementActivationResult::kStaleNode:
-      file_chooser_upload_.error_code = "stale_node";
-      file_chooser_upload_.error_message =
-          "inspected element was removed or replaced before activation";
-      break;
-    case VimbrowserElementActivationResult::kTargetDisabled:
-      file_chooser_upload_.error_code = "target_disabled";
-      file_chooser_upload_.error_message =
-          "inspected element became disabled before activation";
-      break;
-    case VimbrowserElementActivationResult::kBackendUnavailable:
-    default:
-      file_chooser_upload_.error_code = "activation_backend_unavailable";
-      file_chooser_upload_.error_message =
-          "custom Chromium element activation backend became unavailable";
-      break;
-  }
+  const VimbrowserElementActivationError error =
+      ElementActivationErrorForResult(activation_result);
+  file_chooser_upload_.error_code = error.code;
+  file_chooser_upload_.error_message = error.message;
   CefRefPtr<CefFileDialogCallback> chooser_callback =
       std::move(file_chooser_upload_.chooser_callback);
   if (chooser_callback) {
@@ -1954,11 +2350,17 @@ void BrowserWindow::HandleInspectControlsIpcCommand(
           return;
         }
         if (result != 0) {
+          const std::string detail = json && json_size ? std::string(json, json_size) : "";
+          if (detail.find("\"deadline_exceeded\"") != std::string::npos) {
+            context->reply(UploadFileErrorJson("inspection_timeout",
+                "renderer inspection exceeded 2500ms; backend is present; readiness/cause unknown"));
+            return;
+          }
           context->reply(UploadFileErrorJson(
               result == 1 ? "stale_document" : "inspection_backend_unavailable",
               result == 1
                   ? "frame document changed or became unavailable during inspection"
-                  : "custom Chromium control inspection backend is unavailable"));
+                  : "control backend call failed or disconnected; this does not prove it is missing"));
           return;
         }
         const std::string inspection =
@@ -2194,6 +2596,101 @@ void BrowserWindow::HandleNetworkReplayIpcCommand(uint64_t tab_id,
   CefURLRequest::Create(request, client, context);
 }
 
+void BrowserWindow::HandleNetworkExecuteIpcCommand(uint64_t tab_id,
+                                                   std::string encoded_payload,
+                                                   IpcReplyCallback reply) {
+  NetworkExecuteRequest payload;
+  std::string error;
+  if (!DecodeNetworkExecutePayload(encoded_payload, &payload, &error)) {
+    reply("ERR " + error + "\n");
+    return;
+  }
+
+  size_t index = 0;
+  CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &error, &index);
+  if (!browser) {
+    reply(error);
+    return;
+  }
+  if (!tabs_[index].client) {
+    reply("ERR tab has no client\n");
+    return;
+  }
+  CefRefPtr<CefRequest> request = tabs_[index].client->BuildDerivedRequest(
+      payload.template_request_id, payload.mutation, &error);
+  if (!request) {
+    reply(error);
+    return;
+  }
+  CefRefPtr<CefRequestContext> context =
+      browser->GetHost() ? browser->GetHost()->GetRequestContext() : nullptr;
+  if (!context) {
+    reply("ERR tab has no request context\n");
+    return;
+  }
+  CefRefPtr<URLRequestBrokerClient> client(new URLRequestBrokerClient(
+      payload.template_request_id, std::move(reply)));
+  CefRefPtr<CefURLRequest> url_request =
+      CefURLRequest::Create(request, client, context);
+  if (!url_request) {
+    client->OnRequestComplete(nullptr);
+    return;
+  }
+  CefPostDelayedTask(TID_UI,
+                     base::BindOnce(
+                         [](CefRefPtr<CefURLRequest> request) {
+                           if (request &&
+                               request->GetRequestStatus() == UR_IO_PENDING) {
+                             request->Cancel();
+                           }
+                         },
+                         url_request),
+                     payload.timeout_ms);
+}
+
+void BrowserWindow::HandleNetworkWaitIpcCommand(uint64_t tab_id,
+                                                std::string url_prefix,
+                                                int timeout_ms,
+                                                uint64_t after_request_id,
+                                                IpcReplyCallback reply) {
+  PollNetworkWait(tab_id, std::move(url_prefix), after_request_id,
+                  std::chrono::steady_clock::now() +
+                      std::chrono::milliseconds(timeout_ms),
+                  std::move(reply));
+}
+
+void BrowserWindow::PollNetworkWait(
+    uint64_t tab_id, std::string url_prefix, uint64_t after_request_id,
+    std::chrono::steady_clock::time_point deadline, IpcReplyCallback reply) {
+  const std::optional<size_t> index = FindTabIndexById(tab_id);
+  if (!index || !tabs_[*index].client) {
+    reply("ERR tab has no client\n");
+    return;
+  }
+  if (std::optional<std::string> match = tabs_[*index].client->NetworkMatchJson(
+          url_prefix, after_request_id)) {
+    reply("{\"matched\":true,\"timed_out\":false,\"request\":" + *match + "}");
+    return;
+  }
+  if (std::chrono::steady_clock::now() >= deadline) {
+    reply("{\"matched\":false,\"timed_out\":true,"
+          "\"after_request_id\":" +
+          std::to_string(after_request_id) + "}");
+    return;
+  }
+
+  CefRefPtr<BrowserWindow> self(this);
+  IpcReplyCallback scheduled_reply = reply;
+  if (!CefPostDelayedTask(TID_UI,
+                          base::BindOnce(&BrowserWindow::PollNetworkWait, self,
+                                         tab_id, std::move(url_prefix),
+                                         after_request_id, deadline,
+                                         std::move(scheduled_reply)),
+                          25)) {
+    reply("ERR failed to schedule network wait\n");
+  }
+}
+
 void BrowserWindow::HandleScreenshotIpcCommand(uint64_t tab_id,
                                                IpcReplyCallback reply) {
   std::string error;
@@ -2231,58 +2728,29 @@ void BrowserWindow::HandleScreenshotIpcCommand(uint64_t tab_id,
     return;
   }
 
-  // Paint the inactive tab into a background compositor surface without
-  // activating or focusing it. CEF/Views only keeps a reliable surface for
-  // views that are attached and visible, so briefly show the target behind the
-  // active view, keep the active view frontmost, then let the backend CDP
-  // new-surface path copy the target's own surface. The cleanup hides the
-  // target again if it is still inactive.
-  CefRefPtr<CefBrowserView> target_view = tabs_[index].view;
-  CefRefPtr<CefBrowserView> active_view =
-      active_index_ < tabs_.size() ? tabs_[active_index_].view : nullptr;
-  if (target_view) {
-    target_view->SetVisible(true);
-  }
-  if (content_inner_panel_ && active_view && active_view != target_view) {
-    content_inner_panel_->ReorderChildView(active_view, -1);
-  }
-  if (content_inner_panel_ && content_inner_panel_->GetLayout()) {
-    content_inner_panel_->Layout();
-  }
-
-  CefRefPtr<BrowserWindow> self(this);
-  auto cleanup = [self, target_view, tab_id]() {
-    const std::optional<size_t> index = self->FindTabIndexById(tab_id);
-    if (!index || *index != self->active_index_) {
-      if (target_view) {
-        target_view->SetVisible(false);
-      }
-    }
-    if (self->content_inner_panel_ && self->content_inner_panel_->GetLayout()) {
-      self->content_inner_panel_->Layout();
-    }
-  };
-
+  // The IPC activity lease supplies a live compositor surface behind the
+  // owner's page. The screenshot does not shorten/release another operation's
+  // lease or change native focus/selection.
   CefPostDelayedTask(
       TID_UI,
       base::BindOnce(
           [](CefRefPtr<CefBrowserHost> host,
              CefRefPtr<CefDictionaryValue> params, uint64_t tab_id,
-             std::string url, IpcReplyCallback reply,
-             std::function<void()> cleanup) mutable {
+             std::string url, IpcReplyCallback reply) mutable {
             CefRefPtr<ScreenshotDevToolsObserver> observer =
                 new ScreenshotDevToolsObserver(tab_id, std::move(url),
-                                               std::move(reply),
-                                               std::move(cleanup));
+                                               std::move(reply));
             StartScreenshotDevToolsCapture(host, params, observer);
           },
-          host, params, tab_id, std::move(url), std::move(reply),
-          std::move(cleanup)),
+          host, params, tab_id, std::move(url), std::move(reply)),
       75);
 }
 
 void BrowserWindow::AppendTabJson(std::string &out, const Tab &tab,
                                   size_t index) const {
+  const auto activity_remaining_ms = std::max<int64_t>(0,
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          tab.activity_deadline - std::chrono::steady_clock::now()).count());
   if (!tab.client && !tab.url.empty()) {
     out += "{\"id\":";
     out += tab.id_json;
@@ -2292,6 +2760,8 @@ void BrowserWindow::AppendTabJson(std::string &out, const Tab &tab,
     AppendJsonNumber(out, index + 1);
     out += ",\"active\":";
     AppendJsonBool(out, index == active_index_);
+    out += ",\"activity_remaining_ms\":";
+    AppendJsonNumber(out, activity_remaining_ms);
     out += ",\"audible\":";
     AppendJsonBool(out, tab.audible);
     out += ",\"folder_id\":";
@@ -2361,6 +2831,8 @@ void BrowserWindow::AppendTabJson(std::string &out, const Tab &tab,
   AppendJsonNumber(out, index + 1);
   out += ",\"active\":";
   AppendJsonBool(out, index == active_index_);
+  out += ",\"activity_remaining_ms\":";
+  AppendJsonNumber(out, activity_remaining_ms);
   out += ",\"audible\":";
   AppendJsonBool(out, tab.audible);
   out += ",\"folder_id\":";
@@ -2468,6 +2940,25 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
   if (command == "status" || command == "json") {
     RefreshAudibleTabs();
     return IpcStatusJson();
+  }
+  if (command == "diagnose-tab") {
+    uint64_t tab_id = 0;
+    if (argv.size() != 2 || !ParseUint64Arg(argv[1], &tab_id))
+      return "ERR usage: diagnose-tab <tabid>\n";
+    const auto index = FindTabIndexById(tab_id);
+    std::string out = "{\"ok\":true,\"shell_build\":\"" __DATE__ " " __TIME__ "\",\"control_backend_build\":\"";
+    out += vimbrowser_control_backend_build ? vimbrowser_control_backend_build() : "legacy-unversioned";
+    out += "\",\"renderer_probe\":\"not_requested_metadata_only\",\"tab\":";
+    if (!index) return out + "null}";
+    const Tab& tab = tabs_[*index];
+    AppendTabJson(out, tab, *index);
+    const auto browser = tab.client ? tab.client->browser() : nullptr;
+    const auto frame = browser ? browser->GetMainFrame() : nullptr;
+    out += ",\"browser_present\":";
+    AppendJsonBool(out, !!browser);
+    out += ",\"main_frame_valid\":";
+    AppendJsonBool(out, frame && frame->IsValid());
+    return out + "}";
   }
   if (command == "tabs") {
     RefreshAudibleTabs();
@@ -2963,13 +3454,15 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     RecordOpenHistory(text);
     const bool activate = command == "open-focus-tab";
     AddTab(url, activate);
+    if (!activate && !tabs_.empty()) SetTabActivity(tabs_.back().id);
     return activate ? IpcStatusJson() : TabsJson();
   }
   if (command == "open-context-tab" ||
       command == "open-background-context-tab" ||
-      command == "open-focus-context-tab") {
+      command == "open-focus-context-tab" ||
+      command == "open-background-context-tab-brief") {
     if (argv.size() < 3) {
-      return "ERR usage: open-context-tab|open-background-context-tab|open-focus-context-tab "
+      return "ERR usage: open-context-tab|open-background-context-tab|open-focus-context-tab|open-background-context-tab-brief "
              "<context-name> <url-or-query>\n";
     }
     const std::string text = JoinArgs(argv, 2);
@@ -2979,7 +3472,13 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     if (!AddContextTab(argv[1], url, activate, &error)) {
       return error;
     }
+    if (!activate && !tabs_.empty()) SetTabActivity(tabs_.back().id);
     RecordOpenHistory(text);
+    if (command == "open-background-context-tab-brief") {
+      std::string out = "{\"ok\":true,\"tab\":";
+      AppendTabJson(out, tabs_.back(), tabs_.size() - 1);
+      return out + "}";
+    }
     return activate ? IpcStatusJson() : TabsJson();
   }
   if (command == "open") {
@@ -2997,7 +3496,7 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
     Tab &tab = tabs_[tab_index];
     last_tab_close_placeholder_ = false;
     SetTabUrl(tab, url);
-    EnsureTabBrowser(tab_index, true);
+    SetTabActivity(tab.id);
     if (tab.client && tab.client->browser() &&
         tab.client->browser()->GetMainFrame()) {
       tab.client->browser()->GetMainFrame()->LoadURL(url);
@@ -3024,13 +3523,17 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
       return "ERR tab has no browser\n";
     }
     if (command == "reload") {
+      SetTabActivity(tab.id);
       browser->Reload();
     } else if (command == "reload-ignore-cache") {
+      SetTabActivity(tab.id);
       browser->ReloadIgnoreCache();
     } else if (command == "back") {
+      SetTabActivity(tab.id);
       if (browser->CanGoBack())
         browser->GoBack();
     } else if (command == "forward") {
+      SetTabActivity(tab.id);
       if (browser->CanGoForward())
         browser->GoForward();
     } else if (command == "stop") {
@@ -3243,12 +3746,16 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
            "  scroll-tab <tabid> <dy> [count]\n"
            "  frame-tree <tabid>\n"
            "  inspect-controls <tabid> <base64-v1-json-query>\n"
+           "  activate-control <tabid> <exact-node-handle>\n"
            "  key <[ctrl+][shift+][alt+][cmd+]key>\n"
            "  html <tabid>\n"
            "  text <tabid>\n"
            "  frame-html <tabid> <frameid>\n"
            "  frame-text <tabid> <frameid>\n"
            "  screenshot <tabid>\n"
+           "  tab-activity <tabid> <0..300000 milliseconds> (0 releases)\n"
+           "  diagnose-tab <tabid> (metadata only; no wake/focus)\n"
+           "  open-background-context-tab-brief <context> <target>\n"
            "  js <tabid> <javascript>\n"
            "  frame-js <tabid> <frameid> <javascript>\n"
            "  js-base64 <tabid> <base64-utf8-javascript>\n"
@@ -3261,11 +3768,15 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
            "  cookies-url <url>\n"
            "  cookie-delete <tabid> <name>\n"
            "  cookie-set <tabid> <name> <value> [domain] [path]\n"
+           "  network <tabid> capture status|on [url-prefix]|off\n"
+           "  network <tabid> wait <url-prefix> [timeout-ms] "
+           "[after-request-id]\n"
            "  network <tabid> list\n"
            "  network <tabid> detail <requestid>\n"
            "  network <tabid> body <requestid>\n"
            "  network <tabid> replay <requestid>\n"
            "  network <tabid> clear\n"
+           "  network-execute-base64 <tabid> <base64-json-payload>\n"
            "  fps\n"
            "  refresh\n"
            "  url\n"
@@ -3288,6 +3799,19 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
   }
 
   const std::string command = ToLowerAscii(argv[0]);
+  if (command == "tab-activity") {
+    uint64_t tab_id = 0;
+    long duration_ms = 0;
+    if (argv.size() != 3 || !ParseUint64Arg(argv[1], &tab_id) ||
+        !ParseLongArg(argv[2], &duration_ms) || duration_ms < 0 ||
+        duration_ms > 300000) {
+      reply("ERR usage: tab-activity <tabid> <0..300000 milliseconds>\n");
+      return;
+    }
+    reply(SetTabActivity(tab_id, static_cast<int>(duration_ms), false)
+              ? "OK\n" : "ERR no such tabid\n");
+    return;
+  }
   // Materialize only the addressed lazy tab, never ActivateTab/RequestFocus.
   // Browser/context creation and initial navigation are asynchronous. Retry on
   // the UI thread with a bounded deadline, preserving the original stable ID.
@@ -3311,7 +3835,7 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
       }
       const bool was_dormant = tabs_[*index].deferred_load ||
                                !tabs_[*index].view;
-      EnsureTabBrowser(*index, true);
+      SetTabActivity(target_id);
       const auto browser = tabs_[*index].client
                                ? tabs_[*index].client->browser() : nullptr;
       if (was_dormant || !browser ||
@@ -3464,6 +3988,75 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
     return;
   }
 
+  if (command == "activate-control") {
+    if (argv.size() != 3) {
+      reply(UploadFileErrorJson(
+          "invalid_usage",
+          "usage: activate-control <tabid> <exact-node-handle>"));
+      return;
+    }
+    uint64_t tab_id = 0;
+    if (!parse_tab_id(1, &tab_id)) {
+      return;
+    }
+    const std::string& handle = argv[2];
+    if (!handle.starts_with("eh1_") || handle.size() > 128) {
+      reply(UploadFileErrorJson("invalid_handle",
+                                "inspected element handle is malformed"));
+      return;
+    }
+    std::string browser_error;
+    CefRefPtr<CefBrowser> browser = BrowserForTabId(tab_id, &browser_error);
+    if (!browser || !browser->GetHost()) {
+      reply(UploadFileErrorJson("tab_unavailable",
+                                "tab has no live browser backend"));
+      return;
+    }
+
+    auto* context = new ActivateControlContext{tab_id, std::move(reply)};
+    uint64_t ignored_nonce_high = 0;
+    uint64_t ignored_nonce_low = 0;
+    const bool started = ActivateElementHandleCompat(vimbrowser_activate_element_handle,
+        browser->GetIdentifier(), handle.data(), handle.size(), true,
+        &ignored_nonce_high, &ignored_nonce_low,
+        +[](void* user_data, int result, int match_count) {
+          std::unique_ptr<ActivateControlContext> context(
+              static_cast<ActivateControlContext*>(user_data));
+          if (!context || !context->reply) {
+            return;
+          }
+          const auto activation_result =
+              static_cast<VimbrowserElementActivationResult>(result);
+          if (activation_result !=
+              VimbrowserElementActivationResult::kDispatched) {
+            const VimbrowserElementActivationError error =
+                ElementActivationErrorForResult(activation_result);
+            context->reply(UploadFileErrorJson(
+                error.code, error.message, -1,
+                activation_result ==
+                        VimbrowserElementActivationResult::kAmbiguousTarget
+                    ? match_count
+                    : -1));
+            return;
+          }
+          std::ostringstream out;
+          out << "{\"ok\":true,\"tabid\":" << context->tab_id
+              << ",\"target\":{\"kind\":\"handle\"},"
+                 "\"activation\":{\"dispatched\":true,"
+                 "\"user_activation\":true}}";
+          context->reply(out.str());
+        },
+        context);
+    if (!started) {
+      IpcReplyCallback startup_reply = std::move(context->reply);
+      delete context;
+      startup_reply(UploadFileErrorJson(
+          "activation_backend_unavailable",
+          "custom Chromium element activation backend is unavailable"));
+    }
+    return;
+  }
+
   if (command == "html" || command == "text" ||
       command == "frame-html" || command == "frame-text") {
     const bool frame_specific = command.starts_with("frame-");
@@ -3604,7 +4197,8 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
 
   if (command == "network") {
     if (argv.size() < 3) {
-      reply("ERR usage: network <tabid> list|detail|body|replay [requestid]\n");
+      reply("ERR usage: network <tabid> "
+            "capture|wait|list|detail|body|replay|clear ...\n");
       return;
     }
     uint64_t tab_id = 0;
@@ -3617,6 +4211,60 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
       return;
     }
     const std::string subcommand = ToLowerAscii(argv[2]);
+    if (subcommand == "capture") {
+      if (argv.size() < 4) {
+        reply(
+            "ERR usage: network <tabid> capture status|on [url-prefix]|off\n");
+        return;
+      }
+      const std::string setting = ToLowerAscii(argv[3]);
+      if (setting == "status" && argv.size() == 4) {
+        reply(tabs_[*index].client->NetworkCaptureJson());
+        return;
+      }
+      if (setting == "off" && argv.size() == 4) {
+        reply(tabs_[*index].client->SetNetworkCapture(false, {}));
+        return;
+      }
+      if (setting == "on") {
+        const std::string url_prefix =
+            argv.size() > 4 ? JoinArgs(argv, 4) : std::string();
+        if (url_prefix.size() > kMaxNetworkFilterBytes) {
+          reply("ERR network capture URL prefix is too long\n");
+          return;
+        }
+        reply(tabs_[*index].client->SetNetworkCapture(true, url_prefix));
+        return;
+      }
+      reply("ERR usage: network <tabid> capture status|on [url-prefix]|off\n");
+      return;
+    }
+    if (subcommand == "wait") {
+      if (argv.size() < 4 || argv.size() > 6) {
+        reply("ERR usage: network <tabid> wait <url-prefix> [timeout-ms] "
+              "[after-request-id]\n");
+        return;
+      }
+      if (argv[3].size() > kMaxNetworkFilterBytes) {
+        reply("ERR network wait URL prefix is too long\n");
+        return;
+      }
+      uint64_t timeout_ms = 10000;
+      if (argv.size() >= 5 &&
+          (!ParseUint64Arg(argv[4], &timeout_ms) || timeout_ms == 0 ||
+           timeout_ms > static_cast<uint64_t>(kMaxNetworkWaitTimeoutMs))) {
+        reply("ERR network wait timeout must be between 1 and 30000 ms\n");
+        return;
+      }
+      uint64_t after_request_id = 0;
+      if (argv.size() >= 6 && !ParseUint64Arg(argv[5], &after_request_id)) {
+        reply("ERR invalid after-request-id\n");
+        return;
+      }
+      HandleNetworkWaitIpcCommand(tab_id, argv[3], static_cast<int>(timeout_ms),
+                                  after_request_id, std::move(reply));
+      return;
+    }
     if (subcommand == "list" || subcommand == "clear") {
       if (argv.size() != 3) {
         reply("ERR usage: network <tabid> list|clear\n");
@@ -3658,7 +4306,22 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
       HandleNetworkReplayIpcCommand(tab_id, request_id, std::move(reply));
       return;
     }
-    reply("ERR usage: network <tabid> list|detail|body|replay [requestid]\n");
+    reply("ERR usage: network <tabid> "
+          "capture|wait|list|detail|body|replay|clear ...\n");
+    return;
+  }
+
+  if (command == "network-execute-base64") {
+    if (argv.size() != 3) {
+      reply(
+          "ERR usage: network-execute-base64 <tabid> <base64-json-payload>\n");
+      return;
+    }
+    uint64_t tab_id = 0;
+    if (!parse_tab_id(1, &tab_id)) {
+      return;
+    }
+    HandleNetworkExecuteIpcCommand(tab_id, argv[2], std::move(reply));
     return;
   }
 

@@ -7,7 +7,6 @@ import("//build/config/ozone.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
 mojom("mojom") {
-  generate_java = true
   sources = [
     "accelerated_widget.mojom",
     "buffer_types.mojom",
@@ -387,7 +386,6 @@ mojom("native_handle_types") {
   }
 
   public_deps = [ "//mojo/public/mojom/base" ]
-  generate_java = true
 
   shared_cpp_typemaps = []
 
@@ -434,54 +432,8 @@ mojom("native_handle_types") {
     ]
   }
 
-  if (is_android) {
-    shared_cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "gfx.mojom.AHardwareBufferHandle"
-            cpp = "::base::android::ScopedHardwareBufferHandle"
-            move_only = true
-          },
-        ]
-        traits_headers = [ "native_handle_types_mojom_traits.h" ]
-        traits_public_deps = [ ":native_handle_types_mojom_traits" ]
-      },
-    ]
-  }
-
-  if (is_win) {
-    shared_cpp_typemaps += [
-      {
-        types = [
-          {
-            mojom = "gfx.mojom.DXGIHandle"
-            cpp = "::gfx::DXGIHandle"
-            move_only = true
-          },
-          {
-            mojom = "gfx.mojom.DXGIHandleToken"
-            cpp = "::gfx::DXGIHandleToken"
-          },
-        ]
-        traits_headers = [ "native_handle_types_mojom_traits.h" ]
-        traits_public_deps = [ ":native_handle_types_mojom_traits" ]
-      },
-    ]
-  }
-
   cpp_typemaps = shared_cpp_typemaps
   blink_cpp_typemaps = shared_cpp_typemaps
-}
-
-if (is_win) {
-  mojom("dxgi_info") {
-    sources = [ "dxgi_info.mojom" ]
-    public_deps = [
-      "//mojo/public/mojom/base",
-      "//skia/public/mojom",
-    ]
-  }
 }
 
 mojom("test_interfaces") {
@@ -519,8 +471,6 @@ component("native_handle_types_mojom_traits") {
 }
 
 mojom("hdr_metadata") {
-  generate_java = true
-
   sources = [ "hdr_metadata.mojom" ]
 
   public_deps = [

@@ -27,17 +27,15 @@ source_set("actions") {
   ]
 }
 
-if (!is_android) {
-  executable("dump_actions") {
-    testonly = true
+executable("dump_actions") {
+  testonly = true
 
-    sources = [ "tools/dump_actions.cc" ]
+  sources = [ "tools/dump_actions.cc" ]
 
-    deps = [
-      ":actions_headers",
-      "//ui/actions:actions_headers",
-    ]
-  }
+  deps = [
+    ":actions_headers",
+    "//ui/actions:actions_headers",
+  ]
 }
 
 source_set("unit_tests") {

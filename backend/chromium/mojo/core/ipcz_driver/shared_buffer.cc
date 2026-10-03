@@ -65,14 +65,8 @@ CreateRegionHandleFromPlatformHandles(
     return {};
   }
 
-#if BUILDFLAG(IS_WIN)
-  return handles[0].TakeHandle();
-#elif BUILDFLAG(IS_FUCHSIA)
-  return zx::vmo(handles[0].TakeHandle());
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   return handles[0].TakeMachSendRight();
-#elif BUILDFLAG(IS_ANDROID)
-  return handles[0].TakeFD();
 #else
   base::ScopedFD readonly_fd;
   if (mode == base::subtle::PlatformSharedMemoryRegion::Mode::kWritable) {

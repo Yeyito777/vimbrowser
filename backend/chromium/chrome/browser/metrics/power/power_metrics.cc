@@ -19,16 +19,6 @@ constexpr const char* kBatteryDischargeRateRelativeHistogramName =
     "Power.BatteryDischargeRateRelative5";
 constexpr const char* kBatteryDischargeModeHistogramName =
     "Power.BatteryDischargeMode5";
-#if BUILDFLAG(IS_WIN)
-constexpr const char* kHasPreciseBatteryDischargeGranularity =
-    "Power.HasPreciseBatteryDischargeGranularity";
-constexpr const char* kBatteryDischargeRatePreciseMilliwattsHistogramName =
-    "Power.BatteryDischargeRatePreciseMilliwatts";
-constexpr const char* kBatteryDischargeRateMilliwattsTenMinutesHistogramName =
-    "Power.BatteryDischargeRateMilliwatts6.TenMinutes";
-constexpr const char* kBatteryDischargeModeTenMinutesHistogramName =
-    "Power.BatteryDischargeMode5.TenMinutes";
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -158,22 +148,6 @@ BatteryDischarge GetBatteryDischargeDuringInterval(
   const auto discharge_rate_mw = CalculateDischargeRateMilliwatts(
       *previous_battery_state, *new_battery_state, interval_duration);
 
-#if BUILDFLAG(IS_WIN)
-  // The maximum granularity allowed for the following battery discharge value.
-  // The bell curve of the battery discharge rate starts at 1000 mW. This
-  // correspond to a discharge amount of 1000/60 ~ 17 mWh every 1 minute
-  // interval.
-  static const int64_t kMaximumGranularityInMilliwattHours = 17;
-  std::optional<int64_t> discharge_rate_with_precise_granularity;
-  if (previous_battery_state->battery_discharge_granularity.has_value() &&
-      previous_battery_state->battery_discharge_granularity.value() <=
-          kMaximumGranularityInMilliwattHours &&
-      new_battery_state->battery_discharge_granularity.has_value() &&
-      new_battery_state->battery_discharge_granularity.value() <=
-          kMaximumGranularityInMilliwattHours) {
-    discharge_rate_with_precise_granularity = discharge_rate_mw;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   const auto discharge_rate_relative = CalculateDischargeRateRelative(
       *previous_battery_state, *new_battery_state, interval_duration);
@@ -184,10 +158,6 @@ BatteryDischarge GetBatteryDischargeDuringInterval(
   return {
     .mode = BatteryDischargeMode::kDischarging,
     .rate_milliwatts = discharge_rate_mw,
-#if BUILDFLAG(IS_WIN)
-    .rate_milliwatts_with_precise_granularity =
-        discharge_rate_with_precise_granularity,
-#endif
     .rate_relative = discharge_rate_relative
   };
 }
@@ -197,11 +167,6 @@ void ReportBatteryHistograms(
     BatteryDischarge battery_discharge,
     bool is_initial_interval,
     const std::vector<const char*>& scenario_suffixes) {
-#if BUILDFLAG(IS_WIN)
-  base::UmaHistogramBoolean(
-      kHasPreciseBatteryDischargeGranularity,
-      battery_discharge.rate_milliwatts_with_precise_granularity.has_value());
-#endif  // BUILDFLAG(IS_WIN)
 
   bool battery_saver_enabled =
       performance_manager::user_tuning::BatterySaverModeManager::
@@ -228,16 +193,6 @@ void ReportBatteryHistograms(
                             scenario_suffix, interval_type_suffix,
                             battery_saver_suffix}),
               *battery_discharge.rate_milliwatts);
-#if BUILDFLAG(IS_WIN)
-          if (battery_discharge.rate_milliwatts_with_precise_granularity) {
-            base::UmaHistogramCounts100000(
-                base::StrCat(
-                    {kBatteryDischargeRatePreciseMilliwattsHistogramName,
-                     scenario_suffix, interval_type_suffix,
-                     battery_saver_suffix}),
-                *battery_discharge.rate_milliwatts_with_precise_granularity);
-          }
-#endif  // BUILDFLAG(IS_WIN)
           DCHECK(battery_discharge.rate_relative.has_value());
           base::UmaHistogramCounts1000(
               base::StrCat({kBatteryDischargeRateRelativeHistogramName,
@@ -249,18 +204,3 @@ void ReportBatteryHistograms(
     }
   }
 }
-
-#if BUILDFLAG(IS_WIN)
-void ReportBatteryHistogramsTenMinutesInterval(
-    base::TimeDelta interval_duration,
-    BatteryDischarge battery_discharge) {
-  base::UmaHistogramEnumeration(kBatteryDischargeModeTenMinutesHistogramName,
-                                battery_discharge.mode);
-  if (battery_discharge.mode == BatteryDischargeMode::kDischarging) {
-    DCHECK(battery_discharge.rate_milliwatts.has_value());
-    base::UmaHistogramCounts100000(
-        kBatteryDischargeRateMilliwattsTenMinutesHistogramName,
-        *battery_discharge.rate_milliwatts);
-  }
-}
-#endif  // BUILDFLAG(IS_WIN)

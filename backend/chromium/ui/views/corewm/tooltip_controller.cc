@@ -268,15 +268,6 @@ void TooltipController::OnMouseEvent(ui::MouseEvent* event) {
         break;
       }
 
-#if BUILDFLAG(IS_WIN)
-      // Showing a tooltip causes Windows to generate a MOUSE_MOVED
-      // event to the same location it was already at; when that happens,
-      // we need to throw the event away rather than acting as if someone
-      // moved the mouse and showing a new tooltip.
-      if (event->location() == last_mouse_loc_) {
-        break;
-      }
-#endif
 
       last_mouse_loc_ = event->location();
       aura::Window* target = nullptr;

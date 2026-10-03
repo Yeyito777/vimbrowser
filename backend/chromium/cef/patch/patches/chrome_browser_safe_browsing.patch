@@ -10,11 +10,3 @@ index afa955ce1c261ea4a555029a71b3935741233a96..b214e5d749067afe1bee68131c27a787
      "//chrome/browser/preloading/prefetch/no_state_prefetch",
      "//chrome/browser/profiles",
      "//chrome/browser/profiles:profile",
-@@ -50,6 +51,7 @@ static_library("safe_browsing") {
-     "//components/enterprise/buildflags",
-     "//components/enterprise/common:strings",
-     "//components/enterprise/obfuscation/core:enterprise_obfuscation",
-+    "//components/gcm_driver:gcm_buildflags",
-     "//components/keyed_service/content",
-     "//components/language/core/browser",
-     "//components/no_state_prefetch/browser",

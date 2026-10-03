@@ -18,6 +18,10 @@ option optimize_for = LITE_RUNTIME;
 // SharingMessageType in enums.xml.
 // LINT.IfChange(MessageType)
 enum MessageType {
+  reserved 12, 13;
+  reserved "SEND_TAB_TO_SELF_PUSH_NOTIFICATION",
+      "DESKTOP_TO_MOBILE_PROMO_PUSH_NOTIFICATION";
+
   UNKNOWN_MESSAGE = 0;
   PING_MESSAGE = 1;
   ACK_MESSAGE = 2;
@@ -30,8 +34,6 @@ enum MessageType {
   DISCOVERY_REQUEST = 9;
   WEB_RTC_SIGNALING_FRAME = 10;
   OPTIMIZATION_GUIDE_PUSH_NOTIFICATION = 11;
-  SEND_TAB_TO_SELF_PUSH_NOTIFICATION = 12;
-  DESKTOP_TO_MOBILE_PROMO_PUSH_NOTIFICATION = 13;
   ONE_TIME_TOKEN_BACKEND_NOTIFICATION = 14;
 }
 // LINT.ThenChange(//tools/metrics/histograms/enums.xml:SharingMessageType)

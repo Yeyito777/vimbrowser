@@ -14,10 +14,6 @@
 #include "build/build_config.h"
 #include "core/fxcrt/span.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "core/fxcrt/data_vector.h"
-#include "core/fxcrt/retain_ptr.h"
-#endif
 
 class CFX_DIBBase;
 
@@ -47,10 +43,6 @@ class FaxModule {
                               int pitch,
                               pdfium::span<uint8_t> dest_buf);
 
-#if BUILDFLAG(IS_WIN)
-  // `src` must have a BPP value of 1.
-  static DataVector<uint8_t> FaxEncode(RetainPtr<const CFX_DIBBase> src);
-#endif  // BUILDFLAG(IS_WIN)
 
   FaxModule() = delete;
   FaxModule(const FaxModule&) = delete;

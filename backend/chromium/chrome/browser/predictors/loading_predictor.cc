@@ -30,10 +30,6 @@
 #include "third_party/blink/public/common/storage_key/storage_key.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/radio_utils.h"
-#include "base/power_monitor/power_monitor.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace features {
 

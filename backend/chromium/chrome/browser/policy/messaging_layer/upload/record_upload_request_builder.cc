@@ -246,12 +246,6 @@ SequenceInformationDictionaryBuilder::SequenceInformationDictionaryBuilder(
     const SequenceInformation& sequence_information,
     bool is_generation_guid_required) {
   bool generation_guid_is_invalid = false;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (is_generation_guid_required) {
-    generation_guid_is_invalid = !sequence_information.has_generation_guid() ||
-                                 sequence_information.generation_guid().empty();
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   // SequenceInformation requires these fields be set. `generation_guid` is
   // required only for unmanaged ChromeOS devices.
@@ -267,9 +261,6 @@ SequenceInformationDictionaryBuilder::SequenceInformationDictionaryBuilder(
   result_->Set(GetGenerationIdPath(),
                base::NumberToString(sequence_information.generation_id()));
   result_->Set(GetPriorityPath(), sequence_information.priority());
-#if BUILDFLAG(IS_CHROMEOS)
-  result_->Set(GetGenerationGuidPath(), sequence_information.generation_guid());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 SequenceInformationDictionaryBuilder::~SequenceInformationDictionaryBuilder() =
@@ -294,12 +285,6 @@ std::string_view SequenceInformationDictionaryBuilder::GetPriorityPath() {
   return reporting::json_keys::kPriority;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-// static
-std::string_view SequenceInformationDictionaryBuilder::GetGenerationGuidPath() {
-  return json_keys::kGenerationGuid;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 EncryptionInfoDictionaryBuilder::EncryptionInfoDictionaryBuilder(
     const EncryptionInfo& encryption_info) {

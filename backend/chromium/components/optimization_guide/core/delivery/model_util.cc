@@ -99,8 +99,6 @@ std::string GetStringNameForOptimizationTarget(
       return "SegmentationBottomToolbar";
     case proto::OPTIMIZATION_TARGET_AUTOFILL_FIELD_CLASSIFICATION:
       return "AutofillFieldTypeClassification";
-    case proto::OPTIMIZATION_TARGET_SEGMENTATION_IOS_MODULE_RANKER:
-      return "SegmentationIosModuleRanker";
     case proto::OPTIMIZATION_TARGET_SEGMENTATION_DESKTOP_NTP_MODULE:
       return "SegmentationDesktopNtpModule";
     case proto::OPTIMIZATION_TARGET_PRELOADING_HEURISTICS:
@@ -153,8 +151,6 @@ std::string GetStringNameForOptimizationTarget(
       return "NotificationPermissionsV3";
     case proto::OPTIMIZATION_TARGET_MODEL_EXECUTION_FEATURE_PROOFREADER_API:
       return "ModelExecutionFeatureProofreaderApi";
-    case proto::OPTIMIZATION_TARGET_SEGMENTATION_IOS_DEFAULT_BROWSER_PROMO:
-      return "SegmentationIosDefaultBrowserPromo";
     case proto::OPTIMIZATION_TARGET_EDU_CLASSIFIER:
       return "EduClassifier";
     case proto::OPTIMIZATION_TARGET_PERMISSIONS_AIV4_GEOLOCATION_DESKTOP:
@@ -188,19 +184,11 @@ std::optional<base::FilePath> StringToFilePath(const std::string& str_path) {
     return std::nullopt;
   }
 
-#if BUILDFLAG(IS_WIN)
-  return base::FilePath(base::UTF8ToWide(str_path));
-#else
   return base::FilePath(str_path);
-#endif
 }
 
 std::string FilePathToString(const base::FilePath& file_path) {
-#if BUILDFLAG(IS_WIN)
-  return base::WideToUTF8(file_path.value());
-#else
   return file_path.value();
-#endif
 }
 
 base::FilePath GetBaseFileNameForModels() {

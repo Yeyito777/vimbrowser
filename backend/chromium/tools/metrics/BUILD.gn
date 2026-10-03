@@ -175,24 +175,13 @@ group("metrics_python_tests") {
   data += JSON_TO_STRUCT_FILES + JSON_TO_STRUCT_TEST_FILES
 
   # Add platform-specific dependencies for dirmd.
-  if (is_win) {
-    data += [
-      "//third_party/depot_tools/dirmd.bat",
-      "//third_party/depot_tools/cipd_bin_setup.bat",
-      "//third_party/depot_tools/cipd_manifest.txt",
-    ]
-    if (host_os == "win") {
-      data += [ "//third_party/depot_tools/.cipd_bin/dirmd.exe" ]
-    }
-  } else {
-    data += [
-      "//third_party/depot_tools/dirmd",
-      "//third_party/depot_tools/cipd_bin_setup.sh",
-      "//third_party/depot_tools/cipd_manifest.txt",
-    ]
-    if (host_os != "win") {
-      data += [ "//third_party/depot_tools/.cipd_bin/dirmd" ]
-    }
+  data += [
+    "//third_party/depot_tools/dirmd",
+    "//third_party/depot_tools/cipd_bin_setup.sh",
+    "//third_party/depot_tools/cipd_manifest.txt",
+  ]
+  if (host_os != "win") {
+    data += [ "//third_party/depot_tools/.cipd_bin/dirmd" ]
   }
 
   data_deps = [ "//testing:test_scripts_shared" ]

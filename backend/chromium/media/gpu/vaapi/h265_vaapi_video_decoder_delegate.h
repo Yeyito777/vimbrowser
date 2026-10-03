@@ -103,16 +103,6 @@ class H265VaapiVideoDecoderDelegate : public H265Decoder::H265Accelerator,
   // (RASL frame). This is updated every SubmitFrameMetadata().
   bool drop_frame_ = false;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // We need to hold onto this memory here because it's referenced by the
-  // mapped buffer in libva across calls. It is filled in SubmitSlice() and
-  // stays alive until SubmitDecode() or Reset().
-  std::vector<VAEncryptionSegmentInfo> encryption_segment_info_;
-
-  // We need to retain this for the multi-slice case since that will aggregate
-  // the encryption details across all the slices.
-  VAEncryptionParameters crypto_params_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 }  // namespace media

@@ -15,11 +15,7 @@
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/geometry/rect_f.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#elif BUILDFLAG(IS_IOS)
-#include <CoreGraphics/CoreGraphics.h>
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
@@ -76,22 +72,7 @@ void SaturatedClampRange(int min, int max, int* origin, int* span) {
 
 namespace gfx {
 
-#if BUILDFLAG(IS_WIN)
-
-Rect::Rect(const RECT& r)
-    : origin_(r.left, r.top),
-      size_(std::abs(r.right - r.left), std::abs(r.bottom - r.top)) {}
-
-RECT Rect::ToRECT() const {
-  RECT r;
-  r.left = x();
-  r.right = right();
-  r.top = y();
-  r.bottom = bottom();
-  return r;
-}
-
-#elif BUILDFLAG(IS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 
 Rect::Rect(const CGRect& r)
     : origin_(r.origin.x, r.origin.y), size_(r.size.width, r.size.height) {}

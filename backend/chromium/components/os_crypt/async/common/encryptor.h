@@ -85,9 +85,6 @@ class COMPONENT_EXPORT(OS_CRYPT_ASYNC) Encryptor {
     // being serialized to/from mojo.
     std::optional<mojom::Algorithm> algorithm_;
     std::vector<uint8_t> key_;
-#if BUILDFLAG(IS_WIN)
-    bool encrypted_ = false;
-#endif
   };
 
   enum class Option {

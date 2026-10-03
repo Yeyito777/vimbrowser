@@ -88,11 +88,6 @@ class SequencedTaskSource {
     return GetPendingWakeUp(lazy_now, SelectTaskOption::kDefault);
   }
 
-#if BUILDFLAG(IS_WIN)
-  // Return true if the next wakeup requires Windows' high-resolution timer to
-  // be enabled.
-  virtual bool NextWakeUpNeedsHighRes() = 0;
-#endif
 
   // Indicates that work that has mutual exclusion expectations with tasks from
   // this `SequencedTaskSource` will start running.

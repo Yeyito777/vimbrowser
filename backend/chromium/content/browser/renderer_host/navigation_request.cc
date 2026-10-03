@@ -225,11 +225,6 @@
 #include "url/origin.h"
 #include "url/url_constants.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot_cache.h"
-#include "ui/android/window_android.h"
-#include "ui/android/window_android_compositor.h"
-#endif
 
 namespace content {
 
@@ -249,10 +244,6 @@ constexpr base::TimeDelta kDefaultCommitTimeout = base::Seconds(30);
 // Overrideable via SetCommitTimeoutForTesting.
 base::TimeDelta g_commit_timeout = kDefaultCommitTimeout;
 
-#if BUILDFLAG(IS_ANDROID)
-// Timeout for locking the compositor at the beginning of navigation.
-constexpr base::TimeDelta kCompositorLockTimeout = base::Milliseconds(150);
-#endif
 
 const char kSecSharedStorageWritableRequestHeaderKey[] =
     "Sec-Shared-Storage-Writable";
@@ -1413,9 +1404,6 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateRendererInitiated(
           /*navigation_token=*/base::UnguessableToken::Create(),
           /*prefetched_signed_exchanges=*/
           std::vector<blink::mojom::PrefetchedSignedExchangeInfoPtr>(),
-#if BUILDFLAG(IS_ANDROID)
-          /*data_url_as_string=*/std::string(),
-#endif
           /*is_browser_initiated=*/false,
           /*has_ua_visual_transition*/ false,
           /*document_ukm_source_id=*/ukm::kInvalidSourceId,
@@ -1457,9 +1445,7 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateRendererInitiated(
           /*is_initial_webui=*/false,
           /*isolated_app_policy=*/std::nullopt,
           /*internal_scroll_to_text_fragment=*/std::nullopt);
-#if !BUILDFLAG(IS_ANDROID)
   CHECK(!GetContentClient()->browser()->IsInitialWebUIURL(common_params->url));
-#endif
 
   // CreateRendererInitiated() should only be triggered when the navigation is
   // initiated by a frame in the same process.
@@ -1571,9 +1557,6 @@ NavigationRequest::CreateForSynchronousRendererCommit(
           /*navigation_token=*/base::UnguessableToken::Create(),
           /*prefetched_signed_exchanges=*/
           std::vector<blink::mojom::PrefetchedSignedExchangeInfoPtr>(),
-#if BUILDFLAG(IS_ANDROID)
-          /*data_url_as_string=*/std::string(),
-#endif
           /*is_browser_initiated=*/false,
           /*has_ua_visual_transition*/ false,
           /*document_ukm_source_id=*/ukm::kInvalidSourceId,
@@ -1767,13 +1750,8 @@ NavigationRequest::NavigationRequest(
          !NavigationTypeUtils::IsReload(common_params_->navigation_type));
   DCHECK(IsInOutermostMainFrame() ||
          common_params_->base_url_for_data_url.is_empty());
-#if BUILDFLAG(IS_ANDROID)
-  DCHECK(IsInOutermostMainFrame() ||
-         commit_params_->data_url_as_string.empty());
-#endif
   CheckSoftNavigationHeuristicsInvariants();
 
-#if !BUILDFLAG(IS_ANDROID)
   // It should not be possible to navigate away from the initial WebUI page,
   // except when recovering from a crash or doing a manual reload from e.g.
   // DevTools.
@@ -1807,7 +1785,6 @@ NavigationRequest::NavigationRequest(
     CHECK(is_navigating_from_initial_empty_document ||
           current_rfh_is_initial_webui);
   }
-#endif
 
   ScopedCrashKeys crash_keys(*this);
 
@@ -2115,23 +2092,6 @@ NavigationRequest::NavigationRequest(
 
   begin_params_->headers = headers.ToString();
 
-#if BUILDFLAG(IS_ANDROID)
-  RenderWidgetHostImpl* host = RenderWidgetHostImpl::From(
-      frame_tree_node_->current_frame_host()->GetRenderWidgetHost());
-  if (NeedsUrlLoader() && IsInPrimaryMainFrame() && host && !host->IsHidden() &&
-      host->GetView() && host->GetView()->GetNativeView() &&
-      host->GetView()->GetNativeView()->GetWindowAndroid()) {
-    // If the compositor changes, we will just let the lock timeout instead of
-    // trying to deal with it explicitly.
-    ui::WindowAndroidCompositor* compositor =
-        host->GetView()->GetNativeView()->GetWindowAndroid()->GetCompositor();
-    if (compositor) {
-      compositor_lock_ = compositor->GetCompositorLock(kCompositorLockTimeout);
-    }
-  }
-
-  navigation_handle_proxy_ = std::make_unique<NavigationHandleProxy>(this);
-#endif
 
   if (NeedsUrlLoader() && common_params_->url.SchemeIsHTTPOrHTTPS()) {
     if (GetContentClient()->browser()->ShouldPreconnectNavigation(
@@ -2289,14 +2249,6 @@ NavigationRequest::~NavigationRequest() {
     loading_mem_tracker_->Cancel();
   ResetExpectedProcess();
 
-#if BUILDFLAG(IS_ANDROID)
-  if (IsInPrimaryMainFrame()) {
-    if (auto* cache =
-            GetNavigationController()->GetNavigationEntryScreenshotCache()) {
-      cache->OnNavigationFinished(*this);
-    }
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   if (HasCommitted()) {
     CHECK(!navigation_discard_reason_.has_value());
@@ -2349,10 +2301,6 @@ NavigationRequest::~NavigationRequest() {
   // org.chromium.chrome.browser.toolbar.ToolbarManager
   pending_entry_ref_.reset();
 
-#if BUILDFLAG(IS_ANDROID)
-  if (navigation_visible_to_embedder_)
-    navigation_handle_proxy_->DidFinish();
-#endif
 
   if (is_deferred_on_fenced_frame_url_mapping_) {
     CHECK(NeedFencedFrameURLMapping());
@@ -2796,56 +2744,6 @@ void NavigationRequest::BeginNavigationImpl() {
               perfetto::Flow::FromPointer(this));
   base::ElapsedTimer timer;
   SetState(WILL_START_NAVIGATION);
-#if BUILDFLAG(IS_ANDROID)
-  base::WeakPtr<NavigationRequest> this_ptr(weak_factory_.GetWeakPtr());
-  bool should_override_url_loading = false;
-
-  if (!GetContentClient()->browser()->ShouldOverrideUrlLoading(
-          frame_tree_node_->frame_tree_node_id(),
-          commit_params_->is_browser_initiated, commit_params_->original_url,
-          commit_params_->original_method,
-          common_params_->has_possibly_filtered_user_gesture, false,
-          frame_tree_node_->IsOutermostMainFrame(),
-          frame_tree_node_->frame_tree().is_prerendering(),
-          ui::PageTransitionFromInt(common_params_->transition),
-          &should_override_url_loading)) {
-    if (reserved_prerender_host_info_.has_value()) {
-      // Prerender activation must not fail but some reports imply it can
-      // actually be failing: crbug.com/408969974. This dump is useful for
-      // debugging it.
-      std::string prerender_type = GeneratePrerenderHistogramSuffix(
-          GetPrerenderTriggerType(), GetPrerenderEmbedderHistogramSuffix());
-      SCOPED_CRASH_KEY_STRING64("Bug411566699", "prerender_type",
-                                prerender_type);
-      base::debug::DumpWithoutCrashing();
-    }
-
-    // A Java exception was thrown by the embedding application; we
-    // need to return from this task. Specifically, it's not safe from
-    // this point on to make any JNI calls.
-    return;
-  }
-
-  // The content/ embedder might cause |this| to be deleted while
-  // |ShouldOverrideUrlLoading| is called.
-  // See https://crbug.com/770157.
-  if (!this_ptr)
-    return;
-
-  if (should_override_url_loading) {
-    // Don't create a NavigationHandle here to simulate what happened with the
-    // old navigation code path (i.e. doesn't fire onPageFinished notification
-    // for aborted loads).
-    auto completion_status =
-        network::URLLoaderCompletionStatus(net::ERR_ABORTED);
-    error_navigation_trigger_ =
-        ErrorNavigationTrigger::kShouldOverrideUrlLoading;
-    OnRequestFailedInternal(completion_status, false /*skip_throttles*/,
-                            std::nullopt /*error_page_content*/,
-                            false /*collapse_frame*/);
-    return;
-  }
-#endif
 
   // Check Content Security Policy before the NavigationThrottles run. This
   // gives CSP a chance to modify requests that NavigationThrottles would
@@ -3284,11 +3182,6 @@ void NavigationRequest::StartNavigation() {
   }
 
   navigation_visible_to_embedder_ = true;
-#if BUILDFLAG(IS_ANDROID)
-  // Once the navigation has started, fill in the details in the Java side
-  // navigation handle.
-  navigation_handle_proxy_->DidStart();
-#endif
 
   if (IsInMainFrame()) {
     DCHECK(!common_params_->navigation_start.is_null());
@@ -3331,10 +3224,6 @@ void NavigationRequest::ResetForCrossDocumentRestart() {
   // to objects owned by the handle (see the comment in the header).
   DCHECK(!loader_);
 
-#if BUILDFLAG(IS_ANDROID)
-  if (navigation_visible_to_embedder_)
-    navigation_handle_proxy_->DidFinish();
-#endif
 
   // Set this bit so the observers on `DidFinishNavigation()` are also aware of
   // the restart.
@@ -3361,12 +3250,6 @@ void NavigationRequest::ResetForCrossDocumentRestart() {
   processing_navigation_throttle_ = false;
 
   navigation_visible_to_embedder_ = false;
-#if BUILDFLAG(IS_ANDROID)
-  if (navigation_handle_proxy_) {
-    navigation_handle_proxy_.reset();
-    navigation_handle_proxy_ = std::make_unique<NavigationHandleProxy>(this);
-  }
-#endif
 
   // Reset the previously selected RenderFrameHost. This is expected to be null
   // at the beginning of a new navigation. See https://crbug.com/936962.
@@ -3586,46 +3469,6 @@ void NavigationRequest::OnRequestRedirected(
   // a reason or another.
   RecordAddressSpaceFeature();
 
-#if BUILDFLAG(IS_ANDROID)
-  base::WeakPtr<NavigationRequest> this_ptr(weak_factory_.GetWeakPtr());
-
-  bool should_override_url_loading = false;
-  if (!GetContentClient()->browser()->ShouldOverrideUrlLoading(
-          frame_tree_node_->frame_tree_node_id(),
-          commit_params_->is_browser_initiated, redirect_info.new_url,
-          redirect_info.new_method,
-          // Redirects are always not counted as from user gesture.
-          false, true, frame_tree_node_->IsOutermostMainFrame(),
-          frame_tree_node_->frame_tree().is_prerendering(),
-          ui::PageTransitionFromInt(common_params_->transition),
-          &should_override_url_loading)) {
-    // A Java exception was thrown by the embedding application; we
-    // need to return from this task. Specifically, it's not safe from
-    // this point on to make any JNI calls.
-    return;
-  }
-
-  // The content/ embedder might cause |this| to be deleted while
-  // |ShouldOverrideUrlLoading| is called.
-  // See https://crbug.com/770157.
-  if (!this_ptr)
-    return;
-
-  if (should_override_url_loading) {
-    net_error_ = net::ERR_ABORTED;
-    error_navigation_trigger_ =
-        ErrorNavigationTrigger::kShouldOverrideUrlLoading;
-    common_params_->url = redirect_info.new_url;
-    common_params_->method = redirect_info.new_method;
-    // Update the navigation handle to point to the new url to ensure
-    // AwWebContents sees the new URL and thus passes that URL to onPageFinished
-    // (rather than passing the old URL).
-    UpdateStateFollowingRedirect(GURL(redirect_info.new_referrer));
-    frame_tree_node_->ResetNavigationRequest(
-        NavigationDiscardReason::kInternalCancellation);
-    return;
-  }
-#endif
   if (!ChildProcessSecurityPolicyImpl::GetInstance()->CanRedirectToURL(
           redirect_info.new_url)) {
     DVLOG(1) << "Denied redirect for "
@@ -8717,9 +8560,6 @@ void NavigationRequest::UpdateStateFollowingRedirect(
   SetState(WILL_REDIRECT_REQUEST);
   processing_navigation_throttle_ = true;
 
-#if BUILDFLAG(IS_ANDROID)
-  navigation_handle_proxy_->DidRedirect();
-#endif
 }
 
 void NavigationRequest::SetNavigationClient(
@@ -8738,16 +8578,6 @@ void NavigationRequest::SetNavigationClient(
 }
 
 bool NavigationRequest::NeedsUrlLoader() {
-#if BUILDFLAG(IS_ANDROID)
-  // If the navigation is for a PDF file, Chrome on Android will render it with
-  // a Java NativePage object and the navigation will always be main frame. The
-  // NativePage is responsible for reading the file and thus no URLLoader is
-  // needed. If NativePage is not enabled for PDF, |is_pdf_| should never be
-  // true.
-  if (is_pdf_) {
-    return false;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   bool is_mhtml_subframe_loaded_from_achive =
       IsForMhtmlSubframe() &&
@@ -11342,12 +11172,6 @@ bool NavigationRequest::IsPrerenderHostReused() {
   return reserved_prerender_host_info_->is_prerender_host_reused;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-const base::android::JavaRef<jobject>&
-NavigationRequest::GetJavaNavigationHandle() {
-  return navigation_handle_proxy_->java_navigation_handle();
-}
-#endif
 
 void NavigationRequest::SetViewTransitionState(
     std::unique_ptr<ScopedViewTransitionResources> resources,
@@ -12334,11 +12158,7 @@ bool NavigationRequest::IsInitialWebUISyncNavigation() {
 }
 
 bool NavigationRequest::IsInitialWebUINavigation() {
-#if !BUILDFLAG(IS_ANDROID)
   return GetContentClient()->browser()->IsInitialWebUIURL(GetURL());
-#else
-  return false;
-#endif
 }
 
 }  // namespace content

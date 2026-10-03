@@ -10,10 +10,6 @@
 #include "gpu/command_buffer/service/scheduler.h"
 #include "services/webnn/webnn_context_provider_impl.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "services/webnn/host/execution_provider_initializer.h"
-#include "ui/gfx/mojom/dxgi_info.mojom.h"
-#endif
 
 namespace webnn::test {
 
@@ -49,12 +45,6 @@ class FakeGpuHostForTesting : public viz::mojom::GpuHost {
                        const std::string& key,
                        const std::string& shader) override;
   void ClearGrShaderDiskCache() override;
-#if BUILDFLAG(IS_WIN)
-  void DidUpdateOverlayInfo(const gpu::OverlayInfo& overlay_info) override;
-  void DidUpdateDXGIInfo(gfx::mojom::DXGIInfoPtr dxgi_info) override;
-  void EnsureWebNNExecutionProvidersReady(
-      EnsureWebNNExecutionProvidersReadyCallback callback) override;
-#endif
   void CreateWebNNWeightsFile(CreateWebNNWeightsFileCallback callback) override;
 
  private:

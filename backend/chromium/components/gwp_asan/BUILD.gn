@@ -15,7 +15,7 @@ test("gwp_asan_unittests") {
     "//testing/gtest",
     "//third_party/boringssl",
   ]
-  if (is_win || is_mac || is_linux || is_chromeos || is_android || is_ios) {
+  if (is_win || is_mac || is_linux || is_chromeos || is_ios) {
     deps += [
       "//components/gwp_asan/client:unit_tests",
       "//components/gwp_asan/crash_handler:unit_tests",
@@ -27,7 +27,7 @@ test("gwp_asan_unittests") {
   data_deps = [ "//testing/buildbot/filters:gwp_asan_unittests_filters" ]
 }
 
-if (is_win || is_mac || is_linux || is_chromeos || is_android) {
+if (is_win || is_mac || is_linux || is_chromeos) {
   executable("dump_gwp_asan") {
     sources = [ "tools/dump_gwp_asan/dump_gwp_asan.cc" ]
 

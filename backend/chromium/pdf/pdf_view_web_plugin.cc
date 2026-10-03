@@ -18,7 +18,6 @@
 #include "base/byte_size.h"
 #include "base/check_op.h"
 #include "base/containers/fixed_flat_map.h"
-#include "base/containers/queue.h"
 #include "base/containers/span.h"
 #include "base/debug/crash_logging.h"
 #include "base/feature_list.h"
@@ -35,9 +34,6 @@
 #include "base/numerics/safe_conversions.h"
 #include "base/strings/escape.h"
 #include "base/strings/strcat.h"
-#include "base/strings/string_number_conversions.h"
-#include "base/strings/string_split.h"
-#include "base/strings/string_util.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/thread_annotations.h"
@@ -72,7 +68,6 @@
 #include "pdf/ui/document_properties.h"
 #include "pdf/ui/file_name.h"
 #include "pdf/ui/thumbnail.h"
-#include "printing/metafile_skia.h"
 #include "printing/units.h"
 #include "services/network/public/mojom/referrer_policy.mojom-shared.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
@@ -95,8 +90,6 @@
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_plugin_container.h"
 #include "third_party/blink/public/web/web_plugin_params.h"
-#include "third_party/blink/public/web/web_print_params.h"
-#include "third_party/blink/public/web/web_print_preset_options.h"
 #include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/public/web/web_widget.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -148,19 +141,6 @@ constexpr base::TimeDelta kFindResultCooldown = base::Milliseconds(100);
 
 constexpr std::string_view kChromeExtensionHost =
     "chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/";
-
-// Print Preview base URL.
-constexpr std::string_view kChromePrintHost = "chrome://print/";
-
-// Untrusted Print Preview base URL.
-constexpr std::string_view kChromeUntrustedPrintHost =
-    "chrome-untrusted://print/";
-
-// Same value as `printing::COMPLETE_PREVIEW_DOCUMENT_INDEX`.
-constexpr int kCompletePDFIndex = -1;
-
-// A different negative value to differentiate itself from `kCompletePDFIndex`.
-constexpr int kInvalidPDFIndex = -2;
 
 // Get save data from plugin in maximum 16 MB blocks.
 // LINT.IfChange(MaxSaveBufferSize)
@@ -238,35 +218,6 @@ base::DictValue DictFromRect(const gfx::Rect& rect) {
       .Set("y", rect.y())
       .Set("width", rect.width())
       .Set("height", rect.height());
-}
-
-bool IsPrintPreviewUrl(std::string_view url) {
-  return base::StartsWith(url, kChromeUntrustedPrintHost);
-}
-
-int ExtractPrintPreviewPageIndex(std::string_view src_url) {
-  // Sample `src_url` format: chrome-untrusted://print/id/page_index/print.pdf
-  // The page_index is zero-based, but can be negative with special meanings.
-  std::vector<std::string_view> url_substr =
-      base::SplitStringPiece(src_url.substr(kChromeUntrustedPrintHost.size()),
-                             "/", base::TRIM_WHITESPACE, base::SPLIT_WANT_ALL);
-  if (url_substr.size() != 3) {
-    return kInvalidPDFIndex;
-  }
-
-  if (url_substr[2] != "print.pdf") {
-    return kInvalidPDFIndex;
-  }
-
-  int page_index = 0;
-  if (!base::StringToInt(url_substr[1], &page_index)) {
-    return kInvalidPDFIndex;
-  }
-  return page_index;
-}
-
-bool IsPreviewingPDF(int print_preview_page_count) {
-  return print_preview_page_count == 0;
 }
 
 bool IsSaveDataSizeValid(size_t size) {
@@ -567,14 +518,12 @@ bool PdfViewWebPlugin::InitializeCommon() {
   initialized_ = true;
 
   // Check if the PDF is being loaded in the PDF chrome extension. We only allow
-  // the plugin to be loaded in the extension and print preview to avoid
-  // exposing sensitive APIs directly to external websites.
+  // the plugin to be loaded in the extension to avoid exposing sensitive APIs
+  // directly to external websites.
   //
   // This is enforced before creating the plugin (see
   // `pdf::CreateInternalPlugin()`), so we just `CHECK` for defense-in-depth.
-  const std::string& embedder_origin = client_->GetEmbedderOriginString();
-  is_print_preview_ = (embedder_origin == kChromePrintHost);
-  CHECK(IsPrintPreview() || embedder_origin == kChromeExtensionHost);
+  CHECK_EQ(client_->GetEmbedderOriginString(), kChromeExtensionHost);
 
   full_frame_ = params->full_frame;
   background_color_ = params->background_color;
@@ -587,12 +536,6 @@ bool PdfViewWebPlugin::InitializeCommon() {
   pdf_accessibility_data_handler_ =
       client_->CreateAccessibilityDataHandler(this, client_->PluginContainer());
   CHECK(pdf_accessibility_data_handler_);
-
-  // Skip the remaining initialization when in Print Preview mode. Loading will
-  // continue after the plugin receives a "resetPrintPreviewMode" message.
-  if (IsPrintPreview()) {
-    return true;
-  }
 
   last_progress_sent_ = 0;
   LoadUrl(params->src_url, base::BindOnce(&PdfViewWebPlugin::DidOpen,
@@ -631,7 +574,6 @@ void PdfViewWebPlugin::Destroy() {
   if (initialized_) {
     // Explicitly destroy the PDFiumEngine during destruction as it may call
     // back into this object.
-    preview_engine_.reset();
     engine_.reset();
     PerProcessInitializer::GetInstance().Release();
   }
@@ -660,7 +602,7 @@ v8::Local<v8::Object> PdfViewWebPlugin::V8ScriptableObject(
 }
 
 bool PdfViewWebPlugin::SupportsKeyboardFocus() const {
-  return !IsPrintPreview();
+  return true;
 }
 
 void PdfViewWebPlugin::UpdateAllLifecyclePhases(
@@ -840,83 +782,6 @@ void PdfViewWebPlugin::DidFinishLoading() {}
 
 void PdfViewWebPlugin::DidFailLoading(const blink::WebURLError& error) {}
 
-bool PdfViewWebPlugin::SupportsPaginatedPrint() {
-  return true;
-}
-
-bool PdfViewWebPlugin::GetPrintPresetOptionsFromDocument(
-    blink::WebPrintPresetOptions* print_preset_options) {
-  print_preset_options->is_scaling_disabled = !engine_->GetPrintScaling();
-  print_preset_options->copies = engine_->GetCopiesToPrint();
-  print_preset_options->duplex_mode = engine_->GetDuplexMode();
-  print_preset_options->uniform_page_size = engine_->GetUniformPageSizePoints();
-  return true;
-}
-
-int PdfViewWebPlugin::PrintBegin(const blink::WebPrintParams& print_params) {
-  // The returned value is always equal to the number of pages in the PDF
-  // document irrespective of the printable area.
-  int32_t ret = engine_->GetNumberOfPages();
-  if (!ret) {
-    return 0;
-  }
-
-  if (!engine_->HasPermission(DocumentPermission::kPrintLowQuality)) {
-    return 0;
-  }
-
-  print_params_ = print_params;
-  if (!engine_->HasPermission(DocumentPermission::kPrintHighQuality)) {
-    print_params_->rasterize_pdf = true;
-  }
-
-  engine_->PrintBegin();
-  return ret;
-}
-
-void PdfViewWebPlugin::PrintPage(int page_index, cc::PaintCanvas* canvas) {
-  // The entire document goes into one metafile. However, it is impossible to
-  // know if a call to `PrintPage()` is the last call. Thus, `PrintPage()` just
-  // stores the pages to print and the metafile. Eventually, the printed output
-  // is generated in `PrintEnd()` and copied over to the metafile.
-
-  // Every `canvas` passed to this method should have a valid `metafile`.
-  printing::MetafileSkia* metafile = canvas->GetPrintingMetafile();
-  DCHECK(metafile);
-
-  // `pages_to_print_` should be empty iff `printing_metafile_` is not set.
-  DCHECK_EQ(pages_to_print_.empty(), !printing_metafile_);
-
-  // The metafile should be the same across all calls for a given print job.
-  DCHECK(!printing_metafile_ || (printing_metafile_ == metafile));
-
-  if (!printing_metafile_) {
-    printing_metafile_ = metafile;
-  }
-
-  pages_to_print_.push_back(page_index);
-}
-
-void PdfViewWebPlugin::PrintEnd() {
-  if (pages_to_print_.empty()) {
-    return;
-  }
-
-  print_pages_called_ = true;
-  printing_metafile_->InitFromData(
-      engine_->PrintPages(pages_to_print_, print_params_.value()));
-
-  if (print_pages_called_) {
-    client_->RecordComputedAction("PDF.PrintPage");
-  }
-  print_pages_called_ = false;
-  print_params_.reset();
-  engine_->PrintEnd();
-
-  printing_metafile_ = nullptr;
-  pages_to_print_.clear();
-}
-
 bool PdfViewWebPlugin::HasSelection() const {
   return !selected_text_.IsEmpty();
 }
@@ -1020,7 +885,7 @@ void PdfViewWebPlugin::StopFind() {
 }
 
 bool PdfViewWebPlugin::CanRotateView() {
-  return !IsPrintPreview();
+  return true;
 }
 
 void PdfViewWebPlugin::RotateView(blink::WebPlugin::RotationType type) {
@@ -1328,23 +1193,6 @@ void PdfViewWebPlugin::Email(const std::string& to,
           .Set("body", base::EscapeUrlEncodedData(body, false)));
 }
 
-void PdfViewWebPlugin::Print() {
-  if (!engine_) {
-    return;
-  }
-
-  const bool can_print =
-      engine_->HasPermission(DocumentPermission::kPrintLowQuality) ||
-      engine_->HasPermission(DocumentPermission::kPrintHighQuality);
-  if (!can_print) {
-    return;
-  }
-
-  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE, base::BindOnce(&PdfViewWebPlugin::OnInvokePrintDialog,
-                                weak_factory_.GetWeakPtr()));
-}
-
 void PdfViewWebPlugin::SubmitForm(const std::string& url,
                                   const void* data,
                                   int length) {
@@ -1395,11 +1243,6 @@ int PdfViewWebPlugin::GetContentRestrictions() const {
     content_restrictions |= kContentRestrictionCopy;
   }
 
-  if (!engine_->HasPermission(DocumentPermission::kPrintLowQuality) &&
-      !engine_->HasPermission(DocumentPermission::kPrintHighQuality)) {
-    content_restrictions |= kContentRestrictionPrint;
-  }
-
   return content_restrictions;
 }
 
@@ -1407,11 +1250,10 @@ std::unique_ptr<UrlLoader> PdfViewWebPlugin::CreateUrlLoader() {
   if (full_frame_) {
     DidStartLoading();
 
-    // Disable save and print until the document is fully loaded, since they
-    // would generate an incomplete document. This needs to be done each time
+    // Disable save until the document is fully loaded, since it would generate
+    // an incomplete document. This needs to be done each time
     // DidStartLoading() is called because that resets the content restrictions.
-    pdf_host_->UpdateContentRestrictions(kContentRestrictionSave |
-                                         kContentRestrictionPrint);
+    pdf_host_->UpdateContentRestrictions(kContentRestrictionSave);
   }
 
   return std::make_unique<UrlLoader>(weak_factory_.GetWeakPtr());
@@ -1436,24 +1278,6 @@ void PdfViewWebPlugin::DocumentLoadComplete() {
 
   // Clear the focus state for on-screen keyboards.
   FormFieldFocusChange(PDFiumEngineClient::FocusFieldType::kNoFocus);
-
-  if (IsPrintPreview()) {
-    // Scroll location is retained across document loads in Print Preview, so
-    // there's no need to override the scroll position by scrolling again.
-    if (IsPreviewingPDF(print_preview_page_count_)) {
-      SendPrintPreviewLoadedNotification();
-    } else {
-      DCHECK_EQ(0, print_preview_loaded_page_count_);
-      print_preview_loaded_page_count_ = 1;
-      engine_->AppendBlankPages(print_preview_page_count_);
-      LoadNextPreviewPage();
-    }
-
-    OnGeometryChanged(0, 0);
-    if (!document_size_.IsEmpty()) {
-      paint_manager_.InvalidateRect(gfx::Rect(plugin_rect_.size()));
-    }
-  }
 
   RecordDocumentMetrics();
 
@@ -1566,10 +1390,6 @@ void PdfViewWebPlugin::FormFieldFocusChange(
                          ? blink::WebTextInputType::kWebTextInputTypeText
                          : blink::WebTextInputType::kWebTextInputTypeNone;
   client_->UpdateTextInputState();
-}
-
-bool PdfViewWebPlugin::IsPrintPreview() const {
-  return is_print_preview_;
 }
 
 SkColor PdfViewWebPlugin::GetBackgroundColor() const {
@@ -1838,12 +1658,8 @@ void PdfViewWebPlugin::OnMessage(const base::DictValue& message) {
            &PdfViewWebPlugin::HandleGetVimbrowserHintLinksMessage},
           {"highlightTextFragments",
            &PdfViewWebPlugin::HandleHighlightTextFragmentsMessage},
-          {"print", &PdfViewWebPlugin::HandlePrintMessage},
-          {"loadPreviewPage", &PdfViewWebPlugin::HandleLoadPreviewPageMessage},
           {"releaseSaveInBlockBuffers",
            &PdfViewWebPlugin::HandleReleaseSaveInBlockBuffers},
-          {"resetPrintPreviewMode",
-           &PdfViewWebPlugin::HandleResetPrintPreviewModeMessage},
           {"rotateClockwise", &PdfViewWebPlugin::HandleRotateClockwiseMessage},
           {"rotateCounterclockwise",
            &PdfViewWebPlugin::HandleRotateCounterclockwiseMessage},
@@ -2005,10 +1821,6 @@ void PdfViewWebPlugin::HandleHighlightTextFragmentsMessage(
   if (engine_->FindAndHighlightTextFragments(text_fragments)) {
     engine_->ScrollToFirstTextFragment(/*force_smooth_scroll=*/false);
   }
-}
-
-void PdfViewWebPlugin::HandlePrintMessage(const base::DictValue& /*message*/) {
-  Print();
 }
 
 void PdfViewWebPlugin::HandleRotateClockwiseMessage(
@@ -2411,16 +2223,6 @@ void PdfViewWebPlugin::OnPaint(const std::vector<gfx::Rect>& paint_rects,
 gfx::PointF PdfViewWebPlugin::GetScrollPositionFromOffset(
     const gfx::Vector2dF& scroll_offset) const {
   gfx::PointF scroll_origin;
-
-  // TODO(crbug.com/40726602): Right-to-left scrolling currently is not
-  // compatible with the PDF viewer's sticky "scroller" element.
-  if (ui_direction_ == base::i18n::RIGHT_TO_LEFT && IsPrintPreview()) {
-    scroll_origin.set_x(
-        std::max(document_size_.width() * static_cast<float>(zoom_) -
-                     plugin_dip_size_.width(),
-                 0.0f));
-  }
-
   return scroll_origin + scroll_offset;
 }
 
@@ -2868,10 +2670,6 @@ void PdfViewWebPlugin::HandleImeCommit(const blink::WebString& text) {
   }
 }
 
-void PdfViewWebPlugin::OnInvokePrintDialog() {
-  client_->Print();
-}
-
 void PdfViewWebPlugin::ResetRecentlySentFindUpdate() {
   recently_sent_find_update_ = false;
 }
@@ -2884,8 +2682,6 @@ void PdfViewWebPlugin::RecordDocumentMetrics() {
   metrics_handler_->RecordDocumentMetrics(engine_->GetDocumentMetadata());
 
 #if BUILDFLAG(ENABLE_PDF_INK2)
-  // `metrics_handler_` is only initialized when not in Print Preview, so the
-  // V2 ink annotations load metric will not count Print Preview loads.
   if (ink_module_) {
     // Use a timeout limit of 100ms, which will capture over 90 percent of PDFs
     // without increasing the PDF load time a significant amount.
@@ -3014,151 +2810,6 @@ void PdfViewWebPlugin::SendLoadingProgress(double percentage) {
 void PdfViewWebPlugin::HandleReleaseSaveInBlockBuffers(
     const base::DictValue& /*message*/) {
   ReleaseBuffer(save_data_buffer_);
-}
-
-void PdfViewWebPlugin::HandleResetPrintPreviewModeMessage(
-    const base::DictValue& message) {
-  const std::string& url = *message.FindString("url");
-  bool is_grayscale = message.FindBool("grayscale").value();
-  int print_preview_page_count = message.FindInt("pageCount").value();
-
-  // For security reasons, crash if `url` is not for Print Preview.
-  CHECK(IsPrintPreview());
-  CHECK(IsPrintPreviewUrl(url));
-
-  DCHECK_GE(print_preview_page_count, 0);
-
-  int page_index = ExtractPrintPreviewPageIndex(url);
-  if (IsPreviewingPDF(print_preview_page_count)) {
-    DCHECK_EQ(page_index, kCompletePDFIndex);
-  } else {
-    DCHECK_GE(page_index, 0);
-  }
-
-  print_preview_page_count_ = print_preview_page_count;
-  print_preview_loaded_page_count_ = 0;
-  url_ = url;
-  preview_pages_info_ = base::queue<PreviewPageInfo>();
-  preview_document_load_state_ = DocumentLoadState::kComplete;
-  document_load_state_ = DocumentLoadState::kLoading;
-  last_progress_sent_ = 0;
-  LoadUrl(url_, base::BindOnce(&PdfViewWebPlugin::DidOpen,
-                               weak_factory_.GetWeakPtr()));
-  preview_engine_.reset();
-
-  // TODO(crbug.com/40193305): Figure out a more consistent way to preserve
-  // engine settings across a Print Preview reset.
-  engine_ = client_->CreateEngine(
-      this, PDFiumFormFiller::ScriptOption::kNoJavaScript);
-  engine_->ZoomUpdated(zoom_ * device_scale_);
-  engine_->PageOffsetUpdated(available_area_.OffsetFromOrigin());
-  engine_->PluginSizeUpdated(available_area_.size());
-  engine_->SetGrayscale(is_grayscale);
-
-  paint_manager_.InvalidateRect(gfx::Rect(plugin_rect_.size()));
-}
-
-void PdfViewWebPlugin::HandleLoadPreviewPageMessage(
-    const base::DictValue& message) {
-  const std::string& url = *message.FindString("url");
-  int dest_page_index = message.FindInt("index").value();
-
-  // For security reasons, crash if `url` is not for Print Preview.
-  CHECK(IsPrintPreview());
-  CHECK(IsPrintPreviewUrl(url));
-
-  DCHECK_GE(dest_page_index, 0);
-  DCHECK_LT(dest_page_index, print_preview_page_count_);
-
-  // Print Preview JS will send the loadPreviewPage message for every page,
-  // including the first page in the print preview, which has already been
-  // loaded when handing the resetPrintPreviewMode message. Just ignore it.
-  if (dest_page_index == 0) {
-    return;
-  }
-
-  int src_page_index = ExtractPrintPreviewPageIndex(url);
-  DCHECK_GE(src_page_index, 0);
-
-  preview_pages_info_.push({.url = url, .dest_page_index = dest_page_index});
-  LoadAvailablePreviewPage();
-}
-
-void PdfViewWebPlugin::LoadAvailablePreviewPage() {
-  if (preview_pages_info_.empty() ||
-      document_load_state_ != DocumentLoadState::kComplete ||
-      preview_document_load_state_ == DocumentLoadState::kLoading) {
-    return;
-  }
-
-  preview_document_load_state_ = DocumentLoadState::kLoading;
-  const std::string& url = preview_pages_info_.front().url;
-
-  // Note that `last_progress_sent_` is not reset for preview page loads.
-  LoadUrl(url, base::BindOnce(&PdfViewWebPlugin::DidOpenPreview,
-                              weak_factory_.GetWeakPtr()));
-}
-
-void PdfViewWebPlugin::DidOpenPreview(std::unique_ptr<UrlLoader> loader,
-                                      Result result) {
-  DCHECK_EQ(result, Result::kSuccess);
-
-  // `preview_engine_` holds a `raw_ptr` to `preview_client_`.
-  // We need to explicitly destroy it before clobbering
-  // `preview_client_` to dodge lifetime issues.
-  preview_engine_.reset();
-
-  preview_client_ = std::make_unique<PreviewModeClient>(this);
-  preview_engine_ = client_->CreateEngine(
-      preview_client_.get(), PDFiumFormFiller::ScriptOption::kNoJavaScript);
-  preview_engine_->PluginSizeUpdated({});
-  preview_engine_->HandleDocumentLoad(std::move(loader), url_);
-}
-
-void PdfViewWebPlugin::PreviewDocumentLoadComplete() {
-  if (preview_document_load_state_ != DocumentLoadState::kLoading ||
-      preview_pages_info_.empty()) {
-    return;
-  }
-
-  preview_document_load_state_ = DocumentLoadState::kComplete;
-
-  int dest_page_index = preview_pages_info_.front().dest_page_index;
-  preview_pages_info_.pop();
-  engine_->AppendPage(preview_engine_.get(), dest_page_index);
-
-  ++print_preview_loaded_page_count_;
-  LoadNextPreviewPage();
-}
-
-void PdfViewWebPlugin::PreviewDocumentLoadFailed() {
-  client_->RecordComputedAction("PDF.PreviewDocumentLoadFailure");
-  if (preview_document_load_state_ != DocumentLoadState::kLoading ||
-      preview_pages_info_.empty()) {
-    return;
-  }
-
-  // Even if a print preview page failed to load, keep going.
-  preview_document_load_state_ = DocumentLoadState::kFailed;
-  preview_pages_info_.pop();
-  ++print_preview_loaded_page_count_;
-  LoadNextPreviewPage();
-}
-
-void PdfViewWebPlugin::LoadNextPreviewPage() {
-  if (!preview_pages_info_.empty()) {
-    DCHECK_LT(print_preview_loaded_page_count_, print_preview_page_count_);
-    LoadAvailablePreviewPage();
-    return;
-  }
-
-  if (print_preview_loaded_page_count_ == print_preview_page_count_) {
-    SendPrintPreviewLoadedNotification();
-  }
-}
-
-void PdfViewWebPlugin::SendPrintPreviewLoadedNotification() {
-  client_->PostMessage(base::DictValue().Set("type", "printPreviewLoaded"));
 }
 
 void PdfViewWebPlugin::CreateAgent(
@@ -3352,8 +3003,7 @@ void PdfViewWebPlugin::LoadAccessibility() {
 }
 
 void PdfViewWebPlugin::ApplyAndObserveRendererPreferences() {
-  if (!features::kPdfInk2TextHighlighting.Get() || IsPrintPreview() ||
-      !Container()) {
+  if (!features::kPdfInk2TextHighlighting.Get() || !Container()) {
     return;
   }
 

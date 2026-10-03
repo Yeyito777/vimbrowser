@@ -90,8 +90,6 @@ source_set("proc_cmdline") {
 source_set("producer_support") {
   deps = [
     "../../../gn:default_deps",
-    "../../base",
-    "../../traced/probes/packages_list:packages_list_parser",
     "../../tracing/core",
   ]
   sources = [
@@ -131,7 +129,6 @@ perfetto_unittest_source_set("unittests") {
     "interner_unittest.cc",
     "proc_cmdline_unittest.cc",
     "proc_utils_unittest.cc",
-    "producer_support_unittest.cc",
     "profiler_guardrails_unittest.cc",
   ]
 }

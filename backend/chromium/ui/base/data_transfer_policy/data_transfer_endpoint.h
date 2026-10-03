@@ -22,13 +22,6 @@ enum class EndpointType {
   kUrl = 1,      // Website URL e.g. www.example.com.
   kClipboardHistory = 2,  // Clipboard History UI has privileged access to any
                           // clipboard data.
-#if BUILDFLAG(IS_CHROMEOS)
-  kUnknownVm = 3,  // The VM type is not identified.
-  kArc = 4,        // ARC.
-  kBorealis = 5,   // Borealis OS.
-  kCrostini = 6,   // Crostini.
-  kPluginVm = 7,   // Plugin VM App.
-#endif             // BUILDFLAG(IS_CHROMEOS)
 };
 
 struct COMPONENT_EXPORT(UI_BASE_DATA_TRANSFER_POLICY)

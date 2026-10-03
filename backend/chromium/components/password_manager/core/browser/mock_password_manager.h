@@ -116,38 +116,6 @@ class MockPasswordManager : public password_manager::PasswordManagerInterface {
               HaveFormManagersReceivedData,
               (const PasswordManagerDriver*),
               (const override));
-#if BUILDFLAG(IS_IOS)
-  MOCK_METHOD(void,
-              OnSubframeFormSubmission,
-              (PasswordManagerDriver*, const autofill::FormData&),
-              (override));
-  MOCK_METHOD(void,
-              UpdateStateOnUserInput,
-              (password_manager::PasswordManagerDriver*,
-               const autofill::FieldDataManager&,
-               std::optional<autofill::FormRendererId>,
-               autofill::FieldRendererId,
-               const std::u16string&),
-              (override));
-  MOCK_METHOD(void, OnPasswordNoLongerGenerated, (), (override));
-  MOCK_METHOD(void,
-              OnPasswordFormsRemoved,
-              (PasswordManagerDriver*,
-               const autofill::FieldDataManager&,
-               const std::set<autofill::FormRendererId>&,
-               const std::set<autofill::FieldRendererId>&),
-              (override));
-  MOCK_METHOD(void,
-              OnIframeDetach,
-              (const std::string&,
-               PasswordManagerDriver*,
-               const autofill::FieldDataManager&),
-              (override));
-  MOCK_METHOD(void,
-              PropagateFieldDataManagerInfo,
-              (const autofill::FieldDataManager&, const PasswordManagerDriver*),
-              (override));
-#endif
   MOCK_METHOD(bool, IsFormManagerPendingPasswordUpdate, (), (const override));
 };
 }  // namespace password_manager

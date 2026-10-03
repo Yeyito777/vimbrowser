@@ -27,9 +27,6 @@ class CPDF_RenderOptions;
 class CPDF_RenderStatus;
 class PauseIndicatorIface;
 
-#if BUILDFLAG(IS_WIN)
-class CFX_ImageTransformer;
-#endif
 
 class CPDF_ImageRenderer {
  public:
@@ -54,9 +51,6 @@ class CPDF_ImageRenderer {
     kNone = 0,
     kDefault,
     kBlend,  // AGG-specific
-#if BUILDFLAG(IS_WIN)
-    kTransform,
-#endif
   };
 
   bool StartBitmapAlpha();
@@ -67,12 +61,6 @@ class CPDF_ImageRenderer {
   bool ContinueBlend(PauseIndicatorIface* pPause);
   bool DrawMaskedImage();
   bool DrawPatternImage();
-#if BUILDFLAG(IS_WIN)
-  bool StartDIBBaseFallback();
-  bool ContinueTransform(PauseIndicatorIface* pPause);
-  bool IsPrinting() const;
-  void HandleFilters();
-#endif
   FX_RECT GetDrawRect() const;
   CFX_Matrix GetDrawMatrix(const FX_RECT& rect) const;
   // Returns the mask, or nullptr if the mask could not be created.
@@ -96,9 +84,6 @@ class CPDF_ImageRenderer {
   CFX_Matrix obj_to_device_;
   CFX_Matrix image_matrix_;
   std::unique_ptr<CPDF_ImageLoader> const loader_;
-#if BUILDFLAG(IS_WIN)
-  std::unique_ptr<CFX_ImageTransformer> transformer_;
-#endif
   std::unique_ptr<RenderDeviceDriverIface::Continuation> continuation_;
   Mode mode_ = Mode::kNone;
   float alpha_ = 0.0f;

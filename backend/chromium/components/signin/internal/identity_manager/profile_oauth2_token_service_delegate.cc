@@ -230,20 +230,6 @@ void ProfileOAuth2TokenServiceDelegate::FireAuthErrorChanged(
   }
 }
 
-#if BUILDFLAG(IS_IOS)
-void ProfileOAuth2TokenServiceDelegate::FireAccountsOnDeviceChanged() {
-  for (auto& observer : observer_list_) {
-    observer.OnAccountsOnDeviceChanged();
-  }
-}
-
-void ProfileOAuth2TokenServiceDelegate::FireAccountOnDeviceUpdated(
-    const AccountInfo& account_info) {
-  for (auto& observer : observer_list_) {
-    observer.OnAccountOnDeviceUpdated(account_info);
-  }
-}
-#endif
 
 std::string ProfileOAuth2TokenServiceDelegate::GetTokenForMultilogin(
     const CoreAccountId& account_id) const {
@@ -260,12 +246,6 @@ std::vector<CoreAccountId> ProfileOAuth2TokenServiceDelegate::GetAccounts()
   return std::vector<CoreAccountId>();
 }
 
-#if BUILDFLAG(IS_IOS)
-std::vector<AccountInfo>
-ProfileOAuth2TokenServiceDelegate::GetAccountsOnDevice() const {
-  return std::vector<AccountInfo>();
-}
-#endif  // BUILDFLAG(IS_IOS)
 
 const net::BackoffEntry* ProfileOAuth2TokenServiceDelegate::BackoffEntry()
     const {

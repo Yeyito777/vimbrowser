@@ -33,13 +33,7 @@ source_set("tracked") {
     "tracked_split_preference.h",
   ]
 
-  if (is_win) {
-    sources += [
-      "device_id_win.cc",
-      "registry_hash_store_contents_win.cc",
-      "registry_hash_store_contents_win.h",
-    ]
-  } else if (is_mac) {
+  if (is_mac) {
     sources += [ "device_id_mac.cc" ]
   } else {
     sources += [ "device_id_stub.cc" ]
@@ -82,10 +76,6 @@ source_set("unit_tests") {
     "pref_hash_store_impl_unittest.cc",
     "tracked_preferences_migration_unittest.cc",
   ]
-
-  if (is_win) {
-    sources += [ "registry_hash_store_contents_win_unittest.cc" ]
-  }
 
   deps = [
     ":tracked",

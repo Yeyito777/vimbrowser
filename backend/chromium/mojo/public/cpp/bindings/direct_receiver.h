@@ -223,18 +223,6 @@ COMPONENT_EXPORT(MOJO_CPP_BINDINGS) bool IsDirectReceiverSupported();
 // different platforms (e.g. IO on Windows, but UI on Android).
 COMPONENT_EXPORT(MOJO_CPP_BINDINGS) bool IsAsyncIOSupported();
 
-#if BUILDFLAG(IS_WIN)
-
-// The Windows sandbox blocks named pipe creation, so in a sandboxed process
-// this must be called before the sandbox is locked down. This is safe to call
-// in an unsandboxed process but is not required.
-//
-// This restricts DirectReceiver to a single thread, although the number of
-// threads could be increased by creating more transports if needed.
-COMPONENT_EXPORT(MOJO_CPP_BINDINGS)
-void CreateDirectReceiverTransportBeforeSandbox();
-
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace mojo
 

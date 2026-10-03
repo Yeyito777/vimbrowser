@@ -29,9 +29,6 @@
 #include "components/webapps/common/web_app_id.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chromeos/ash/experiences/system_web_apps/types/system_web_app_delegate_map.h"
-#endif
 
 namespace content {
 class WebContents;
@@ -85,10 +82,6 @@ class ManifestUpdateManager final : public WebAppInstallManagerObserver {
   ManifestUpdateManager();
   ~ManifestUpdateManager() override;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  void SetSystemWebAppDelegateMap(
-      const ash::SystemWebAppDelegateMap* system_web_apps_delegate_map);
-#endif
 
   void SetProvider(base::PassKey<WebAppProvider>, WebAppProvider& provider);
   void Start();
@@ -201,10 +194,6 @@ class ManifestUpdateManager final : public WebAppInstallManagerObserver {
 
   static bool& BypassWindowCloseWaitingForTesting();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  raw_ptr<const ash::SystemWebAppDelegateMap, DanglingUntriaged>
-      system_web_apps_delegate_map_ = nullptr;
-#endif
   raw_ptr<WebAppProvider> provider_ = nullptr;
 
   base::ScopedObservation<WebAppInstallManager, WebAppInstallManagerObserver>

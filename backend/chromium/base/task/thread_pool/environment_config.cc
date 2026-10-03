@@ -10,18 +10,11 @@
 #include "base/threading/platform_thread.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/background_thread_pool_field_trial.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace base::internal {
 namespace {
 
 bool CanUseBackgroundThreadTypeForWorkerThreadImpl() {
-#if BUILDFLAG(IS_ANDROID)
-  return base::android::BackgroundThreadPoolFieldTrial::
-      ShouldUseBackgroundThreadPool();
-#else   // BUILDFLAG(IS_ANDROID)
   // When Lock doesn't handle multiple thread priorities, run all
   // WorkerThread with a normal priority to avoid priority inversion when a
   // thread running with a normal priority tries to acquire a lock held by a
@@ -42,17 +35,14 @@ bool CanUseBackgroundThreadTypeForWorkerThreadImpl() {
   }
 
   return true;
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 bool CanUseUtilityThreadTypeForWorkerThreadImpl() {
-#if !BUILDFLAG(IS_ANDROID)
   // Same as CanUseBackgroundThreadTypeForWorkerThreadImpl()
   if (!PlatformThread::CanChangeThreadType(ThreadType::kUtility,
                                            ThreadType::kDefault)) {
     return false;
   }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   return true;
 }

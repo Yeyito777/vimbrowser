@@ -67,14 +67,6 @@ class TestPrintingContext : public PrintingContext {
   void SetNewDocumentBlockedByPermissions() {
     new_document_blocked_by_permissions_ = true;
   }
-#if BUILDFLAG(IS_WIN)
-  void SetOnRenderPageBlockedByPermissions() {
-    render_page_blocked_by_permissions_ = true;
-  }
-  void SetOnRenderPageFailsForPage(uint32_t page_number) {
-    render_page_fail_for_page_number_ = page_number;
-  }
-#endif
   void SetOnRenderDocumentBlockedByPermissions() {
     render_document_blocked_by_permissions_ = true;
   }
@@ -108,10 +100,6 @@ class TestPrintingContext : public PrintingContext {
   mojom::ResultCode UpdatePrinterSettings(
       const PrinterSettings& printer_settings) override;
   mojom::ResultCode NewDocument(const std::u16string& document_name) override;
-#if BUILDFLAG(IS_WIN)
-  mojom::ResultCode RenderPage(const PrintedPage& page,
-                               const PageSetup& page_setup) override;
-#endif
   mojom::ResultCode PrintDocument(const MetafilePlayer& metafile,
                                   const PrintSettings& settings,
                                   uint32_t num_pages) override;
@@ -119,10 +107,6 @@ class TestPrintingContext : public PrintingContext {
   void Cancel() override;
   void ReleaseContext() override;
   NativeDrawingContext context() const override;
-#if BUILDFLAG(IS_WIN)
-  mojom::ResultCode InitWithSettingsForTest(
-      std::unique_ptr<PrintSettings> settings) override;
-#endif
 
  private:
   mojom::ResultCode AskUserForSettingsImpl(int max_pages,
@@ -157,10 +141,6 @@ class TestPrintingContext : public PrintingContext {
   bool new_document_cancels_ = false;
   bool new_document_fails_ = false;
   bool new_document_blocked_by_permissions_ = false;
-#if BUILDFLAG(IS_WIN)
-  bool render_page_blocked_by_permissions_ = false;
-  std::optional<uint32_t> render_page_fail_for_page_number_;
-#endif
   bool render_document_blocked_by_permissions_ = false;
   bool document_done_blocked_by_permissions_ = false;
 

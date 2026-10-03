@@ -86,18 +86,6 @@ class SharesheetService : public KeyedService {
   // Gets the sharesheet controller for the given |native_window|.
   SharesheetController* GetSharesheetController(
       gfx::NativeWindow native_window);
-#if BUILDFLAG(IS_CHROMEOS)
-  // Skips the generic Sharesheet bubble and directly displays the
-  // NearbyShare bubble dialog for ARC.
-  void ShowNearbyShareBubbleForArc(gfx::NativeWindow native_window,
-                                   apps::IntentPtr intent,
-                                   LaunchSource source,
-                                   DeliveredCallback delivered_callback,
-                                   CloseCallback close_callback,
-                                   ActionCleanupCallback cleanup_callback);
-
-  void AddShareActionForTest(ShareActionType type);
-#endif  // BUILDFLAG(IS_CHROMEOS)
   // |share_action_type| is set to null when testing, but should otherwise have
   // a valid value.
   void OnBubbleClosed(gfx::NativeWindow native_window,

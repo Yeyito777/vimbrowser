@@ -56,11 +56,7 @@ bool IsTabGroupSyncDelegateAndroidEnabled() {
 }
 
 bool IsTabGroupSyncCoordinatorEnabled() {
-#if BUILDFLAG(IS_ANDROID)
-  return false;
-#else
   return true;
-#endif
 }
 
 bool RestrictDownloadOnSyncedTabs() {

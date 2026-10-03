@@ -28,21 +28,11 @@
 #include "chrome/browser/web_applications/web_app_registrar.h"
 #include "components/keep_alive_registry/scoped_keep_alive.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/web_applications/isolated_web_apps/commands/copy_bundle_to_cache_command.h"
-#include "chrome/browser/web_applications/isolated_web_apps/policy/isolated_web_app_cache_client.h"
-#include "components/webapps/isolated_web_apps/error/uma_logging.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace web_app {
 
 namespace {
 
-#if BUILDFLAG(IS_CHROMEOS)
-constexpr char kCopyToCacheResult[] = "copy_to_cache_result";
-constexpr char kCopyBundleToCacheAfterUpdateMetric[] =
-    "WebApp.Isolated.CopyBundleToCacheAfterUpdate";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace
 
@@ -60,12 +50,6 @@ IsolatedWebAppUpdateApplyTask::IsolatedWebAppUpdateApplyTask(
   debug_log_ = base::DictValue()
                    .Set("bundle_id", url_info_.web_bundle_id().id())
                    .Set("app_id", url_info_.app_id());
-#if BUILDFLAG(IS_CHROMEOS)
-  if (IsIwaBundleCacheEnabledInCurrentSession()) {
-    debug_log_.Set("bundle_cache", "IWA bundle cache is enabled");
-    cache_client_ = std::make_unique<IwaCacheClient>();
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 IsolatedWebAppUpdateApplyTask::~IsolatedWebAppUpdateApplyTask() = default;
@@ -97,41 +81,9 @@ void IsolatedWebAppUpdateApplyTask::OnUpdateApplied(
                                })
                                .error_or("Success"));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (result.has_value() && IsIwaBundleCacheEnabledInCurrentSession()) {
-    CopyUpdatedBundleToCache();
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   std::move(callback_).Run(std::move(result));
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void IsolatedWebAppUpdateApplyTask::CopyUpdatedBundleToCache() {
-  command_scheduler_->CopyIsolatedWebAppBundleToCache(
-      url_info_, IwaCacheClient::GetCurrentSessionType(),
-      base::BindOnce(&IsolatedWebAppUpdateApplyTask::OnBundleCopiedToCache,
-                     weak_factory_.GetWeakPtr()));
-}
-
-void IsolatedWebAppUpdateApplyTask::OnBundleCopiedToCache(
-    CopyBundleToCacheResult result) {
-  web_app::UmaLogExpectedStatus(kCopyBundleToCacheAfterUpdateMetric, result);
-  if (result.has_value()) {
-    debug_log_.Set(kCopyToCacheResult,
-                   "Successfully copied bundle to: " +
-                       result->cached_bundle_path().MaybeAsASCII());
-    std::move(callback_).Run(base::ok());
-    return;
-  }
-  debug_log_.Set(kCopyToCacheResult,
-                 CopyBundleToCacheErrorToString(result.error()));
-  std::move(callback_).Run(
-      base::unexpected<IsolatedWebAppApplyUpdateCommandError>(
-          IsolatedWebAppApplyUpdateCommandError{
-              .message = kCopyToCacheFailedMessage}));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace web_app

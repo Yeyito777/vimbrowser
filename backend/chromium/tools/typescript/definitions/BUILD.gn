@@ -65,13 +65,6 @@ ts_library("build_ts") {
     "//tools/typescript/definitions/windows.d.ts",
   ]
 
-  if (is_chromeos) {
-    definitions += [
-      "//tools/typescript/definitions/chromeos_info_private.d.ts",
-      "//tools/typescript/definitions/quick_unlock_private.d.ts",
-    ]
-  }
-
   if (enable_guest_view && !enable_extensions_core) {
     definitions +=
         [ "//tools/typescript/definitions/chrome_slim_web_view_private.d.ts" ]

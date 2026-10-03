@@ -20,11 +20,6 @@
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 
-#if BUILDFLAG(IS_WIN)
-namespace gfx {
-class D3DSharedFence;
-}
-#endif
 
 namespace viz {
 class SharedImageFormat;
@@ -77,14 +72,6 @@ class SharedImageInterfaceProxy {
   void CopyToGpuMemoryBuffer(const SyncToken& sync_token,
                              const Mailbox& mailbox);
 
-#if BUILDFLAG(IS_WIN)
-  void CopyToGpuMemoryBufferAsync(const SyncToken& sync_token,
-                                  const Mailbox& mailbox,
-                                  base::OnceCallback<void(bool)> callback);
-  void UpdateSharedImage(const SyncToken& sync_token,
-                         scoped_refptr<gfx::D3DSharedFence> d3d_shared_fence,
-                         const Mailbox& mailbox);
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_ANDROID)
   void CopyNativeGmbToSharedMemoryAsync(
@@ -109,13 +96,6 @@ class SharedImageInterfaceProxy {
   void VerifyFlush();
   void WaitSyncToken(const SyncToken& sync_token);
 
-#if BUILDFLAG(IS_FUCHSIA)
-  void RegisterSysmemBufferCollection(zx::eventpair service_handle,
-                                      zx::channel sysmem_token,
-                                      const viz::SharedImageFormat& format,
-                                      gfx::BufferUsage usage,
-                                      bool register_with_image_pipe);
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
   void NotifyMailboxAdded(const Mailbox& mailbox,
                           gpu::SharedImageUsageSet usage);
@@ -156,10 +136,6 @@ class SharedImageInterfaceProxy {
 
   const gpu::SharedImageCapabilities capabilities_;
 
-#if BUILDFLAG(IS_WIN)
-  absl::flat_hash_set<gfx::DXGIHandleToken> registered_fence_tokens_
-      GUARDED_BY(lock_);
-#endif
 };
 
 }  // namespace gpu

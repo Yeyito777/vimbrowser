@@ -27,9 +27,6 @@ class AXPlatformForTest : public AXPlatform::Delegate {
 
   // AXPlatform::Delegate:
   AXMode GetAccessibilityMode() override;
-#if BUILDFLAG(IS_WIN)
-  AXPlatform::ProductStrings GetProductStrings() override;
-#endif
 
  private:
   friend class ScopedAXModeSetter;

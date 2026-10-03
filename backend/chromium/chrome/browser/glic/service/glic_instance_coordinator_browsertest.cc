@@ -181,9 +181,6 @@ class GlicInstanceCoordinatorBrowserTest
   ~GlicInstanceCoordinatorBrowserTest() override = default;
 
   void SetUpOnMainThread() override {
-    // There are a number of APIs that aren't yet available on mobile android.
-    // This should be removed once those are available.
-    SKIP_TEST_FOR_NON_DESKTOP_ANDROID();
     GlicBrowserTestMixin::SetUpOnMainThread();
   }
 

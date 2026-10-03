@@ -21,13 +21,6 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/geometry/size_f.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS)
-#include "pdf/flatten_pdf_result.h"
-#endif
 
 #if BUILDFLAG(IS_CHROMEOS) && BUILDFLAG(ENABLE_SCREEN_AI_SERVICE)
 #include <memory>
@@ -76,41 +69,12 @@ class PDFiumEngineExports {
   PDFiumEngineExports& operator=(const PDFiumEngineExports&) = delete;
   ~PDFiumEngineExports();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // See the definition of CreateFlattenedPdf in pdf.cc for details.
-  std::optional<FlattenPdfResult> CreateFlattenedPdf(
-      base::span<const uint8_t> input_buffer);
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
-#if BUILDFLAG(IS_WIN)
-  // See the definition of RenderPDFPageToDC in pdf.cc for details.
-  bool RenderPDFPageToDC(base::span<const uint8_t> pdf_buffer,
-                         int page_index,
-                         const RenderingSettings& settings,
-                         HDC dc);
-
-  void SetPDFUsePrintMode(int mode);
-#endif  // BUILDFLAG(IS_WIN)
 
   // See the definition of RenderPDFPageToBitmap in pdf.cc for details.
   bool RenderPDFPageToBitmap(base::span<const uint8_t> pdf_buffer,
                              int page_index,
                              const RenderingSettings& settings,
                              void* bitmap_buffer);
-
-  // See the definition of ConvertPdfPagesToNupPdf in pdf.cc for details.
-  std::vector<uint8_t> ConvertPdfPagesToNupPdf(
-      std::vector<base::span<const uint8_t>> input_buffers,
-      size_t pages_per_sheet,
-      const gfx::Size& page_size,
-      const gfx::Rect& printable_area);
-
-  // See the definition of ConvertPdfDocumentToNupPdf in pdf.cc for details.
-  std::vector<uint8_t> ConvertPdfDocumentToNupPdf(
-      base::span<const uint8_t> input_buffer,
-      size_t pages_per_sheet,
-      const gfx::Size& page_size,
-      const gfx::Rect& printable_area);
 
   bool GetPDFDocInfo(base::span<const uint8_t> pdf_buffer,
                      int* page_count,

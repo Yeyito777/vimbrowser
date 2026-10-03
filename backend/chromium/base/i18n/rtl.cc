@@ -26,10 +26,6 @@
 #include "third_party/icu/source/common/unicode/uscript.h"
 #include "third_party/icu/source/i18n/unicode/coll.h"
 
-#if BUILDFLAG(IS_IOS)
-#include "base/debug/crash_logging.h"
-#include "base/ios/ios_util.h"
-#endif
 
 namespace base::i18n {
 
@@ -145,12 +141,6 @@ std::string GetCanonicalLocale(std::string_view locale) {
 }
 
 void SetICUDefaultLocale(std::string_view locale_string) {
-#if BUILDFLAG(IS_IOS)
-  static base::debug::CrashKeyString* crash_key_locale =
-      base::debug::AllocateCrashKeyString("icu_locale_input",
-                                          base::debug::CrashKeySize::Size256);
-  base::debug::SetCrashKeyString(crash_key_locale, locale_string);
-#endif
   icu::Locale locale(ICULocaleName(locale_string).c_str());
   UErrorCode error_code = U_ZERO_ERROR;
   const char* lang = locale.getLanguage();
@@ -192,11 +182,6 @@ bool ICUIsRTL() {
 
 TextDirection GetForcedTextDirection() {
 // On iOS, check for RTL forcing.
-#if BUILDFLAG(IS_IOS)
-  if (base::ios::IsInForcedRTL()) {
-    return base::i18n::RIGHT_TO_LEFT;
-  }
-#endif
 
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kForceUIDirection)) {
@@ -302,33 +287,6 @@ TextDirection GetStringDirection(std::u16string_view text) {
   return (result == UNKNOWN_DIRECTION) ? LEFT_TO_RIGHT : result;
 }
 
-#if BUILDFLAG(IS_WIN)
-bool AdjustStringForLocaleDirection(std::u16string* text) {
-  if (!IsRTL() || text->empty()) {
-    return false;
-  }
-
-  // Marking the string as LTR if the locale is RTL and the string does not
-  // contain strong RTL characters. Otherwise, mark the string as RTL.
-  bool has_rtl_chars = StringContainsStrongRTLChars(*text);
-  if (!has_rtl_chars) {
-    WrapStringWithLTRFormatting(text);
-  } else {
-    WrapStringWithRTLFormatting(text);
-  }
-
-  return true;
-}
-
-bool UnadjustStringForLocaleDirection(std::u16string* text) {
-  if (!IsRTL() || text->empty()) {
-    return false;
-  }
-
-  *text = StripWrappingBidiControlCharacters(*text);
-  return true;
-}
-#else
 bool AdjustStringForLocaleDirection(std::u16string* text) {
   // On OS X & GTK the directionality of a label is determined by the first
   // strongly directional character.
@@ -407,7 +365,6 @@ bool UnadjustStringForLocaleDirection(std::u16string* text) {
   return true;
 }
 
-#endif  // !BUILDFLAG(IS_WIN)
 
 void EnsureTerminatedDirectionalFormatting(std::u16string* text) {
   int count = 0;
@@ -484,8 +441,6 @@ void WrapPathWithLTRFormatting(const FilePath& path,
   rtl_safe_path->push_back(kLeftToRightEmbeddingMark);
 #if BUILDFLAG(IS_APPLE)
   rtl_safe_path->append(UTF8ToUTF16(path.value()));
-#elif BUILDFLAG(IS_WIN)
-  rtl_safe_path->append(AsString16(path.value()));
 #else  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_APPLE)
   std::wstring wide_path = base::SysNativeMBToWide(path.value());
   rtl_safe_path->append(WideToUTF16(wide_path));

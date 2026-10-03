@@ -20,9 +20,6 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/ui/ash/login/login_display_host.h"
-#endif
 
 using content::BrowserThread;
 
@@ -105,9 +102,7 @@ void SetBrowserStartupIsComplete() {
     return;
 
   size_t browser_count = 0;
-#if !BUILDFLAG(IS_ANDROID)
   browser_count = chrome::GetTotalBrowserCount();
-#endif  // !BUILDFLAG(IS_ANDROID)
   TRACE_EVENT_INSTANT1("startup", "Startup.StartupComplete",
                        TRACE_EVENT_SCOPE_GLOBAL, "BrowserCount", browser_count);
   GetStartupCompleteFlag().Set();
@@ -199,22 +194,10 @@ void StartupObserver::Start() {
 }  // namespace
 
 void AfterStartupTaskUtils::StartMonitoringStartup() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // If we are on a login screen which does not expect WebUI to be loaded,
-  // Browser won't be created at startup.
-  if (ash::LoginDisplayHost::default_host() &&
-      !ash::LoginDisplayHost::default_host()->IsWebUIStarted()) {
-    content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(&SetBrowserStartupIsComplete));
-    return;
-  }
-#endif
 
   // For Android, startup completion is signaled via
   // AfterStartupTaskUtils.java. We do not use the StartupObserver.
-#if !BUILDFLAG(IS_ANDROID)
   StartupObserver::Start();
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   // Add failsafe timeout
   content::GetUIThreadTaskRunner({})->PostDelayedTask(

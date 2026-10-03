@@ -56,7 +56,6 @@ browser_exposed_mojom_targets = [
   "//chrome/browser/ui/webui/omnibox/logging:mojo_bindings",
   "//chrome/browser/ui/webui/omnibox_popup/mojom:mojom",
   "//chrome/browser/ui/webui/on_device_internals:mojom",
-  "//chrome/browser/ui/webui/on_device_translation_internals:mojo_bindings",
   "//chrome/browser/ui/webui/password_manager:mojo_bindings",
   "//chrome/browser/ui/webui/privacy_sandbox:mojo_bindings",
   "//chrome/browser/ui/webui/private_ai_internals:mojo_bindings",
@@ -93,7 +92,6 @@ browser_exposed_mojom_targets = [
   "//chrome/common/search:mojo_bindings",
   "//chrome/services/file_util/public/mojom:mojom",
   "//chrome/services/media_gallery_util/public/mojom:mojom",
-  "//chrome/services/printing/public/mojom:mojom",
   "//chrome/services/removable_storage_writer/public/mojom:mojom",
   "//components/attribution_reporting:mojom",
   "//components/attribution_reporting:registration_header_error_mojom",
@@ -158,10 +156,8 @@ browser_exposed_mojom_targets = [
   "//components/password_manager/services/csv_password/public/mojom:mojom",
   "//components/payments/mojom:mojom",
   "//components/performance_manager/public/mojom:mojom",
-  "//components/printing/common:mojo_interfaces",
   "//components/safe_browsing/content/common:interfaces",
   "//components/safe_browsing/core/common:interfaces",
-  "//components/on_device_translation/public/mojom:mojom",
   "//components/schema_org/common:improved_mojom",
   "//components/schema_org/common:mojom",
   "//components/security_interstitials/core/common/mojom:mojom",
@@ -170,7 +166,6 @@ browser_exposed_mojom_targets = [
   "//components/services/heap_profiling/public/mojom:mojom",
   "//components/services/paint_preview_compositor/public/mojom:mojom",
   "//components/services/patch/public/mojom:mojom",
-  "//components/services/print_compositor/public/mojom:mojom",
   "//components/services/quarantine/public/mojom:mojom",
   "//components/services/storage/privileged/mojom:mojom_webui",
   "//components/services/storage/public/mojom:mojom",
@@ -178,11 +173,9 @@ browser_exposed_mojom_targets = [
   "//components/services/storage/public/mojom/filesystem:filesystem",
   "//components/services/unzip/public/mojom:mojom",
   "//components/site_engagement/core/mojom:mojo_bindings",
-  "//components/spellcheck/common:interfaces",
   "//components/subresource_filter/content/mojom:mojom",
   "//components/subresource_filter/core/mojom:mojom",
   "//components/tab_groups/public/mojom:mojo_bindings",
-  "//components/translate/content/common:common",
   "//components/variations:variations_mojom",
   "//components/visitedlink/common:interfaces",
   "//components/viz/service/debugger/mojom:mojom",
@@ -362,7 +355,5 @@ if (enable_surface_embed) {
   browser_exposed_mojom_targets += [ "//components/surface_embed/common:mojom" ]
 }
 
-if (!is_android) {
-  browser_exposed_mojom_targets +=
-      [ "//chrome/browser/ui/webui/feedback/report_unsafe_site:mojo_bindings" ]
-}
+browser_exposed_mojom_targets +=
+    [ "//chrome/browser/ui/webui/feedback/report_unsafe_site:mojo_bindings" ]

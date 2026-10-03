@@ -36,13 +36,6 @@ source_set("device_monitors") {
     ]
     frameworks = [ "Foundation.framework" ]
   }
-
-  if (is_win) {
-    sources += [
-      "system_message_window_win.cc",
-      "system_message_window_win.h",
-    ]
-  }
 }
 
 source_set("unit_tests") {
@@ -56,8 +49,4 @@ source_set("unit_tests") {
     "//testing/gmock",
     "//testing/gtest",
   ]
-
-  if (is_win) {
-    sources += [ "system_message_window_win_unittest.cc" ]
-  }
 }

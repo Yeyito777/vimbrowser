@@ -52,18 +52,6 @@
 #include "third_party/perfetto/include/perfetto/tracing/track.h"
 #include "ui/base/idle/idle.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/browser_process.h"
-#include "chrome/browser/device_identity/device_oauth2_token_service.h"
-#include "chrome/browser/device_identity/device_oauth2_token_service_factory.h"
-#include "chrome/browser/policy/chrome_browser_policy_connector.h"
-#include "chromeos/components/kiosk/kiosk_utils.h"
-#include "chromeos/components/mgs/managed_guest_session_utils.h"
-#include "components/account_manager_core/account_manager_util.h"
-#include "google_apis/gaia/google_service_auth_error.h"
-#include "google_apis/gaia/oauth2_access_token_consumer.h"
-#include "google_apis/gaia/oauth2_access_token_manager.h"
-#endif
 
 namespace extensions {
 
@@ -130,70 +118,6 @@ class IdentityGetAuthTokenFunction::RefreshTokensLoadedWaiter
       identity_manager_observation_{this};
 };
 
-#if BUILDFLAG(IS_CHROMEOS)
-
-class IdentityGetAuthTokenFunction::DeviceOAuth2TokenFetcher
-    : public OAuth2AccessTokenManager::Consumer {
- public:
-  using CallbackType = base::OnceCallback<void(
-      const std::optional<std::string>& /*access_token*/,
-      base::Time /*expiration_time*/,
-      const GoogleServiceAuthError& /*error*/)>;
-
-  DeviceOAuth2TokenFetcher()
-      : OAuth2AccessTokenManager::Consumer("device_oauth2_token_service_ash") {}
-  ~DeviceOAuth2TokenFetcher() override = default;
-
-  // Starts requesting access token.
-  void StartRequest(CallbackType callback) {
-    request_ = DeviceOAuth2TokenServiceFactory::Get()->StartAccessTokenRequest(
-        {GaiaConstants::kAnyApiOAuth2Scope}, this);
-    callback_ = std::move(callback);
-  }
-
-  // OAuth2AccessTokenManager::Consumer:
-
-  void OnGetTokenSuccess(
-      const OAuth2AccessTokenManager::Request* request,
-      const OAuth2AccessTokenConsumer::TokenResponse& token_response) override {
-    if (callback_) {
-      std::move(callback_).Run(token_response.access_token,
-                               token_response.expiration_time,
-                               GoogleServiceAuthError::AuthErrorNone());
-    }
-  }
-
-  void OnGetTokenFailure(const OAuth2AccessTokenManager::Request* request,
-                         const GoogleServiceAuthError& error) override {
-    if (callback_) {
-      std::move(callback_).Run(std::nullopt, base::Time(), error);
-    }
-  }
-
- private:
-  std::unique_ptr<OAuth2AccessTokenManager::Request> request_;
-  CallbackType callback_;
-};
-
-void IdentityGetAuthTokenFunction::StartDeviceAccessTokenRequest() {
-  device_oauth2_token_fetcher_ = std::make_unique<DeviceOAuth2TokenFetcher>();
-  // Since robot account refresh tokens are scoped down to [any-api] only,
-  // request access token for [any-api] instead of login.
-  device_oauth2_token_fetcher_->StartRequest(
-      base::BindOnce(&IdentityGetAuthTokenFunction::
-                         OnAccessTokenForDeviceAccountFetchCompleted,
-                     weak_ptr_factory_.GetWeakPtr()));
-}
-
-void IdentityGetAuthTokenFunction::OnAccessTokenForDeviceAccountFetchCompleted(
-    const std::optional<std::string>& access_token,
-    base::Time expiration_time,
-    const GoogleServiceAuthError& error) {
-  device_oauth2_token_fetcher_.reset();
-  OnGetAccessTokenComplete(access_token, expiration_time, error);
-}
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 IdentityGetAuthTokenFunction::IdentityGetAuthTokenFunction() = default;
 
@@ -279,14 +203,7 @@ ExtensionFunction::ResponseAction IdentityGetAuthTokenFunction::Run() {
       base::BindOnce(&IdentityGetAuthTokenFunction::GetAuthTokenForAccount,
                      weak_ptr_factory_.GetWeakPtr(), gaia_id);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  const bool needs_identity_manager_tokens =
-      !(g_browser_process->browser_policy_connector()
-            ->IsDeviceEnterpriseManaged() &&
-        (chromeos::IsManagedGuestSession() || chromeos::IsKioskSession()));
-#else
   const bool needs_identity_manager_tokens = true;
-#endif  // BUILDFLAG(IS_CHROMEOS)
   signin::IdentityManager* identity_manager =
       IdentityManagerFactory::GetForProfile(GetProfile());
   if (needs_identity_manager_tokens &&
@@ -323,20 +240,6 @@ void IdentityGetAuthTokenFunction::GetAuthTokenForAccount(
   }
 
   token_key_.account_info = selected_account;
-#if BUILDFLAG(IS_CHROMEOS)
-  if (g_browser_process->browser_policy_connector()
-          ->IsDeviceEnterpriseManaged()) {
-    if (chromeos::IsManagedGuestSession()) {
-      CompleteFunctionWithError(IdentityGetAuthTokenError(
-          IdentityGetAuthTokenError::State::kNotAllowlistedInPublicSession));
-      return;
-    }
-    if (chromeos::IsKioskSession()) {
-      StartMintTokenFlow(IdentityMintRequestQueue::MINT_TYPE_NONINTERACTIVE);
-      return;
-    }
-  }
-#endif
 
   if (selected_account.IsEmpty()) {
     if (!ShouldStartSigninFlow()) {
@@ -415,12 +318,6 @@ void IdentityGetAuthTokenFunction::StartSigninFlow() {
   // If the signin flow fails, don't display the login prompt again.
   interactivity_status_for_signin_ = InteractivityStatus::kNotRequested;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // In normal mode (i.e. non-kiosk mode), the user has to log out to
-  // re-establish credentials. Let the global error popup handle everything.
-  // In kiosk mode, interactive sign-in is not supported.
-  SigninFailed();
-#else
   if (ExtensionsBrowserClient::Get()->IsShuttingDown()) {
     // The login prompt cannot be displayed when the browser process is shutting
     // down.
@@ -442,19 +339,16 @@ void IdentityGetAuthTokenFunction::StartSigninFlow() {
   }
 #endif  // BUILDFLAG(ENABLE_DICE_SUPPORT)
   ShowExtensionLoginPrompt();
-#endif
 }
 
 void IdentityGetAuthTokenFunction::StartMintTokenFlow(
     IdentityMintRequestQueue::MintType type) {
-#if !BUILDFLAG(IS_CHROMEOS)
   // ChromeOS in kiosk mode may start the mint token flow without account.
   DCHECK(!token_key_.account_info.IsEmpty())
       << "token_key_.account_info is empty!";
   DCHECK(IdentityManagerFactory::GetForProfile(GetProfile())
              ->HasAccountWithRefreshToken(token_key_.account_info.account_id))
       << "No Refresh token!";
-#endif
   TRACE_EVENT_BEGIN("identity", "MintTokenFlow",
                     perfetto::Track::FromPointer(this), "type", type);
 
@@ -512,26 +406,6 @@ void IdentityGetAuthTokenFunction::StartMintToken(
   if (type == IdentityMintRequestQueue::MINT_TYPE_NONINTERACTIVE) {
     switch (cache_status) {
       case IdentityTokenCacheValue::CACHE_STATUS_NOTFOUND:
-#if BUILDFLAG(IS_CHROMEOS)
-        // Always force minting token for ChromeOS kiosk app and managed guest
-        // session.
-        if (chromeos::IsManagedGuestSession()) {
-          CompleteFunctionWithError(
-              IdentityGetAuthTokenError(IdentityGetAuthTokenError::State::
-                                            kNotAllowlistedInPublicSession));
-          return;
-        }
-        if (chromeos::IsKioskSession()) {
-          gaia_mint_token_mode_ = OAuth2MintTokenFlow::MODE_MINT_TOKEN_FORCE;
-          if (g_browser_process->browser_policy_connector()
-                  ->IsDeviceEnterpriseManaged()) {
-            StartDeviceAccessTokenRequest();
-          } else {
-            StartTokenKeyAccountAccessTokenRequest();
-          }
-          return;
-        }
-#endif
 
         if (oauth2_info.auto_approve && *oauth2_info.auto_approve) {
           // oauth2_info.auto_approve is protected by an allowlist in
@@ -812,9 +686,6 @@ void IdentityGetAuthTokenFunction::OnGetAccessTokenComplete(
     const GoogleServiceAuthError& error) {
   // By the time we get here we should no longer have an outstanding access
   // token request.
-#if BUILDFLAG(IS_CHROMEOS)
-  DCHECK(!device_oauth2_token_fetcher_);
-#endif
   DCHECK(!token_key_account_access_token_fetcher_);
   if (access_token) {
     TRACE_EVENT_END("identity", perfetto::Track::FromPointer(this));
@@ -848,9 +719,6 @@ void IdentityGetAuthTokenFunction::OnAccessTokenFetchCompleted(
 }
 
 void IdentityGetAuthTokenFunction::OnIdentityAPIShutdown() {
-#if BUILDFLAG(IS_CHROMEOS)
-  device_oauth2_token_fetcher_.reset();
-#endif
   gaia_remote_consent_flow_.reset();
   token_key_account_access_token_fetcher_.reset();
   refresh_tokens_loaded_waiter_.reset();

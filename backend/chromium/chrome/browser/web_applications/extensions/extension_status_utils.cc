@@ -123,12 +123,8 @@ void OnExtensionSystemReady(content::BrowserContext* context,
 }
 
 bool DidPreinstalledAppsPerformNewInstallation(Profile* profile) {
-#if !BUILDFLAG(IS_CHROMEOS)
   return preinstalled_apps::Provider::DidPerformNewInstallationForProfile(
       profile);
-#else
-  return false;
-#endif
 }
 
 bool IsPreinstalledAppId(const std::string& app_id) {

@@ -6580,90 +6580,17 @@ bool ValidateQueryDisplayAttribANGLE(const ValidationContext *val,
 }
 
 bool ValidateGetNativeClientBufferANDROID(const ValidationContext *val,
-                                          const AHardwareBuffer *buffer)
+                                          const AHardwareBuffer *)
 {
-    // No extension check is done because no display is passed to eglGetNativeClientBufferANDROID
-    // despite it being a display extension.  No display is needed for the implementation though.
-    if (buffer == nullptr)
-    {
-        val->setError(EGL_BAD_PARAMETER, "NULL buffer.");
-        return false;
-    }
-
-    return true;
+    val->setError(EGL_BAD_PARAMETER, "Android native buffers are not supported.");
+    return false;
 }
 
 bool ValidateCreateNativeClientBufferANDROID(const ValidationContext *val,
-                                             const egl::AttributeMap &attribMap)
+                                             const egl::AttributeMap &)
 {
-    attribMap.initializeWithoutValidation();
-
-    if (attribMap.isEmpty() || attribMap.begin()->second == EGL_NONE)
-    {
-        val->setError(EGL_BAD_PARAMETER, "invalid attribute list.");
-        return false;
-    }
-
-    int width     = attribMap.getAsInt(EGL_WIDTH, 0);
-    int height    = attribMap.getAsInt(EGL_HEIGHT, 0);
-    int redSize   = attribMap.getAsInt(EGL_RED_SIZE, 0);
-    int greenSize = attribMap.getAsInt(EGL_GREEN_SIZE, 0);
-    int blueSize  = attribMap.getAsInt(EGL_BLUE_SIZE, 0);
-    int alphaSize = attribMap.getAsInt(EGL_ALPHA_SIZE, 0);
-    int usage     = attribMap.getAsInt(EGL_NATIVE_BUFFER_USAGE_ANDROID, 0);
-
-    for (AttributeMap::const_iterator attributeIter = attribMap.begin();
-         attributeIter != attribMap.end(); attributeIter++)
-    {
-        EGLAttrib attribute = attributeIter->first;
-        switch (attribute)
-        {
-            case EGL_WIDTH:
-            case EGL_HEIGHT:
-                // Validation done after the switch statement
-                break;
-            case EGL_RED_SIZE:
-            case EGL_GREEN_SIZE:
-            case EGL_BLUE_SIZE:
-            case EGL_ALPHA_SIZE:
-                if (redSize < 0 || greenSize < 0 || blueSize < 0 || alphaSize < 0)
-                {
-                    val->setError(EGL_BAD_PARAMETER, "incorrect channel size requested");
-                    return false;
-                }
-                break;
-            case EGL_NATIVE_BUFFER_USAGE_ANDROID:
-                // The buffer must be used for either a texture or a renderbuffer.
-                if ((usage & ~(EGL_NATIVE_BUFFER_USAGE_PROTECTED_BIT_ANDROID |
-                               EGL_NATIVE_BUFFER_USAGE_RENDERBUFFER_BIT_ANDROID |
-                               EGL_NATIVE_BUFFER_USAGE_TEXTURE_BIT_ANDROID)) != 0)
-                {
-                    val->setError(EGL_BAD_PARAMETER, "invalid usage flag");
-                    return false;
-                }
-                break;
-            case EGL_NONE:
-                break;
-            default:
-                val->setError(EGL_BAD_ATTRIBUTE, "invalid attribute");
-                return false;
-        }
-    }
-
-    // Validate EGL_WIDTH and EGL_HEIGHT values passed in. Done here to account
-    // for the case where EGL_WIDTH and EGL_HEIGHT were not part of the attribute list.
-    if (width <= 0 || height <= 0)
-    {
-        val->setError(EGL_BAD_PARAMETER, "incorrect buffer dimensions requested");
-        return false;
-    }
-
-    if (gl::GetAndroidHardwareBufferFormatFromChannelSizes(attribMap) == 0)
-    {
-        val->setError(EGL_BAD_PARAMETER, "unsupported format");
-        return false;
-    }
-    return true;
+    val->setError(EGL_BAD_PARAMETER, "Android native buffers are not supported.");
+    return false;
 }
 
 bool ValidateCopyMetalSharedEventANGLE(const ValidationContext *val,

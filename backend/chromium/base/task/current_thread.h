@@ -166,11 +166,6 @@ class BASE_EXPORT CurrentThread {
       RegisterOnNextIdleCallbackPasskey,
       OnceClosure on_next_idle_callback);
 
-#if BUILDFLAG(IS_WIN)
-  void set_os_modal_loop(bool os_modal_loop) { os_modal_loop_ = os_modal_loop; }
-
-  bool os_modal_loop() const { return os_modal_loop_; }
-#endif  // OS_WIN
 
   // Enables nested task processing in scope of an upcoming native message loop.
   // Some unwanted message loops may occur when using common controls or printer
@@ -246,12 +241,6 @@ class BASE_EXPORT CurrentThread {
 
   raw_ptr<sequence_manager::internal::SequenceManagerImpl> current_;
 
-#if BUILDFLAG(IS_WIN)
- private:
-  // Should be set to true before calling Windows APIs like TrackPopupMenu, etc.
-  // which enter a modal message loop.
-  bool os_modal_loop_ = false;
-#endif
 };
 
 // UI extension of CurrentThread.
@@ -278,26 +267,8 @@ class BASE_EXPORT CurrentUIThread : public CurrentThread {
                            MessagePumpForUI::FdWatcher* delegate);
 #endif
 
-#if BUILDFLAG(IS_IOS)
-  // Forwards to SequenceManager::Attach().
-  // TODO(crbug.com/40568517): Plumb the actual SequenceManager* to
-  // callers and remove ability to access this method from
-  // CurrentUIThread.
-  void Attach();
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-  // Forwards to MessagePumpAndroid::Abort().
-  // TODO(crbug.com/40568517): Plumb the actual MessagePumpForUI* to
-  // callers and remove ability to access this method from
-  // CurrentUIThread.
-  void Abort();
-#endif
 
-#if BUILDFLAG(IS_WIN)
-  void AddMessagePumpObserver(MessagePumpForUI::Observer* observer);
-  void RemoveMessagePumpObserver(MessagePumpForUI::Observer* observer);
-#endif
 
  private:
   explicit CurrentUIThread(
@@ -319,12 +290,7 @@ class BASE_EXPORT CurrentIOThread : public CurrentThread {
 
   CurrentIOThread* operator->() { return this; }
 
-#if BUILDFLAG(IS_WIN)
-  // Please see MessagePumpWin for definitions of these methods.
-  [[nodiscard]] bool RegisterIOHandler(HANDLE file,
-                                       MessagePumpForIO::IOHandler* handler);
-  bool RegisterJobObject(HANDLE job, MessagePumpForIO::IOHandler* handler);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
   // Please see WatchableIOMessagePumpPosix for definition.
   // Prefer base::FileDescriptorWatcher for non-critical IO.
   bool WatchFileDescriptor(int fd,
@@ -342,14 +308,6 @@ class BASE_EXPORT CurrentIOThread : public CurrentThread {
       MessagePumpForIO::MachPortWatcher* delegate);
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-  // Additional watch API for native platform resources.
-  bool WatchZxHandle(zx_handle_t handle,
-                     bool persistent,
-                     zx_signals_t signals,
-                     MessagePumpForIO::ZxHandleWatchController* controller,
-                     MessagePumpForIO::ZxHandleWatcher* delegate);
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
  private:
   explicit CurrentIOThread(

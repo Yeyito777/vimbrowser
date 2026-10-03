@@ -6,9 +6,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include "gpu/vulkan/fuchsia/vulkan_fuchsia_ext.h"
-#endif
 
 #include "components/viz/common/gpu/vulkan_context_provider.h"
 #include "gpu/vulkan/vulkan_implementation.h"

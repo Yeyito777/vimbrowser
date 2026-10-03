@@ -760,18 +760,6 @@ std::u16string FormatUrlWithAdjustments(
         url.SchemeIs(url::kMailToScheme)
             ? new_parsed->scheme.len + 1   // +1 for :.
             : new_parsed->scheme.len + 3;  // +3 for ://.
-#if BUILDFLAG(IS_WIN)
-    // Because there's an additional leading slash after the scheme for local
-    // files on Windows, we should remove it for URL display when eliding
-    // the scheme by offsetting by an additional character.
-    if (url.SchemeIs(url::kFileScheme) &&
-        base::StartsWith(url_string, u"file:///",
-                         base::CompareCase::INSENSITIVE_ASCII)) {
-      ++new_parsed->path.begin;
-      ++scheme_size;
-      ++scheme_and_separator_len;
-    }
-#endif
 
     url_string.erase(0, scheme_size);
     // Because offsets in the |adjustments| are already calculated with respect

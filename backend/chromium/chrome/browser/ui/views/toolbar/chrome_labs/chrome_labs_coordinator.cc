@@ -21,13 +21,6 @@
 #include "components/webui/flags/pref_service_flags_storage.h"
 #include "ui/views/bubble/bubble_dialog_delegate_view.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/constants/ash_switches.h"
-#include "base/system/sys_info.h"
-#include "chrome/browser/ash/ownership/owner_settings_service_ash.h"
-#include "chrome/browser/ash/ownership/owner_settings_service_ash_factory.h"
-#include "chrome/browser/ash/settings/about_flags.h"
-#endif
 
 ChromeLabsCoordinator::ChromeLabsCoordinator(Browser* browser)
     : browser_(browser) {
@@ -60,23 +53,8 @@ bool ChromeLabsCoordinator::BubbleExists() {
 }
 
 void ChromeLabsCoordinator::Show(ShowUserType user_type) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Bypass possible incognito profile same as chrome://flags does.
-  Profile* original_profile = browser_->profile()->GetOriginalProfile();
-  if (user_type == ShowUserType::kChromeOsOwnerUserType) {
-    ash::OwnerSettingsServiceAsh* service =
-        ash::OwnerSettingsServiceAshFactory::GetForBrowserContext(
-            original_profile);
-    flags_storage_ = std::make_unique<ash::about_flags::OwnerFlagsStorage>(
-        original_profile->GetPrefs(), service);
-  } else {
-    flags_storage_ = std::make_unique<flags_ui::PrefServiceFlagsStorage>(
-        original_profile->GetPrefs());
-  }
-#else
   flags_storage_ = std::make_unique<flags_ui::PrefServiceFlagsStorage>(
       g_browser_process->local_state());
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   flags_state_ = about_flags::GetCurrentFlagsState();
 
@@ -119,11 +97,6 @@ void ChromeLabsCoordinator::Hide() {
 }
 
 void ChromeLabsCoordinator::ShowOrHide() {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (is_waiting_to_show_) {
-    return;
-  }
-#endif
   if (BubbleExists()) {
     Hide();
     return;
@@ -132,34 +105,6 @@ void ChromeLabsCoordinator::ShowOrHide() {
   // ChromeOS verifying if the owner is signed in is async operation.
   // Asynchronously check if the user is the owner and show the Chrome Labs
   // bubble only after we have this information.
-#if BUILDFLAG(IS_CHROMEOS)
-  // Bypass possible incognito profile same as chrome://flags does.
-  Profile* original_profile = browser_->profile()->GetOriginalProfile();
-  if ((base::SysInfo::IsRunningOnChromeOS() ||
-       should_circumvent_device_check_for_testing_) &&
-      ash::OwnerSettingsServiceAshFactory::GetForBrowserContext(
-          original_profile)) {
-    ash::OwnerSettingsServiceAsh* service =
-        ash::OwnerSettingsServiceAshFactory::GetForBrowserContext(
-            original_profile);
-    is_waiting_to_show_ = true;
-    service->IsOwnerAsync(base::BindOnce(
-        [](base::WeakPtr<BrowserView> browser_view,
-           ChromeLabsCoordinator* coordinator, bool is_owner) {
-          // BrowserView may have been destroyed before async function returns
-          if (!browser_view) {
-            return;
-          }
-          is_owner
-              ? coordinator->Show(
-                    ChromeLabsCoordinator::ShowUserType::kChromeOsOwnerUserType)
-              : coordinator->Show();
-          coordinator->is_waiting_to_show_ = false;
-        },
-        BrowserView::GetBrowserViewForBrowser(browser_)->GetAsWeakPtr(), this));
-    return;
-  }
-#endif
   Show();
 }
 

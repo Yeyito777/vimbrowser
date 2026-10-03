@@ -38,9 +38,6 @@ class SystemNotificationHelper {
       std::unique_ptr<NotificationDisplayService> service);
 
  private:
-  // Gets or creates a NotificationDisplayService for system notifications.
-  NotificationDisplayService* GetSystemService();
-
   // The global system NotificationDisplayService, not bound to any profile.
   std::unique_ptr<NotificationDisplayService> system_service_;
 };

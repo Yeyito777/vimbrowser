@@ -65,13 +65,6 @@ DefaultPlatformConfiguration::GetEnableRates(
     return RelativePopulations{0.0, 100.0, 0.0};
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (browser_test_mode_enabled()) {
-    // This is a browser test or maybe a tast test that called
-    // chrome.EnableStackSampledMetrics().
-    return RelativePopulations{0.0, 100.0, 0.0};
-  }
-#endif
 
   CHECK_NE(*release_channel, version_info::Channel::UNKNOWN);
 
@@ -137,218 +130,11 @@ bool DefaultPlatformConfiguration::IsSupportedForChannel(
     return true;
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (browser_test_mode_enabled()) {
-    // This is a browser test or maybe a tast test that called
-    // chrome.EnableStackSampledMetrics().
-    return true;
-  }
-#endif
 
   // All channels are supported in release builds.
   return *release_channel != version_info::Channel::UNKNOWN;
 }
 
-#if BUILDFLAG(IS_ANDROID)
-// The configuration to use for the Android platform. Defined in terms of
-// DefaultPlatformConfiguration where Android does not differ from the default
-// case.
-class AndroidPlatformConfiguration : public DefaultPlatformConfiguration {
- public:
-  explicit AndroidPlatformConfiguration(
-      bool browser_test_mode_enabled,
-      base::RepeatingCallback<bool(double)> is_enabled_on_dev_callback);
-
-  RelativePopulations GetEnableRates(
-      std::optional<version_info::Channel> release_channel) const override;
-
-  double GetChildProcessPerExecutionEnableFraction(
-      sampling_profiler::ProfilerProcessType process) const override;
-
-  std::optional<sampling_profiler::ProfilerProcessType> ChooseEnabledProcess()
-      const override;
-
-  bool IsEnabledForThread(
-      sampling_profiler::ProfilerProcessType process,
-      sampling_profiler::ProfilerThreadType thread,
-      std::optional<version_info::Channel> release_channel) const override;
-
-  bool IsSupportedForChannel(
-      std::optional<version_info::Channel> release_channel) const override;
-
- private:
-  // Whether profiling is enabled on a thread type for Android DEV channel.
-  const base::flat_map<sampling_profiler::ProfilerThreadType, bool>
-      thread_enabled_on_dev_;
-};
-
-AndroidPlatformConfiguration::AndroidPlatformConfiguration(
-    bool browser_test_mode_enabled,
-    base::RepeatingCallback<bool(double)> is_enabled_on_dev_callback)
-    : DefaultPlatformConfiguration(browser_test_mode_enabled),
-      thread_enabled_on_dev_(
-          base::MakeFlatMap<sampling_profiler::ProfilerThreadType, bool>(
-              []() {
-                std::vector<sampling_profiler::ProfilerThreadType> threads;
-                for (int i = 0;
-                     i <= static_cast<int>(
-                              sampling_profiler::ProfilerThreadType::kMax);
-                     i++) {
-                  threads.push_back(
-                      static_cast<sampling_profiler::ProfilerThreadType>(i));
-                }
-                return threads;
-              }(),
-              {},
-              [&](sampling_profiler::ProfilerThreadType thread) {
-                // Only enable 25% of threads on Dev channel as analysis
-                // shows 25% thread enable rate will give us sufficient
-                // resolution (100us).
-                return std::make_pair(thread,
-                                      is_enabled_on_dev_callback.Run(0.25));
-              })) {}
-
-ThreadProfilerPlatformConfiguration::RelativePopulations
-AndroidPlatformConfiguration::GetEnableRates(
-    std::optional<version_info::Channel> release_channel) const {
-  // For now, until http://crbug.com/485225932 is solved, we disable for
-  // local/CQ builds.
-  if (!release_channel.has_value()) {
-    return RelativePopulations{100.0, 0.0, 0.0};
-  }
-  // Always enable profiling in browser test mode.
-  if (browser_test_mode_enabled()) {
-    return RelativePopulations{0.0, 100.0, 0.0};
-  }
-
-  CHECK(*release_channel != version_info::Channel::UNKNOWN);
-
-  if (*release_channel == version_info::Channel::STABLE) {
-// Only enable for arm64, as this does not require DFM installation.
-#if defined(ARCH_CPU_ARM64)
-    // For 100% of population
-    // - 1/2 within the subgroup, i.e. 50.0% of total population, enable
-    // profiling.
-    // - 1/2 within the subgroup, disable profiling.
-    // This results a total of 0.00005% enable rate.
-    static constexpr double experiment_rate = 0.0001;
-    return RelativePopulations{100.0 - experiment_rate, 0.0, experiment_rate};
-#else
-    // Don't enable for arm32.
-    return RelativePopulations{100.0, 0.0, 0.0};
-#endif
-  }
-
-  if (*release_channel == version_info::Channel::BETA) {
-    // For 100% of population
-    // - 1/2 within the subgroup, i.e. 50.0% of total population, enable
-    // profiling.
-    // - 1/2 within the subgroup, disable profiling.
-    // This results a total of 50.0% enable rate.
-    return RelativePopulations{0.0, 0.0, 100.0};
-  }
-
-  // For 100% of population
-  // - 1/2 within the subgroup, i.e. 50.0% of total population, enable
-  // profiling.
-  // - 1/2 within the subgroup, disable profiling.
-  // This results a total of 50.0% enable rate.
-  return RelativePopulations{0.0, 0.0, 100.0};
-}
-
-double AndroidPlatformConfiguration::GetChildProcessPerExecutionEnableFraction(
-    sampling_profiler::ProfilerProcessType process) const {
-  // Unconditionally profile child processes that match ChooseEnabledProcess().
-  return 1.0;
-}
-
-std::optional<sampling_profiler::ProfilerProcessType>
-AndroidPlatformConfiguration::ChooseEnabledProcess() const {
-  // Weights are set such that we will receive similar amount of data from
-  // each process type. The value is calculated based on Canary/Dev channel
-  // data collected when all process are sampled.
-  const struct {
-    sampling_profiler::ProfilerProcessType process;
-    int weight;
-  } process_enable_weights[] = {
-      {sampling_profiler::ProfilerProcessType::kBrowser, 50},
-      {sampling_profiler::ProfilerProcessType::kGpu, 40},
-      {sampling_profiler::ProfilerProcessType::kRenderer, 10},
-  };
-
-  int total_weight = 0;
-  for (const auto& process_enable_weight : process_enable_weights) {
-    total_weight += process_enable_weight.weight;
-  }
-  DCHECK_EQ(100, total_weight);
-
-  int chosen =
-      base::RandIntInclusive(0, total_weight - 1);  // Max is inclusive.
-  int cumulative_weight = 0;
-  for (const auto& process_enable_weight : process_enable_weights) {
-    if (chosen >= cumulative_weight &&
-        chosen < cumulative_weight + process_enable_weight.weight) {
-      return process_enable_weight.process;
-    }
-    cumulative_weight += process_enable_weight.weight;
-  }
-  NOTREACHED();
-}
-
-bool AndroidPlatformConfiguration::IsEnabledForThread(
-    sampling_profiler::ProfilerProcessType process,
-    sampling_profiler::ProfilerThreadType thread,
-    std::optional<version_info::Channel> release_channel) const {
-  if (!DefaultPlatformConfiguration::IsEnabledForThread(process, thread,
-                                                        release_channel)) {
-    return false;
-  }
-
-  if (!release_channel.has_value() || browser_test_mode_enabled()) {
-    return true;
-  }
-
-  switch (*release_channel) {
-    // TODO(crbug.com/40287243): Adjust thread-level enable rate for beta
-    // channel based on the data volume after launch. Temporarily use the same
-    // thread-level enable rate as dev channel.
-    case version_info::Channel::BETA:
-    case version_info::Channel::DEV: {
-      const auto entry = thread_enabled_on_dev_.find(thread);
-      CHECK(entry != thread_enabled_on_dev_.end());
-      return entry->second;
-    }
-    case version_info::Channel::CANARY:
-      return true;
-    default:
-      return false;
-  }
-}
-
-bool AndroidPlatformConfiguration::IsSupportedForChannel(
-    std::optional<version_info::Channel> release_channel) const {
-  // The profiler is always supported for local builds and the CQ.
-  if (!release_channel) {
-    return true;
-  }
-
-  // Canary, dev, beta, stable channels are supported in release builds, with
-  // stable only support on arm64.
-  switch (*release_channel) {
-    case version_info::Channel::CANARY:
-    case version_info::Channel::DEV:
-    case version_info::Channel::BETA:
-#if defined(ARCH_CPU_ARM64)
-    case version_info::Channel::STABLE:
-#endif
-      return true;
-
-    default:
-      return false;
-  }
-}
-
-#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
@@ -357,13 +143,8 @@ std::unique_ptr<ThreadProfilerPlatformConfiguration>
 ThreadProfilerPlatformConfiguration::Create(
     bool browser_test_mode_enabled,
     base::RepeatingCallback<bool(double)> is_enabled_on_dev_callback) {
-#if BUILDFLAG(IS_ANDROID)
-  return std::make_unique<AndroidPlatformConfiguration>(
-      browser_test_mode_enabled, is_enabled_on_dev_callback);
-#else
   return std::make_unique<DefaultPlatformConfiguration>(
       browser_test_mode_enabled);
-#endif
 }
 
 bool ThreadProfilerPlatformConfiguration::IsSupported(

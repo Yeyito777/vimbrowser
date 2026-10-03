@@ -47,11 +47,6 @@
 #error "This file must not be included on macOS; Chromium Mac doesn't use Aura."
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-// TODO(crbug.com/376575664): Remove this include directive when the
-// ADVANCED_MEMORY_SAFETY_CHECKS macro is removed.
-#include "base/memory/advanced_memory_safety_checks.h"
-#endif
 
 namespace cc {
 class LayerTreeFrameSink;
@@ -116,10 +111,6 @@ class AURA_EXPORT Window : public ui::LayerDelegate,
                            public ui::PropertyHandler,
                            public ui::metadata::MetaDataProvider,
                            public viz::HostFrameSinkClient {
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(crbug.com/376575664): Remove this macro once the bug gets fixed.
-  ADVANCED_MEMORY_SAFETY_CHECKS();
-#endif
 
  public:
   METADATA_HEADER_BASE(Window);

@@ -125,12 +125,10 @@ class ProfileAttributesStorage {
   bool IsDefaultProfileName(const std::u16string& name,
                             bool include_check_for_legacy_profile_name) const;
 
-#if !BUILDFLAG(IS_ANDROID)
   // Records statistics about a profile `entry` that is being deleted. If the
   // profile has opened browser window(s) in the moment of deletion, this
   // function must be called before these windows get closed.
   void RecordDeletedProfileState(ProfileAttributesEntry* entry);
-#endif
 
   // Records statistics about profiles as would be visible in the profile picker
   // (if we would display it in this moment).
@@ -268,11 +266,9 @@ class ProfileAttributesStorage {
   // Download and high-res avatars used by the profiles.
   void DownloadAvatars();
 
-#if !BUILDFLAG(IS_ANDROID)
   // Loads GAIA pictures (if any) for all profiles registered in the storage and
   // puts them in memory cache.
   void LoadGAIAPictureIfNeeded();
-#endif
 
 #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_CHROMEOS)
   // Migrate any legacy profile names ("First user", "Default Profile") to

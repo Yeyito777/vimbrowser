@@ -61,6 +61,7 @@ disable_fieldtrial_testing_config=true
 enable_background_mode=false
 enable_backup_ref_ptr_support=false
 enable_downgrade_processing=false
+enable_printing=false
 enable_resource_allowlist_generation=false
 enable_widevine=true
 # Sites such as X/Twitter and Steam serve MP4/H.264/AAC media.  Chromium's
@@ -102,9 +103,14 @@ EOF
 else
   cat >> "${args_tmp}" <<EOF
 target_cpu="${target_cpu}"
-enable_linux_installer=false
 use_sysroot=true
 cef_use_gtk=false
+# Vimbrowser is an X11 browser. Retain headless Ozone for off-screen CEF use,
+# but do not compile or expose the Wayland backend.
+ozone_auto_platforms=false
+ozone_platform="x11"
+ozone_platform_headless=true
+ozone_platform_x11=true
 EOF
 fi
 
@@ -130,6 +136,11 @@ fi
 
 echo "[+] Building ${target} in backend/chromium/out/${build_dir}"
 autoninja_args=(-C "out/${build_dir}" --fast_nop)
+if [[ "${VIMBROWSER_BUILD_QUIET:-0}" == "1" ]]; then
+  # Remote clean builds can contain tens of thousands of status updates. Keep
+  # the transport alive without flooding its bounded output channel.
+  autoninja_args+=(--quiet --heartbeat_period=5m)
+fi
 if [[ -n "${JOBS:-}" ]]; then
   if [[ ! "${JOBS}" =~ ^[1-9][0-9]*$ ]]; then
     echo "error: JOBS must be a positive integer, got '${JOBS}'" >&2

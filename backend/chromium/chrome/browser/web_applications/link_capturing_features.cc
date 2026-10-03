@@ -16,11 +16,7 @@ BASE_FEATURE(kNavigationCapturingOnExistingFrames,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
 bool ShouldShowLinkCapturingUX() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return true;
-#else
   return base::FeatureList::IsEnabled(::features::kPwaNavigationCapturing);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 bool IsNavigationCapturingReimplEnabled() {

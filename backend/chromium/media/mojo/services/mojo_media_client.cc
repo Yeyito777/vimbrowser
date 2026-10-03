@@ -83,16 +83,6 @@ std::unique_ptr<Renderer> MojoMediaClient::CreateCastRenderer(
 }
 #endif  // BUILDFLAG(ENABLE_CAST_RENDERER)
 
-#if BUILDFLAG(IS_WIN)
-std::unique_ptr<Renderer> MojoMediaClient::CreateMediaFoundationRenderer(
-    scoped_refptr<base::SingleThreadTaskRunner> task_runner,
-    mojom::FrameInterfaceFactory* frame_interfaces,
-    mojo::PendingRemote<mojom::MediaLog> media_log_remote,
-    mojo::PendingReceiver<mojom::MediaFoundationRendererExtension>
-        renderer_extension_receiver) {
-  return nullptr;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 std::unique_ptr<CdmFactory> MojoMediaClient::CreateCdmFactory(
     mojom::FrameInterfaceFactory* frame_interfaces) {

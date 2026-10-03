@@ -200,11 +200,7 @@ void KeySystemSupportImpl::NotifyUpdate(
 }
 
 bool KeySystemSupportImpl::allow_hw_secure_capability_check() const {
-#if BUILDFLAG(IS_WIN)
-  return is_protected_content_allowed_ && is_protected_identifier_allowed_;
-#else
   return true;
-#endif
 }
 
 void KeySystemSupportImpl::ObserveKeySystemCapabilities() {

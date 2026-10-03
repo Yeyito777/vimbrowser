@@ -14,16 +14,8 @@
 #include "components/enterprise/browser/identifiers/identifiers_prefs.h"
 #include "components/prefs/pref_service.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "components/policy/core/common/cloud/cloud_policy_util.h"
-#else
 #include "components/enterprise/browser/controller/browser_dm_token_storage.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/utf_string_conversions.h"
-#include "base/win/win_util.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace enterprise {
 
@@ -96,30 +88,12 @@ std::string ProfileIdDelegateImpl::GetDeviceId() {
 
 // static
 std::string ProfileIdDelegateImpl::GetId() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // Gets the device ID from cloud policy.
-  return policy::GetDeviceName();
-#else
   // Gets the device ID from the BrowserDMTokenStorage.
   std::string device_id =
       policy::BrowserDMTokenStorage::Get()->RetrieveClientId();
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, the combination of the client ID and device serial
-  // number are used to form the device ID.
-  //
-  // Serial number could be empty for various reasons. However, we should still
-  // generate a profile ID with whatever we have. Devices without serial number
-  // will have higher chance of twin issue but it is still better than no ID at
-  // all.
-  auto serial_number = base::win::GetSerialNumber();
-  if (serial_number) {
-    device_id += base::WideToUTF8(*serial_number);
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   return device_id;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 }  // namespace enterprise

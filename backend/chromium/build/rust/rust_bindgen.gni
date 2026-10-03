@@ -8,10 +8,6 @@ import("//build/config/sysroot.gni")
 import("//build/rust/rust_bindgen_generator.gni")
 import("//build/rust/rust_static_library.gni")
 
-if (is_win) {
-  import("//build/toolchain/win/win_toolchain_data.gni")
-}
-
 _bindgen_path = "${rust_bindgen_root}/bin/bindgen"
 if (host_os == "win") {
   _bindgen_path = "${_bindgen_path}.exe"

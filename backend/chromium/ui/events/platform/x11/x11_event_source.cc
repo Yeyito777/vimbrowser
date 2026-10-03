@@ -33,9 +33,6 @@
 #include "ui/events/platform/x11/x11_event_watcher_fdwatch.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ui/events/ozone/chromeos/cursor_controller.h"
-#endif
 
 namespace ui {
 

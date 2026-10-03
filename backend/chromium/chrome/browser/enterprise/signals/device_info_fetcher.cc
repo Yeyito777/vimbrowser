@@ -8,8 +8,6 @@
 
 #if BUILDFLAG(IS_MAC)
 #include "chrome/browser/enterprise/signals/device_info_fetcher_mac.h"
-#elif BUILDFLAG(IS_WIN)
-#include "chrome/browser/enterprise/signals/device_info_fetcher_win.h"
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 #include "chrome/browser/enterprise/signals/device_info_fetcher_linux.h"
 #endif

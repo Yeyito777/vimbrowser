@@ -31,9 +31,7 @@
 #include "ui/views/widget/root_view.h"
 #include "ui/views/widget/widget.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/views/accessibility/view_ax_platform_node_delegate_win.h"
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "ui/views/accessibility/view_ax_platform_node_delegate_mac.h"
 #elif BUILDFLAG(IS_LINUX)
 #include "ui/views/accessibility/view_ax_platform_node_delegate_auralinux.h"
@@ -101,8 +99,6 @@ std::unique_ptr<ViewAccessibility> ViewAccessibility::Create(View* view) {
 #if !BUILDFLAG(HAS_NATIVE_ACCESSIBILITY)
   // Cannot use std::make_unique because constructor is protected.
   return base::WrapUnique(new ViewAccessibility(view));
-#elif BUILDFLAG(IS_WIN)
-  return ViewAXPlatformNodeDelegateWin::CreatePlatformSpecific(view);
 #elif BUILDFLAG(IS_MAC)
   return ViewAXPlatformNodeDelegateMac::CreatePlatformSpecific(view);
 #elif BUILDFLAG(IS_LINUX)
@@ -112,13 +108,7 @@ std::unique_ptr<ViewAccessibility> ViewAccessibility::Create(View* view) {
 
 // static
 bool ViewAccessibility::IsViewsAccessibilityTreeEnabled() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS never uses the Views accessibility tree, even if the feature is
-  // enabled elsewhere. Instead, it uses the Automation API.
-  return false;
-#else
   return ::features::IsAccessibilityTreeForViewsEnabled();
-#endif
 }
 
 ViewAccessibility::ViewAccessibility(View* view) : view_(view) {
@@ -1041,20 +1031,6 @@ void ViewAccessibility::OnViewAddedToWidget() {
   // name is stable.
   std::string effective_class = std::string(view_->GetClassName());
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, Narrator restricts focus to web content in Scan Mode only when
-  // the root web area’s parent has class name "Chrome_WidgetWin_1". This is a
-  // hardcoded behavior. It worked before Chromium enabled UIA by default, since
-  // the MSAA Proxy added the root web area under a window with that class name.
-  // We’re collaborating with the Narrator team to update their tab detection
-  // logic, but rollout will take time. This is a temporary mitigation. See
-  // https://crbug.com/443225250 for details.
-  if (::ui::AXPlatform::GetInstance().IsUiaProviderEnabled() &&
-      features::IsFixNarratorWebContentContainmentEnabled() &&
-      effective_class == "ContentsContainerView") {
-    effective_class = "Chrome_WidgetWin_1";
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
   SetClassName(effective_class);
 }
@@ -1819,15 +1795,10 @@ void ViewAccessibility::UpdateIgnoredState() {
 // TODO(crbug.com/371237539): In ChromeOS, its not an expectation that being
 // a view unfocusable descendant of a focusable ancestor will make the view
 // ignored.
-#if !BUILDFLAG(IS_CHROMEOS)
   bool is_ignored = should_be_ignored_ || pruned_ ||
                     GetCachedRole() == ax::mojom::Role::kNone ||
                     (has_focusable_ancestor_ &&
                      view_->GetFocusBehavior() == View::FocusBehavior::NEVER);
-#else
-  bool is_ignored = should_be_ignored_ || pruned_ ||
-                    GetCachedRole() == ax::mojom::Role::kNone;
-#endif  // !BUILDFLAG(IS_CHROMEOS)
   SetState(ax::mojom::State::kIgnored, is_ignored);
   UpdateFocusableState();
 }

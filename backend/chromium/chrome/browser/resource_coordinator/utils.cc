@@ -53,30 +53,6 @@ void AttemptFastKillForDiscard(
       succeed ? AttemptFastKillForDiscardResult::kKilled
               : AttemptFastKillForDiscardResult::kSkipped;
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (!succeed &&
-      discard_reason == ::mojom::LifecycleUnitDiscardReason::URGENT) {
-    // We avoid fast shutdown on tabs with beforeunload handlers on the main
-    // frame, as that is often an indication of unsaved user state.
-    static const bool should_ignore_workers =
-        features::kUrgentDiscardIgnoreWorkers.Get();
-    if (!main_frame->GetSuddenTerminationDisablerState(
-            blink::mojom::SuddenTerminationDisablerType::
-                kBeforeUnloadHandler) &&
-        render_process_host->FastShutdownIfPossible(
-            1u, /*skip_unload_handlers=*/true,
-            /*ignore_workers=*/should_ignore_workers,
-            /*ignore_keep_alive=*/false,
-            /*ignore_pending_reuse=*/false,
-            /*use_outermost_main_frame_check=*/web_contents_discard_enabled)) {
-      result =
-          should_ignore_workers
-              ? AttemptFastKillForDiscardResult::
-                    kKilledWithoutUnloadHandlersAndWorkers
-              : AttemptFastKillForDiscardResult::kKilledWithoutUnloadHandlers;
-    }
-  }
-#endif
   base::UmaHistogramEnumeration("Discarding.AttemptFastKillForDiscardResult",
                                 result);
 }

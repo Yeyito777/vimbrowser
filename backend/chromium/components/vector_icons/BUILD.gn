@@ -291,13 +291,6 @@ if (current_toolchain == default_toolchain) {
       "work.icon",
     ]
 
-    if (is_chromeos) {
-      sources += [
-        "notification_download.icon",
-        "videogame_asset_outline.icon",
-      ]
-    }
-
     if (is_chrome_branded) {
       sources += [
         "google_chrome/google_agentspace_monochrome_logo.icon",

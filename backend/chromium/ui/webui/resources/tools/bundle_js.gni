@@ -99,17 +99,6 @@ template("bundle_js") {
     is_chrome_untrusted =
         string_replace(invoker.host, "chrome-untrusted://", "") != invoker.host
 
-    if (is_chromeos) {
-      ash_resources_path =
-          rebase_path("$root_gen_dir/ash/webui/common/resources/preprocessed/",
-                      root_build_dir)
-      if (!is_chrome_untrusted) {
-        external_paths +=
-            [ "chrome://resources/ash/common/|$ash_resources_path" ]
-      }
-      external_paths += [ "//resources/ash/common/|$ash_resources_path" ]
-    }
-
     if (!is_chrome_untrusted) {
       external_paths += [ "chrome://resources/polymer/v3_0/|$polymer_path" ]
     }

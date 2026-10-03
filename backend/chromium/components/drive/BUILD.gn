@@ -106,25 +106,4 @@ source_set("unit_tests") {
     "//google_apis/drive",
     "//testing/gtest",
   ]
-
-  if (is_chromeos) {
-    sources += [ "search_metadata_unittest.cc" ]
-
-    deps += [ ":drive_chromeos" ]
-  }
-}
-
-if (is_chromeos) {
-  source_set("drive_chromeos") {
-    sources = [
-      "chromeos/search_metadata.cc",
-      "chromeos/search_metadata.h",
-    ]
-    deps = [
-      ":drive",
-      "//base",
-      "//base:i18n",
-      "//net",
-    ]
-  }
 }

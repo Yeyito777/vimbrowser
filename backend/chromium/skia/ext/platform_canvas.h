@@ -10,9 +10,6 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
 
 // The platform-specific device will include the necessary platform headers
 // to get the surface type.

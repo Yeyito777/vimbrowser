@@ -9,9 +9,7 @@
 #include "partition_alloc/partition_alloc_base/compiler_specific.h"
 #include "partition_alloc/partition_alloc_base/strings/safe_sprintf.h"
 
-#if !PA_BUILDFLAG(IS_WIN)
 #include <unistd.h>
-#endif
 
 #include <cmath>
 #include <cstring>

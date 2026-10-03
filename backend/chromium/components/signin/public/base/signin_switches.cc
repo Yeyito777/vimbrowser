@@ -10,9 +10,6 @@
 #include "components/signin/public/base/signin_buildflags.h"
 #include "components/signin/public/base/signin_pref_names.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/windows_version.h"
-#endif
 
 namespace switches {
 
@@ -35,21 +32,7 @@ const char kForceFreDefaultBrowserStep[] = "force-fre-default-browser-step";
 // keep-sorted start allow_yaml_lists=yes case=no group_prefixes=["#if", "#else", "#endif", "const", "};", "}", ");", "//", "bool", "base::", "BASE_FEATURE", "BASE_FEATURE_PARAM"] by_regex=["BASE_FEATURE\\(.*\\);"] skip_lines=2
 // clang-format on
 
-#if BUILDFLAG(IS_IOS)
-BASE_FEATURE(kAccountRetrievalWaitsForRestoration,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
-#if BUILDFLAG(IS_WIN)
-// Enables expanding the Avatar Pill to show a sync promo. Expected to be used
-// by Windows users only.
-BASE_FEATURE(kAvatarButtonSyncPromo, base::FEATURE_ENABLED_BY_DEFAULT);
-BASE_FEATURE_PARAM(base::TimeDelta,
-                   kAvatarButtonSyncPromoMinimumCookieAgeParam,
-                   &kAvatarButtonSyncPromo,
-                   "minimum-cookie-age",
-                   base::Days(14));
-#endif
 // Convenient testing flag for `kAvatarButtonSyncPromo` on all platforms.
 // Also reduces the minimum cookie age to 30 seconds.
 BASE_FEATURE(kAvatarButtonSyncPromoForTesting,
@@ -59,13 +42,7 @@ bool IsAvatarSyncPromoFeatureEnabled() {
           switches::kAvatarButtonSyncPromoForTesting)) {
     return true;
   }
-#if BUILDFLAG(IS_WIN)
-  return (base::win::GetVersion() >= base::win::Version::WIN7 &&
-          base::win::GetVersion() <= base::win::Version::WIN10_22H2) &&
-         base::FeatureList::IsEnabled(switches::kAvatarButtonSyncPromo);
-#else
   return false;
-#endif
 }
 base::TimeDelta GetAvatarSyncPromoFeatureMinimumCookeAgeParam() {
   CHECK(IsAvatarSyncPromoFeatureEnabled());
@@ -73,11 +50,7 @@ base::TimeDelta GetAvatarSyncPromoFeatureMinimumCookeAgeParam() {
           switches::kAvatarButtonSyncPromoForTesting)) {
     return base::Seconds(30);
   }
-#if BUILDFLAG(IS_WIN)
-  return kAvatarButtonSyncPromoMinimumCookieAgeParam.Get();
-#else
   NOTREACHED();
-#endif
 }
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
@@ -91,29 +64,8 @@ BASE_FEATURE(kBoundSessionCredentialsKillSwitch,
              base::FEATURE_DISABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 
-#if BUILDFLAG(IS_IOS)
-BASE_FEATURE(kCacheIdentityListInChrome, base::FEATURE_DISABLED_BY_DEFAULT);
-BASE_FEATURE(kEnableACPrefetch, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kCctSignInPrompt, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kChromeAndroidIdentitySurveyFirstRun,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-BASE_FEATURE(kChromeAndroidIdentitySurveyWeb,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-BASE_FEATURE(kChromeAndroidIdentitySurveyNtpSigninButton,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-BASE_FEATURE(kChromeAndroidIdentitySurveyNtpAccountAvatarTap,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-BASE_FEATURE(kChromeAndroidIdentitySurveyNtpPromo,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-BASE_FEATURE(kChromeAndroidIdentitySurveyBookmarkPromo,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 constexpr char kHatsSurveyProbabilityName[] = "probability";
@@ -231,29 +183,13 @@ constexpr base::FeatureParam<U18FeedbackDesktopState>
                                     &kDisableU18FeedbackDesktopStates};
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_ANDROID)
-// Whether activityless sign-in should be used for all entry points.
-BASE_FEATURE(kEnableActivitylessSigninAllEntryPoint,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kEnableAddSessionRedirect, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
-#if BUILDFLAG(IS_IOS)
-BASE_FEATURE(kEnableASWebAuthenticationSession,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 #if BUILDFLAG(ENABLE_BOUND_SESSION_CREDENTIALS)
 // Enable experimental binding session credentials to the device.
 BASE_FEATURE(kEnableBoundSessionCredentials,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 bool IsBoundSessionCredentialsEnabled(const PrefService* profile_prefs) {
   // Enterprise policy takes precedence over the feature value.
@@ -273,11 +209,7 @@ const base::FeatureParam<std::string>
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
 // Enables Chrome refresh tokens binding to a device.
 BASE_FEATURE(kEnableChromeRefreshTokenBinding,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif
 );
 bool IsChromeRefreshTokenBindingEnabled(const PrefService* profile_prefs) {
   // Enterprise policy takes precedence over the feature value.
@@ -299,11 +231,7 @@ BASE_FEATURE(kEnableFakeCapabilityForTesting,
 // If `kEnableOAuthMultiloginStandardCookiesBinding` is enabled, DBSC standard
 // takes precedence over DBSC prototype.
 BASE_FEATURE(kEnableOAuthMultiloginCookiesBinding,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif  // BUILDFLAG(IS_WIN)
 );
 #endif  // BUILDFLAG(ENABLE_DICE_SUPPORT)
 
@@ -315,11 +243,7 @@ BASE_FEATURE(kEnableOAuthMultiloginCookiesBinding,
 // NOTE: This flag is meant to be used in conjunction with the
 // `kEnableOAuthMultiloginCookiesBinding` flag.
 BASE_FEATURE(kEnableOAuthMultiloginCookiesBindingServerExperiment,
-#if BUILDFLAG(IS_WIN)
-             base::FEATURE_ENABLED_BY_DEFAULT
-#else
              base::FEATURE_DISABLED_BY_DEFAULT
-#endif  // BUILDFLAG(IS_WIN)
 );
 BASE_FEATURE_PARAM(bool,
                    kOAuthMultiloginCookieBindingEnforced,
@@ -344,46 +268,14 @@ BASE_FEATURE(kEnableOAuthMultiloginStandardCookiesBindingForGlicPartition,
 #endif  // BUILDFLAG(ENABLE_DICE_SUPPORT)
 
 BASE_FEATURE(kEnablePreferencesAccountStorage,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_DISABLED_BY_DEFAULT
-#else
              base::FEATURE_ENABLED_BY_DEFAULT
-#endif  // BUILDFLAG(IS_CHROMEOS)
 );
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kEnableSeamlessSignin, base::FEATURE_DISABLED_BY_DEFAULT);
-// Determines the sign-in promo UI that is shown when kEnableSeamlessSignin is
-// enabled.
-constexpr base::FeatureParam<SeamlessSigninPromoType>::Option
-    kSeamlessSigninPromoTypes[] = {
-        {SeamlessSigninPromoType::kCompact, "compact"},
-        {SeamlessSigninPromoType::kTwoButtons, "twoButtons"},
-};
-constexpr base::FeatureParam<SeamlessSigninPromoType> kSeamlessSigninPromoType{
-    &kEnableSeamlessSignin, "seamless-signin-promo-type",
-    SeamlessSigninPromoType::kCompact, &kSeamlessSigninPromoTypes};
-// Determines the sign-in promo strings that are shown when
-// kEnableSeamlessSignin is enabled.
-constexpr base::FeatureParam<SeamlessSigninStringType>::Option
-    kSeamlessSigninStringTypes[] = {
-        {SeamlessSigninStringType::kContinueButton, "continueButton"},
-        {SeamlessSigninStringType::kSigninButton, "signinButton"},
-};
-constexpr base::FeatureParam<SeamlessSigninStringType>
-    kSeamlessSigninStringType{
-        &kEnableSeamlessSignin, "seamless-signin-string-type",
-        SeamlessSigninStringType::kContinueButton, &kSeamlessSigninStringTypes};
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
 BASE_FEATURE(kEnableSearchAIModeSigninPromo, base::FEATURE_DISABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(ENABLE_DICE_SUPPORT)
 
-#if BUILDFLAG(IS_IOS)
-BASE_FEATURE(kEnforceCanSignInToChromeCapability,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
 // Enables the management disclaimer for managed signed profiles. All signed in
@@ -429,43 +321,24 @@ constexpr base::FeatureParam<FirstRunDesktopSignInPromoVariation>
 BASE_FEATURE(kFirstRunDesktopRevamp, base::FEATURE_DISABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kForceHistoryOptInScreen, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 // Features to trigger the startup sign-in promo at boot.
 BASE_FEATURE(kForceStartupSigninPromo, base::FEATURE_DISABLED_BY_DEFAULT);
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kFRESignInAlternativeSecondaryButtonText,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS)
 BASE_FEATURE(kFullscreenSignInPromoUseDate, base::FEATURE_DISABLED_BY_DEFAULT);
 #endif
 
-#if !BUILDFLAG(IS_IOS)
 BASE_FEATURE(kGlicEligibilitySeparateAccountCapability,
              base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
 BASE_FEATURE(kHandleMdmErrorsForDasherAccounts,
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_IOS)
-BASE_FEATURE(kIdentityInAuthErrorFollowUps, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kMakeIdentityManagerSourceOfAccounts,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-// When enabled a new library is used to fetch accounts via
-// AccountManagerAccountManagerDelegate
-BASE_FEATURE(kMigrateAccountManagerDelegate, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 BASE_FEATURE(kNonDefaultGaiaOriginCheck, base::FEATURE_ENABLED_BY_DEFAULT);
 
@@ -514,26 +387,15 @@ constexpr base::FeatureParam<ProfilePickerVariation>
 
 BASE_FEATURE(kProfilesReordering, base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_IOS)
-BASE_FEATURE(kReadContextualAccountCapabilities,
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
 BASE_FEATURE(kRestrictDeviceManagementServiceOAuthScope,
              base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 BASE_FEATURE(kShowProfilePickerToAllUsersExperiment,
              base::FEATURE_DISABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kSigninLevelUpButton, base::FEATURE_DISABLED_BY_DEFAULT);
-
-BASE_FEATURE(kSigninManagerSeedingFix, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 BASE_FEATURE(kSigninPromoLimitsExperiment, base::FEATURE_DISABLED_BY_DEFAULT);
 const base::FeatureParam<int> kContextualSigninPromoShownThreshold(
@@ -579,67 +441,27 @@ bool IsSigninWindows10DepreciationState() {
           switches::kSigninWindows10DepreciationStateForTesting)) {
     return true;
   }
-#if BUILDFLAG(IS_WIN)
-  return base::win::GetVersion() >= base::win::Version::WIN7 &&
-         base::win::GetVersion() <= base::win::Version::WIN10_22H2;
-#else
   return false;
-#endif
 }
 
-#if BUILDFLAG(IS_ANDROID)
-// Feature to bypass double-checking that signin callers have correctly gotten
-// the user to accept account management. This check is slow and not strictly
-// necessary, so disable it while we work on adding caching.
-// TODO(https://crbug.com/339457762): Restore the check when we implement
-// caching.
-BASE_FEATURE(kSkipCheckForAccountManagementOnSignin,
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 BASE_FEATURE(kSkipRefreshTokenCheckInIdentityManager,
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kSmartEmailLineBreaking, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Enables the generation of pseudo-stable per-user per-device device
-// identifiers. This identifier can be reset by the user by powerwashing the
-// device.
-BASE_FEATURE(kStableDeviceId, base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_IOS)
-BASE_FEATURE(kSupportAddSessionEmailPrefill, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 // Kill switch for displaying sign-in errors in the profile picker.
 BASE_FEATURE(kSupportErrorsInProfilePicker, base::FEATURE_ENABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
-#if BUILDFLAG(IS_ANDROID)
-BASE_FEATURE(kSupportForcedSigninPolicy, base::FEATURE_DISABLED_BY_DEFAULT);
-
-// Killswitch for the support of AddSession in web sign-in flow.
-BASE_FEATURE(kSupportWebSigninAddSession, base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
 
 BASE_FEATURE(kSyncEnableBookmarksInTransportMode,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_DISABLED_BY_DEFAULT
-#else
              base::FEATURE_ENABLED_BY_DEFAULT
-#endif
 );
 BASE_FEATURE(kBookmarksMigrateUiChanges,
-#if BUILDFLAG(IS_CHROMEOS)
-             base::FEATURE_DISABLED_BY_DEFAULT
-#else
              base::FEATURE_ENABLED_BY_DEFAULT
-#endif
 );
 
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
@@ -655,11 +477,7 @@ BASE_FEATURE(kUsePrimaryAndTonalButtonsForPromos,
 // keep-sorted end
 
 bool IsExtensionsExplicitBrowserSigninEnabled() {
-#if BUILDFLAG(IS_CHROMEOS)
-  return false;
-#else
   return true;
-#endif
 }
 
 }  // namespace switches

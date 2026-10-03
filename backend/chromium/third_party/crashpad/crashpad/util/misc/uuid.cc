@@ -97,11 +97,6 @@ bool UUID::InitializeFromString(std::string_view string) {
   return true;
 }
 
-#if BUILDFLAG(IS_WIN)
-bool UUID::InitializeFromString(std::wstring_view string) {
-  return InitializeFromString(base::WideToUTF8(string));
-}
-#endif
 
 bool UUID::InitializeWithNew() {
 #if BUILDFLAG(IS_APPLE)
@@ -128,15 +123,6 @@ bool UUID::InitializeWithNew() {
 #endif  // BUILDFLAG(IS_APPLE)
 }
 
-#if BUILDFLAG(IS_WIN)
-void UUID::InitializeFromSystemUUID(const ::UUID* system_uuid) {
-  static_assert(sizeof(::UUID) == sizeof(UUID),
-                "unexpected system uuid size");
-  static_assert(offsetof(::UUID, Data1) == offsetof(UUID, data_1),
-                "unexpected system uuid layout");
-  memcpy(this, system_uuid, sizeof(*this));
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 std::string UUID::ToString() const {
   return base::StringPrintf("%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
@@ -153,10 +139,5 @@ std::string UUID::ToString() const {
                             data_5[5]);
 }
 
-#if BUILDFLAG(IS_WIN)
-std::wstring UUID::ToWString() const {
-  return base::UTF8ToWide(ToString());
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace crashpad

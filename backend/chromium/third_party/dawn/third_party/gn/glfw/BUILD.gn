@@ -112,16 +112,6 @@ static_library("glfw") {
     ]
   }
 
-  if (is_win) {
-    sources += [
-      "${glfw_dir}/src/win32_module.c",
-      "${glfw_dir}/src/win32_thread.c",
-      "${glfw_dir}/src/win32_thread.h",
-      "${glfw_dir}/src/win32_time.c",
-      "${glfw_dir}/src/win32_time.h",
-    ]
-  }
-
   # Per-backend code.
   if (dawn_use_x11) {
     defines += [ "_GLFW_X11" ]
@@ -184,19 +174,6 @@ static_library("glfw") {
       "-Wno-sign-compare",
       "-Wno-unguarded-availability",
       "-Wno-objc-multiple-method-names",
-    ]
-  }
-
-  if (is_win) {
-    defines += [ "_GLFW_WIN32" ]
-    sources += [
-      "${glfw_dir}/src/wgl_context.c",
-      "${glfw_dir}/src/win32_init.c",
-      "${glfw_dir}/src/win32_joystick.c",
-      "${glfw_dir}/src/win32_joystick.h",
-      "${glfw_dir}/src/win32_monitor.c",
-      "${glfw_dir}/src/win32_platform.h",
-      "${glfw_dir}/src/win32_window.c",
     ]
   }
 }

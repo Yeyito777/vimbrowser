@@ -41,7 +41,6 @@ namespace ui_controls {
 // tests.
 void EnableUIControls();
 
-#if !BUILDFLAG(IS_ANDROID)
 // Reset the state in ui controls logic that are updated by the test to the
 // initial state.
 void ResetUIControlsIfEnabled();
@@ -53,7 +52,6 @@ bool IsUIControlsEnabled();
 // Generates keyboard accelerator state in bitmap from each key boolean.
 int GenerateAcceleratorState(bool control, bool shift, bool alt, bool command);
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 enum KeyEventType { kKeyPress = 1 << 0, kKeyRelease = 1 << 1 };
 
@@ -89,7 +87,6 @@ enum AcceleratorState {
 
 // Not supported on win.
 // TODO(crbug.com/40256300): Support this on win.
-#if !BUILDFLAG(IS_WIN)
 // Sends a key press and/or release message with/without modifier keys.
 // `key_event_types` is a bitmask of KeyEventType constants that indicates what
 // events are generated.
@@ -102,9 +99,7 @@ bool SendKeyEventsNotifyWhenDone(gfx::NativeWindow window,
                                  int key_event_types,
                                  base::OnceClosure task,
                                  int accelerator_state = kNoAccelerator);
-#endif  // !BUILDFLAG(IS_WIN)
 
-#if !BUILDFLAG(IS_ANDROID)
 
 // A default value for a window hint specifies that no window hint is given and
 // an appropriate target window should be deduced from the target or current
@@ -175,26 +170,6 @@ bool SendMouseEventsNotifyWhenDone(
 bool SendMouseClick(MouseButton type,
                     gfx::NativeWindow window_hint = gfx::NativeWindow());
 
-#if BUILDFLAG(IS_WIN)
-// Send WM_POINTER messages to generate touch events. There is no way to detect
-// when events are received by chrome, it's up to users of this API to detect
-// when events arrive. |action| is a bitmask of the TouchType constants that
-// indicate what events are generated, |num| is the number of the touch
-// pointers, |screen_x| and |screen_y| are the screen coordinates of a touch
-// pointer.
-bool SendTouchEvents(int action, int num, int screen_x, int screen_y);
-#elif BUILDFLAG(IS_CHROMEOS)
-// Sends a TouchEvent to the window system. |action| is a bitmask of the
-// TouchType constants that indicates what events are generated, |id| identifies
-// the touch point.
-// TODO(mukai): consolidate this interface with the Windows SendTouchEvents.
-bool SendTouchEvents(int action, int id, int x, int y);
-bool SendTouchEventsNotifyWhenDone(int action,
-                                   int id,
-                                   int x,
-                                   int y,
-                                   base::OnceClosure task);
-#endif
 
 #if BUILDFLAG(IS_LINUX)
 // Forces the platform implementation to use screen coordinates, even if they're
@@ -217,7 +192,6 @@ void InstallUIControlsAura(UIControlsAura* instance);
 bool IsFullKeyboardAccessEnabled();
 #endif
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace ui_controls
 

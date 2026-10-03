@@ -18,10 +18,6 @@
 #include "base/posix/eintr_wrapper.h"
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-#include <lib/zx/vmo.h>
-#include "base/fuchsia/fuchsia_logging.h"
-#endif
 
 namespace gfx {
 
@@ -39,9 +35,6 @@ NativePixmapPlane::NativePixmapPlane(int stride,
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
                                      ,
                                      base::ScopedFD fd
-#elif BUILDFLAG(IS_FUCHSIA)
-                                     ,
-                                     zx::vmo vmo
 #endif
                                      )
     : stride(stride),
@@ -50,9 +43,6 @@ NativePixmapPlane::NativePixmapPlane(int stride,
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
       ,
       fd(std::move(fd))
-#elif BUILDFLAG(IS_FUCHSIA)
-      ,
-      vmo(std::move(vmo))
 #endif
 {
 }
@@ -92,22 +82,6 @@ NativePixmapHandle CloneHandleForIPC(const NativePixmapHandle& handle) {
     cloned_plane.size = plane.size;
     cloned_plane.fd = std::move(fd_dup);
     clone.planes.push_back(std::move(cloned_plane));
-#elif BUILDFLAG(IS_FUCHSIA)
-    zx::vmo vmo_dup;
-    // VMO may be set to NULL for pixmaps that cannot be mapped.
-    if (plane.vmo) {
-      zx_status_t status = plane.vmo.duplicate(ZX_RIGHT_SAME_RIGHTS, &vmo_dup);
-      if (status != ZX_OK) {
-        ZX_DLOG(ERROR, status) << "zx_handle_duplicate";
-        return NativePixmapHandle();
-      }
-    }
-    NativePixmapPlane cloned_plane;
-    cloned_plane.stride = plane.stride;
-    cloned_plane.offset = plane.offset;
-    cloned_plane.size = plane.size;
-    cloned_plane.vmo = std::move(vmo_dup);
-    clone.planes.push_back(std::move(cloned_plane));
 #else
 #error Unsupported OS
 #endif
@@ -119,18 +93,6 @@ NativePixmapHandle CloneHandleForIPC(const NativePixmapHandle& handle) {
       handle.supports_zero_copy_webgpu_import;
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-  if (handle.buffer_collection_handle) {
-    zx_status_t status = handle.buffer_collection_handle.duplicate(
-        ZX_RIGHT_SAME_RIGHTS, &clone.buffer_collection_handle);
-    if (status != ZX_OK) {
-      ZX_DLOG(ERROR, status) << "zx_handle_duplicate";
-      return NativePixmapHandle();
-    }
-  }
-  clone.buffer_index = handle.buffer_index;
-  clone.ram_coherency = handle.ram_coherency;
-#endif
 
   return clone;
 }

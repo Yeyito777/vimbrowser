@@ -86,20 +86,6 @@ static_library("browser") {
     "//ui/base",
   ]
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
-  if (is_android) {
-    sources += [
-      "ads_blocked_message_delegate.cc",
-      "ads_blocked_message_delegate.h",
-    ]
-    deps += [
-      "//components/messages/android",
-      "//components/messages/android:feature_flags",
-      "//components/resources:android_resources",
-      "//components/strings:components_strings_grit",
-      "//components/subresource_filter/android",
-      "//components/subresource_filter/android:subresource_filter_jni_headers",
-    ]
-  }
 }
 
 static_library("test_support") {
@@ -150,9 +136,6 @@ static_library("test_support") {
     "//net",
     "//url",
   ]
-  if (is_android) {
-    deps += [ "//components/messages/android:test_support" ]
-  }
 }
 
 source_set("unit_tests") {
@@ -202,14 +185,7 @@ source_set("unit_tests") {
     "//url",
   ]
   public_deps = [ "//components/subresource_filter/content/mojom" ]
-  if (is_android) {
-    sources += [ "ads_blocked_message_delegate_unittest.cc" ]
-    deps += [
-      "//components/messages/android:test_support",
-      "//components/resources:android_resources",
-      "//components/strings:components_strings_grit",
-    ]
-  }
+
   if (is_ios && use_blink) {
     deps += [ "//components/test:subresource_filter_test_bundle_data" ]
   }

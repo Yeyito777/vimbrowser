@@ -72,8 +72,6 @@ MojoActionForChromeAction(actions::ActionId action_id) {
       return side_panel::customize_chrome::mojom::ActionId::kClearBrowsingData;
     case kActionPrint:
       return side_panel::customize_chrome::mojom::ActionId::kPrint;
-    case kActionShowTranslate:
-      return side_panel::customize_chrome::mojom::ActionId::kShowTranslate;
     case kActionSendTabToSelf:
       return side_panel::customize_chrome::mojom::ActionId::kSendTabToSelf;
     case kActionQrCodeGenerator:
@@ -132,8 +130,6 @@ std::optional<actions::ActionId> ChromeActionForMojoAction(
       return kActionClearBrowsingData;
     case side_panel::customize_chrome::mojom::ActionId::kPrint:
       return kActionPrint;
-    case side_panel::customize_chrome::mojom::ActionId::kShowTranslate:
-      return kActionShowTranslate;
     case side_panel::customize_chrome::mojom::ActionId::kSendTabToSelf:
       return kActionSendTabToSelf;
     case side_panel::customize_chrome::mojom::ActionId::kQrCodeGenerator:
@@ -361,8 +357,6 @@ void CustomizeToolbarHandler::ListActions(ListActionsCallback callback) {
   add_action(kActionSidePanelShowLensOverlayResults,
              side_panel::customize_chrome::mojom::CategoryId::kTools);
   add_action(kActionSidePanelShowSearchCompanion,
-             side_panel::customize_chrome::mojom::CategoryId::kTools);
-  add_action(kActionShowTranslate,
              side_panel::customize_chrome::mojom::CategoryId::kTools);
   add_action(kActionQrCodeGenerator,
              side_panel::customize_chrome::mojom::CategoryId::kTools);

@@ -17,14 +17,7 @@
 #include "device/fido/mac/authenticator.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "device/fido/win/authenticator.h"
-#include "device/fido/win/webauthn_api.h"
-#endif
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "device/fido/cros/authenticator.h"
-#endif
 
 namespace content {
 
@@ -45,20 +38,6 @@ void IsUVPlatformAuthenticatorAvailable(
                                                        std::move(callback));
 }
 
-#elif BUILDFLAG(IS_WIN)
-void IsUVPlatformAuthenticatorAvailable(
-    IsUVPlatformAuthenticatorAvailableCallback callback) {
-  device::WinWebAuthnApiAuthenticator::
-      IsUserVerifyingPlatformAuthenticatorAvailable(
-          device::WinWebAuthnApi::GetDefault(), std::move(callback));
-}
-
-#elif BUILDFLAG(IS_CHROMEOS)
-void IsUVPlatformAuthenticatorAvailable(
-    IsUVPlatformAuthenticatorAvailableCallback callback) {
-  device::ChromeOSAuthenticator::IsUVPlatformAuthenticatorAvailable(
-      std::move(callback));
-}
 #endif
 
 }  // namespace content

@@ -19,8 +19,6 @@
 
 #if BUILDFLAG(IS_APPLE)
 #include <mach/mach.h>
-#elif BUILDFLAG(IS_WIN)
-#include <windows.h>
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 #include <ucontext.h>
 #endif  // BUILDFLAG(IS_APPLE)
@@ -33,8 +31,6 @@ using NativeCPUContext = x86_thread_state;
 #elif defined(ARCH_CPU_ARM64)
 using NativeCPUContext = arm_unified_thread_state;
 #endif
-#elif BUILDFLAG(IS_WIN)
-using NativeCPUContext = CONTEXT;
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 using NativeCPUContext = ucontext_t;
 #endif  // BUILDFLAG(IS_APPLE)

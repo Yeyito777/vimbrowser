@@ -17,9 +17,6 @@
 #include "ui/views/controls/menu/menu_controller.h"
 #include "ui/views/property_effects.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/dpi.h"
-#endif
 
 namespace views {
 

@@ -20,11 +20,6 @@
 #include "content/public/common/zygote/zygote_handle.h"
 #endif  // BUILDFLAG(USE_ZYGOTE)
 
-#if BUILDFLAG(IS_WIN)
-#include "base/synchronization/waitable_event.h"
-#include "base/win/scoped_handle.h"
-#include "sandbox/win/src/sandbox_policy.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/process_requirement.h"
@@ -41,32 +36,12 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
 
   sandbox::mojom::Sandbox GetSandboxType() override;
 
-#if BUILDFLAG(IS_WIN)
-  std::string GetSandboxTag() override;
-  bool GetAppContainerId(std::string* appcontainer_id) override;
-  bool DisableDefaultPolicy() override;
-  bool ShouldLaunchElevated() override;
-  bool InitializeConfig(sandbox::TargetConfig* config) override;
-  bool ShouldUnsandboxedRunInJob() override;
-  bool CetCompatible() override;
-  bool PreSpawnTarget(sandbox::TargetPolicy* policy) override;
-  // Set preload libraries to transfer as part of the sandbox delegate data,
-  // which will used in utility_main to preload these libraries before lockdown.
-  void SetPreloadLibraries(const std::vector<base::FilePath>& preloads) {
-    preload_libraries_ = preloads;
-  }
-  // Set the event used for bootstrap info. Takes a duplicate of the passed
-  // event and ensures it is passed to the utility process.
-  void SetBootstrapStatusEvent(const base::WaitableEvent& event);
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(USE_ZYGOTE)
   ZygoteCommunication* GetZygote() override;
 #endif  // BUILDFLAG(USE_ZYGOTE)
 
-#if BUILDFLAG(IS_POSIX)
   base::EnvironmentMap GetEnvironment() override;
-#endif  // BUILDFLAG(IS_POSIX)
 
 #if BUILDFLAG(USE_ZYGOTE)
   void SetZygote(ZygoteCommunication* handle);
@@ -77,29 +52,14 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
 #endif  // BUILDFLAG(IS_MAC)
 
  private:
-#if BUILDFLAG(IS_POSIX)
   base::EnvironmentMap env_;
-#endif  // BUILDFLAG(IS_POSIX)
 
-#if BUILDFLAG(IS_WIN)
-  // Adds preload-libraries to the delegate blob for utility_main() to access
-  // before lockdown is initialized.
-  void AddDelegateData(sandbox::TargetPolicy* policy);
-
-  std::vector<base::FilePath> preload_libraries_;
-
-  std::optional<base::win::ScopedHandle> event_handle_to_inherit_;
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(USE_ZYGOTE)
   std::optional<raw_ptr<ZygoteCommunication>> zygote_;
 #endif  // BUILDFLAG(USE_ZYGOTE)
 
   const sandbox::mojom::Sandbox sandbox_type_;
-#if BUILDFLAG(IS_WIN)
-  // If true then App Container will not be used for this utility process.
-  const bool app_container_disabled_;
-#endif  // BUILDFLAG(IS_WIN)
   base::CommandLine cmd_line_;
 };
 }  // namespace content

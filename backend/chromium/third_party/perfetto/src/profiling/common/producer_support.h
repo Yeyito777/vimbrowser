@@ -18,7 +18,6 @@
 #define SRC_PROFILING_COMMON_PRODUCER_SUPPORT_H_
 
 #include <cinttypes>
-#include <string>
 #include <vector>
 
 #include "perfetto/tracing/core/forward_decls.h"
@@ -29,11 +28,6 @@ namespace profiling {
 bool CanProfile(const DataSourceConfig& ds_config,
                 uint64_t uid,
                 const std::vector<std::string>& installed_by);
-bool CanProfileAndroid(const DataSourceConfig& ds_config,
-                       uint64_t uid,
-                       const std::vector<std::string>& installed_by,
-                       const std::string& build_type,
-                       const std::string& packages_list_path);
 
 }  // namespace profiling
 }  // namespace perfetto

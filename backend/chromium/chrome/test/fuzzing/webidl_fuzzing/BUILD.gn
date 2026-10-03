@@ -10,7 +10,7 @@ group("test") {
   testonly = true
 }
 
-if (!is_android && !is_msan && fuzzing_engine_supports_custom_main) {
+if (!is_msan && fuzzing_engine_supports_custom_main) {
   action("webidl_grammar_generator") {
     script =
         "//chrome/test/fuzzing/webidl_fuzzing/grammar_generator/generator.py"

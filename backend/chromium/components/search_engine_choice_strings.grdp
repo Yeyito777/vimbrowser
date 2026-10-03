@@ -3,7 +3,7 @@
 
   <!-- Non-choice screen strings -->
 
-  <message name="IDS_SEARCH_ENGINE_CHOICE_SETTINGS_SUBTITLE" desc="This is the body text of a dialog where the user can change their default search engine. This string explains that the list of search engines reflects the user’s region and are randomized (not in order of recommendation). We want users to understand that they can use any search engine with Chrome." formatter_data="android_java">
+  <message name="IDS_SEARCH_ENGINE_CHOICE_SETTINGS_SUBTITLE" desc="This is the body text of a dialog where the user can change their default search engine. This string explains that the list of search engines reflects the user’s region and are randomized (not in order of recommendation). We want users to understand that they can use any search engine with Chrome.">
     These search engines are popular in your region and are shown in random order
   </message>
 
@@ -36,7 +36,7 @@
 
   <!-- Choice screen only strings -->
 
-  <if expr="not is_android"> <!-- Since Chrome does not show these choice screens on Android, exclude them from these builds.-->
+   <!-- Since Chrome does not show these choice screens on Android, exclude them from these builds.-->
 
     <if expr="use_titlecase">
       <message name="IDS_SEARCH_ENGINE_CHOICE_PAGE_TITLE" desc="This string is the heading of a screen that prompts the user to select the search engine that they want to use by default. (A search engine provides answers to search queries; this is different from a browser, which displays web pages. A search engine powers many experiences within a browser.) We want users to read this screen and understand that they can use any search engine with Chrome.">
@@ -158,5 +158,5 @@
       Use for all Guest profiles
     </message>
 
-  </if> <!-- end not is_android -->
+   <!-- end not is_android -->
 </grit-part>

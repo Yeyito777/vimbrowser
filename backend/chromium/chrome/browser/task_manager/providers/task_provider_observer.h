@@ -30,11 +30,6 @@ class TaskProviderObserver {
   // is only for tasks representing renderer processes.
   virtual void TaskUnresponsive(Task* task) {}
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // This notifies of the event that the TaskIdsList maintained by
-  // GetTaskIdsList() should be invalidated.
-  virtual void TaskIdsListToBeInvalidated() {}
-#endif
 };
 
 }  // namespace task_manager

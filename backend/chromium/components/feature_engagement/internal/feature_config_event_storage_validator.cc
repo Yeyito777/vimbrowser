@@ -88,9 +88,6 @@ void FeatureConfigEventStorageValidator::InitializeFeatures(
     InitializeGroupConfig(configuration.GetGroupConfig(*group));
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  InitializeEventPrefixes(configuration);
-#endif
 }
 
 void FeatureConfigEventStorageValidator::ClearForTesting() {
@@ -132,12 +129,5 @@ void FeatureConfigEventStorageValidator::InitializeEventConfig(
     longest_storage_times_[event_config.name] = event_config.storage;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void FeatureConfigEventStorageValidator::InitializeEventPrefixes(
-    const Configuration& configuration) {
-  const auto& prefixes = configuration.GetRegisteredAllowedEventPrefixes();
-  should_store_event_name_prefixes_.insert(prefixes.begin(), prefixes.end());
-}
-#endif
 
 }  // namespace feature_engagement

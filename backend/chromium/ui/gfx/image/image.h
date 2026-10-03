@@ -70,10 +70,7 @@ class COMPONENT_EXPORT(GFX) Image {
   // representation.
   explicit Image(const ImageSkia& image);
 
-#if BUILDFLAG(IS_IOS)
-  // Retains |image|.
-  explicit Image(UIImage* image);
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   // Retains |image|.
   explicit Image(NSImage* image);
 #endif
@@ -119,9 +116,7 @@ class COMPONENT_EXPORT(GFX) Image {
   // the Image. Must only be called if IsEmpty() is false.
   const SkBitmap* ToSkBitmap() const;
   const ImageSkia* ToImageSkia() const;
-#if BUILDFLAG(IS_IOS)
-  UIImage* ToUIImage() const;
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
   NSImage* ToNSImage() const;
 #endif
 

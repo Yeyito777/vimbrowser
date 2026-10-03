@@ -9,17 +9,23 @@
 #include "cef/include/views/cef_window_delegate.h"
 #include "cef/libcef/browser/browser_host_base.h"
 #include "cef/libcef/browser/views/browser_view_impl.h"
+#include "cef/libcef/common/task_runner_impl.h"
+#include "content/public/browser/web_contents.h"
 
 namespace {
 
-// Default popup window delegate implementation.
-class PopupWindowDelegate : public CefWindowDelegate {
+// Vimbrowser has no generic top-level web-popup window. Document
+// Picture-in-Picture is the sole retained floating browsing surface.
+class PictureInPictureWindowDelegate : public CefWindowDelegate {
  public:
-  explicit PopupWindowDelegate(CefRefPtr<CefBrowserView> browser_view)
+  explicit PictureInPictureWindowDelegate(
+      CefRefPtr<CefBrowserView> browser_view)
       : browser_view_(browser_view) {}
 
-  PopupWindowDelegate(const PopupWindowDelegate&) = delete;
-  PopupWindowDelegate& operator=(const PopupWindowDelegate&) = delete;
+  PictureInPictureWindowDelegate(const PictureInPictureWindowDelegate&) =
+      delete;
+  PictureInPictureWindowDelegate& operator=(
+      const PictureInPictureWindowDelegate&) = delete;
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) override {
     window->AddChildView(browser_view_);
@@ -46,7 +52,7 @@ class PopupWindowDelegate : public CefWindowDelegate {
  private:
   CefRefPtr<CefBrowserView> browser_view_;
 
-  IMPLEMENT_REFCOUNTING(PopupWindowDelegate);
+  IMPLEMENT_REFCOUNTING(PictureInPictureWindowDelegate);
 };
 
 }  // namespace
@@ -130,8 +136,26 @@ void CefBrowserPlatformDelegate::PopupBrowserCreated(
   }
 
   if (!popup_handled) {
-    CefWindow::CreateTopLevelWindow(
-        new PopupWindowDelegate(new_browser_view.get()));
+    content::WebContents* web_contents = new_browser->GetWebContents();
+    if (web_contents && web_contents->GetPictureInPictureOptions()) {
+      CefWindow::CreateTopLevelWindow(
+          new PictureInPictureWindowDelegate(new_browser_view.get()));
+    } else {
+      // Ordinary web popups must be claimed by the opener's BrowserView
+      // delegate and embedded as tabs. Fail closed instead of silently escaping
+      // into an unmanaged native window when a shell-side invariant regresses.
+      // The Alloy creation stack still has BrowserView notifications to deliver,
+      // so close asynchronously rather than invalidating its weak view here.
+      CEF_POST_TASK(
+          CEF_UIT,
+          base::BindOnce(
+              [](CefRefPtr<CefBrowserHostBase> browser) {
+                if (browser) {
+                  browser->CloseBrowser(true);
+                }
+              },
+              CefRefPtr<CefBrowserHostBase>(new_browser)));
+    }
   }
 
   // Release the reference added in PopupWebContentsCreated().

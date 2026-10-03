@@ -55,9 +55,6 @@
 #include "ui/native_theme/features/native_theme_features.h"
 #include "ui/native_theme/native_theme_aura.h"
 #include "ui/native_theme/native_theme_fluent.h"
-#if BUILDFLAG(IS_WIN)
-#include "ui/native_theme/native_theme_win.h"
-#endif
 #else
 #include "ui/native_theme/native_theme_mobile.h"
 #endif
@@ -183,11 +180,7 @@ void RefreshVimbrowserNativeElementShaderState(std::atomic<bool>* enabled) {
 using NativeUiTheme = NativeThemeMac;
 using WebUiTheme = NativeThemeAura;
 #elif defined(USE_AURA)
-#if BUILDFLAG(IS_WIN)
-using NativeUiTheme = NativeThemeWin;
-#else
 using NativeUiTheme = NativeThemeAura;
-#endif
 NativeTheme* GetInstanceForWebImpl() {
   static const bool use_fluent = IsFluentScrollbarEnabled();
   if (use_fluent) {
@@ -195,11 +188,7 @@ NativeTheme* GetInstanceForWebImpl() {
     return s_web_theme.get();
   }
   static base::NoDestructor<NativeThemeAura> s_web_theme(
-#if BUILDFLAG(IS_CHROMEOS)
-      true
-#else
       IsOverlayScrollbarEnabledByFeatureFlag()
-#endif
   );
   return s_web_theme.get();
 }
@@ -516,13 +505,8 @@ void NativeTheme::PaintMenuItemBackground(
   const SkScalar radius = SkIntToScalar(extra_params.corner_radius);
   cc::PaintFlags flags;
   const ColorId id = (state == kHovered)
-#if BUILDFLAG(IS_CHROMEOS)
-                         ? kColorAshSystemUIMenuItemBackgroundSelected
-                         : kColorAshSystemUIMenuBackground;
-#else
                          ? kColorMenuItemBackgroundSelected
                          : kColorMenuBackground;
-#endif
   flags.setColor(color_provider->GetColor(id));
   canvas->drawRoundRect(gfx::RectToSkRect(rect), radius, radius, flags);
 }

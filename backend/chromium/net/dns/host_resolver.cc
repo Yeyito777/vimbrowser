@@ -40,10 +40,6 @@
 #include "stale_host_resolver.h"
 #include "url/scheme_host_port.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/android_info.h"
-#include "net/android/network_library.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace net {
 
@@ -484,60 +480,8 @@ HostResolver::CreateStandaloneNetworkBoundResolver(
     std::optional<ManagerOptions> options,
     std::string_view host_mapping_rules,
     bool enable_caching) {
-#if BUILDFLAG(IS_ANDROID)
-  // Note that the logic below uses Android APIs that don't work on a sandboxed
-  // process: This is not problematic because this function is used only by
-  // Cronet which doesn't enable sandboxing.
-
-  auto resolve_context = std::make_unique<ResolveContext>(
-      nullptr /*url_request_context */, enable_caching);
-  auto manager_options = std::move(options).value_or(ManagerOptions());
-  // Support the use of the built-in resolver when possible.
-  bool is_builtin_resolver_supported =
-      manager_options.insecure_dns_client_enabled &&
-      base::android::android_info::sdk_int() >=
-          base::android::android_info::SDK_VERSION_P;
-  if (is_builtin_resolver_supported) {
-    // Pre-existing DnsConfigOverrides is currently ignored, consider extending
-    // if a use case arises.
-    DCHECK(manager_options.dns_config_overrides == DnsConfigOverrides());
-
-    std::vector<IPEndPoint> dns_servers;
-    bool dns_over_tls_active;
-    std::string dns_over_tls_hostname;
-    std::vector<std::string> search_suffixes;
-    if (android::GetDnsServersForNetwork(&dns_servers, &dns_over_tls_active,
-                                         &dns_over_tls_hostname,
-                                         &search_suffixes, target_network)) {
-      DnsConfigOverrides dns_config_overrides =
-          DnsConfigOverrides::CreateOverridingEverythingWithDefaults();
-      dns_config_overrides.nameservers = dns_servers;
-      // Android APIs don't specify whether to use DoT or DoH. So, leave the
-      // decision to `DnsConfig::allow_dns_over_https_upgrade` default value.
-      dns_config_overrides.dns_over_tls_active = dns_over_tls_active;
-      dns_config_overrides.dns_over_tls_hostname = dns_over_tls_hostname;
-      dns_config_overrides.search = search_suffixes;
-
-      manager_options.dns_config_overrides = dns_config_overrides;
-      // Regardless of DoH vs DoT, the important contract to respect is not to
-      // perform insecure DNS lookups if `dns_over_tls_active` == true.
-      manager_options.additional_types_via_insecure_dns_enabled =
-          !dns_over_tls_active;
-    } else {
-      // Disable when android::GetDnsServersForNetwork fails.
-      is_builtin_resolver_supported = false;
-    }
-  }
-
-  manager_options.insecure_dns_client_enabled = is_builtin_resolver_supported;
-  return std::make_unique<ContextHostResolver>(
-      HostResolverManager::CreateNetworkBoundHostResolverManager(
-          manager_options, target_network, net_log),
-      std::move(resolve_context));
-#else   // !BUILDFLAG(IS_ANDROID)
   NOTIMPLEMENTED();
   return nullptr;
-#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 // static

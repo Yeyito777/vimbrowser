@@ -1,4 +1,0 @@
-border {
-  colors: rgb(213,208,204);
-  outline: -1 -1 50 26 / 13;
-}

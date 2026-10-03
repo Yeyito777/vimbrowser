@@ -32,9 +32,6 @@ bool AccessibilityAnnotatorDatabase::Init(const base::FilePath& db_path) {
   // This may cause an increase in kBusy failures on open.
   db_ = std::make_unique<sql::Database>(
       sql::DatabaseOptions()
-#if BUILDFLAG(IS_WIN)
-          .set_exclusive_database_file_lock(true)
-#endif  // IS_WIN
           .set_wal_mode(true),
       sql::Database::Tag("AccessibilityAnnotator"));
 

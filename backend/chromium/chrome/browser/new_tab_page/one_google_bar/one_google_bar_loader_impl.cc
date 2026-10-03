@@ -34,11 +34,6 @@
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/signin/chrome_signin_helper.h"
-#include "components/signin/core/browser/chrome_connected_header_helper.h"
-#include "components/signin/core/browser/signin_header_helper.h"
-#endif
 
 namespace {
 
@@ -175,9 +170,6 @@ class OneGoogleBarLoaderImpl::AuthenticatedURLLoader {
 
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   const GURL api_url_;
-#if BUILDFLAG(IS_CHROMEOS)
-  const bool account_consistency_mirror_required_;
-#endif
 
   LoadDoneCallback callback_;
 
@@ -192,9 +184,6 @@ OneGoogleBarLoaderImpl::AuthenticatedURLLoader::AuthenticatedURLLoader(
     LoadDoneCallback callback)
     : url_loader_factory_(url_loader_factory),
       api_url_(std::move(api_url)),
-#if BUILDFLAG(IS_CHROMEOS)
-      account_consistency_mirror_required_(account_consistency_mirror_required),
-#endif
       callback_(std::move(callback)) {
 }
 
@@ -202,33 +191,6 @@ void OneGoogleBarLoaderImpl::AuthenticatedURLLoader::SetRequestHeaders(
     network::ResourceRequest* request) const {
   variations::AppendVariationsHeaderUnknownSignedIn(
       api_url_, variations::InIncognito::kNo, request);
-#if BUILDFLAG(IS_CHROMEOS)
-  signin::ChromeConnectedHeaderHelper chrome_connected_header_helper(
-      account_consistency_mirror_required_
-          ? signin::AccountConsistencyMethod::kMirror
-          : signin::AccountConsistencyMethod::kDisabled);
-  int profile_mode = signin::PROFILE_MODE_DEFAULT;
-  if (account_consistency_mirror_required_) {
-    // For the child account case (where currently
-    // |account_consistency_mirror_required_| is true on Chrome OS), we always
-    // want to disable adding an account and going to incognito.
-    profile_mode = signin::PROFILE_MODE_INCOGNITO_DISABLED |
-                   signin::PROFILE_MODE_ADD_ACCOUNT_DISABLED;
-  }
-
-  std::string chrome_connected_header_value =
-      chrome_connected_header_helper.BuildRequestHeader(
-          /*is_header_request=*/true, api_url_,
-          // Gaia ID is only needed for (drive|docs).google.com.
-          GaiaId(),
-          /*is_child_account=*/signin::Tribool::kUnknown, profile_mode,
-          signin::kChromeMirrorHeaderSource,
-          /*force_account_consistency=*/false);
-  if (!chrome_connected_header_value.empty()) {
-    request->headers.SetHeader(signin::kChromeConnectedHeader,
-                               chrome_connected_header_value);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 }
 
 void OneGoogleBarLoaderImpl::AuthenticatedURLLoader::Start() {

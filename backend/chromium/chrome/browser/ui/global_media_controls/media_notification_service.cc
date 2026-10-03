@@ -48,16 +48,6 @@
 #include "services/metrics/public/cpp/ukm_builders.h"
 #include "services/metrics/public/cpp/ukm_recorder.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/session/session_controller_impl.h"
-#include "ash/shell.h"
-#include "ash/system/media/media_notification_provider.h"
-#include "ash/system/media/media_tray.h"
-#include "ash/system/status_area_widget.h"
-#include "ash/system/unified/unified_system_tray.h"
-#include "ash/system/unified/unified_system_tray_bubble.h"
-#include "ash/system/unified/unified_system_tray_controller.h"
-#endif
 
 namespace mojom {
 using global_media_controls::mojom::DeviceListClient;
@@ -135,11 +125,6 @@ MediaNotificationService::MediaNotificationService(Profile* profile,
     : profile_(profile), receiver_(this) {
   item_manager_ = global_media_controls::MediaItemManager::Create();
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (auto* provider = ash::MediaNotificationProvider::Get(); provider) {
-    provider_observation_.Observe(provider);
-  }
-#endif
 
   std::optional<base::UnguessableToken> source_id;
   if (!show_from_all_profiles) {
@@ -177,13 +162,11 @@ MediaNotificationService::MediaNotificationService(Profile* profile,
   }
   // CastMediaNotificationProducer is owned by
   // CastMediaNotificationProducerKeyedService in Ash.
-#if !BUILDFLAG(IS_CHROMEOS)
   // base::Unretained() is safe here because `cast_notification_producer_` is
   // deleted before `item_manager_`.
   cast_notification_producer_ = std::make_unique<CastMediaNotificationProducer>(
       profile, item_manager_.get());
   item_manager_->AddItemProducer(cast_notification_producer_.get());
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   presentation_request_notification_producer_ =
       std::make_unique<PresentationRequestNotificationProducer>(
@@ -201,61 +184,6 @@ MediaNotificationService::MediaNotificationService(Profile* profile,
   }
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void MediaNotificationService::ShowDialogAsh(
-    std::unique_ptr<media_router::StartPresentationContext> context) {
-  auto* web_contents = content::WebContents::FromRenderFrameHost(
-      content::RenderFrameHost::FromID(
-          context->presentation_request().render_frame_host_id));
-  OnStartPresentationContextCreated(std::move(context));
-  auto routes = media_router::WebContentsPresentationManager::Get(web_contents)
-                    ->GetMediaRoutes();
-  std::string item_id;
-  if (!routes.empty()) {
-    // When `routes` is not empty, we'd ideally set `item_id` to be the ID of a
-    // MediaRoute so that we'd only show the corresponding notification item.
-    item_id = routes.begin()->media_route_id();
-  } else {
-    item_id = content::MediaSession::GetRequestIdFromWebContents(web_contents)
-                  .ToString();
-  }
-
-  // Keep Media Tray pinned to use a separate widget in kiosk sessions because
-  // the Unified System Tray bubble is not available.
-  if (ash::Shell::Get()->session_controller()->IsRunningInAppMode()) {
-    ash::MediaTray::SetPinnedToShelf(true);
-  }
-
-  if (ash::MediaTray::IsPinnedToShelf()) {
-    ash::StatusAreaWidget::ForWindow(ash::Shell::Get()->GetPrimaryRootWindow())
-        ->media_tray()
-        ->ShowBubbleWithItem(item_id);
-  } else {
-    ash::UnifiedSystemTray* tray =
-        ash::StatusAreaWidget::ForWindow(
-            ash::Shell::Get()->GetPrimaryRootWindow())
-            ->unified_system_tray();
-    tray->ShowBubble();
-    tray->bubble()
-        ->unified_system_tray_controller()
-        ->ShowMediaControlsDetailedView(
-            global_media_controls::GlobalMediaControlsEntryPoint::kPresentation,
-            item_id);
-  }
-}
-
-void MediaNotificationService::OnMediaNotificationProviderWillBeDestroyed() {
-  if (supplemental_device_picker_producer_) {
-    if (auto* item_manager =
-            GetMediaItemManagerForSupplementalDevicePickerProducer()) {
-      item_manager->RemoveItemProducer(
-          supplemental_device_picker_producer_.get());
-    }
-    supplemental_device_picker_producer_.reset();
-  }
-  provider_observation_.Reset();
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 MediaNotificationService::~MediaNotificationService() {
   media_session_item_producer_->RemoveObserver(this);
@@ -686,12 +614,5 @@ bool MediaNotificationService::IsIdBlocked(
 
 global_media_controls::MediaItemManager* MediaNotificationService::
     GetMediaItemManagerForSupplementalDevicePickerProducer() {
-#if BUILDFLAG(IS_CHROMEOS)
-  auto* media_notification_provider = ash::MediaNotificationProvider::Get();
-  return media_notification_provider
-             ? media_notification_provider->GetMediaItemManager()
-             : nullptr;
-#else
   return item_manager_.get();
-#endif
 }

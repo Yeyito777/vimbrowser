@@ -32,7 +32,6 @@
 #include "components/media_router/common/providers/cast/certificate/switches.h"
 #include "components/network_session_configurator/common/network_switches.h"
 #include "components/startup_metric_utils/browser/startup_metric_utils.h"
-#include "components/translate/core/common/translate_switches.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
 #include "google_apis/gaia/gaia_switches.h"
@@ -50,17 +49,9 @@
 #include "ui/gfx/native_ui_types.h"
 #include "ui/views/views_switches.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "services/webnn/webnn_switches.h"
-#endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "chrome/browser/android/flags/bad_flags_snackbar_manager.h"
-#include "chrome/browser/flags/android/chrome_feature_list.h"
-#else
 #include "chrome/browser/actor/actor_switches.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "extensions/common/switches.h"
@@ -68,7 +59,6 @@
 
 namespace {
 
-#if !BUILDFLAG(IS_ANDROID)
 // Dangerous command line flags for which to display a warning that "stability
 // and security will suffer".
 const char* const kBadFlags[] = {
@@ -87,15 +77,10 @@ const char* const kBadFlags[] = {
     sandbox::policy::switches::kDisableSeccompFilterSandbox,
     sandbox::policy::switches::kDisableSetuidSandbox,
     sandbox::policy::switches::kNoSandbox,
-#if BUILDFLAG(IS_WIN)
-    sandbox::policy::switches::kAllowThirdPartyModules,
-#endif
     switches::kDisableWebSecurity,
     switches::kSingleProcess,
 
     // These flags disable or undermine the Same Origin Policy.
-    translate::switches::kTranslateSecurityOrigin,
-
     // These flags undermine HTTPS / connection security.
     switches::kDisableWebRtcEncryption,
     switches::kIgnoreCertificateErrors,
@@ -103,8 +88,6 @@ const char* const kBadFlags[] = {
 
     // These flags change the URLs that handle PII.
     switches::kGaiaUrl,
-    translate::switches::kTranslateScriptURL,
-
 #if BUILDFLAG(ENABLE_EXTENSIONS)
     // These flags enable extensions running scripts on chrome:// and
     // chrome-extension:// URLs.
@@ -147,17 +130,9 @@ const char* const kBadFlags[] = {
     // be possible to read GPU data for other Chromium processes.
     switches::kEnableUnsafeWebGPU,
 
-#if BUILDFLAG(IS_WIN)
-    // These flags allow loading libraries from specified paths, which may
-    // compromise process integrity and security.
-    switches::kWebNNOrtLibraryPathForTesting,
-    switches::kWebNNOrtEpLibraryPathForTesting,
-#endif
 
-#if !BUILDFLAG(IS_ANDROID)
     // A flag to bypass the WebHID blocklist for testing purposes.
     switches::kDisableHidBlocklist,
-#endif
 
     // This flag tells Chrome to automatically install an Isolated Web App in
     // developer mode. The flag should contain the path to an unsigned Web
@@ -201,7 +176,6 @@ const char* const kBadFlags[] = {
     // origin blocklist) for testing purposes.
     actor::switches::kDisableActorSafetyChecks,
 };
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 // Dangerous flags that can be enabled in about:flags, for which to display a
 // warning that "stability and security will suffer".
@@ -219,9 +193,6 @@ static const std::variant<const base::Feature*, const char*>
         // This flag disables site isolation.
         switches::kDisableSiteIsolation,
 
-#if BUILDFLAG(IS_ANDROID)
-        &chrome::android::kCommandLineOnNonRooted,
-#endif
 
         // This flag disables security for the Page Embedded Permission Control,
         // for testing purposes. Can only be enabled via the command line.
@@ -248,14 +219,12 @@ void ShowBadFlagsInfoBarHelper(content::WebContents* web_contents,
 void ShowBadFlagsPrompt(content::WebContents* web_contents) {
 // On Android, ShowBadFlagsPrompt doesn't show the warning notification
 // for flags which are not available in about:flags.
-#if !BUILDFLAG(IS_ANDROID)
   for (const char* flag : kBadFlags) {
     if (base::CommandLine::ForCurrentProcess()->HasSwitch(flag)) {
       ShowBadFlagsInfoBar(web_contents, IDS_BAD_FLAGS_WARNING_MESSAGE, flag);
       return;
     }
   }
-#endif
 
   for (const auto& flag_or_feature : kBadFeatureFlagsInAboutFlags) {
     std::string bad_flag_name = std::visit(
@@ -277,14 +246,8 @@ void ShowBadFlagsPrompt(content::WebContents* web_contents) {
         flag_or_feature);
 
     if (!bad_flag_name.empty()) {
-#if BUILDFLAG(IS_ANDROID)
-      ShowBadFlagsSnackbar(web_contents, l10n_util::GetStringFUTF16(
-                                             IDS_BAD_FEATURES_WARNING_MESSAGE,
-                                             base::UTF8ToUTF16(bad_flag_name)));
-#else
       ShowBadFlagsInfoBarHelper(web_contents, IDS_BAD_FEATURES_WARNING_MESSAGE,
                                 bad_flag_name);
-#endif
       return;
     }
   }

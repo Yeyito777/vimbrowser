@@ -175,15 +175,9 @@ void ResetForceSigninForTesting() {
 }
 
 bool IsProfileDeletionAllowed(Profile* profile) {
-#if BUILDFLAG(IS_ANDROID)
-  return false;
-#else
   return true;
-#endif
 }
 
-#if !BUILDFLAG(IS_ANDROID)
-#if !BUILDFLAG(IS_CHROMEOS)
 // Returns true if managed accounts signin are required to create a new profile
 // by policies set in `profile`.
 bool IsProfileSeparationEnforcedByProfile(
@@ -270,7 +264,6 @@ bool IsAccountExemptedFromEnterpriseProfileSeparation(
       prefs::kProfileSeparationDomainExceptionList);
   return allowed_domains.contains(domain);
 }
-#endif  // !BUILDFLAG(IS_CHROMEOS)
 
 void RecordEnterpriseProfileCreationUserChoice(bool enforced_by_policy,
                                                bool created) {
@@ -281,7 +274,6 @@ void RecordEnterpriseProfileCreationUserChoice(bool enforced_by_policy,
       created);
 }
 
-#endif  // !BUILDFLAG(IS_ANDROID)
 
 PrimaryAccountError SetPrimaryAccountWithInvalidToken(
     Profile* profile,

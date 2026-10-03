@@ -5,7 +5,6 @@
 import("//mojo/public/tools/bindings/mojom.gni")
 
 mojom("common_mojom") {
-  generate_java = true
   sources = [ "encryptor.mojom" ]
 
   public_deps = [
@@ -46,8 +45,6 @@ mojom("common_mojom") {
 mojom("algorithm_mojom") {
   # External code should depend on ":common_mojom" instead.
   visibility = [ ":*" ]
-
-  generate_java = true
 
   sources = [ "algorithm.mojom" ]
 
@@ -97,9 +94,6 @@ source_set("test_support") {
 # allows the dependency on crypt32.lib to be forwarded to both :common and
 # :common_mojom which might be in different modules in a component-build.
 source_set("crypto_lib") {
-  if (is_win) {
-    libs = [ "crypt32.lib" ]
-  }
 }
 
 source_set("unit_tests") {
@@ -118,8 +112,4 @@ source_set("unit_tests") {
     "//mojo/public/cpp/test_support:test_utils",
     "//testing/gtest",
   ]
-
-  if (is_win) {
-    libs = [ "crypt32.lib" ]
-  }
 }

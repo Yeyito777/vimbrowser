@@ -22,11 +22,6 @@
 #include "ui/gfx/native_pixmap_handle.h"
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OZONE)
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/scoped_hardware_buffer_handle.h"
-#include "mojo/public/cpp/platform/platform_handle.h"
-#include "mojo/public/cpp/system/message_pipe.h"
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_APPLE)
 #include "ui/gfx/mac/io_surface.h"
@@ -34,20 +29,6 @@
 
 namespace mojo {
 
-#if BUILDFLAG(IS_ANDROID)
-template <>
-struct COMPONENT_EXPORT(GFX_NATIVE_HANDLE_TYPES_SHARED_MOJOM_TRAITS)
-    StructTraits<gfx::mojom::AHardwareBufferHandleDataView,
-                 ::base::android::ScopedHardwareBufferHandle> {
-  static PlatformHandle buffer_handle(
-      ::base::android::ScopedHardwareBufferHandle& handle);
-  static ScopedMessagePipeHandle tracking_pipe(
-      ::base::android::ScopedHardwareBufferHandle& handle);
-
-  static bool Read(gfx::mojom::AHardwareBufferHandleDataView data,
-                   ::base::android::ScopedHardwareBufferHandle* handle);
-};
-#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OZONE)
 template <>
@@ -90,57 +71,12 @@ struct COMPONENT_EXPORT(GFX_NATIVE_HANDLE_TYPES_SHARED_MOJOM_TRAITS)
   }
 #endif
 
-#if BUILDFLAG(IS_FUCHSIA)
-  static PlatformHandle buffer_collection_handle(
-      gfx::NativePixmapHandle& pixmap_handle);
-
-  static uint32_t buffer_index(gfx::NativePixmapHandle& pixmap_handle) {
-    return pixmap_handle.buffer_index;
-  }
-
-  static bool ram_coherency(gfx::NativePixmapHandle& pixmap_handle) {
-    return pixmap_handle.ram_coherency;
-  }
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
   static bool Read(gfx::mojom::NativePixmapHandleDataView data,
                    gfx::NativePixmapHandle* out);
 };
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OZONE)
 
-#if BUILDFLAG(IS_WIN)
-template <>
-struct COMPONENT_EXPORT(GFX_NATIVE_HANDLE_TYPES_SHARED_MOJOM_TRAITS)
-    StructTraits<gfx::mojom::DXGIHandleDataView, gfx::DXGIHandle> {
-  static PlatformHandle buffer_handle(gfx::DXGIHandle& handle) {
-    return PlatformHandle(handle.TakeBufferHandle());
-  }
-
-  static const gfx::DXGIHandleToken& token(const gfx::DXGIHandle& handle) {
-    return handle.token();
-  }
-
-  static base::UnsafeSharedMemoryRegion& shared_memory_handle(
-      gfx::DXGIHandle& handle) {
-    return handle.region_;
-  }
-
-  static bool Read(gfx::mojom::DXGIHandleDataView data,
-                   gfx::DXGIHandle* handle);
-};
-
-template <>
-struct COMPONENT_EXPORT(GFX_NATIVE_HANDLE_TYPES_SHARED_MOJOM_TRAITS)
-    StructTraits<gfx::mojom::DXGIHandleTokenDataView, gfx::DXGIHandleToken> {
-  static const base::UnguessableToken& value(
-      const gfx::DXGIHandleToken& input) {
-    return input.value();
-  }
-
-  static bool Read(gfx::mojom::DXGIHandleTokenDataView& input,
-                   gfx::DXGIHandleToken* output);
-};
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_APPLE)
 struct COMPONENT_EXPORT(GFX_NATIVE_HANDLE_TYPES_SHARED_MOJOM_TRAITS)
@@ -151,11 +87,6 @@ struct COMPONENT_EXPORT(GFX_NATIVE_HANDLE_TYPES_SHARED_MOJOM_TRAITS)
   ~IOSurfaceHandle();
 
   base::apple::ScopedMachSendRight mach_send_right;
-#if BUILDFLAG(IS_IOS)
-  base::UnsafeSharedMemoryRegion shared_memory_region;
-  std::array<uint32_t, gfx::kMaxIOSurfacePlanes> plane_strides;
-  std::array<uint32_t, gfx::kMaxIOSurfacePlanes> plane_offsets;
-#endif
 };
 
 template <>
@@ -165,22 +96,6 @@ struct COMPONENT_EXPORT(GFX_NATIVE_HANDLE_TYPES_SHARED_MOJOM_TRAITS)
     return PlatformHandle(std::move(handle.mach_send_right));
   }
 
-#if BUILDFLAG(IS_IOS)
-  static base::UnsafeSharedMemoryRegion& shared_memory_handle(
-      IOSurfaceHandle& handle) {
-    return handle.shared_memory_region;
-  }
-
-  static std::array<uint32_t, gfx::kMaxIOSurfacePlanes>& plane_strides(
-      IOSurfaceHandle& handle) {
-    return handle.plane_strides;
-  }
-
-  static std::array<uint32_t, gfx::kMaxIOSurfacePlanes>& plane_offsets(
-      IOSurfaceHandle& handle) {
-    return handle.plane_offsets;
-  }
-#endif  // BUILDFLAG(IS_IOS)
 
   static bool Read(gfx::mojom::IOSurfaceHandleDataView data,
                    IOSurfaceHandle* handle);
@@ -214,18 +129,7 @@ struct COMPONENT_EXPORT(GFX_NATIVE_HANDLE_TYPES_SHARED_MOJOM_TRAITS)
   }
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_OZONE)
 
-#if BUILDFLAG(IS_WIN)
-  static gfx::DXGIHandle& dxgi_handle(gfx::GpuMemoryBufferHandle& handle) {
-    return handle.dxgi_handle_;
-  }
-#endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_ANDROID)
-  static base::android::ScopedHardwareBufferHandle&
-  android_hardware_buffer_handle(gfx::GpuMemoryBufferHandle& handle) {
-    return handle.android_hardware_buffer;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
 
   static bool Read(gfx::mojom::GpuMemoryBufferPlatformHandleDataView data,
                    gfx::GpuMemoryBufferHandle* handle);

@@ -141,23 +141,6 @@ OSExchangeData::GetFileContents() const {
   return provider_->GetFileContents();
 }
 
-#if BUILDFLAG(IS_WIN)
-bool OSExchangeData::HasVirtualFilenames() const {
-  return provider_->HasVirtualFilenames();
-}
-
-std::optional<std::vector<FileInfo>> OSExchangeData::GetVirtualFilenames()
-    const {
-  return provider_->GetVirtualFilenames();
-}
-
-void OSExchangeData::GetVirtualFilesAsTempFiles(
-    base::OnceCallback<
-        void(const std::vector<std::pair<base::FilePath, base::FilePath>>&)>
-        callback) const {
-  provider_->GetVirtualFilesAsTempFiles(std::move(callback));
-}
-#endif
 
 #if defined(USE_AURA)
 bool OSExchangeData::HasHtml() const {

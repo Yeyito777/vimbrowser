@@ -43,12 +43,6 @@
 #include "services/network/public/mojom/network_service.mojom.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/task_manager/providers/arc/arc_process_task_provider.h"
-#include "chrome/browser/task_manager/providers/vm/vm_process_task_provider.h"
-#include "chromeos/ash/experiences/arc/arc_util.h"
-#include "chromeos/ash/experiences/arc/process/arc_process_service.h"
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 namespace task_manager {
 
@@ -105,12 +99,6 @@ TaskManagerImpl::TaskManagerImpl()
       std::move(primary_subproviders),
       std::make_unique<RenderProcessHostTaskProvider>()));
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (arc::IsArcAvailable())
-    task_providers_.push_back(std::make_unique<ArcProcessTaskProvider>());
-  task_providers_.push_back(std::make_unique<VmProcessTaskProvider>());
-  arc_shared_sampler_ = std::make_unique<ArcSharedSampler>();
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   g_instance_created = true;
 }
@@ -152,21 +140,13 @@ double TaskManagerImpl::GetPlatformIndependentCPUUsage(TaskId task_id) const {
 }
 
 base::Time TaskManagerImpl::GetStartTime(TaskId task_id) const {
-#if BUILDFLAG(IS_WIN)
-  return GetTaskGroupByTaskId(task_id)->start_time();
-#else
   NOTIMPLEMENTED();
   return base::Time();
-#endif
 }
 
 base::TimeDelta TaskManagerImpl::GetCpuTime(TaskId task_id) const {
-#if BUILDFLAG(IS_WIN)
-  return GetTaskGroupByTaskId(task_id)->cpu_time();
-#else
   NOTIMPLEMENTED();
   return base::TimeDelta();
-#endif
 }
 
 std::optional<base::ByteSize> TaskManagerImpl::GetMemoryFootprintUsage(
@@ -176,11 +156,7 @@ std::optional<base::ByteSize> TaskManagerImpl::GetMemoryFootprintUsage(
 
 std::optional<base::ByteSize> TaskManagerImpl::GetSwappedMemoryUsage(
     TaskId task_id) const {
-#if BUILDFLAG(IS_CHROMEOS)
-  return GetTaskGroupByTaskId(task_id)->swapped_bytes();
-#else
   return std::nullopt;
-#endif
 }
 
 std::optional<base::ByteSize> TaskManagerImpl::GetGpuMemoryUsage(
@@ -198,37 +174,21 @@ int TaskManagerImpl::GetIdleWakeupsPerSecond(TaskId task_id) const {
 }
 
 int TaskManagerImpl::GetHardFaultsPerSecond(TaskId task_id) const {
-#if BUILDFLAG(IS_WIN)
-  return GetTaskGroupByTaskId(task_id)->hard_faults_per_second();
-#else
   return -1;
-#endif
 }
 
 void TaskManagerImpl::GetGDIHandles(TaskId task_id,
                                     int64_t* current,
                                     int64_t* peak) const {
-#if BUILDFLAG(IS_WIN)
-  const TaskGroup* task_group = GetTaskGroupByTaskId(task_id);
-  *current = task_group->gdi_current_handles();
-  *peak = task_group->gdi_peak_handles();
-#else
   *current = -1;
   *peak = -1;
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void TaskManagerImpl::GetUSERHandles(TaskId task_id,
                                      int64_t* current,
                                      int64_t* peak) const {
-#if BUILDFLAG(IS_WIN)
-  const TaskGroup* task_group = GetTaskGroupByTaskId(task_id);
-  *current = task_group->user_current_handles();
-  *peak = task_group->user_peak_handles();
-#else
   *current = -1;
   *peak = -1;
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 int TaskManagerImpl::GetOpenFdCount(TaskId task_id) const {
@@ -362,12 +322,10 @@ const TaskIdList& TaskManagerImpl::GetTaskIdsList() const {
     // the oldest tasks first).
     auto comparator = [](const Task* a, const Task* b) -> bool {
       bool should_make_adjustment = false;
-#if !BUILDFLAG(IS_ANDROID)
       // Move vm processes up over the arc tasks.
       should_make_adjustment =
           (a->GetType() == Task::ARC && b->GetType() == Task::CROSTINI) ||
           (b->GetType() == Task::ARC && a->GetType() == Task::CROSTINI);
-#endif
       return std::make_tuple(
                  a->HasParentTask(),
                  should_make_adjustment ? b->GetType() : a->GetType(),
@@ -521,10 +479,6 @@ void TaskManagerImpl::TaskAdded(Task* task) {
         task->process_handle(), proc_id, is_running_in_vm,
         on_background_data_ready_callback_, shared_sampler_,
         blocking_pool_runner_);
-#if BUILDFLAG(IS_CHROMEOS)
-    if (task->GetType() == Task::ARC)
-      task_group->SetArcSampler(arc_shared_sampler_.get());
-#endif
   }
 
   task_group->AddTask(task);
@@ -568,12 +522,6 @@ void TaskManagerImpl::TaskUnresponsive(Task* task) {
   NotifyObserversOnTaskUnresponsive(task->task_id());
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-void TaskManagerImpl::TaskIdsListToBeInvalidated() {
-  sorted_task_ids_.clear();
-  NotifyObserversOnRefresh(GetTaskIdsList());
-}
-#endif  //  BUILDFLAG(IS_CHROMEOS)
 
 void TaskManagerImpl::UpdateAccumulatedStatsNetworkForRoute(
     content::GlobalRenderFrameHostId render_frame_host_id,
@@ -651,12 +599,6 @@ void TaskManagerImpl::Refresh() {
                                enabled_resources_flags());
   }
 
-#if BUILDFLAG(IS_CHROMEOS)
-  if (TaskManagerObserver::IsResourceRefreshEnabled(
-          REFRESH_TYPE_MEMORY_FOOTPRINT, enabled_resources_flags())) {
-    arc_shared_sampler_->Refresh();
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
   NotifyObserversOnRefresh(GetTaskIdsList());
 }

@@ -43,15 +43,6 @@ class TabCaptureAccessHandler : public CaptureAccessHandlerBase {
                      bool is_allowlisted_extension,
                      std::unique_ptr<MediaStreamUI> media_ui);
 
-#if BUILDFLAG(IS_CHROMEOS)
-  // Called back after checking Data Leak Prevention (DLP) restrictions.
-  void OnDlpRestrictionChecked(
-      base::WeakPtr<content::WebContents> web_contents,
-      std::unique_ptr<PendingAccessRequest> pending_request,
-      std::unique_ptr<MediaStreamUI> media_ui,
-      bool is_dlp_allowed);
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 };
 
 #endif  // CHROME_BROWSER_MEDIA_WEBRTC_TAB_CAPTURE_ACCESS_HANDLER_H_

@@ -101,9 +101,6 @@
 #include "services/network/tpcd/metadata/manager.h"
 #include "services/network/url_loader.h"
 
-#if BUILDFLAG(IS_ANDROID) && defined(ARCH_CPU_ARMEL)
-#include "third_party/boringssl/src/include/openssl/cpu.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CASTOS)
 #include "components/os_crypt/sync/key_storage_config_linux.h"
@@ -113,10 +110,6 @@
 #include "services/network/network_change_notifier_passive_factory.h"
 #endif
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/android/application_status_listener.h"
-#include "net/android/http_auth_negotiate_android.h"
-#endif
 
 #if BUILDFLAG(IS_MAC)
 #include "components/enterprise/platform_auth/url_session_url_loader_bridge.h"
@@ -159,74 +152,6 @@ void OnGetNetworkList(std::unique_ptr<net::NetworkInterfaceList> networks,
   }
 }
 
-#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(USE_KERBEROS)
-// Used for Negotiate authentication on Android, which needs to generate tokens
-// in the browser process.
-class NetworkServiceAuthNegotiateAndroid : public net::HttpAuthMechanism {
- public:
-  NetworkServiceAuthNegotiateAndroid(NetworkContext* network_context,
-                                     const net::HttpAuthPreferences* prefs)
-      : network_context_(network_context), auth_negotiate_(prefs) {}
-  ~NetworkServiceAuthNegotiateAndroid() override = default;
-
-  // HttpAuthMechanism implementation:
-  bool Init(const net::NetLogWithSource& net_log) override {
-    return auth_negotiate_.Init(net_log);
-  }
-
-  bool NeedsIdentity() const override {
-    return auth_negotiate_.NeedsIdentity();
-  }
-
-  bool AllowsExplicitCredentials() const override {
-    return auth_negotiate_.AllowsExplicitCredentials();
-  }
-
-  net::HttpAuth::AuthorizationResult ParseChallenge(
-      net::HttpAuthChallengeTokenizer* tok) override {
-    return auth_negotiate_.ParseChallenge(tok);
-  }
-
-  int GenerateAuthToken(const net::AuthCredentials* credentials,
-                        const std::string& spn,
-                        const std::string& channel_bindings,
-                        std::string* auth_token,
-                        const net::NetLogWithSource& net_log,
-                        net::CompletionOnceCallback callback) override {
-    network_context_->client()->OnGenerateHttpNegotiateAuthToken(
-        auth_negotiate_.server_auth_token(), auth_negotiate_.can_delegate(),
-        auth_negotiate_.GetAuthAndroidNegotiateAccountType(), spn,
-        base::BindOnce(&NetworkServiceAuthNegotiateAndroid::Finish,
-                       weak_factory_.GetWeakPtr(), auth_token,
-                       std::move(callback)));
-    return net::ERR_IO_PENDING;
-  }
-
-  void SetDelegation(net::HttpAuth::DelegationType delegation_type) override {
-    auth_negotiate_.SetDelegation(delegation_type);
-  }
-
- private:
-  void Finish(std::string* auth_token_out,
-              net::CompletionOnceCallback callback,
-              int result,
-              const std::string& auth_token) {
-    *auth_token_out = auth_token;
-    std::move(callback).Run(result);
-  }
-
-  raw_ptr<NetworkContext> network_context_ = nullptr;
-  net::android::HttpAuthNegotiateAndroid auth_negotiate_;
-  base::WeakPtrFactory<NetworkServiceAuthNegotiateAndroid> weak_factory_{this};
-};
-
-std::unique_ptr<net::HttpAuthMechanism> CreateAuthSystem(
-    NetworkContext* network_context,
-    const net::HttpAuthPreferences* prefs) {
-  return std::make_unique<NetworkServiceAuthNegotiateAndroid>(network_context,
-                                                              prefs);
-}
-#endif
 
 // Called when NetworkService received a bad IPC message (but only when
 // NetworkService is running in a separate process - otherwise the existing bad
@@ -422,12 +347,6 @@ void NetworkService::Initialize(mojom::NetworkServiceParamsPtr params,
 
   initialized_ = true;
 
-#if BUILDFLAG(IS_ANDROID) && defined(ARCH_CPU_ARMEL)
-  // Measure Android kernels with missing AT_HWCAP2 auxv fields. See
-  // https://crbug.com/boringssl/46.
-  UMA_HISTOGRAM_BOOLEAN("Net.NeedsHWCAP2Workaround",
-                        CRYPTO_needs_hwcap2_workaround());
-#endif
 
   if (!params->environment.empty()) {
     SetEnvironment(std::move(params->environment));
@@ -718,20 +637,6 @@ void NetworkService::SetSSLKeyLogFile(base::File file) {
 void NetworkService::CreateNetworkContext(
     mojo::PendingReceiver<mojom::NetworkContext> receiver,
     mojom::NetworkContextParamsPtr params) {
-#if BUILDFLAG(IS_ANDROID)
-  if (params->cookie_store_ready_callback) {
-    auto pending = std::make_unique<PendingNetworkContext>(
-        this, std::move(receiver), std::move(params));
-    pending->ready_receiver.Bind(
-        std::move(pending->params->cookie_store_ready_callback));
-    auto* raw = pending.get();
-    pending->ready_receiver.set_disconnect_handler(
-        base::BindOnce(&NetworkService::OnPendingNetworkContextDisconnected,
-                       base::Unretained(this), raw));
-    pending_network_contexts_.emplace(std::move(pending));
-    return;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
   owned_network_contexts_.emplace(std::make_unique<NetworkContext>(
       this, std::move(receiver), std::move(params),
       base::BindOnce(&NetworkService::OnNetworkContextConnectionClosed,
@@ -894,16 +799,6 @@ void NetworkService::OnPeerToPeerConnectionsCountChange(uint32_t count) {
       ->OnPeerToPeerConnectionsCountChange(count);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void NetworkService::OnApplicationStateChange(
-    base::android::ApplicationState state) {
-  for (NetworkContext* network_context : network_contexts_) {
-    for (auto const& listener : network_context->app_status_listeners()) {
-      listener->Notify(state);
-    }
-  }
-}
-#endif
 
 void NetworkService::SetEnvironment(
     std::vector<mojom::EnvironmentVariablePtr> environment) {
@@ -999,17 +894,6 @@ void NetworkService::UpdateKeyPinsList(mojom::PinListPtr pin_list,
   }
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void NetworkService::DumpWithoutCrashing(base::Time dump_request_time) {
-  static base::debug::CrashKeyString* time_key =
-      base::debug::AllocateCrashKeyString("time_since_dump_request_ms",
-                                          base::debug::CrashKeySize::Size32);
-  base::debug::ScopedCrashKeyString scoped_time(
-      time_key, base::NumberToString(
-                    (base::Time::Now() - dump_request_time).InMilliseconds()));
-  base::debug::DumpWithoutCrashing();
-}
-#endif
 
 void NetworkService::BindTestInterfaceForTesting(
     mojo::PendingReceiver<mojom::NetworkServiceTest> receiver) {
@@ -1148,10 +1032,6 @@ NetworkService::CreateHttpAuthHandlerFactory(NetworkContext* network_context) {
   if (!http_auth_static_network_service_params_) {
     return net::HttpAuthHandlerFactory::CreateDefault(
         network_context->GetHttpAuthPreferences()
-#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(USE_KERBEROS)
-            ,
-        base::BindRepeating(&CreateAuthSystem, network_context)
-#endif
     );
   }
 
@@ -1160,10 +1040,6 @@ NetworkService::CreateHttpAuthHandlerFactory(NetworkContext* network_context) {
 #if BUILDFLAG(USE_EXTERNAL_GSSAPI)
           ,
       http_auth_static_network_service_params_->gssapi_library_name
-#endif
-#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(USE_KERBEROS)
-      ,
-      base::BindRepeating(&CreateAuthSystem, network_context)
 #endif
   );
 }
@@ -1184,9 +1060,6 @@ void NetworkService::InitMockNetworkChangeNotifierForTesting() {
 }
 
 void NetworkService::DestroyNetworkContexts() {
-#if BUILDFLAG(IS_ANDROID)
-  pending_network_contexts_.clear();
-#endif  // BUILDFLAG(IS_ANDROID)
   owned_network_contexts_.clear();
 }
 
@@ -1201,41 +1074,6 @@ void NetworkService::OnNetworkContextConnectionClosed(
   owned_network_contexts_.erase(it);
 }
 
-#if BUILDFLAG(IS_ANDROID)
-NetworkService::PendingNetworkContext::PendingNetworkContext(
-    NetworkService* service,
-    mojo::PendingReceiver<mojom::NetworkContext> receiver,
-    mojom::NetworkContextParamsPtr params)
-    : service(service),
-      context_receiver(std::move(receiver)),
-      params(std::move(params)) {}
-
-NetworkService::PendingNetworkContext::~PendingNetworkContext() = default;
-
-void NetworkService::PendingNetworkContext::OnCookieStoreReady() {
-  service->OnPendingNetworkContextReady(this);
-}
-
-void NetworkService::OnPendingNetworkContextReady(
-    PendingNetworkContext* pending) {
-  auto it = pending_network_contexts_.find(pending);
-  CHECK(it != pending_network_contexts_.end());
-  auto node = pending_network_contexts_.extract(it);
-  std::unique_ptr<PendingNetworkContext> owned = std::move(node.value());
-
-  owned_network_contexts_.emplace(std::make_unique<NetworkContext>(
-      this, std::move(owned->context_receiver), std::move(owned->params),
-      base::BindOnce(&NetworkService::OnNetworkContextConnectionClosed,
-                     base::Unretained(this))));
-}
-
-void NetworkService::OnPendingNetworkContextDisconnected(
-    PendingNetworkContext* pending) {
-  auto it = pending_network_contexts_.find(pending);
-  CHECK(it != pending_network_contexts_.end());
-  pending_network_contexts_.erase(it);
-}
-#endif  // BUILDFLAG(IS_ANDROID)
 
 void NetworkService::Bind(
     mojo::PendingReceiver<mojom::NetworkService> receiver) {

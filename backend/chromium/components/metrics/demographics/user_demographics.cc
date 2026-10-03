@@ -16,18 +16,8 @@
 
 namespace metrics {
 
-#if !BUILDFLAG(IS_CHROMEOS)
 constexpr auto kSyncDemographicsPrefFlags =
     user_prefs::PrefRegistrySyncable::SYNCABLE_PRIORITY_PREF;
-#else
-constexpr auto kSyncOsDemographicsPrefFlags =
-    user_prefs::PrefRegistrySyncable::SYNCABLE_OS_PRIORITY_PREF;
-// TODO(crbug.com/40240008): Make this non-syncable (on Ash only) after full
-// rollout of the syncable os priority pref; then delete it locally from Ash
-// devices.
-constexpr auto kSyncDemographicsPrefFlags =
-    user_prefs::PrefRegistrySyncable::SYNCABLE_PRIORITY_PREF;
-#endif
 
 constexpr auto kUserDemographicsBirthYearOffsetPrefFlags =
     PrefRegistry::NO_REGISTRATION_FLAGS;
@@ -37,14 +27,6 @@ constexpr auto kDeprecatedDemographicsBirthYearOffsetPrefFlags =
 namespace {
 
 const base::DictValue& GetDemographicsDict(PrefService* profile_prefs) {
-#if BUILDFLAG(IS_CHROMEOS)
-  // TODO(crbug.com/40240008): On Ash only, clear sync demographics pref once
-  // os-level syncable pref is fully rolled out and Ash drops support for
-  // non-os-level syncable prefs.
-  if (profile_prefs->HasPrefPath(kSyncOsDemographicsPrefName)) {
-    return profile_prefs->GetDict(kSyncOsDemographicsPrefName);
-  }
-#endif
   return profile_prefs->GetDict(kSyncDemographicsPrefName);
 }
 
@@ -176,10 +158,6 @@ void RegisterDemographicsLocalStatePrefs(PrefRegistrySimple* registry) {
 }
 
 void RegisterDemographicsProfilePrefs(PrefRegistrySimple* registry) {
-#if BUILDFLAG(IS_CHROMEOS)
-  registry->RegisterDictionaryPref(kSyncOsDemographicsPrefName,
-                                   kSyncOsDemographicsPrefFlags);
-#endif
   registry->RegisterDictionaryPref(kSyncDemographicsPrefName,
                                    kSyncDemographicsPrefFlags);
   registry->RegisterIntegerPref(
@@ -197,9 +175,6 @@ void ClearDemographicsPrefs(PrefService* profile_prefs) {
   // to change for a given user + client id, then the min/max noisy birth year
   // values could both be reported, revealing the true value in the middle.
   profile_prefs->ClearPref(kSyncDemographicsPrefName);
-#if BUILDFLAG(IS_CHROMEOS)
-  profile_prefs->ClearPref(kSyncOsDemographicsPrefName);
-#endif
 }
 
 UserDemographicsResult GetUserNoisedBirthYearAndGenderFromPrefs(

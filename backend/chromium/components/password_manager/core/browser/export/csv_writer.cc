@@ -53,11 +53,7 @@ void CSVFormatter::AppendValue(const std::string& raw_value) {
 }
 
 void CSVFormatter::EndLine() {
-#if BUILDFLAG(IS_WIN)
-  const char kLineEnding[] = "\r\n";
-#else
   const char kLineEnding[] = "\n";
-#endif
   output_->append(kLineEnding);
   at_beginning_of_line_ = true;
 }

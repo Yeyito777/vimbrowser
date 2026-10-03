@@ -17,12 +17,6 @@
 #include "third_party/perfetto/protos/perfetto/config/chrome/system_metrics.gen.h"
 #include "third_party/perfetto/protos/perfetto/config/data_source_config.gen.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-// Psapi.h must come after Windows.h.
-#include <psapi.h>
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace tracing {
 
@@ -96,50 +90,9 @@ void SystemMetricsSampler::SystemSampler::SampleSystemMetrics() {
                   cpu_throughput->estimated_frequency);
   }
 
-#if BUILDFLAG(IS_ANDROID)
-  auto frequencies = cpu_frequency_monitor_.GetCoreFrequencies();
-  for (const auto& freq : frequencies) {
-    TRACE_COUNTER(TRACE_DISABLED_BY_DEFAULT("system_metrics"),
-                  perfetto::CounterTrack("CpuFrequency", freq.core_id.value(),
-                                         perfetto::Track::Global(0)),
-                  freq.freq);
-  }
-#endif
 
-#if BUILDFLAG(IS_WIN)
-  base::CpuFrequencyInfo cpu_info = base::GetCpuFrequencyInfo();
-  TRACE_COUNTER(
-      TRACE_DISABLED_BY_DEFAULT("system_metrics"),
-      perfetto::CounterTrack("NumActiveCpus", perfetto::Track::Global(0)),
-      cpu_info.num_active_cpus);
-
-  SampleMemoryMetrics();
-#endif
 }
 
-#if BUILDFLAG(IS_WIN)
-void SystemMetricsSampler::SystemSampler::SampleMemoryMetrics() {
-  MEMORYSTATUSEX mem_status = {};
-  mem_status.dwLength = sizeof(mem_status);
-  if (!::GlobalMemoryStatusEx(&mem_status)) {
-    return;
-  }
-
-  TRACE_COUNTER(
-      TRACE_DISABLED_BY_DEFAULT("system_metrics"),
-      perfetto::CounterTrack("CommitMemoryLimit", perfetto::Track::Global(0)),
-      mem_status.ullTotalPageFile);
-
-  TRACE_COUNTER(TRACE_DISABLED_BY_DEFAULT("system_metrics"),
-                perfetto::CounterTrack("CommitMemoryAvailable",
-                                       perfetto::Track::Global(0)),
-                mem_status.ullAvailPageFile);
-  TRACE_COUNTER(TRACE_DISABLED_BY_DEFAULT("system_metrics"),
-                perfetto::CounterTrack("AvailablePhysicalMemory",
-                                       perfetto::Track::Global(0)),
-                mem_status.ullAvailPhys);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void SystemMetricsSampler::SystemSampler::OnCpuProbeResult(
     std::optional<system_cpu::CpuSample> cpu_sample) {
@@ -182,9 +135,6 @@ void SystemMetricsSampler::ProcessSampler::SampleProcessMetrics() {
                   memory_info->vm_swap_bytes);
     TRACE_COUNTER(TRACE_DISABLED_BY_DEFAULT("system_metrics"), "RssAnonMemory",
                   memory_info->rss_anon_bytes);
-#elif BUILDFLAG(IS_WIN)
-    TRACE_COUNTER(TRACE_DISABLED_BY_DEFAULT("system_metrics"), "PrivateMemory",
-                  memory_info->private_bytes);
 #endif  // BUILDFLAG(IS_WIN)
   }
 }

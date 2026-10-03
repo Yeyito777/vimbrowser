@@ -15,9 +15,6 @@
 #include "ui/gfx/buffer_types.h"
 #include "ui/gfx/gpu_fence.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/win/d3d_shared_fence.h"
-#endif
 
 namespace gpu {
 namespace {
@@ -238,50 +235,6 @@ void SharedImageInterfaceProxy::CopyToGpuMemoryBuffer(
   }
 }
 
-#if BUILDFLAG(IS_WIN)
-void SharedImageInterfaceProxy::CopyToGpuMemoryBufferAsync(
-    const SyncToken& sync_token,
-    const Mailbox& mailbox,
-    base::OnceCallback<void(bool)> callback) {
-  base::AutoLock lock(lock_);
-  host_->CopyToGpuMemoryBufferAsync(
-      mailbox, GenerateDependenciesFromSyncToken(std::move(sync_token), host_),
-      ++next_release_id_, std::move(callback));
-}
-
-void SharedImageInterfaceProxy::UpdateSharedImage(
-    const SyncToken& sync_token,
-    scoped_refptr<gfx::D3DSharedFence> d3d_shared_fence,
-    const Mailbox& mailbox) {
-  base::AutoLock lock(lock_);
-
-  std::vector<SyncToken> dependencies =
-      GenerateDependenciesFromSyncToken(std::move(sync_token), host_);
-  // Register fence in gpu process in first update.
-  auto [token_it, inserted] =
-      registered_fence_tokens_.insert(d3d_shared_fence->GetDXGIHandleToken());
-  if (inserted) {
-    gfx::GpuFenceHandle fence_handle;
-    fence_handle.Adopt(d3d_shared_fence->CloneSharedHandle());
-
-    last_flush_id_ = host_->EnqueueDeferredMessage(
-        mojom::DeferredRequestParams::NewSharedImageRequest(
-            mojom::DeferredSharedImageRequest::NewRegisterDxgiFence(
-                mojom::RegisterDxgiFenceParams::New(
-                    mailbox, d3d_shared_fence->GetDXGIHandleToken(),
-                    std::move(fence_handle)))),
-        std::move(dependencies), /*release_count=*/0);
-  }
-
-  last_flush_id_ = host_->EnqueueDeferredMessage(
-      mojom::DeferredRequestParams::NewSharedImageRequest(
-          mojom::DeferredSharedImageRequest::NewUpdateDxgiFence(
-              mojom::UpdateDxgiFenceParams::New(
-                  mailbox, d3d_shared_fence->GetDXGIHandleToken(),
-                  d3d_shared_fence->GetFenceValue()))),
-      std::move(dependencies), /*release_count=*/0);
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_ANDROID)
 void SharedImageInterfaceProxy::CopyNativeGmbToSharedMemoryAsync(
@@ -488,19 +441,6 @@ bool SharedImageInterfaceProxy::GetSHMForPixelData(
   return true;
 }
 
-#if BUILDFLAG(IS_FUCHSIA)
-void SharedImageInterfaceProxy::RegisterSysmemBufferCollection(
-    zx::eventpair service_handle,
-    zx::channel sysmem_token,
-    const viz::SharedImageFormat& format,
-    gfx::BufferUsage usage,
-    bool register_with_image_pipe) {
-  host_->GetGpuChannel().RegisterSysmemBufferCollection(
-      mojo::PlatformHandle(std::move(service_handle)),
-      mojo::PlatformHandle(std::move(sysmem_token)), format, usage,
-      register_with_image_pipe);
-}
-#endif  // BUILDFLAG(IS_FUCHSIA)
 
 void SharedImageInterfaceProxy::AddReferenceToSharedImage(
     const SyncToken& sync_token,

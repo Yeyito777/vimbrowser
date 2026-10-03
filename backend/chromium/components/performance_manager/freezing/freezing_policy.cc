@@ -257,15 +257,6 @@ FreezingPolicy::FreezingPolicy(
     resource_usage_query_observation_.Observe(&resource_usage_query_.value());
     resource_usage_query_->Start(kCPUMeasurementInterval);
   }
-#if BUILDFLAG(IS_WIN)
-  if (base::FeatureList::IsEnabled(
-          features::kInfiniteTabsFreezingOnMemoryPressure)) {
-    memory_check_timer_.Start(
-        FROM_HERE,
-        features::kInfiniteTabsFreezingOnMemoryPressureInterval.Get(), this,
-        &FreezingPolicy::CheckMemoryPressureForFreezing);
-  }
-#endif
 }
 
 FreezingPolicy::~FreezingPolicy() = default;
@@ -1400,41 +1391,6 @@ base::TimeTicks FreezingPolicy::GenerateRandomPeriodicUnfreezePhase() const {
 }
 
 void FreezingPolicy::CheckMemoryPressureForFreezing() {
-#if BUILDFLAG(IS_WIN)
-  base::SystemMemoryInfo info;
-  if (!base::GetSystemMemoryInfo(&info)) {
-    // Cannot get system memory info, do nothing.
-    return;
-  }
-
-  // The moderate pressure threshold value is lifted from the default logic in
-  // SystemMemoryPressureEvaluator. It was determined experimentally to ensure
-  // sufficient responsiveness of the memory pressure subsystem with minimal
-  // overhead.
-  const int kPressureThresholdPercent =
-      features::kInfiniteTabsFreezingOnMemoryPressurePercent.Get();
-
-  base::ByteSize total = info.total;
-  base::ByteSize avail = info.avail_phys;
-
-  int available_percent = 0;
-  if (total.is_positive()) {
-    available_percent =
-        static_cast<int>(avail.InBytesF() / total.InBytesF() * 100.0);
-  }
-
-  bool is_now_under_pressure = available_percent < kPressureThresholdPercent;
-
-  // If the pressure state hasn't changed, there's nothing to do.
-  if (is_now_under_pressure == is_under_memory_pressure_) {
-    return;
-  }
-
-  // The state has changed. Update the flag and re-evaluate all pages.
-  is_under_memory_pressure_ = is_now_under_pressure;
-  UpdateAllPagesFrozenState();
-
-#endif  // BUILDFLAG(IS_WIN)
 }
 
 void FreezingPolicy::UpdateAllPagesFrozenState() {

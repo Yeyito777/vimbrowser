@@ -721,10 +721,6 @@ component("cpp_base") {
   ]
   defines = [ "IS_NETWORK_CPP_BASE_IMPL" ]
 
-  if (is_fuchsia) {
-    sources += [ "transferable_directory_fuchsia.cc" ]
-  }
-
   if (is_linux) {
     sources += [
       "network_interface_change_listener_mojom_traits.cc",

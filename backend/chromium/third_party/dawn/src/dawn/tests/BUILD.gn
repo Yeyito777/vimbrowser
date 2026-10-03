@@ -480,10 +480,6 @@ dawn_test("dawn_unittests") {
     sources += [ "unittests/RawPtrTests.cpp" ]
   }
 
-  if (is_win) {
-    sources += [ "unittests/WindowsUtilsTests.cpp" ]
-  }
-
   if (dawn_enable_d3d12) {
     sources += [ "unittests/d3d12/CopySplitTests.cpp" ]
   }
@@ -772,9 +768,6 @@ source_set("end2end_tests_sources") {
   if (is_mac || is_ios || is_linux) {
     sources += [ "end2end/BufferHostMappedPointerTests_posix.cpp" ]
   }
-  if (is_win) {
-    sources += [ "end2end/BufferHostMappedPointerTests_win.cpp" ]
-  }
 
   if (dawn_supports_glfw_for_windowing) {
     sources += [
@@ -872,13 +865,6 @@ source_set("white_box_tests_sources") {
       sources += [
         "white_box/SharedTextureMemoryTests_dmabuf.cpp",
         "white_box/SharedTextureMemoryTests_opaquefd.cpp",
-      ]
-    }
-
-    if (is_android) {
-      sources += [
-        "white_box/SharedTextureMemoryTests_android.cpp",
-        "white_box/SharedTextureMemoryYCbCrAndroidTests.cpp",
       ]
     }
 

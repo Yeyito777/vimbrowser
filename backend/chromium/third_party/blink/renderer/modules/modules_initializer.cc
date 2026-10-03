@@ -8,7 +8,6 @@
 
 #include "base/task/thread_pool.h"
 #include "base/trace_event/trace_event.h"
-#include "build/android_buildflags.h"
 #include "build/build_config.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "third_party/blink/public/mojom/dom_storage/session_storage_namespace.mojom-blink.h"
@@ -120,7 +119,7 @@
 namespace blink {
 namespace {
 
-#if BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_DESKTOP_ANDROID)
+#if BUILDFLAG(IS_ANDROID)
 
 class SuspendCaptureObserver : public GarbageCollected<SuspendCaptureObserver>,
                                public Supplement<Page>,
@@ -161,7 +160,7 @@ class SuspendCaptureObserver : public GarbageCollected<SuspendCaptureObserver>,
 };
 
 const char SuspendCaptureObserver::kSupplementName[] = "SuspendCaptureObserver";
-#endif  // BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_DESKTOP_ANDROID)
+#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
@@ -376,9 +375,9 @@ void ModulesInitializer::ProvideModulesToPage(
     const SessionStorageNamespaceId& namespace_id) const {
   StorageNamespace::ProvideSessionStorageNamespaceTo(page, namespace_id);
   AudioGraphTracer::ProvideAudioGraphTracerTo(page);
-#if BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_DESKTOP_ANDROID)
+#if BUILDFLAG(IS_ANDROID)
   page.ProvideSupplement(MakeGarbageCollected<SuspendCaptureObserver>(page));
-#endif  // BUILDFLAG(IS_ANDROID)  && !BUILDFLAG(IS_DESKTOP_ANDROID)
+#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 void ModulesInitializer::ForceNextWebGLContextCreationToFail() const {

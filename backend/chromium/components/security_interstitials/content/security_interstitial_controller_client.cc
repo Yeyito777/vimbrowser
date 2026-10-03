@@ -149,20 +149,11 @@ void SecurityInterstitialControllerClient::OpenUrlInNewForegroundTab(
 }
 
 void SecurityInterstitialControllerClient::OpenEnhancedProtectionSettings() {
-#if BUILDFLAG(IS_ANDROID)
-  settings_page_helper_->OpenEnhancedProtectionSettings(&*web_contents_);
-#else
   settings_page_helper_->OpenEnhancedProtectionSettingsWithIph(
       &*web_contents_,
       safe_browsing::SafeBrowsingSettingReferralMethod::kSecurityInterstitial);
-#endif
 }
 
-#if BUILDFLAG(IS_ANDROID)
-void SecurityInterstitialControllerClient::OpenAdvancedProtectionSettings() {
-  settings_page_helper_->OpenAdvancedProtectionSettings(*web_contents_);
-}
-#endif
 
 const std::string& SecurityInterstitialControllerClient::GetApplicationLocale()
     const {

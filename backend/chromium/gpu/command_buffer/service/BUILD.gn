@@ -89,23 +89,6 @@ source_set("service_sources") {
     "//ui/gfx/geometry",
     "//ui/gl",
   ]
-
-  if (is_android && !is_debug) {
-    # On Android optimize more since this component can be a bottleneck.
-    configs -= [ "//build/config/compiler:default_optimization" ]
-    configs += [ "//build/config/compiler:optimize_max" ]
-  }
-}
-
-if (is_win) {
-  config("service_win_linker_flags") {
-    # This is in a separate config so the flags can be applied to dependents.
-    # ldflags in GN aren't automatically inherited.
-    ldflags = [
-      # Linking with OneCore.lib causes the following dlls to load.
-      "/DELAYLOAD:api-ms-win-core-handle-l1-1-0.dll",
-    ]
-  }
 }
 
 target(link_target_type, "gles2_sources") {
@@ -426,12 +409,6 @@ target(link_target_type, "gles2_sources") {
       "//ui/base:features",
       "//ui/ozone",
     ]
-    if (is_chromeos) {
-      deps += [
-        "//ash/constants",
-        "//ui/gfx/linux:drm",
-      ]
-    }
   }
 
   if (enable_vulkan) {
@@ -479,10 +456,6 @@ target(link_target_type, "gles2_sources") {
       ]
 
       deps += [ "//ui/ozone" ]
-
-      if (is_chromeos) {
-        deps += [ "//ui/gfx/linux:drm" ]
-      }
     }
 
     if (is_linux && use_dawn) {
@@ -554,151 +527,9 @@ target(link_target_type, "gles2_sources") {
       "shared_image/skia_graphite_dawn_image_representation.h",
     ]
     deps += [ "//third_party/dawn/src/dawn:cpp" ]
-
-    if (is_chromeos) {
-      sources += [
-        "drm_modifiers_filter_dawn.cc",
-        "drm_modifiers_filter_dawn.h",
-      ]
-      deps += [ "//ui/gfx/linux:drm" ]
-    }
-  }
-
-  if (is_android) {
-    if (!is_debug) {
-      # On Android optimize more since this component can be a bottleneck.
-      configs -= [ "//build/config/compiler:default_optimization" ]
-      configs += [ "//build/config/compiler:optimize_max" ]
-    }
-    sources += [
-      "ahardwarebuffer_utils.cc",
-      "ahardwarebuffer_utils.h",
-      "image_reader_gl_owner.cc",
-      "image_reader_gl_owner.h",
-      "ref_counted_lock.cc",
-      "ref_counted_lock.h",
-      "shared_image/ahardwarebuffer_image_backing_factory.cc",
-      "shared_image/ahardwarebuffer_image_backing_factory.h",
-      "shared_image/android_image_backing.cc",
-      "shared_image/android_image_backing.h",
-      "shared_image/android_video_image_backing.cc",
-      "shared_image/android_video_image_backing.h",
-      "shared_image/gl_texture_android_image_representation.cc",
-      "shared_image/gl_texture_android_image_representation.h",
-      "shared_image/gl_texture_passthrough_android_image_representation.cc",
-      "shared_image/gl_texture_passthrough_android_image_representation.h",
-      "shared_image/skia_vk_android_image_representation.cc",
-      "shared_image/skia_vk_android_image_representation.h",
-      "shared_image/video_image_reader_image_backing.cc",
-      "shared_image/video_image_reader_image_backing.h",
-      "stream_texture_shared_image_interface.h",
-      "texture_owner.cc",
-      "texture_owner.h",
-    ]
-
-    # For AImageReader.
-    libs = [ "mediandk" ]
-
-    if (use_dawn) {
-      sources += [
-        "shared_image/dawn_ahardwarebuffer_image_representation.cc",
-        "shared_image/dawn_ahardwarebuffer_image_representation.h",
-      ]
-    }
-
-    deps += [
-      "//base",
-      "//third_party/jni_zero",
-    ]
-
-    # TODO(cblume): http://crbug.com/911313
-    # Abstract out the platform specific defines. Right now we need the android
-    # platform specific define here to be able to include android specific
-    # functions.
-    defines += [ "VK_USE_PLATFORM_ANDROID_KHR" ]
-    deps += [ "//third_party/libsync" ]
-    if (enable_vulkan) {
-      deps += [ "//gpu/vulkan" ]
-    }
-  }
-
-  if (is_win) {
-    sources += [
-      "dxgi_shared_handle_manager.cc",
-      "dxgi_shared_handle_manager.h",
-      "shared_image/d3d11_image_same_adapter_copy_strategy.cc",
-      "shared_image/d3d11_image_same_adapter_copy_strategy.h",
-      "shared_image/d3d_image_backing.cc",
-      "shared_image/d3d_image_backing.h",
-      "shared_image/d3d_image_backing_factory.cc",
-      "shared_image/d3d_image_backing_factory.h",
-      "shared_image/d3d_image_representation.cc",
-      "shared_image/d3d_image_representation.h",
-      "shared_image/d3d_image_utils.cc",
-      "shared_image/d3d_image_utils.h",
-      "shared_image/dcomp_image_backing_factory.cc",
-      "shared_image/dcomp_image_backing_factory.h",
-      "shared_image/dcomp_surface_image_backing.cc",
-      "shared_image/dcomp_surface_image_backing.h",
-      "shared_image/dcomp_surface_image_representation.cc",
-      "shared_image/dcomp_surface_image_representation.h",
-      "shared_image/dxgi_swap_chain_image_backing.cc",
-      "shared_image/dxgi_swap_chain_image_backing.h",
-      "shared_image/dxgi_swap_chain_image_representation.cc",
-      "shared_image/dxgi_swap_chain_image_representation.h",
-    ]
-    libs = [
-      "d3d11.lib",
-      "d3d12.lib",
-      "dxguid.lib",
-      "onecore.lib",
-    ]
-    all_dependent_configs = [ ":service_win_linker_flags" ]
   }
 }
 
 proto_library("disk_cache_proto") {
   sources = [ "disk_cache_proto.proto" ]
-}
-
-if (is_android) {
-  static_library("android_texture_owner_test_support") {
-    testonly = true
-    sources = [
-      "mock_texture_owner.cc",
-      "mock_texture_owner.h",
-      "ref_counted_lock_for_test.cc",
-      "ref_counted_lock_for_test.h",
-    ]
-    deps = [
-      ":gles2",
-      "//base/test:test_support",
-      "//gpu:test_support",
-      "//testing/gmock",
-      "//testing/gtest",
-      "//ui/gl",
-      "//ui/gl/init",
-    ]
-  }
-}
-
-if (is_android) {
-  source_set("android_texture_owner_unittests") {
-    testonly = true
-    sources = [ "image_reader_gl_owner_unittest.cc" ]
-
-    # For AImageReader_getFormat()
-    libs = [ "mediandk" ]
-
-    deps = [
-      ":android_texture_owner_test_support",
-      ":gles2",
-      "//base/test:test_support",
-      "//gpu:test_support",
-      "//testing/gmock",
-      "//testing/gtest",
-      "//ui/gl",
-      "//ui/gl/init",
-    ]
-  }
 }

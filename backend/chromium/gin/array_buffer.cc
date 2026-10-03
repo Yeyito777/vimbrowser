@@ -18,13 +18,11 @@
 #include "partition_alloc/partition_root.h"
 #include "v8/include/v8-initialization.h"
 
-#if BUILDFLAG(IS_POSIX)
 #include <sys/mman.h>
 
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
 #endif
-#endif  // BUILDFLAG(IS_POSIX)
 
 namespace gin {
 
@@ -183,16 +181,8 @@ class ArrayBufferSharedMemoryMapper : public base::SharedMemoryMapper {
     v8::PlatformSharedMemoryHandle v8_handle;
 #if BUILDFLAG(IS_APPLE)
     v8_handle = v8::SharedMemoryHandleFromMachMemoryEntry(handle);
-#elif BUILDFLAG(IS_FUCHSIA)
-    v8_handle = v8::SharedMemoryHandleFromVMO(handle->get());
-#elif BUILDFLAG(IS_WIN)
-    v8_handle = v8::SharedMemoryHandleFromFileMapping(handle);
-#elif BUILDFLAG(IS_ANDROID)
-    v8_handle = v8::SharedMemoryHandleFromFileDescriptor(handle);
-#elif BUILDFLAG(IS_POSIX)
-    v8_handle = v8::SharedMemoryHandleFromFileDescriptor(handle.fd);
 #else
-#error "Unknown platform"
+    v8_handle = v8::SharedMemoryHandleFromFileDescriptor(handle.fd);
 #endif
 
     // Size and offset must be a multiple of the page allocation granularity.

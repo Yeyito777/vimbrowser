@@ -2348,22 +2348,6 @@
     'traffic_annotation': {
       'filepath': 'tools/traffic_annotation/'
     },
-    'translate': {
-      'filepath': 'chrome/android/java/src/org/chromium/chrome/browser/translate|'\
-                  'chrome/android/java/src/org/chromium/chrome/browser/infobar/translate|'\
-                  'chrome/android/javatests/src/org/chromium/chrome/browser/translate|'\
-                  'chrome/browser/translate|'\
-                  'chrome/browser/ui/translate|'\
-                  'chrome/browser/ui/webui/translate_internals|'\
-                  'chrome/browser/ui/views/translate|'\
-                  'chrome/renderer/translate|'\
-                  'chrome/test/data/translate|'\
-                  'components/resources/translate_resources.grdp'\
-                  'components/translate|'\
-                  'components/translate_strings_grdp|'\
-                  'ios/chrome/browser/translate|'\
-                  'ios/web_view/internal/translate'
-    },
     'turtledove': {
       'filepath': 'content/browser/interest_group/|'\
                   'content/services/auction_worklet/|'\
@@ -3434,7 +3418,6 @@
                            'ramyagopalan+watch@google.com',
 			   'jorgelo+watch@chromium.org',
 			   'crmullins+watch@chromium.org'],
-    'translate': ['translate-reviews@chromium.org'],
     'turtledove': [],
     'ui_compositor': ['cc-bugs@chromium.org'],
     'ui_display_win': ['robliao+watch@chromium.org'],

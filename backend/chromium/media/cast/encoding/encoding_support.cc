@@ -65,16 +65,6 @@ bool IsHardwareH264EncodingEnabled(
   }
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  // TODO(crbug.com/40653760): Now that we have software fallback for hardware
-  // encoders, it is okay to enable hardware H264 for windows, as the one to
-  // two percent of sessions that fail can gracefully fallback.
-  if (!command_line.HasSwitch(
-          switches::kCastStreamingForceEnableHardwareH264) &&
-      !base::FeatureList::IsEnabled(kCastStreamingWinHardwareH264)) {
-    return false;
-  }
-#endif
 
   return IsHardwareEncodingEnabled(profiles, H264PROFILE_MIN, H264PROFILE_MAX);
 }

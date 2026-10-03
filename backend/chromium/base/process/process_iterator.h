@@ -21,11 +21,7 @@
 #include "base/strings/string_util.h"
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-
-#include <tlhelp32.h>
-#elif BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_OPENBSD)
+#if BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_OPENBSD)
 #include <sys/sysctl.h>
 #elif BUILDFLAG(IS_FREEBSD)
 #include <sys/user.h>
@@ -35,13 +31,7 @@
 
 namespace base {
 
-#if BUILDFLAG(IS_WIN)
-struct ProcessEntry : public PROCESSENTRY32 {
-  ProcessId pid() const { return th32ProcessID; }
-  ProcessId parent_pid() const { return th32ParentProcessID; }
-  const FilePath::CharType* exe_file() const { return szExeFile; }
-};
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 struct BASE_EXPORT ProcessEntry {
   ProcessEntry();
   ProcessEntry(const ProcessEntry& other);
@@ -109,13 +99,10 @@ class BASE_EXPORT ProcessIterator {
   // that process's info if there is one, false otherwise.
   bool CheckForNextProcess();
 
-#if BUILDFLAG(IS_WIN)
-  HANDLE snapshot_;
-  bool started_iteration_ = false;
-#elif BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_BSD)
+#if BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_BSD)
   std::vector<kinfo_proc> kinfo_procs_;
   size_t index_of_kinfo_proc_ = 0;
-#elif BUILDFLAG(IS_POSIX)
+#else
   struct DIRClose {
     inline void operator()(DIR* x) const {
       if (x) {

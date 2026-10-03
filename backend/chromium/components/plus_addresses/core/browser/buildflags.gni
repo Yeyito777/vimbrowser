@@ -7,6 +7,5 @@ import("//build/config/chrome_build.gni")
 
 declare_args() {
   # Use drawables from the downstream clank/ repository only for branded builds.
-  plus_addresses_use_internal_android_resources =
-      is_android && enable_chrome_android_internal && is_chrome_branded
+  plus_addresses_use_internal_android_resources = false
 }

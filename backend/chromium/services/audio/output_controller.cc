@@ -76,13 +76,7 @@ const char* ErrorTypeToString(
 }
 
 bool ShouldMonitorAudioLevels() {
-#if BUILDFLAG(IS_ANDROID)
-  return base::FeatureList::IsEnabled(media::kEnableAudioMonitoringOnAndroid);
-#elif BUILDFLAG(IS_IOS)
-  return false;
-#else
   return true;
-#endif
 }
 
 }  // namespace

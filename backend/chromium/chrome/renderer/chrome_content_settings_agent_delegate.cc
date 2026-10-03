@@ -8,9 +8,6 @@
 #include "pdf/buildflags.h"
 
 // TODO(b/197163596): Remove File Manager constants
-#if BUILDFLAG(IS_CHROMEOS)
-#include "ash/webui/file_manager/url_constants.h"
-#endif
 #include "content/public/common/url_constants.h"
 #include "content/public/renderer/render_frame.h"
 #include "third_party/blink/public/platform/web_security_origin.h"
@@ -160,16 +157,6 @@ bool ChromeContentSettingsAgentDelegate::IsPlatformApp() {
 }
 
 bool ChromeContentSettingsAgentDelegate::IsAllowListedSystemWebApp() {
-#if BUILDFLAG(IS_CHROMEOS)
-  blink::WebLocalFrame* frame = render_frame_->GetWebFrame();
-  blink::WebSecurityOrigin origin = frame->GetDocument().GetSecurityOrigin();
-  // TODO(crbug.com/1233395): Migrate Files SWA to Clipboard API and remove this
-  // allow-list.
-  if (origin.Protocol().Ascii() == ::content::kChromeUIScheme &&
-      origin.Host().Utf8() == ::ash::file_manager::kChromeUIFileManagerHost) {
-    return true;
-  }
-#endif
   return false;
 }
 

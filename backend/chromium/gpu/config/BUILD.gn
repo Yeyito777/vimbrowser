@@ -9,10 +9,6 @@ import("//gpu/vulkan/features.gni")
 import("//skia/features.gni")
 import("//ui/gl/features.gni")
 
-if (is_android) {
-  import("//build/config/android/rules.gni")
-}
-
 process_json_outputs = [
   "$target_gen_dir/gpu_driver_bug_list_arrays_and_structs_autogen.h",
   "$target_gen_dir/gpu_driver_bug_list_autogen.cc",
@@ -42,16 +38,8 @@ action("process_json") {
     "--skip-testing-data",
     "--os-filter",
   ]
-  if (is_win) {
-    args += [ "win" ]
-  } else if (is_mac) {
+  if (is_mac) {
     args += [ "macosx" ]
-  } else if (is_android) {
-    args += [ "android" ]
-  } else if (is_chromeos) {
-    args += [ "chromeos" ]
-  } else if (is_fuchsia) {
-    args += [ "fuchsia" ]
   } else {
     args += [ "linux" ]
   }
@@ -124,10 +112,6 @@ component("config") {
     "webgpu_blocklist_impl.h",
   ]
 
-  if (is_fuchsia) {
-    sources += [ "gpu_info_collector_fuchsia.cc" ]
-  }
-
   sources += process_json_outputs
 
   defines = [ "GPU_CONFIG_IMPLEMENTATION" ]
@@ -182,53 +166,17 @@ component("config") {
   allow_circular_includes_from =
       [ "//gpu/ipc/common:gpu_preferences_interface" ]
 
-  if (is_android) {
-    sources += [ "gpu_info_collector_android.cc" ]
-  }
-  if (is_win) {
-    sources += [ "gpu_info_collector_win.cc" ]
-    deps += [ "//third_party/microsoft_dxheaders:dxguids" ]
-    libs = [ "dxgi.lib" ]
-  }
   if (is_mac) {
     sources += [ "gpu_info_collector_mac.mm" ]
     frameworks = [ "OpenGL.framework" ]
   }
-  if (is_ios) {
-    sources += [ "gpu_info_collector_ios.mm" ]
-  }
   if (is_linux || is_chromeos) {
     sources += [ "gpu_info_collector_linux.cc" ]
   }
-  if (is_linux || is_chromeos || is_apple || is_fuchsia || is_android) {
+  if (is_linux || is_chromeos || is_apple || is_fuchsia) {
     deps += [ "//third_party/angle:angle_gpu_info_util" ]
   }
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
-  }
-}
-
-if (is_android) {
-  java_cpp_strings("java_switches_srcjar") {
-    # External code should depend on ":config_java" instead.
-    visibility = [ ":*" ]
-    sources = [ "gpu_switches.cc" ]
-    class_name = "org.chromium.gpu.config.GpuSwitches"
-  }
-
-  java_cpp_features("java_features_srcjar") {
-    # External code should depend on ":config_java" instead.
-    visibility = [ ":*" ]
-    sources = [ "gpu_finch_features.cc" ]
-    class_name = "org.chromium.gpu.config.GpuFeatures"
-  }
-
-  android_library("config_java") {
-    # Right now, this only includes the Java switches/features. But if we need
-    # more Java files, they should be added here as necessary.
-    srcjar_deps = [
-      ":java_features_srcjar",
-      ":java_switches_srcjar",
-    ]
   }
 }

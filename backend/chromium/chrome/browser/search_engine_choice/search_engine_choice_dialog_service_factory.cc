@@ -23,10 +23,6 @@
 #include "components/search_engines/search_engines_switches.h"
 #include "components/search_engines/template_url_service.h"
 
-#if BUILDFLAG(IS_CHROMEOS)
-#include "chrome/browser/profiles/profiles_state.h"
-#include "chromeos/components/kiosk/kiosk_utils.h"
-#endif
 
 namespace {
 using ::regional_capabilities::SearchEngineChoiceScreenConditions;
@@ -40,11 +36,6 @@ bool g_is_chrome_build =
 #endif
 
 bool IsSupportedProfileType(Profile& profile) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (chromeos::IsKioskSession() || profiles::IsChromeAppKioskSession()) {
-    return false;
-  }
-#endif
 
   // Guest sessions (including child guest) don't count as "regular" but can be
   // eligible.

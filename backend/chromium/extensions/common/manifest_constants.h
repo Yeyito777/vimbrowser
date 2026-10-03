@@ -172,11 +172,6 @@ inline constexpr char kWebview[] = "webview";
 inline constexpr char kWebviewAccessibleResources[] = "accessible_resources";
 inline constexpr char kWebviewName[] = "name";
 inline constexpr char kWebviewPartitions[] = "partitions";
-#if BUILDFLAG(IS_CHROMEOS)
-inline constexpr char kFileSystemProviderCapabilities[] =
-    "file_system_provider_capabilities";
-inline constexpr char kActionHandlerActionKey[] = "action";
-#endif
 
 }  // namespace manifest_keys
 
@@ -730,15 +725,6 @@ inline constexpr char kVersionFormatting[] =
     "The extension version is parsed as '%s'.";
 inline constexpr char16_t kWebRequestConflictsWithLazyBackground[] =
     u"The 'webRequest' API cannot be used with event pages.";
-#if BUILDFLAG(IS_CHROMEOS)
-inline constexpr char16_t kInvalidFileSystemProviderMissingCapabilities[] =
-    u"The 'fileSystemProvider' permission requires the "
-    "'file_system_provider_capabilities' section to be specified in the "
-    "manifest.";
-inline constexpr char kInvalidFileSystemProviderMissingPermission[] =
-    "The 'file_system_provider_capabilities' section requires the "
-    "'fileSystemProvider' permission to be specified in the manifest.";
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 }  // namespace manifest_errors
 

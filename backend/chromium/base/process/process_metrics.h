@@ -29,15 +29,9 @@
 
 #include "base/process/port_provider_mac.h"
 
-#if !BUILDFLAG(IS_IOS)
 #include <mach/mach_vm.h>
 #endif
-#endif
 
-#if BUILDFLAG(IS_WIN)
-#include "base/win/scoped_handle.h"
-#include "base/win/windows_types.h"
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID) || \
     BUILDFLAG(IS_AIX)
@@ -94,9 +88,6 @@ struct ProcessMemoryInfo {
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) ||
         // BUILDFLAG(IS_ANDROID)
 
-#if BUILDFLAG(IS_WIN)
-  uint64_t private_bytes = 0;
-#endif  // BUILDFLAG(IS_WIN)
 
   // On iOS,
   //   TBD: https://crbug.com/41315025
@@ -215,7 +206,6 @@ class BASE_EXPORT ProcessMetrics {
   int GetPackageIdleWakeupsPerSecond();
 #endif
 
-#if BUILDFLAG(IS_POSIX)
   // Returns the number of file descriptors currently open by the process, or
   // -1 on error.
   int GetOpenFdCount() const;
@@ -223,7 +213,6 @@ class BASE_EXPORT ProcessMetrics {
   // Returns the soft limit of file descriptors that can be opened by the
   // process, or -1 on error.
   int GetOpenFdSoftLimit() const;
-#endif  // BUILDFLAG(IS_POSIX)
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
   // Minor and major page fault count as reported by /proc/[pid]/stat.
@@ -256,11 +245,7 @@ class BASE_EXPORT ProcessMetrics {
   mach_port_t TaskForHandle(ProcessHandle process_handle) const;
 #endif
 
-#if BUILDFLAG(IS_WIN)
-  win::ScopedHandle process_;
-#else
   ProcessHandle process_;
-#endif
 
   // Used to store the previous times and CPU usage counts so we can
   // compute the CPU usage between calls.
@@ -302,12 +287,10 @@ BASE_EXPORT size_t GetMaxFds();
 // Returns the maximum number of handles that can be open at once per process.
 BASE_EXPORT size_t GetHandleLimit();
 
-#if BUILDFLAG(IS_POSIX)
 // Increases the file descriptor soft limit to |max_descriptors| or the OS hard
 // limit, whichever is lower. If the limit is already higher than
 // |max_descriptors|, then nothing happens.
 BASE_EXPORT void IncreaseFdLimitTo(unsigned int max_descriptors);
-#endif  // BUILDFLAG(IS_POSIX)
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_LINUX) ||      \
     BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_AIX) || \
@@ -332,18 +315,8 @@ struct BASE_EXPORT SystemMemoryInfo {
 
   ByteSize total;
 
-#if !BUILDFLAG(IS_WIN)
   ByteSize free;
-#endif
 
-#if BUILDFLAG(IS_WIN)
-  // "This is the amount of physical memory that can be immediately reused
-  // without having to write its contents to disk first. It is the sum of the
-  // size of the standby, free, and zero lists." (MSDN).
-  // Standby: not modified pages of physical ram (file-backed memory) that are
-  // not actively being used.
-  ByteSize avail_phys;
-#endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID) || \
     BUILDFLAG(IS_AIX)
@@ -373,10 +346,6 @@ struct BASE_EXPORT SystemMemoryInfo {
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) ||
         // BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_AIX) BUILDFLAG(IS_FUCHSIA)
 
-#if BUILDFLAG(IS_CHROMEOS)
-  ByteSize shmem;
-  ByteSize slab;
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_APPLE)
   ByteSize speculative;
@@ -481,54 +450,6 @@ BASE_EXPORT TimeDelta GetUserCpuTimeSinceBoot();
 #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) ||
         // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_AIX)
 
-#if BUILDFLAG(IS_CHROMEOS)
-// Data from files in directory /sys/block/zram0 about ZRAM usage.
-struct BASE_EXPORT SwapInfo {
-  SwapInfo()
-      : num_reads(0),
-        num_writes(0),
-        compr_data_size(0),
-        orig_data_size(0),
-        mem_used_total(0) {}
-
-  uint64_t num_reads = 0;
-  uint64_t num_writes = 0;
-  uint64_t compr_data_size = 0;
-  uint64_t orig_data_size = 0;
-  uint64_t mem_used_total = 0;
-};
-
-// Parses a string containing the contents of /sys/block/zram0/mm_stat.
-// This should be used for the new ZRAM sysfs interfaces.
-// Returns true on success or false for a parsing error.
-// Exposed for testing.
-BASE_EXPORT bool ParseZramMmStat(std::string_view mm_stat_data,
-                                 SwapInfo* swap_info);
-
-// Parses a string containing the contents of /sys/block/zram0/stat
-// This should be used for the new ZRAM sysfs interfaces.
-// Returns true on success or false for a parsing error.
-// Exposed for testing.
-BASE_EXPORT bool ParseZramStat(std::string_view stat_data, SwapInfo* swap_info);
-
-// In ChromeOS, reads files from /sys/block/zram0 that contain ZRAM usage data.
-// Fills in the provided |swap_data| structure.
-// Returns true on success or false for a parsing error.
-BASE_EXPORT bool GetSwapInfo(SwapInfo* swap_info);
-
-// Data about GPU memory usage. These fields will be -1 if not supported.
-struct BASE_EXPORT GraphicsMemoryInfoKB {
-  int gpu_objects = -1;
-  int64_t gpu_memory_size = -1;
-};
-
-// Report on Chrome OS graphics memory. Returns true on success.
-// /run/debugfs_gpu is a bind mount into /sys/kernel/debug and synchronously
-// reading the in-memory files in /sys is fast in most cases. On platform that
-// reading the graphics memory info is slow, this function returns false.
-BASE_EXPORT bool GetGraphicsMemoryInfo(GraphicsMemoryInfoKB* gpu_meminfo);
-
-#endif  // BUILDFLAG(IS_CHROMEOS)
 
 struct BASE_EXPORT SystemPerformanceInfo {
   SystemPerformanceInfo();
@@ -583,13 +504,6 @@ class BASE_EXPORT SystemMetrics {
   SystemMemoryInfo memory_info_;
   VmStatInfo vmstat_info_;
   SystemDiskInfo disk_info_;
-#endif
-#if BUILDFLAG(IS_CHROMEOS)
-  SwapInfo swap_info_;
-  GraphicsMemoryInfoKB gpu_memory_info_;
-#endif
-#if BUILDFLAG(IS_WIN)
-  SystemPerformanceInfo performance_;
 #endif
 };
 

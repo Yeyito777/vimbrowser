@@ -679,11 +679,7 @@ Response BrowserHandler::GetBrowserCommandLine(
   // contains kEnableAutomation.
   if (command_line->HasSwitch(switches::kEnableAutomation)) {
     for (const auto& arg : command_line->argv()) {
-#if BUILDFLAG(IS_WIN)
-      (*arguments)->emplace_back(base::WideToUTF8(arg));
-#else
       (*arguments)->emplace_back(arg);
-#endif
     }
     return Response::Success();
   } else {
@@ -769,12 +765,7 @@ void BrowserHandler::OnDownloadUpdated(download::DownloadItem* item) {
       {
         base::FilePath target_file_path = item->GetTargetFilePath();
         if (!target_file_path.empty()) {
-#if BUILDFLAG(IS_WIN)
-          // On Windows, the target file path is a wide string.
-          maybe_file_path = base::WideToUTF8(target_file_path.value());
-#else
           maybe_file_path = target_file_path.value();
-#endif
         }
       }
       break;
