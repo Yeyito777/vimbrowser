@@ -1370,6 +1370,39 @@ def test_sidebar_d_focuses_next_visible_tab(h: Harness) -> None:
     h.ipc(["folder-delete", str(container["id"]), "recursive"])
 
 
+def test_sidebar_jk_after_deleting_active_last_tab(h: Harness) -> None:
+    # Use real native keys, not IPC "key": IPC calls the shell handler directly
+    # and would hide a missing BrowserView key-event target.
+    for delete_key in ("d", "shift+d"):
+        for suffix in ("first", "second", "last"):
+            h.ipc(["open-tab", h.initial_url + "#focus-delete-" + suffix])
+        tabs = h.ipc(["tabs"])["tabs"]
+        first, second, last = tabs[-3:]
+        h.ipc(["tab-focus", str(last["id"])])
+        time.sleep(0.25)
+        h.ipc(["sidebar-focus", "sidebar"])
+
+        # Deleting the last active row falls back to the previous tab. Unlike
+        # deleting a middle row, there is no subsequent switch to a different
+        # successor to repair native focus via delayed browser activation.
+        h.key(delete_key, pause=0.35)
+        after_delete = h.ipc(["status"])
+        require(last["id"] not in {
+                    tab["id"] for tab in h.ipc(["tabs"])["tabs"]} and
+                after_delete.get("active_tabid") == second["id"] and
+                after_delete.get("sidebar_selected_id") == second["id"],
+                f"{delete_key} did not delete the active last tab", after_delete)
+
+        # No refocus, activation, or synthetic IPC keys between deletion and j/k.
+        for key, expected in (("k", first), ("j", second)):
+            h.key(key)
+            after_move = h.ipc(["status"])
+            require(after_move.get("active_tabid") == second["id"] and
+                    after_move.get("sidebar_selected_id") == expected["id"],
+                    f"sidebar {key} stopped working after {delete_key}",
+                    after_move)
+
+
 def test_ipc_toggles_folder_pin(h: Harness) -> None:
     h.ipc(["open-tab", h.initial_url])
     tabs = h.ipc(["tabs"])["tabs"]
@@ -1920,6 +1953,7 @@ TESTS = [
     test_ipc_toggles_folder_pin,
     test_shift_jk_uses_focused_sidebar_order_inside_folder,
     test_sidebar_d_focuses_next_visible_tab,
+    test_sidebar_jk_after_deleting_active_last_tab,
     test_sidebar_keybinds_do_not_type,
     test_sidebar_i_focuses_webview_insert_without_typing,
     test_ctrl_jk_cycle_focus_not_hints,

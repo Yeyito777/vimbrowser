@@ -741,7 +741,12 @@ void BrowserWindow::CloseTabAtIndex(size_t closing, CloseFocus focus_after_close
   }
   UpdateFpsIndicator();
   UpdateStatusBar();
-  if (closing_active && focus_area_ == FocusArea::kWebView &&
+  // The visible BrowserView receives native keys even when the sidebar has
+  // logical focus. Closing it removes that target; restore it just as
+  // ApplyActiveBrowserSelection does, without changing the logical focus area.
+  if (closing_active &&
+      (focus_area_ == FocusArea::kWebView ||
+       focus_area_ == FocusArea::kTabSidebar) &&
       tabs_[active_index_].view) {
     tabs_[active_index_].view->RequestFocus();
   }
