@@ -34,3 +34,5 @@ __pycache__/
 /backend/.gclient_previous_sync_commits
 /frontend/node_modules/
 /frontend/dist/
+/build-pointer-input/
+/build-pointer-devtools/

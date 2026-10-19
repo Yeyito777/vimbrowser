@@ -465,6 +465,10 @@ class BrowserWindow final : public CefWindowDelegate,
   uint64_t ActiveTabId() const;
   void CompleteJsIpcRequest(uint64_t request_id, std::string response);
   std::string FrameTreeJson(uint64_t tab_id) const;
+  void HandleInputIpcCommand(const std::string& command,
+                             uint64_t tab_id,
+                             const std::string& encoded,
+                             IpcReplyCallback reply);
   void HandleInspectControlsIpcCommand(uint64_t tab_id,
                                        std::string encoded_query,
                                        IpcReplyCallback reply);

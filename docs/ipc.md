@@ -583,6 +583,99 @@ vimbrowser-cli inspect-controls @active --frame FRAME_ID \
 vimbrowser-cli activate-control @active eh1_HANDLE_FROM_INSPECTION
 ```
 
+#### Region-bound pointer and key input
+
+`input-region`, `pointer-gesture` and `key-input` relay trusted mouse clicks,
+drags and keys at chosen points, for controls whose meaning depends on *where*
+they are pressed (canvas "click on the object" challenges, image grids,
+sliders). They are implemented entirely in the shell on the tab's own DevTools
+session (`DOM.getNodeForLocation`, `DOM.getBoxModel`, `Page.getFrameTree`,
+`Input.dispatchMouseEvent`, `Input.dispatchKeyEvent`), so they work with the
+cached CEF distribution and need no libcef rebuild. All payloads are compact
+v1 JSON in standard base64; coordinates are CSS px of the tab's main viewport.
+
+`input-region <tabid> {"version":1,"frame_id":"FRAME","x":X,"y":Y}` mints a
+`ph1_...` handle: one-shot, 15 s, bound to that tab. The browser hit-tests the
+point through DevTools (not page script), requires the hit to belong to the
+named frame (same-target frames are matched by URL along the whole parent
+chain; identical siblings are refused as `ambiguous_frame`), and records the
+element's border box, the frame's visible box (the owner `<iframe>` content
+boxes intersected with the viewport), and each frame's document (`loaderId`).
+DevTools sees through same-process frames but stops at an out-of-process
+iframe: when the point lies in one, the handle binds to that iframe element as
+a whole (`"bound":"cross-process-frame"`; a frame nested inside it is reported
+as `inside_cross_process_frame`).
+
+```json
+{"ok":true,"tabid":3,"handle":"ph1_...","ttl_ms":15000,
+ "target":{"tag":"CANVAS","bound":"element"},
+ "frame":{"id":"FRAME","depth":0,"verified_depth":0,"inside_cross_process_frame":false},
+ "regions":{"element":{"x":20,"y":61,"w":300,"h":200},"frame":{"x":0,"y":0,"w":1726,"h":1022}}}
+```
+
+`pointer-gesture <tabid> {"version":1,"handle":"ph1_...","bound":"element"|"frame","steps":[...]}`
+consumes the handle and sends one left-button gesture. Steps are
+`{"type":"move|down|up","x":X,"y":Y,"delay_ms":0..5000}` with the shape
+`move* [down move* up]`, at most 256 steps and 15 s of delays. Shape errors are
+reported before the handle is spent. Before dispatch the binding is re-proven:
+the named frame still exists with the same URL, every same-target frame on the
+chain still has the same document, and the bound element has not moved
+(`target_moved` after scrolling or layout changes). Before **every** step:
+
+- the point must lie in the element region (`bound: element`, and always for
+  the press and anything before it) or in the frame region (later steps of a
+  `bound: frame` drag), otherwise `outside_region`;
+- a fresh DevTools hit test at the point must return the same element (or,
+  for a frame-bound step, a node of that frame which is not a child frame's
+  `<iframe>`), otherwise `target_obscured`, e.g. when the page covers it.
+
+Events go through `Input.dispatchMouseEvent`, which Blink receives as ordinary
+trusted input (`isTrusted`, pointer events, `buttons`, user activation on
+press). For a cross-process iframe they are sent to that iframe's own DevTools
+target (a flattened `Target.setAutoAttach` session for the duration of the
+gesture, detached afterwards). The tab is not activated and native focus does
+not move. A refused step stops the gesture without retry; if the button is
+down it is released at the last validated point. Replies report
+`dispatched_steps`, `button_released` and the `route` used.
+
+`key-input <tabid> {"version":1,"handle":"ph1_...","text":"W7KQ"}` (up to 256
+printable characters, one keystroke each, 35 ms apart) or `{"key":"Enter"}`
+(`Enter`, `Tab`, `Backspace`, `Delete`, `Escape`, `Space`, `Arrow*`, `Home`,
+`End`) sends trusted `Input.dispatchKeyEvent` events. Mint the handle on the
+field: its frame must be the tab's focused frame before every key
+(`frame_not_focused`; press the field with `pointer-gesture` first) and the
+field must still be what is under the minted point. Keys carry no native key
+code, so Chromium marks them `skip_if_unhandled`: they reach only the page,
+never browser shortcuts or vimbrowser's own bindings.
+
+Compared with `activate-control` (whose handles live inside the customized
+libcef), the binding here is weaker in two ways: it is re-checked with
+DevTools' document-level hit test rather than the compositor input router plus
+Blink's exact-node check, and inside an out-of-process iframe it covers the
+whole iframe rather than one element. Known limit: in a tab that is not
+currently displayed, each mouse event can take about a second to be
+acknowledged, so background drags run at roughly one move per second.
+`VIMBROWSER_INPUT_TRACE=1` logs each DevTools call's duration to stderr.
+
+```sh
+vimbrowser-cli input-region @active --frame FRAME_ID --at 412,318
+vimbrowser-cli pointer @active ph1_HANDLE click --at 412,318 --hold 80
+vimbrowser-cli pointer @active ph1_HANDLE drag --from 412,318 --to 590,318 --via 500,322 --frame-bound
+printf 'W7KQ' | vimbrowser-cli key-input @active ph1_FIELD_HANDLE
+```
+
+End-to-end coverage (own profile, cross-origin OOPIF, scrolling, zoom, drag,
+keys, refusals, expiry, background tab) runs only on a nested X11 display:
+
+```sh
+dwm start vimbrowser-pointer-test
+dwm -e vimbrowser-pointer-test exec -- env VIMBROWSER_E2E_NESTED_X11=1 \
+  python3 tests/pointer_input_e2e.py \
+  --binary "$PWD/build-pointer-devtools/Release/vimbrowser" \
+  --cli /home/yeyito/Workspace/exocortex/external-tools/vimbrowser-cli/bin/vimbrowser-cli
+dwm stop vimbrowser-pointer-test
+```
+
 Ordinary web popups retain their real Chromium browsing context—including
 `window.opener`, the `WindowProxy` returned by `window.open()`, `postMessage()`,
 named-window reuse, POST targets, and `window.close()`—but vimbrowser embeds that

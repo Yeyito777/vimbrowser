@@ -3801,6 +3801,9 @@ std::string BrowserWindow::HandleIpcCommand(const std::string &command_line) {
            "  frame-tree <tabid>\n"
            "  inspect-controls <tabid> <base64-v1-json-query>\n"
            "  activate-control <tabid> <exact-node-handle>\n"
+           "  input-region <tabid> <base64-v1-json>\n"
+           "  pointer-gesture <tabid> <base64-v1-json>\n"
+           "  key-input <tabid> <base64-v1-json>\n"
            "  key <[ctrl+][shift+][alt+][cmd+]key>\n"
            "  html <tabid>\n"
            "  text <tabid>\n"
@@ -3875,8 +3878,9 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
       command == "frame-html" || command == "frame-text" ||
       command == "frame-js" || command == "frame-js-base64" ||
       command == "frame-tree" || command == "inspect-controls" ||
-      command == "activate-control" || command == "upload-file" ||
-      command == "scroll-tab";
+      command == "activate-control" || command == "input-region" ||
+      command == "pointer-gesture" || command == "key-input" ||
+      command == "upload-file" || command == "scroll-tab";
   uint64_t target_id = 0;
   if (page_command && argv.size() > 1 &&
       ParseUint64Arg(argv[1], &target_id)) {
@@ -3884,7 +3888,8 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
     if (index) {
       if (command == "js" || command == "js-base64" || command == "js-file" ||
           command == "frame-js" || command == "frame-js-base64" ||
-          command == "activate-control" || command == "upload-file") {
+          command == "activate-control" || command == "pointer-gesture" ||
+          command == "key-input" || command == "upload-file") {
         tabs_[*index].automation_popup_background = true;
       }
       const bool was_dormant = tabs_[*index].deferred_load ||
@@ -4109,6 +4114,21 @@ void BrowserWindow::HandleIpcCommandAsync(const std::string &command_line,
           "activation_backend_unavailable",
           "custom Chromium element activation backend is unavailable"));
     }
+    return;
+  }
+
+  if (command == "input-region" || command == "pointer-gesture" ||
+      command == "key-input") {
+    if (argv.size() != 3) {
+      reply(UploadFileErrorJson(
+          "invalid_usage", "usage: " + command + " <tabid> <base64-v1-json>"));
+      return;
+    }
+    uint64_t tab_id = 0;
+    if (!parse_tab_id(1, &tab_id)) {
+      return;
+    }
+    HandleInputIpcCommand(command, tab_id, argv[2], std::move(reply));
     return;
   }
 
