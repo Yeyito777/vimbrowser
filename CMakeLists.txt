@@ -63,6 +63,7 @@ set(VIMBROWSER_COMMON_SRCS
   src/browser_window.h
   src/browser_window_internal.cc
   src/browser_window_internal.h
+  src/browser_window_input.cc
   src/browser_window_ipc.cc
   src/browser_window_tabs.cc
   src/config.cc

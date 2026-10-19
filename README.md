@@ -82,6 +82,9 @@ scripts/vimbrowser-ipc js 3 'document.title'
 vimbrowser-cli frame-tree 3 --pretty
 vimbrowser-cli inspect-controls 3 --frame FRAME_ID --role button --name-exact Browse --require-one
 vimbrowser-cli activate-control 3 eh1_INSPECTED_TARGET
+vimbrowser-cli input-region 3 --frame FRAME_ID --at 412,318
+vimbrowser-cli pointer 3 ph1_REGION_HANDLE click --at 412,318
+printf 'W7KQ' | vimbrowser-cli key-input 3 ph1_FIELD_HANDLE
 vimbrowser-cli upload-file 3 '#attachment' /home/me/report.pdf
 vimbrowser-cli upload-file 3 'activate:#browse-button' /home/me/resume.pdf
 vimbrowser-cli upload-file 3 'handle:eh1_INSPECTED_TARGET' /home/me/resume.pdf
@@ -102,7 +105,8 @@ compatibility rules. IPC now has profile-persistent stable tab IDs (separate
 from reorderable tab indexes), ID-based tab focus/delete/order/open commands,
 complete folder/sidebar inspection and control, native HTML/text/JS, backend tab
 screenshots, backend
-cookie inspection/mutation, secure browser-process local-file input assignment,
+cookie inspection/mutation, region-bound trusted pointer gestures and key input,
+secure browser-process local-file input assignment,
 and per-tab native network capture/replay.
 
 Performance tracking lives in [`docs/benchmarks.md`](docs/benchmarks.md). Run
