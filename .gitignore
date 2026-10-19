@@ -36,3 +36,4 @@ __pycache__/
 /frontend/dist/
 /build-pointer-input/
 /build-pointer-devtools/
+/build-captcha-input/
