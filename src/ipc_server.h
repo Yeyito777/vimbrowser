@@ -41,6 +41,8 @@ class IpcServer final {
   std::thread thread_;
   int health_fd_ = -1;
   std::thread health_thread_;
+  // Stop() writes to [1] to wake both accept loops, which poll [0].
+  int wake_fds_[2] = {-1, -1};
   // Snapshot only: the health thread never touches CEF/UI objects.
   std::deque<std::function<std::string()>> operation_snapshots_;
   uint64_t operation_sequence_ = 0;

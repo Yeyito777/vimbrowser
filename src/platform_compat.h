@@ -40,3 +40,28 @@ inline int AcceptCloseOnExec(int fd) {
   return accept4(fd, nullptr, nullptr, SOCK_CLOEXEC);
 #endif
 }
+
+inline int PipeCloseOnExec(int fds[2]) {
+#if defined(__APPLE__)
+  if (pipe(fds) != 0) {
+    return -1;
+  }
+  if (SetCloseOnExecOrClose(fds[0]) < 0) {
+    const int error = errno;
+    close(fds[1]);
+    fds[0] = fds[1] = -1;
+    errno = error;
+    return -1;
+  }
+  if (SetCloseOnExecOrClose(fds[1]) < 0) {
+    const int error = errno;
+    close(fds[0]);
+    fds[0] = fds[1] = -1;
+    errno = error;
+    return -1;
+  }
+  return 0;
+#else
+  return pipe2(fds, O_CLOEXEC);
+#endif
+}

@@ -128,12 +128,10 @@ std::map<std::string, InputHandle>& Handles() {
 }
 
 std::string NewHandleId() {
+  // getentropy() is declared by <sys/random.h> on both Linux and Darwin;
+  // getrandom() is Linux-only.
   std::array<unsigned char, 16> bytes{};
-  size_t filled = 0;
-  while (filled < bytes.size()) {
-    const ssize_t got = getrandom(bytes.data() + filled, bytes.size() - filled, 0);
-    if (got <= 0) continue;
-    filled += static_cast<size_t>(got);
+  while (getentropy(bytes.data(), bytes.size()) != 0) {
   }
   static const char* hex = "0123456789abcdef";
   std::string id = "ph1_";

@@ -1,5 +1,6 @@
 #include "ipc_server.h"
 
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <poll.h>
 #include <sys/stat.h>
@@ -118,6 +119,45 @@ void WriteAll(int fd, const std::string& response) {
   }
 }
 
+bool SetNonBlocking(int fd) {
+  const int flags = fcntl(fd, F_GETFL);
+  return flags >= 0 && fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0;
+}
+
+// Blocks until listen_fd has a pending connection (true) or Stop() writes the
+// wake pipe (false). Stop() cannot wake accept() by shutting down the listening
+// socket: Darwin fails that shutdown() with ENOTCONN and leaves accept() asleep.
+bool WaitForConnection(int listen_fd, int wake_fd) {
+  pollfd fds[2] = {{listen_fd, POLLIN, 0}, {wake_fd, POLLIN, 0}};
+  while (true) {
+    const int ready = poll(fds, 2, -1);
+    if (ready < 0 && errno == EINTR) {
+      continue;
+    }
+    return ready > 0 && fds[1].revents == 0;
+  }
+}
+
+// The listening sockets are non-blocking so a connection that vanishes between
+// poll() and accept() cannot park the loop again. Darwin copies O_NONBLOCK onto
+// the accepted socket; client I/O relies on blocking reads bounded by
+// SO_RCVTIMEO/SO_SNDTIMEO, so clear it.
+int AcceptClient(int listen_fd) {
+  const int fd = AcceptCloseOnExec(listen_fd);
+  if (fd >= 0) {
+    const int flags = fcntl(fd, F_GETFL);
+    if (flags >= 0 && (flags & O_NONBLOCK) != 0) {
+      fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
+    }
+  }
+  return fd;
+}
+
+bool IsTransientAcceptError(int error) {
+  return error == EAGAIN || error == EWOULDBLOCK || error == EINTR ||
+         error == ECONNABORTED;
+}
+
 }  // namespace
 
 IpcServer::IpcServer(BrowserWindow* owner, std::string socket_path)
@@ -197,6 +237,17 @@ bool IpcServer::Start() {
     return false;
   }
   chmod(health_path.c_str(), 0600);
+  if (!SetNonBlocking(server_fd_) || !SetNonBlocking(health_fd_) ||
+      PipeCloseOnExec(wake_fds_) != 0) {
+    std::cerr << "vimbrowser: ipc wake setup failed: " << std::strerror(errno) << std::endl;
+    close(health_fd_);
+    health_fd_ = -1;
+    close(server_fd_);
+    server_fd_ = -1;
+    std::filesystem::remove(socket_path_, ec);
+    std::filesystem::remove(health_path, ec);
+    return false;
+  }
   running_ = true;
   health_thread_ = std::thread(&IpcServer::HealthLoop, this);
   thread_ = std::thread(&IpcServer::Loop, this);
@@ -209,16 +260,10 @@ void IpcServer::Stop() {
     return;
   }
 
-  if (server_fd_ >= 0) {
-    shutdown(server_fd_, SHUT_RDWR);
-    close(server_fd_);
-    server_fd_ = -1;
-  }
-
-  if (health_fd_ >= 0) shutdown(health_fd_, SHUT_RDWR);
-  if (health_thread_.joinable()) health_thread_.join();
-  if (health_fd_ >= 0) close(health_fd_);
-  health_fd_ = -1;
+  // The pipe stays readable once written, so one byte wakes both loops.
+  const char wake = 1;
+  const ssize_t wake_result = write(wake_fds_[1], &wake, 1);
+  (void)wake_result;
 
   const int client_fd = client_fd_.load();
   if (client_fd >= 0) {
@@ -234,8 +279,14 @@ void IpcServer::Stop() {
     cancel_pending();
   }
 
+  if (health_thread_.joinable()) health_thread_.join();
   if (thread_.joinable()) {
     thread_.join();
+  }
+
+  for (int* fd : {&server_fd_, &health_fd_, &wake_fds_[0], &wake_fds_[1]}) {
+    if (*fd >= 0) close(*fd);
+    *fd = -1;
   }
 
   std::error_code ec;
@@ -244,8 +295,8 @@ void IpcServer::Stop() {
 }
 
 void IpcServer::HealthLoop() {
-  while (running_) {
-    const int fd = AcceptCloseOnExec(health_fd_);
+  while (running_ && WaitForConnection(health_fd_, wake_fds_[0])) {
+    const int fd = AcceptClient(health_fd_);
     if (fd < 0) continue;
     timeval timeout = {0, 250000};
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
@@ -274,10 +325,10 @@ void IpcServer::HealthLoop() {
 }
 
 void IpcServer::Loop() {
-  while (running_) {
-    const int client_fd = AcceptCloseOnExec(server_fd_);
+  while (running_ && WaitForConnection(server_fd_, wake_fds_[0])) {
+    const int client_fd = AcceptClient(server_fd_);
     if (client_fd < 0) {
-      if (running_) {
+      if (running_ && !IsTransientAcceptError(errno)) {
         std::cerr << "vimbrowser: ipc accept() failed: " << std::strerror(errno) << std::endl;
       }
       continue;
