@@ -2601,10 +2601,15 @@ bool BrowserWindow::OnKeyEvent(CefRefPtr<CefTextfield> textfield,
     }
     return false;
   }
-  if (textfield != command_field_ || mode_ == Mode::kNormal) {
+  // CEF wraps |textfield| afresh for each callback, so it never compares equal
+  // to |command_field_|; match by ID. Typing and native editing stay with the
+  // field (OnAfterUserAction syncs the model) and Tab, Enter, Escape and Ctrl-X
+  // arrive as window accelerators, so only Command-X needs routing here.
+  if (!textfield || textfield->GetID() != kCommandFieldId ||
+      mode_ == Mode::kNormal) {
     return false;
   }
-  return HandleCommandModeKey(event);
+  return HandleCommandXDeleteCompletion(event);
 }
 
 CefSize BrowserWindow::GetPreferredSize(CefRefPtr<CefView> view) {

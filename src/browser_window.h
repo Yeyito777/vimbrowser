@@ -569,6 +569,7 @@ class BrowserWindow final : public CefWindowDelegate,
       std::vector<CompletionItem>& matches) const;
   bool CycleCommandAutocomplete(int direction);
   bool DeleteSelectedCommandAutocomplete();
+  bool HandleCommandXDeleteCompletion(const CefKeyEvent& event);
   void FillCommandAutocomplete(const CompletionItem& item);
   int CommandAutocompleteVisibleRows() const;
   int CommandAutocompleteHeight() const;

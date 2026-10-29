@@ -549,6 +549,30 @@ bool BrowserWindow::DeleteSelectedCommandAutocomplete() {
   return true;
 }
 
+bool BrowserWindow::HandleCommandXDeleteCompletion(const CefKeyEvent &event) {
+#if defined(__APPLE__)
+  // Keyboards that map Linux-style Ctrl editing shortcuts onto Command deliver
+  // Ctrl-X as Command-X. While Tab has selected a history row and no text is
+  // selected, Cut would do nothing, so treat it as delete-completion instead.
+  if (!IsCommandX(event) || !command_field_ || command_field_->HasSelection() ||
+      !command_autocomplete_.active || command_autocomplete_.selection < 0 ||
+      command_autocomplete_.selection >=
+          static_cast<int>(command_autocomplete_.matches.size()) ||
+      command_autocomplete_
+              .matches[static_cast<size_t>(command_autocomplete_.selection)]
+              .source == CompletionSource::kStatic) {
+    return false;
+  }
+  if (IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN) {
+    DeleteSelectedCommandAutocomplete();
+  }
+  return true;
+#else
+  (void)event;
+  return false;
+#endif
+}
+
 bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent &event) {
   if (mode_ == Mode::kNormal) {
     return false;
@@ -565,23 +589,9 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent &event) {
     return true;
   }
 
-#if defined(__APPLE__)
-  // Keyboards that map Linux-style Ctrl editing shortcuts onto Command deliver
-  // Ctrl-X as Command-X. While Tab has selected a history row and no text is
-  // selected, Cut would do nothing, so treat it as delete-completion instead.
-  if (IsCommandX(event) && command_field_ && !command_field_->HasSelection() &&
-      command_autocomplete_.active && command_autocomplete_.selection >= 0 &&
-      command_autocomplete_.selection <
-          static_cast<int>(command_autocomplete_.matches.size()) &&
-      command_autocomplete_
-              .matches[static_cast<size_t>(command_autocomplete_.selection)]
-              .source != CompletionSource::kStatic) {
-    if (IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN) {
-      DeleteSelectedCommandAutocomplete();
-    }
+  if (HandleCommandXDeleteCompletion(event)) {
     return true;
   }
-#endif
 
   // Keep the editable field focused and delegate native editing operations to
   // it on every desktop platform.
