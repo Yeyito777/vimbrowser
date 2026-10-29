@@ -342,7 +342,8 @@ and profile only. Requires `xenv`, `vimbrowser-cli`, Python and Pillow.
   ChatGPT respectively; the ChatGPT engine fills and submits the prompt on page
   load. Each engine keeps its own shared current-tab/new-tab query history. When
   an open/search history completion is selected with `Tab`, `Ctrl+x` deletes it
-  from history.
+  from history; on macOS `Cmd+x` does too while no text is selected, so
+  keyboards that remap Ctrl editing shortcuts onto Command keep working.
 - `:tab-focus` is a first-class command; command autocomplete lists it and its
   argument autocomplete offers open tabs by number/title/URL
 - `:shader [on|off]` toggles the patched native Blink page color shader; on

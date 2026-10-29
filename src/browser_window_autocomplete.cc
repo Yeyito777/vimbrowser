@@ -72,6 +72,15 @@ bool IsNativeCommandEditingShortcut(const CefKeyEvent &event) {
          MatchesAsciiKey(event, 'z');
 }
 
+#if defined(__APPLE__)
+bool IsCommandX(const CefKeyEvent &event) {
+  return (event.modifiers & EVENTFLAG_COMMAND_DOWN) &&
+         !(event.modifiers & (EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN |
+                              EVENTFLAG_SHIFT_DOWN)) &&
+         MatchesAsciiKey(event, 'x');
+}
+#endif
+
 } // namespace
 
 void BrowserWindow::ClearCommandAutocomplete() {
@@ -555,6 +564,24 @@ bool BrowserWindow::HandleCommandModeKey(const CefKeyEvent &event) {
     }
     return true;
   }
+
+#if defined(__APPLE__)
+  // Keyboards that map Linux-style Ctrl editing shortcuts onto Command deliver
+  // Ctrl-X as Command-X. While Tab has selected a history row and no text is
+  // selected, Cut would do nothing, so treat it as delete-completion instead.
+  if (IsCommandX(event) && command_field_ && !command_field_->HasSelection() &&
+      command_autocomplete_.active && command_autocomplete_.selection >= 0 &&
+      command_autocomplete_.selection <
+          static_cast<int>(command_autocomplete_.matches.size()) &&
+      command_autocomplete_
+              .matches[static_cast<size_t>(command_autocomplete_.selection)]
+              .source != CompletionSource::kStatic) {
+    if (IsRawKeyDown(event) || event.type == KEYEVENT_KEYDOWN) {
+      DeleteSelectedCommandAutocomplete();
+    }
+    return true;
+  }
+#endif
 
   // Keep the editable field focused and delegate native editing operations to
   // it on every desktop platform.
