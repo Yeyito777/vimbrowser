@@ -150,6 +150,15 @@ class BrowserWindow final : public CefWindowDelegate,
   void ShowDevToolsForClient(
       BrowserClient* client,
       const CefPoint& inspect_element_at = CefPoint());
+  // DevTools lives in its own Chrome-style child window pinned over the docked
+  // DevTools pane. Chrome-style BrowserViews take over the Widget they are
+  // added to (Browser close closes that Widget, Widget teardown destroys the
+  // Browser), so hosting one inside the main window crashed whenever DevTools
+  // or the window closed.
+  CefRefPtr<CefWindow> MainWindowForDevTools() const { return window_; }
+  CefRect DevToolsWindowScreenBounds() const;
+  void OnDevToolsWindowCreated(CefRefPtr<CefWindow> window);
+  void OnDevToolsWindowDestroyed(CefRefPtr<CefWindow> window);
   // Canonical vimbrowser IPC command dispatcher. Keep external app automation
   // here and documented in docs/ipc.md.
   std::string HandleIpcCommand(const std::string& command);
@@ -658,6 +667,11 @@ class BrowserWindow final : public CefWindowDelegate,
   void ToggleSidebar();
   void ToggleDevTools();
   void CloseDevTools();
+  void SyncDevToolsWindow();
+  void ClearDevToolsViewState();
+  void RetireDevToolsWindow();
+  bool DevToolsWindowsOpen() const;
+  void MaybeFinishWindowClose();
   bool FocusAreaAvailable(FocusArea area) const;
   bool HandleGlobalFocusKey(const CefKeyEvent& event);
   void MaybeArmModifiedSpaceKeyUpSuppression(const CefKeyEvent& event);
@@ -902,6 +916,10 @@ class BrowserWindow final : public CefWindowDelegate,
   CefRefPtr<CefPanel> devtools_content_panel_;
   CefRefPtr<CefBrowserView> devtools_browser_view_;
   CefRefPtr<CefBrowserViewDelegate> devtools_browser_view_delegate_;
+  CefRefPtr<CefWindow> devtools_window_;
+  CefRefPtr<CefWindowDelegate> devtools_window_delegate_;
+  // Replaced or finished DevTools windows that have not been destroyed yet.
+  std::vector<CefRefPtr<CefWindow>> closing_devtools_windows_;
   CefRefPtr<CefClient> devtools_client_;
   CefRefPtr<CefPanel> status_bar_panel_;
   CefRefPtr<CefPanel> status_sidebar_spacer_panel_;

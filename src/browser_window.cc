@@ -166,6 +166,75 @@ private:
   DISALLOW_COPY_AND_ASSIGN(DevToolsBrowserViewDelegate);
 };
 
+// Hosts the Chrome-style DevTools BrowserView in its own frameless child
+// window. CEF binds a Chrome-style BrowserView to the Widget it is added to:
+// closing the DevTools Browser closes that Widget and Widget teardown destroys
+// the Browser. A dedicated window gives DevTools exactly that lifetime without
+// touching the main window. The owner keeps it over the docked DevTools pane.
+class DevToolsWindowDelegate final : public CefWindowDelegate {
+public:
+  DevToolsWindowDelegate(BrowserWindow *owner,
+                         CefRefPtr<CefBrowserView> browser_view)
+      : owner_(owner), browser_view_(browser_view) {}
+
+  void Detach() { owner_ = nullptr; }
+
+  void OnWindowCreated(CefRefPtr<CefWindow> window) override {
+    // Window managers key on this title (e.g. an AeroSpace floating rule).
+    window->SetTitle("vimbrowser DevTools");
+    window->SetToFillLayout();
+    window->SetBackgroundColor(theme::kAppBg);
+    if (browser_view_) {
+      window->AddChildView(browser_view_);
+    }
+    if (owner_) {
+      owner_->OnDevToolsWindowCreated(window);
+    }
+  }
+
+  void OnWindowDestroyed(CefRefPtr<CefWindow> window) override {
+    if (owner_) {
+      owner_->OnDevToolsWindowDestroyed(window);
+    }
+    owner_ = nullptr;
+    browser_view_ = nullptr;
+  }
+
+  CefRefPtr<CefWindow> GetParentWindow(CefRefPtr<CefWindow> window,
+                                       bool *is_menu,
+                                       bool *can_activate_menu) override {
+    *is_menu = false;
+    *can_activate_menu = true;
+    return owner_ ? owner_->MainWindowForDevTools() : nullptr;
+  }
+
+  CefRect GetInitialBounds(CefRefPtr<CefWindow> window) override {
+    CefRect bounds = owner_ ? owner_->DevToolsWindowScreenBounds() : CefRect();
+    if (bounds.width <= 0 || bounds.height <= 0) {
+      bounds = CefRect(0, 0, 800, 600);
+    }
+    return bounds;
+  }
+
+  bool IsFrameless(CefRefPtr<CefWindow> window) override { return true; }
+  bool CanResize(CefRefPtr<CefWindow> window) override { return false; }
+  bool CanMaximize(CefRefPtr<CefWindow> window) override { return false; }
+  bool CanMinimize(CefRefPtr<CefWindow> window) override { return false; }
+
+  cef_runtime_style_t GetWindowRuntimeStyle() override {
+    return CEF_RUNTIME_STYLE_CHROME;
+  }
+
+private:
+  // A strong reference: a closing DevTools window may report its destruction
+  // after the main window is gone.
+  CefRefPtr<BrowserWindow> owner_;
+  CefRefPtr<CefBrowserView> browser_view_;
+
+  IMPLEMENT_REFCOUNTING(DevToolsWindowDelegate);
+  DISALLOW_COPY_AND_ASSIGN(DevToolsWindowDelegate);
+};
+
 std::string MediaPermissionNameList(uint32_t permissions) {
   std::vector<std::string> names;
   if (permissions & CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE) {
@@ -513,16 +582,7 @@ void BrowserWindow::OnClientBeforeClose(BrowserClient* client) {
   CancelFileChooserUploadForClient(client, "tab_closed",
                                    "armed tab closed before file selection");
   CancelMediaPermissionRequestsForClient(client);
-  if (!window_close_pending_ || !AllTabBrowsersClosed()) {
-    return;
-  }
-
-  window_close_allowed_ = true;
-  if (window_) {
-    window_->Close();
-  } else {
-    CefQuitMessageLoop();
-  }
+  MaybeFinishWindowClose();
 }
 
 bool BrowserWindow::OnClientDoClose(BrowserClient *client) {
@@ -860,18 +920,27 @@ bool BrowserWindow::OnPopupBrowserViewCreated(
       }
     }
 
+    // DevTools for another tab replaces the current DevTools window. Closing
+    // that window is the normal Chrome-style teardown for its Browser.
+    if (devtools_window_) {
+      ClearDevToolsViewState();
+      RetireDevToolsWindow();
+    }
+
     devtools_browser_view_ = popup_browser_view;
     devtools_browser_view_->SetID(kDevToolsBrowserViewId);
     devtools_browser_view_->SetPreferAccelerators(true);
     devtools_browser_view_->SetVisible(true);
     devtools_opener_tab_id_ = opener_tab_id;
     devtools_visible_ = true;
-    if (devtools_panel_ && devtools_content_panel_) {
+    if (devtools_panel_) {
       devtools_panel_->SetVisible(true);
-      if (!devtools_browser_view_->GetParentView()) {
-        devtools_content_panel_->AddChildView(devtools_browser_view_);
-      }
     }
+    // Size the docked pane first; the DevTools window opens over it.
+    Layout();
+    devtools_window_delegate_ =
+        new DevToolsWindowDelegate(this, devtools_browser_view_);
+    CefWindow::CreateTopLevelWindow(devtools_window_delegate_);
     SetFocusArea(FocusArea::kDevTools);
     return true;
   }
@@ -991,25 +1060,124 @@ void BrowserWindow::OnBrowserDestroyed(CefRefPtr<CefBrowserView> browser_view,
   }
 
   if (devtools_browser_view_ && devtools_browser_view_->IsSame(browser_view)) {
-    if (devtools_content_panel_ && browser_view->GetParentView()) {
-      devtools_content_panel_->RemoveChildView(browser_view);
-    }
-    if (devtools_panel_) {
-      devtools_panel_->SetVisible(false);
-    }
-    devtools_browser_view_ = nullptr;
-    devtools_browser_view_delegate_ = nullptr;
-    devtools_client_ = nullptr;
-    devtools_opener_tab_id_ = 0;
-    devtools_visible_ = false;
-    if (focus_area_ == FocusArea::kDevTools) {
-      focus_area_ = FocusArea::kWebView;
-      if (Tab *tab = ActiveTab(); tab && tab->view) {
-        tab->view->RequestFocus();
-      }
-    }
+    ClearDevToolsViewState();
+    // Chrome closes the hosting window when its Browser goes away; make sure
+    // it does even if that already happened out of order.
+    RetireDevToolsWindow();
     UpdateModeIndicator();
     Layout();
+  }
+}
+
+CefRect BrowserWindow::DevToolsWindowScreenBounds() const {
+  if (!devtools_content_panel_ || !window_) {
+    return CefRect();
+  }
+  const CefRect local = devtools_content_panel_->GetBounds();
+  CefPoint origin(0, 0);
+  if (!devtools_content_panel_->ConvertPointToScreen(origin)) {
+    return CefRect();
+  }
+  return CefRect(origin.x, origin.y, local.width, local.height);
+}
+
+void BrowserWindow::OnDevToolsWindowCreated(CefRefPtr<CefWindow> window) {
+  // Called synchronously from CefWindow::CreateTopLevelWindow() in
+  // OnPopupBrowserViewCreated(), so this is always the current DevTools window.
+  devtools_window_ = window;
+  SyncDevToolsWindow();
+}
+
+void BrowserWindow::OnDevToolsWindowDestroyed(CefRefPtr<CefWindow> window) {
+  closing_devtools_windows_.erase(
+      std::remove_if(closing_devtools_windows_.begin(),
+                     closing_devtools_windows_.end(),
+                     [&window](const CefRefPtr<CefWindow> &candidate) {
+                       return candidate->IsSame(window);
+                     }),
+      closing_devtools_windows_.end());
+  if (devtools_window_ && devtools_window_->IsSame(window)) {
+    devtools_window_ = nullptr;
+    devtools_window_delegate_ = nullptr;
+    if (devtools_browser_view_) {
+      ClearDevToolsViewState();
+      UpdateModeIndicator();
+      Layout();
+    }
+  }
+  // CanClose() refused while this window was open, which also drops a tab's
+  // pending close. Ask again: CanClose() re-checks the tabs and lets the window
+  // close once they are ready.
+  if (window_close_pending_ && !DevToolsWindowsOpen() && window_) {
+    window_->Close();
+  }
+}
+
+void BrowserWindow::ClearDevToolsViewState() {
+  if (devtools_panel_) {
+    devtools_panel_->SetVisible(false);
+  }
+  devtools_browser_view_ = nullptr;
+  devtools_opener_tab_id_ = 0;
+  devtools_visible_ = false;
+  if (focus_area_ == FocusArea::kDevTools) {
+    focus_area_ = FocusArea::kWebView;
+    if (Tab *tab = ActiveTab(); tab && tab->view) {
+      tab->view->RequestFocus();
+    }
+  }
+}
+
+void BrowserWindow::RetireDevToolsWindow() {
+  if (!devtools_window_) {
+    return;
+  }
+  CefRefPtr<CefWindow> window = devtools_window_;
+  devtools_window_ = nullptr;
+  devtools_window_delegate_ = nullptr;
+  closing_devtools_windows_.push_back(window);
+  window->Close();
+}
+
+bool BrowserWindow::DevToolsWindowsOpen() const {
+  return devtools_window_ || !closing_devtools_windows_.empty();
+}
+
+void BrowserWindow::MaybeFinishWindowClose() {
+  if (!window_close_pending_ || !AllTabBrowsersClosed() ||
+      DevToolsWindowsOpen()) {
+    return;
+  }
+  window_close_allowed_ = true;
+  if (window_) {
+    window_->Close();
+  } else {
+    CefQuitMessageLoop();
+  }
+}
+
+void BrowserWindow::SyncDevToolsWindow() {
+  if (!devtools_window_) {
+    return;
+  }
+  // The DevTools window is a child of the main window, so it already follows
+  // the main window's visibility and stacking.
+  const bool docked = devtools_visible_ && devtools_browser_view_ && window_ &&
+                      !window_->IsMinimized();
+  const CefRect bounds = docked ? DevToolsWindowScreenBounds() : CefRect();
+  if (!docked || bounds.width <= 0 || bounds.height <= 0) {
+    if (devtools_window_->IsVisible()) {
+      devtools_window_->Hide();
+    }
+    return;
+  }
+  const CefRect current = devtools_window_->GetBounds();
+  if (current.x != bounds.x || current.y != bounds.y ||
+      current.width != bounds.width || current.height != bounds.height) {
+    devtools_window_->SetBounds(bounds);
+  }
+  if (!devtools_window_->IsVisible()) {
+    devtools_window_->Show();
   }
 }
 
@@ -1063,13 +1231,11 @@ void BrowserWindow::ShowDevToolsForClient(BrowserClient *client,
                                  devtools_opener_tab_id_ == opener_tab_id)) {
     devtools_opener_tab_id_ = opener_tab_id;
     devtools_visible_ = true;
-    devtools_browser_view_->SetVisible(true);
-    if (devtools_panel_ && devtools_content_panel_) {
+    if (devtools_panel_) {
       devtools_panel_->SetVisible(true);
-      if (!devtools_browser_view_->GetParentView()) {
-        devtools_content_panel_->AddChildView(devtools_browser_view_);
-      }
     }
+    // SetFocusArea() lays out, which re-shows the DevTools window over the
+    // docked pane.
     SetFocusArea(FocusArea::kDevTools);
   }
 }
@@ -1789,6 +1955,13 @@ void BrowserWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   mode_indicator_label_ = nullptr;
   mode_indicator_panel_ = nullptr;
   sidebar_border_overlay_panel_ = nullptr;
+  if (devtools_window_delegate_) {
+    static_cast<DevToolsWindowDelegate *>(devtools_window_delegate_.get())
+        ->Detach();
+  }
+  devtools_window_delegate_ = nullptr;
+  devtools_window_ = nullptr;
+  closing_devtools_windows_.clear();
   devtools_browser_view_delegate_ = nullptr;
   devtools_client_ = nullptr;
   devtools_browser_view_ = nullptr;
@@ -1837,7 +2010,14 @@ void BrowserWindow::OnWindowBoundsChanged(CefRefPtr<CefWindow> window,
 }
 
 bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
-  if (window_close_allowed_ || AllTabBrowsersClosed()) {
+  // DevTools windows are children of this window; let each finish its own
+  // Chrome-style teardown before this window goes away.
+  if (devtools_window_) {
+    ClearDevToolsViewState();
+    RetireDevToolsWindow();
+  }
+  if ((window_close_allowed_ || AllTabBrowsersClosed()) &&
+      !DevToolsWindowsOpen()) {
     StopSidebarMouseWatcher();
     window_close_allowed_ = true;
     return true;
@@ -1865,7 +2045,7 @@ bool BrowserWindow::CanClose(CefRefPtr<CefWindow> window) {
       all_ready_to_close &= tab.client->browser()->GetHost()->TryCloseBrowser();
     }
   }
-  if (!all_ready_to_close) {
+  if (!all_ready_to_close || DevToolsWindowsOpen()) {
     return false;
   }
 
@@ -3042,9 +3222,8 @@ void BrowserWindow::OnBlur(CefRefPtr<CefView> view) {
 }
 
 cef_runtime_style_t BrowserWindow::GetWindowRuntimeStyle() {
-  // DevTools BrowserViews are Chrome-style in CEF. A Chrome-style Window can
-  // still host our normal Alloy BrowserViews, and it is the only supported
-  // single-window host for a docked Chrome DevTools BrowserView.
+  // A Chrome-style Window hosts our Alloy BrowserViews. Chrome-style DevTools
+  // gets its own child window (DevToolsWindowDelegate) and is never added here.
   return CEF_RUNTIME_STYLE_CHROME;
 }
 
@@ -3509,13 +3688,6 @@ void BrowserWindow::Layout() {
     devtools_content_panel_->SetSize(
         CefSize(std::max(1, devtools_width), main_height));
   }
-  if (devtools_browser_view_) {
-    devtools_browser_view_->SetVisible(devtools_docked);
-    if (devtools_docked) {
-      devtools_browser_view_->SetBounds(
-          CefRect(0, 0, std::max(1, devtools_width), main_height));
-    }
-  }
   if (status_bar_panel_) {
     status_bar_panel_->SetVisible(status_visible);
     status_bar_panel_->SetBackgroundColor(command_active ? theme::kAppBg
@@ -3779,10 +3951,7 @@ void BrowserWindow::Layout() {
     devtools_content_panel_->SetBounds(CefRect(
         kDevToolsBorderWidth, 0, actual_devtools_content_width, main_height));
   }
-  if (devtools_browser_view_ && devtools_docked) {
-    devtools_browser_view_->SetBounds(
-        CefRect(0, 0, actual_devtools_content_width, main_height));
-  }
+  SyncDevToolsWindow();
   if (command_field_) {
     // Match the sidebar/status cmdline font exactly while / or ? is active;
     // regular full-width commands retain their established 13px editing font.
@@ -4156,9 +4325,6 @@ void BrowserWindow::CloseDevTools() {
   // flicker-free, and ShowDevToolsForClient() will re-show/focus the existing
   // DevTools view on the next toggle.
   devtools_visible_ = false;
-  if (devtools_browser_view_) {
-    devtools_browser_view_->SetVisible(false);
-  }
   if (devtools_panel_) {
     devtools_panel_->SetVisible(false);
   }
